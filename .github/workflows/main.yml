@@ -1,0 +1,84 @@
+# .github/workflows/deploy-pages.yml
+name: Deploy static content to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- 1) Check if Pages is enabled ----------
+      - name: Detect GitHub Pages status
+        id: pages_status
+        run: |
+          set -e
+          http_status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/pages)
+
+          if [ "$http_status" = "200" ]; then
+            echo "✅ Pages already enabled."
+            echo "deploy=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice ::GitHub Pages is not enabled for this repository yet."
+            echo "::notice ::Enable it under Settings → Pages (select **GitHub Actions** as the source) and rerun the workflow."
+            echo "deploy=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ---------- 2) Stop early when Pages is disabled ----------
+      - name: Early‑exit (no deploy needed)
+        if: steps.pages_status.outputs.deploy == 'no'
+        run: echo "Skipping build & deploy because Pages is disabled."
+        # Workflow ends successfully here when deploy=no
+        continue-on-error: false
+
+      # ---------- 3) Normal build & deploy path ----------
+      - name: Set up Node
+        if: steps.pages_status.outputs.deploy == 'yes'
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.pages_status.outputs.deploy == 'yes'
+        run: npm ci
+
+      - name: Build
+        if: steps.pages_status.outputs.deploy == 'yes'
+        run: npm run build
+
+      - name: Setup Pages
+        if: steps.pages_status.outputs.deploy == 'yes'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: steps.pages_status.outputs.deploy == 'yes'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Deploy to GitHub Pages
+        if: steps.pages_status.outputs.deploy == 'yes'
+        id: deployment
+        uses: actions/deploy-pages@v4
