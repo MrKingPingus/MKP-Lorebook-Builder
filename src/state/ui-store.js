@@ -1,4 +1,4 @@
-// Zustand store: active tab, search query, type filter selection, and collapse-all flag
+// Zustand store: active tab, search query, type filter selection, window position/size, and expand/group flags
 import { create } from 'zustand';
 import { DEFAULT_WINDOW } from '../constants/defaults.js';
 
@@ -10,6 +10,8 @@ export const useUiStore = create((set) => ({
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
   collapseAll: false,
+  expandAll:   false,
+  groupByType: false,
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
 
   setActiveTab:   (activeTab)   => set({ activeTab }),
@@ -19,6 +21,8 @@ export const useUiStore = create((set) => ({
   setWindowPos:   (windowPos)   => set({ windowPos }),
   setWindowSize:  (windowSize)  => set({ windowSize }),
   setCollapseAll: (collapseAll) => set({ collapseAll }),
+  setExpandAll:   (expandAll)   => set({ expandAll }),
+  setGroupByType: (groupByType) => set({ groupByType }),
   setSavedAt:     (savedAt)     => set({ savedAt }),
 
   toggleTypeFilter: (typeId) =>

@@ -1,13 +1,12 @@
-// Chip-per-trigger input with inline label editing, × delete, and comma/semicolon bulk paste
+// Chip-per-trigger input with inline label editing, × delete, and bulk paste
 import { useRef } from 'react';
 import { Chip } from '../ui/Chip.jsx';
 import { MAX_TRIGGERS } from '../../constants/limits.js';
-import { ENTRY_TYPES } from '../../constants/entry-types.js';
 
-export function TriggerChips({ triggers, type, onUpdate }) {
+export function TriggerChips({ triggers, type, onUpdate, delimiter = ',' }) {
   const inputRef = useRef(null);
-  const typeDef  = ENTRY_TYPES.find((t) => t.id === type);
-  const color    = typeDef?.color;
+
+  const sep = delimiter === ';' ? /;/ : /,/;
 
   function addTrigger(raw) {
     const parts = raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
@@ -19,7 +18,7 @@ export function TriggerChips({ triggers, type, onUpdate }) {
   }
 
   function onKeyDown(e) {
-    if ((e.key === 'Enter' || e.key === ',') && e.currentTarget.value.trim()) {
+    if ((e.key === 'Enter' || e.key === delimiter) && e.currentTarget.value.trim()) {
       e.preventDefault();
       addTrigger(e.currentTarget.value);
       e.currentTarget.value = '';
@@ -52,7 +51,6 @@ export function TriggerChips({ triggers, type, onUpdate }) {
         <Chip
           key={i}
           label={t}
-          color={color}
           onDelete={() => deleteTrigger(i)}
           onRename={(v) => renameTrigger(i, v)}
         />
@@ -61,7 +59,7 @@ export function TriggerChips({ triggers, type, onUpdate }) {
         <input
           ref={inputRef}
           className="trigger-input"
-          placeholder={triggers.length === 0 ? 'Add triggers…' : ''}
+          placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
           onBlur={(e) => {
