@@ -1,25 +1,22 @@
 {
-  "name": "github-pages-vite",
+  "name": "mkp-lorebook-builder",
   "version": "1.0.0",
-  "description": "Template for using Vite with GitHub Pages",
-  "homepage": "https://github.com/nsitu/github-pages-vite#readme",
-  "bugs": {
-    "url": "https://github.com/nsitu/github-pages-vite/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nsitu/github-pages-vite.git"
-  },
+  "description": "Browser-only utility for creating and managing lorebooks for AI chatbots",
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.4"
+  },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
     "vite": "^7.3.1"
   }
 }
