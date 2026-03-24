@@ -1,4 +1,4 @@
-// Entry CRUD operations: add, update, remove, reorder, and renumber enum badges
+// Entry CRUD operations: add, update, remove, reorder, clearAll, and renumber enum badges
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore } from '../state/history-store.js';
 import { createEmptyEntry } from '../services/entry-factory.js';
@@ -40,5 +40,10 @@ export function useEntries() {
     updateActiveEntries(next);
   }
 
-  return { entries, addEntry, updateEntry, removeEntry, reorderEntries };
+  function clearAllEntries() {
+    snapshot();
+    updateActiveEntries([]);
+  }
+
+  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, clearAllEntries };
 }

@@ -1,16 +1,16 @@
-// Search input with clear button, Search/Find-Replace mode toggle, and MatchCounter badge
-import { useUiStore } from '../../state/ui-store.js';
+// Search input with mode <select> dropdown (Search / Find & Replace) and MatchCounter
+import { useUiStore }   from '../../state/ui-store.js';
 import { MatchCounter } from '../ui/MatchCounter.jsx';
-import { FindReplace } from './FindReplace.jsx';
+import { FindReplace }  from './FindReplace.jsx';
 
 export function SearchBar({ entries, matchCount, entryMatchCount }) {
-  const searchQuery  = useUiStore((s) => s.searchQuery);
-  const searchMode   = useUiStore((s) => s.searchMode);
+  const searchQuery    = useUiStore((s) => s.searchQuery);
+  const searchMode     = useUiStore((s) => s.searchMode);
   const setSearchQuery = useUiStore((s) => s.setSearchQuery);
   const setSearchMode  = useUiStore((s) => s.setSearchMode);
 
-  function toggleMode() {
-    setSearchMode(searchMode === 'search' ? 'find-replace' : 'search');
+  function onModeChange(e) {
+    setSearchMode(e.target.value);
     setSearchQuery('');
   }
 
@@ -21,15 +21,20 @@ export function SearchBar({ entries, matchCount, entryMatchCount }) {
           className="search-input"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={searchMode === 'search' ? 'Search entries…' : 'Find…'}
+          placeholder="Search entries..."
         />
         {searchQuery && (
           <button className="search-clear" onClick={() => setSearchQuery('')} title="Clear">×</button>
         )}
-        <button className="search-mode-toggle" onClick={toggleMode} title="Toggle Find & Replace">
-          {searchMode === 'search' ? '⇄' : '✕'}
-        </button>
         <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />
+        <select
+          className="search-mode-select"
+          value={searchMode}
+          onChange={onModeChange}
+        >
+          <option value="search">Search</option>
+          <option value="find-replace">Find &amp; Replace</option>
+        </select>
       </div>
       {searchMode === 'find-replace' && <FindReplace entries={entries} />}
     </div>

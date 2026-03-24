@@ -1,8 +1,11 @@
-// Combined trigger count and character count badge shown in the entry card header
+// Combined trigger/max and char/limit badge — format: "4/25 trg 438/1500 chr"
+import { MAX_TRIGGERS } from '../../constants/limits.js';
+import { CHAR_LIMIT }   from '../../constants/limits.js';
+
 export function StatsBadge({ triggerCount, charCount }) {
   return (
     <span className="stats-badge">
-      {triggerCount} {triggerCount === 1 ? 'trigger' : 'triggers'} · {charCount} chars
+      {triggerCount}/{MAX_TRIGGERS} trg {charCount}/{CHAR_LIMIT} chr
     </span>
   );
 }

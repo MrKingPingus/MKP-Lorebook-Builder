@@ -1,14 +1,58 @@
-// Window footer — renders "Alt+N — new entry" hint text and the Add Entry FAB
-import { FAB } from '../ui/FAB.jsx';
-import { useEntries } from '../../hooks/use-entries.js';
+// Window footer — Clear All, + FAB, Undo, Redo, Import Entries
+import { useEntries }  from '../../hooks/use-entries.js';
+import { useUndoRedo } from '../../hooks/use-undo-redo.js';
+import { useUiStore }  from '../../state/ui-store.js';
 
 export function WindowFooter() {
-  const { addEntry } = useEntries();
+  const { addEntry, clearAllEntries } = useEntries();
+  const { undo, redo, canUndo, canRedo } = useUndoRedo();
+  const setActiveTab = useUiStore((s) => s.setActiveTab);
+
+  function handleClearAll() {
+    if (window.confirm('Clear all entries? This can be undone.')) {
+      clearAllEntries();
+    }
+  }
 
   return (
     <div className="window-footer">
-      <span className="footer-hint">Alt+N — new entry</span>
-      <FAB onClick={addEntry} />
+      <button className="footer-btn" onClick={handleClearAll}>
+        Clear All
+      </button>
+
+      <button
+        className="footer-fab"
+        onClick={addEntry}
+        title="Add entry (Alt+N)"
+      >
+        +
+      </button>
+
+      <button
+        className="footer-btn"
+        onClick={undo}
+        disabled={!canUndo}
+        title="Undo (Ctrl+Z)"
+      >
+        ↩ Undo
+      </button>
+
+      <button
+        className="footer-btn"
+        onClick={redo}
+        disabled={!canRedo}
+        title="Redo (Ctrl+Shift+Z)"
+      >
+        ↪ Redo
+      </button>
+
+      <button
+        className="footer-btn"
+        onClick={() => setActiveTab('import-export')}
+        title="Go to Import / Export"
+      >
+        ↓ Import Entries
+      </button>
     </div>
   );
 }

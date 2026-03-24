@@ -1,7 +1,6 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
 import { useUiStore }     from '../../state/ui-store.js';
 import { WindowHeader }   from './WindowHeader.jsx';
-import { TabBar }         from './TabBar.jsx';
 import { WindowFooter }   from './WindowFooter.jsx';
 import { ResizeHandles }  from './ResizeHandles.jsx';
 import { BuildPanel }     from '../feature/BuildPanel.jsx';
@@ -35,12 +34,19 @@ export function FloatingWindow() {
 
   return (
     <div className="floating-window" style={style}>
+      {/* Golden corner bracket decorations */}
+      <span className="corner corner--nw" />
+      <span className="corner corner--ne" />
+      <span className="corner corner--sw" />
+      <span className="corner corner--se" />
+
       <WindowHeader />
-      <TabBar />
+
       <div className="window-body">
         <PanelSwitch tab={activeTab} />
       </div>
-      {activeTab === 'build' && <WindowFooter />}
+
+      <WindowFooter />
       <ResizeHandles />
     </div>
   );
