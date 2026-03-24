@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Plan
+See @plan.md. Work phases in order. Do not build ahead.
+
 ## Commands
 
 ```bash
