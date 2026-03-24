@@ -5,10 +5,9 @@ import { useUiStore }    from '../../state/ui-store.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
-  const expandAll      = useUiStore((s) => s.expandAll);
-  const groupByType    = useUiStore((s) => s.groupByType);
+  const expandAll   = useUiStore((s) => s.expandAll);
+  const groupByType = useUiStore((s) => s.groupByType);
   const setExpandAll   = useUiStore((s) => s.setExpandAll);
-  const setCollapseAll = useUiStore((s) => s.setCollapseAll);
   const setGroupByType = useUiStore((s) => s.setGroupByType);
 
   function handleTypeClick(e, typeId) {
@@ -20,21 +19,12 @@ export function TypeFilterBar({ entries }) {
       if (typeFilter.length === 1 && typeFilter[0] === typeId) {
         clearFilter();
       } else {
+        // Single-select (clear others, select this)
+        useTypeFilter.clearAndSet?.(typeId);
+        // fallback: toggle through the store
         const { setTypeFilter } = useUiStore.getState();
         setTypeFilter([typeId]);
       }
-    }
-  }
-
-  function handleExpandCollapseClick() {
-    if (expandAll) {
-      // Currently expanded — collapse all
-      setExpandAll(false);
-      setCollapseAll(true);
-    } else {
-      // Currently collapsed — expand all
-      setExpandAll(true);
-      setCollapseAll(false);
     }
   }
 
@@ -77,7 +67,7 @@ export function TypeFilterBar({ entries }) {
         </button>
         <button
           className={`filter-action-btn${expandAll ? ' filter-action-btn--active' : ''}`}
-          onClick={handleExpandCollapseClick}
+          onClick={() => setExpandAll(!expandAll)}
         >
           {expandAll ? 'Collapse All' : 'Expand All'}
         </button>

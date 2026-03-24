@@ -1,5 +1,4 @@
 // Window title bar — logo, lorebook name, lorebook count badge, inline tabs, close button
-import { useRef, useEffect } from 'react';
 import { useDragWindow }  from '../../hooks/use-drag-window.js';
 import { useLorebook }    from '../../hooks/use-lorebook.js';
 import { useUiStore }     from '../../state/ui-store.js';
@@ -11,31 +10,12 @@ const TABS = [
   { id: 'settings',      label: 'Settings' },
 ];
 
-function nameWidth(name) {
-  return Math.max(12, (name?.length ?? 0) + 2) + 'ch';
-}
-
 export function WindowHeader() {
   const { onPointerDown }          = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
   const activeTab                  = useUiStore((s) => s.activeTab);
   const setActiveTab               = useUiStore((s) => s.setActiveTab);
   const lorebookIndex              = useLorebookStore((s) => s.lorebookIndex);
-  const nameRef                    = useRef(null);
-
-  // Sync width when the active lorebook changes (e.g. on load or switch)
-  useEffect(() => {
-    if (nameRef.current) {
-      nameRef.current.style.width = nameWidth(activeLorebook?.name);
-    }
-  }, [activeLorebook?.name]);
-
-  function handleNameChange(e) {
-    renameLorebook(e.target.value);
-    if (nameRef.current) {
-      nameRef.current.style.width = nameWidth(e.target.value);
-    }
-  }
 
   return (
     <div className="window-header" onPointerDown={onPointerDown}>
@@ -45,12 +25,11 @@ export function WindowHeader() {
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
-      {/* Lorebook name — auto-resizing */}
+      {/* Lorebook name — centered */}
       <input
-        ref={nameRef}
         className="lorebook-name-input"
         value={activeLorebook?.name ?? ''}
-        onChange={handleNameChange}
+        onChange={(e) => renameLorebook(e.target.value)}
         placeholder="Lorebook name…"
         onPointerDown={(e) => e.stopPropagation()}
         spellCheck={false}
