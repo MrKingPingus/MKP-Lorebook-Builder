@@ -145,10 +145,11 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
 }
 
-/* Lorebook name */
+/* Lorebook name — width set dynamically via ch units in WindowHeader */
 .lorebook-name-input {
-  flex: 1;
-  min-width: 60px;
+  min-width: 8ch;
+  max-width: 32ch;
+  width: 14ch; /* initial fallback; overwritten by JS */
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -650,6 +651,16 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface);
   cursor: text;
   min-height: 34px;
+}
+
+/* Trigger count badge — sits at the end of the chip row */
+.trigger-count-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .chip {

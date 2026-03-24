@@ -1,5 +1,5 @@
 // Full interactive entry card — collapsed/expanded with left type-color border
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TypeColorDot }    from '../ui/TypeColorDot.jsx';
 import { StatsBadge }      from '../ui/StatsBadge.jsx';
 import { TypeSelector }    from './TypeSelector.jsx';
@@ -14,11 +14,15 @@ import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 export function EntryCard({ entry, index, onUpdate, onRemove }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { compactTriggerMode } = useSettings();
-  const expandAll = useUiStore((s) => s.expandAll);
+  const expandAll   = useUiStore((s) => s.expandAll);
+  const collapseAll = useUiStore((s) => s.collapseAll);
   const [delimiter, setDelimiter] = useState(',');
 
-  // expandAll overrides local collapsed state
-  const collapsed = expandAll ? false : localCollapsed;
+  // Respond to global expand/collapse signals
+  useEffect(() => { if (expandAll)   setLocalCollapsed(false); }, [expandAll]);
+  useEffect(() => { if (collapseAll) setLocalCollapsed(true);  }, [collapseAll]);
+
+  const collapsed = localCollapsed;
 
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';

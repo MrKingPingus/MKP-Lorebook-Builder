@@ -67,6 +67,18 @@ export function TriggerChips({ triggers, type, onUpdate, delimiter = ',' }) {
           }}
         />
       )}
+      <span
+        className="trigger-count-badge"
+        style={{
+          color: triggers.length >= MAX_TRIGGERS
+            ? 'var(--red)'
+            : triggers.length >= Math.floor(MAX_TRIGGERS * 0.8)
+            ? 'var(--yellow)'
+            : 'var(--green)',
+        }}
+      >
+        {triggers.length}/{MAX_TRIGGERS}
+      </span>
     </div>
   );
 }
