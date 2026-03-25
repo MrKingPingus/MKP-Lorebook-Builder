@@ -8,17 +8,22 @@ export function useUndoRedo() {
   const historyUndo = useHistoryStore((s) => s.undo);
   const historyRedo = useHistoryStore((s) => s.redo);
   const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
+  const getActiveLorebook = useLorebookStore((s) => s.getActiveLorebook);
 
   const canUndo = undoStack.length > 0;
   const canRedo = redoStack.length > 0;
 
   function undo() {
-    const snapshot = historyUndo();
+    const lorebook = getActiveLorebook();
+    const current = lorebook ? { entries: [...lorebook.entries] } : null;
+    const snapshot = historyUndo(current);
     if (snapshot) updateActiveEntries(snapshot.entries);
   }
 
   function redo() {
-    const snapshot = historyRedo();
+    const lorebook = getActiveLorebook();
+    const current = lorebook ? { entries: [...lorebook.entries] } : null;
+    const snapshot = historyRedo(current);
     if (snapshot) updateActiveEntries(snapshot.entries);
   }
 

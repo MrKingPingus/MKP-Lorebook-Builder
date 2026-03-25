@@ -7,23 +7,13 @@ import { BuildPanel }     from '../feature/BuildPanel.jsx';
 import { ImportPanel }    from '../feature/ImportPanel.jsx';
 import { ExportPanel }    from '../feature/ExportPanel.jsx';
 import { SettingsPanel }  from '../feature/SettingsPanel.jsx';
-
-function PanelSwitch({ tab }) {
-  if (tab === 'build')         return <BuildPanel />;
-  if (tab === 'import-export') return (
-    <div className="tab-split">
-      <ImportPanel />
-      <ExportPanel />
-    </div>
-  );
-  if (tab === 'settings')      return <SettingsPanel />;
-  return null;
-}
+import { Lander }         from '../feature/Lander.jsx';
 
 export function FloatingWindow() {
   const windowPos  = useUiStore((s) => s.windowPos);
   const windowSize = useUiStore((s) => s.windowSize);
   const activeTab  = useUiStore((s) => s.activeTab);
+  const showLander = useUiStore((s) => s.showLander);
 
   const style = {
     left:   windowPos.x,
@@ -31,6 +21,12 @@ export function FloatingWindow() {
     width:  windowSize.width,
     height: windowSize.height,
   };
+
+  function panelStyle(id) {
+    return activeTab === id
+      ? { flex: 1, minHeight: 0 }
+      : { display: 'none' };
+  }
 
   return (
     <div className="floating-window" style={style}>
@@ -40,13 +36,33 @@ export function FloatingWindow() {
       <span className="corner corner--sw" />
       <span className="corner corner--se" />
 
-      <WindowHeader />
+      {showLander ? (
+        <div className="window-body window-body--lander">
+          <Lander />
+        </div>
+      ) : (
+        <>
+          <WindowHeader />
 
-      <div className="window-body">
-        <PanelSwitch tab={activeTab} />
-      </div>
+          <div className="window-body">
+            {/* All three panels are always mounted; inactive ones are hidden with display:none
+                so React state (entry expand/collapse, etc.) survives tab switches. */}
+            <div style={panelStyle('build')}>
+              <BuildPanel />
+            </div>
+            <div className="tab-split" style={panelStyle('import-export')}>
+              <ImportPanel />
+              <ExportPanel />
+            </div>
+            <div style={panelStyle('settings')}>
+              <SettingsPanel />
+            </div>
+          </div>
 
-      <WindowFooter />
+          <WindowFooter />
+        </>
+      )}
+
       <ResizeHandles />
     </div>
   );

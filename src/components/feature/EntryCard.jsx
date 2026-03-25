@@ -4,21 +4,25 @@ import { TypeColorDot }    from '../ui/TypeColorDot.jsx';
 import { StatsBadge }      from '../ui/StatsBadge.jsx';
 import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
-import { TriggerCompact }  from './TriggerCompact.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useUiStore }      from '../../state/ui-store.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
+import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
-export function EntryCard({ entry, index, onUpdate, onRemove }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
-  const { compactTriggerMode } = useSettings();
-  const expandAll = useUiStore((s) => s.expandAll);
+  const { hideEntryStats } = useSettings();
+  const expandAll    = useUiStore((s) => s.expandAll);
+  const collapseAll  = useUiStore((s) => s.collapseAll);
+  const searchQuery  = useUiStore((s) => s.searchQuery);
+  const setExpandAll   = useUiStore((s) => s.setExpandAll);
+  const setCollapseAll = useUiStore((s) => s.setCollapseAll);
   const [delimiter, setDelimiter] = useState(',');
 
-  // expandAll overrides local collapsed state
-  const collapsed = expandAll ? false : localCollapsed;
+  // expandAll/collapseAll override local collapsed state
+  const collapsed = expandAll ? false : (collapseAll ? true : localCollapsed);
 
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';
@@ -33,6 +37,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
     }
   }
 
+  // Build highlighted entry name HTML for the collapsed header
+  function highlightedName() {
+    const displayName = entry.name || '(unnamed)';
+    if (!searchQuery) return null; // will use plain text
+    const safe = escapeHtml(displayName);
+    return safe.replace(
+      new RegExp(`(${escapeRegex(escapeHtml(searchQuery))})`, 'gi'),
+      '<mark class="search-mark">$1</mark>'
+    );
+  }
+
+  const nameHtml = highlightedName();
+
   return (
     <div
       className="entry-card"
@@ -40,19 +57,33 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
     >
       {/* ── Card header ── */}
       <div className="entry-card-header">
-        <span className="drag-handle" title="Drag to reorder">⠿</span>
+        <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
         <TypeColorDot type={entry.type} />
-        <span className="entry-label" style={{ color: typeColor }}>
-          #{index}: {entry.name || '(unnamed)'}
-        </span>
-        <div className="entry-card-header-right">
-          <StatsBadge
-            triggerCount={entry.triggers.length}
-            charCount={entry.description.length}
+        {nameHtml ? (
+          <span
+            className="entry-label"
+            style={{ color: typeColor }}
+            dangerouslySetInnerHTML={{ __html: `#${index}: ${nameHtml}` }}
           />
+        ) : (
+          <span className="entry-label" style={{ color: typeColor }}>
+            #{index}: {entry.name || '(unnamed)'}
+          </span>
+        )}
+        <div className="entry-card-header-right">
+          {!hideEntryStats && (
+            <StatsBadge
+              triggerCount={entry.triggers.length}
+              charCount={entry.description.length}
+            />
+          )}
           <button
             className="card-action-btn"
-            onClick={() => setLocalCollapsed((c) => !c)}
+            onClick={() => {
+              setLocalCollapsed(!collapsed);
+              setExpandAll(false);
+              setCollapseAll(false);
+            }}
           >
             {collapsed ? '▼ Expand' : '▲ Collapse'}
           </button>
@@ -104,19 +135,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
               </select>
             </div>
 
-            {compactTriggerMode ? (
-              <TriggerCompact
-                triggers={entry.triggers}
-                onUpdate={(triggers) => update({ triggers })}
-              />
-            ) : (
-              <TriggerChips
-                triggers={entry.triggers}
-                type={entry.type}
-                delimiter={delimiter}
-                onUpdate={(triggers) => update({ triggers })}
-              />
-            )}
+            <TriggerChips
+              triggers={entry.triggers}
+              type={entry.type}
+              delimiter={delimiter}
+              searchQuery={searchQuery}
+              onUpdate={(triggers) => update({ triggers })}
+            />
           </div>
 
           {/* Row 3: Suggestions tray */}

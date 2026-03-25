@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { DropZone }      from '../ui/DropZone.jsx';
 import { ImportPreview } from './ImportPreview.jsx';
 import { parseTxtToEntries, readTxtFile } from '../../services/txt-import.js';
-import { importFromDocx } from '../../services/docx-import.js';
-import { readJsonFile, importFromJson } from '../../services/json-import.js';
-import { useEntries } from '../../hooks/use-entries.js';
+import { importFromDocx }                 from '../../services/docx-import.js';
+import { readJsonFile, importFromJson }   from '../../services/json-import.js';
+import { useEntries }       from '../../hooks/use-entries.js';
+import { useLorebook }      from '../../hooks/use-lorebook.js';
 import { useLorebookStore } from '../../state/lorebook-store.js';
-import { useHistoryStore } from '../../state/history-store.js';
+import { useHistoryStore }  from '../../state/history-store.js';
 
 const FORMATS = [
   { id: 'txt',  label: 'TXT',  accept: '.txt' },
@@ -16,20 +17,23 @@ const FORMATS = [
 ];
 
 export function ImportPanel() {
-  const [format, setFormat]       = useState('txt');
-  const [preview, setPreview]     = useState(null);
-  const [error, setError]         = useState('');
-  const [loading, setLoading]     = useState(false);
+  const [format, setFormat]         = useState('txt');
+  const [preview, setPreview]       = useState(null);
+  const [importedName, setImportedName] = useState(null); // set for JSON imports
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
 
-  const { entries }             = useEntries();
-  const updateActiveEntries     = useLorebookStore((s) => s.updateActiveEntries);
-  const pushSnapshot            = useHistoryStore((s) => s.pushSnapshot);
+  const { entries }              = useEntries();
+  const { renameLorebook }       = useLorebook();
+  const updateActiveEntries      = useLorebookStore((s) => s.updateActiveEntries);
+  const pushSnapshot             = useHistoryStore((s) => s.pushSnapshot);
 
   const currentAccept = FORMATS.find((f) => f.id === format)?.accept ?? '.txt';
 
   async function handleFile(file) {
     setError('');
     setPreview(null);
+    setImportedName(null);
     setLoading(true);
     try {
       let parsed;
@@ -43,6 +47,8 @@ export function ImportPanel() {
         const result = importFromJson(raw);
         if (!result.ok) { setError(result.error); return; }
         parsed = result.lorebook.entries;
+        // Preserve the lorebook name so confirm() can load the full state
+        setImportedName(result.lorebook.name ?? null);
       }
       setPreview(parsed);
     } catch (e) {
@@ -55,8 +61,16 @@ export function ImportPanel() {
   function confirm() {
     if (!preview) return;
     pushSnapshot({ entries: [...entries] });
-    updateActiveEntries([...entries, ...preview]);
+    if (format === 'json') {
+      // Load state: replace entries and name with the imported lorebook
+      updateActiveEntries(preview);
+      if (importedName != null) renameLorebook(importedName);
+    } else {
+      // Append for TXT / DOCX
+      updateActiveEntries([...entries, ...preview]);
+    }
     setPreview(null);
+    setImportedName(null);
   }
 
   return (
@@ -66,7 +80,7 @@ export function ImportPanel() {
           <button
             key={f.id}
             className={`format-tab${format === f.id ? ' format-tab--active' : ''}`}
-            onClick={() => { setFormat(f.id); setPreview(null); setError(''); }}
+            onClick={() => { setFormat(f.id); setPreview(null); setImportedName(null); setError(''); }}
           >
             {f.label}
           </button>
@@ -84,8 +98,9 @@ export function ImportPanel() {
       {preview && (
         <ImportPreview
           entries={preview}
+          replaceMode={format === 'json'}
           onConfirm={confirm}
-          onCancel={() => setPreview(null)}
+          onCancel={() => { setPreview(null); setImportedName(null); }}
         />
       )}
     </div>

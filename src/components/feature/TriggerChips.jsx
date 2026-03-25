@@ -1,21 +1,40 @@
-// Chip-per-trigger input with inline label editing, × delete, and bulk paste
-import { useRef } from 'react';
+// Chip-per-trigger input with inline label editing, × delete, bulk paste, counter badge, and dupe flash
+import { useRef, useState } from 'react';
 import { Chip } from '../ui/Chip.jsx';
 import { MAX_TRIGGERS } from '../../constants/limits.js';
 
-export function TriggerChips({ triggers, type, onUpdate, delimiter = ',' }) {
-  const inputRef = useRef(null);
+const TRIGGER_WARN_YELLOW = 20;
 
-  const sep = delimiter === ';' ? /;/ : /,/;
+export function TriggerChips({ triggers, type, onUpdate, delimiter = ',', searchQuery = '' }) {
+  const inputRef  = useRef(null);
+  const [flashDupe, setFlashDupe] = useState(false);
+  const dupeTimer = useRef(null);
+
+  function flashDupeError() {
+    clearTimeout(dupeTimer.current);
+    setFlashDupe(true);
+    dupeTimer.current = setTimeout(() => setFlashDupe(false), 1500);
+  }
 
   function addTrigger(raw) {
     const parts = raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
     const next  = [...triggers];
+    let dupFound = false;
     for (const p of parts) {
-      if (!next.includes(p) && next.length < MAX_TRIGGERS) next.push(p);
+      if (next.some((t) => t.toLowerCase() === p.toLowerCase())) {
+        dupFound = true;
+      } else if (next.length < MAX_TRIGGERS) {
+        next.push(p);
+      }
     }
+    if (dupFound) flashDupeError();
     onUpdate(next);
   }
+
+  const triggerColor =
+    triggers.length >= MAX_TRIGGERS ? 'var(--red)'
+    : triggers.length >= TRIGGER_WARN_YELLOW ? 'var(--yellow)'
+    : 'var(--green)';
 
   function onKeyDown(e) {
     if ((e.key === 'Enter' || e.key === delimiter) && e.currentTarget.value.trim()) {
@@ -46,27 +65,36 @@ export function TriggerChips({ triggers, type, onUpdate, delimiter = ',' }) {
   }
 
   return (
-    <div className="trigger-chips" onClick={() => inputRef.current?.focus()}>
-      {triggers.map((t, i) => (
-        <Chip
-          key={i}
-          label={t}
-          onDelete={() => deleteTrigger(i)}
-          onRename={(v) => renameTrigger(i, v)}
-        />
-      ))}
-      {triggers.length < MAX_TRIGGERS && (
-        <input
-          ref={inputRef}
-          className="trigger-input"
-          placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
-          onKeyDown={onKeyDown}
-          onPaste={onPaste}
-          onBlur={(e) => {
-            if (e.target.value.trim()) { addTrigger(e.target.value); e.target.value = ''; }
-          }}
-        />
-      )}
+    <div className="trigger-chips-wrapper">
+      <div className="trigger-chips" onClick={() => inputRef.current?.focus()}>
+        {triggers.map((t, i) => (
+          <Chip
+            key={i}
+            label={t}
+            onDelete={() => deleteTrigger(i)}
+            onRename={(v) => renameTrigger(i, v)}
+            highlight={searchQuery || undefined}
+          />
+        ))}
+        {triggers.length < MAX_TRIGGERS && (
+          <input
+            ref={inputRef}
+            className="trigger-input"
+            placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
+            onKeyDown={onKeyDown}
+            onPaste={onPaste}
+            onBlur={(e) => {
+              if (e.target.value.trim()) { addTrigger(e.target.value); e.target.value = ''; }
+            }}
+          />
+        )}
+      </div>
+      <div className="trigger-chips-footer">
+        {flashDupe && <span className="trigger-dupe-error">Already exists</span>}
+        <span className="trigger-counter" style={{ color: triggerColor }}>
+          {triggers.length}/{MAX_TRIGGERS}
+        </span>
+      </div>
     </div>
   );
 }

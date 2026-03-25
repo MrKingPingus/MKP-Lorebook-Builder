@@ -1,8 +1,8 @@
-// Window title bar — logo, lorebook name, lorebook count badge, inline tabs, close button
-import { useDragWindow }  from '../../hooks/use-drag-window.js';
-import { useLorebook }    from '../../hooks/use-lorebook.js';
-import { useUiStore }     from '../../state/ui-store.js';
-import { useLorebookStore } from '../../state/lorebook-store.js';
+// Window title bar — logo, lorebook name, lorebook switcher, inline tabs, close button
+import { useDragWindow }      from '../../hooks/use-drag-window.js';
+import { useLorebook }        from '../../hooks/use-lorebook.js';
+import { useUiStore }         from '../../state/ui-store.js';
+import { LorebookSwitcher }   from '../feature/LorebookSwitcher.jsx';
 
 const TABS = [
   { id: 'build',         label: 'Build' },
@@ -15,7 +15,6 @@ export function WindowHeader() {
   const { activeLorebook, renameLorebook } = useLorebook();
   const activeTab                  = useUiStore((s) => s.activeTab);
   const setActiveTab               = useUiStore((s) => s.setActiveTab);
-  const lorebookIndex              = useLorebookStore((s) => s.lorebookIndex);
 
   return (
     <div className="window-header" onPointerDown={onPointerDown}>
@@ -25,25 +24,23 @@ export function WindowHeader() {
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
-      {/* Lorebook name — centered */}
-      <input
-        className="lorebook-name-input"
-        value={activeLorebook?.name ?? ''}
-        onChange={(e) => renameLorebook(e.target.value)}
-        placeholder="Lorebook name…"
-        onPointerDown={(e) => e.stopPropagation()}
-        spellCheck={false}
-      />
+      {/* Lorebook name — auto-sizes to content, centered in flex-grow region */}
+      <div className="lorebook-name-sizer">
+        <input
+          className="lorebook-name-input"
+          value={activeLorebook?.name ?? ''}
+          onChange={(e) => renameLorebook(e.target.value)}
+          placeholder="Lorebook name…"
+          size={Math.max(10, (activeLorebook?.name?.length ?? 0) + 2)}
+          onPointerDown={(e) => e.stopPropagation()}
+          spellCheck={false}
+        />
+      </div>
 
-      {/* Lorebook count badge */}
-      <button
-        className="lorebook-count-badge"
-        title="Lorebook list"
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => setActiveTab('settings')}
-      >
-        🗒 {lorebookIndex.length || 1}
-      </button>
+      {/* Lorebook switcher */}
+      <div onPointerDown={(e) => e.stopPropagation()}>
+        <LorebookSwitcher />
+      </div>
 
       {/* Inline tabs */}
       <nav className="header-tabs" onPointerDown={(e) => e.stopPropagation()}>
