@@ -23,7 +23,9 @@ export function FloatingWindow() {
   };
 
   function panelStyle(id) {
-    return activeTab === id ? {} : { display: 'none' };
+    return activeTab === id
+      ? { flex: 1, minHeight: 0 }
+      : { display: 'none' };
   }
 
   return (
