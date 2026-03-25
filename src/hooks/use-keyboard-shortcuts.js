@@ -11,13 +11,13 @@ export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, hotkey = 'n' 
         return;
       }
       // Ctrl+Shift+Z — redo
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         onRedo?.();
         return;
       }
       // Ctrl+Z — undo
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         onUndo?.();
       }

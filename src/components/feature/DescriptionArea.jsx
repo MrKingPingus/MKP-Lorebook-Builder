@@ -1,5 +1,5 @@
 // Description textarea with DESCRIPTION label, search highlight overlay, char counter, and resize handle
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
@@ -12,17 +12,31 @@ const DEFAULT_HEIGHT = 192; // ~8 rows at 24px
 export function DescriptionArea({ value, onChange }) {
   const textareaRef = useRef(null);
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const manualHeight = useRef(null); // set when user drags handle; null = auto-grow mode
   const dragStart = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
   const searchQuery = useUiStore((s) => s.searchQuery);
+
+  // Auto-grow: expand height to fit content unless user has manually resized
+  useEffect(() => {
+    if (manualHeight.current !== null) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    // Temporarily shrink to measure scrollHeight
+    el.style.height = `${MIN_HEIGHT}px`;
+    const scrollH = el.scrollHeight;
+    el.style.height = '';
+    setHeight(Math.max(MIN_HEIGHT, scrollH));
+  }, [value]);
 
   const onResizePointerDown = useCallback((e) => {
     e.preventDefault();
     dragStart.current = { y: e.clientY, h: height };
 
     function onMove(me) {
-      const delta = me.clientY - dragStart.current.y;
-      setHeight(Math.max(MIN_HEIGHT, dragStart.current.h + delta));
+      const newH = Math.max(MIN_HEIGHT, dragStart.current.h + (me.clientY - dragStart.current.y));
+      manualHeight.current = newH;
+      setHeight(newH);
     }
     function onUp() {
       window.removeEventListener('pointermove', onMove);
@@ -37,7 +51,7 @@ export function DescriptionArea({ value, onChange }) {
       <div className="field-label">
         DESCRIPTION <span className="field-label-hint">({CHAR_LIMIT} char limit)</span>
       </div>
-      <div className="description-wrapper">
+      <div className="description-wrapper" onPointerDown={(e) => e.stopPropagation()}>
         <DescriptionHighlight
           text={value}
           query={searchQuery}

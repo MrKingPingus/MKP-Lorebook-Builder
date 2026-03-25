@@ -1187,7 +1187,7 @@ kbd {
    ============================================================ */
 .lander {
   min-height: 100vh;
-  padding: 80px 24px 120px;
+  padding: 700px 24px 120px;
   max-width: 680px;
   margin: 0 auto;
   display: flex;

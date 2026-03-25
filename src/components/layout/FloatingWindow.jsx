@@ -8,18 +8,6 @@ import { ImportPanel }    from '../feature/ImportPanel.jsx';
 import { ExportPanel }    from '../feature/ExportPanel.jsx';
 import { SettingsPanel }  from '../feature/SettingsPanel.jsx';
 
-function PanelSwitch({ tab }) {
-  if (tab === 'build')         return <BuildPanel />;
-  if (tab === 'import-export') return (
-    <div className="tab-split">
-      <ImportPanel />
-      <ExportPanel />
-    </div>
-  );
-  if (tab === 'settings')      return <SettingsPanel />;
-  return null;
-}
-
 export function FloatingWindow() {
   const windowPos  = useUiStore((s) => s.windowPos);
   const windowSize = useUiStore((s) => s.windowSize);
@@ -32,6 +20,10 @@ export function FloatingWindow() {
     height: windowSize.height,
   };
 
+  function panelStyle(id) {
+    return activeTab === id ? {} : { display: 'none' };
+  }
+
   return (
     <div className="floating-window" style={style}>
       {/* Golden corner bracket decorations */}
@@ -43,7 +35,18 @@ export function FloatingWindow() {
       <WindowHeader />
 
       <div className="window-body">
-        <PanelSwitch tab={activeTab} />
+        {/* All three panels are always mounted; inactive ones are hidden with display:none
+            so React state (entry expand/collapse, etc.) survives tab switches. */}
+        <div style={panelStyle('build')}>
+          <BuildPanel />
+        </div>
+        <div className="tab-split" style={panelStyle('import-export')}>
+          <ImportPanel />
+          <ExportPanel />
+        </div>
+        <div style={panelStyle('settings')}>
+          <SettingsPanel />
+        </div>
       </div>
 
       <WindowFooter />
