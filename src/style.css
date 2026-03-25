@@ -72,9 +72,9 @@ input:focus, textarea:focus, select:focus {
 /* --- App root --- */
 .app-root {
   width: 100vw;
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--bg);
 }
 
@@ -234,6 +234,9 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+.window-body--lander {
+  overflow-y: auto;
 }
 
 /* ============================================================
@@ -748,26 +751,6 @@ input:focus, textarea:focus, select:focus {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Compact trigger mode */
-.trigger-compact { display: flex; gap: 6px; }
-.trigger-compact-input {
-  flex: 1;
-  resize: none;
-  padding: 5px 8px;
-  font-size: 12px;
-  border-radius: var(--radius);
-}
-.delimiter-btn {
-  padding: 4px 8px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 11px;
-  color: var(--muted2);
-  align-self: flex-start;
-  transition: background var(--transition);
-}
-.delimiter-btn:hover { background: var(--surface); color: var(--text); }
 
 /* ============================================================
    Suggestions Tray
@@ -856,6 +839,7 @@ input:focus, textarea:focus, select:focus {
 .description-textarea {
   width: 100%;
   resize: none;
+  overflow: hidden;
   padding: 8px 10px;
   border-radius: var(--radius);
   font-size: 13px;
@@ -866,7 +850,7 @@ input:focus, textarea:focus, select:focus {
   caret-color: var(--text);
   position: relative;
   z-index: 1;
-  min-height: 120px;
+  min-height: 80px;
 }
 .description-textarea:focus { border-color: var(--accent); }
 
@@ -1088,25 +1072,6 @@ kbd {
    Phase 3 additions
    ============================================================ */
 
-/* Description resize handle */
-.description-resize-handle {
-  height: 8px;
-  cursor: ns-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
-.description-resize-handle::after {
-  content: '';
-  width: 40px;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--border2);
-  transition: background var(--transition);
-}
-.description-resize-handle:hover::after { background: var(--accent); }
-
 /* Save prompt (lorebook switcher) */
 .switcher-prompt {
   position: absolute;
@@ -1186,48 +1151,46 @@ kbd {
    Lander page
    ============================================================ */
 .lander {
-  min-height: 100vh;
-  padding: 700px 24px 120px;
-  max-width: 680px;
+  padding: 40px 32px 48px;
+  max-width: 560px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 56px;
-  pointer-events: none; /* let floating window intercept events by default */
+  gap: 40px;
 }
-.lander * { pointer-events: auto; }
 
 .lander-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   text-align: center;
 }
-.lander-logo { font-size: 48px; line-height: 1; }
+.lander-logo { font-size: 40px; line-height: 1; }
 .lander-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.02em;
 }
-.lander-tagline { font-size: 14px; color: var(--muted2); line-height: 1.7; max-width: 460px; }
+.lander-tagline { font-size: 13px; color: var(--muted2); line-height: 1.7; max-width: 400px; }
 
-.lander-cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
-.lander-cta-btn {
-  padding: 9px 22px;
+.lander-start-btn {
+  margin-top: 4px;
+  padding: 10px 28px;
   background: var(--accent);
   color: #fff;
-  border-radius: var(--radius-lg);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
   transition: background var(--transition);
 }
-.lander-cta-btn:hover { background: #3a5ab5; }
+.lander-start-btn:hover { background: #3a5ab5; }
 
-.lander-section { display: flex; flex-direction: column; gap: 12px; }
-.lander-section-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.lander-section { display: flex; flex-direction: column; gap: 10px; }
+.lander-section-title { font-size: 14px; font-weight: 700; color: var(--text); }
 .lander-section-text { font-size: 13px; color: var(--muted2); line-height: 1.6; }
 
 .lander-template-row { display: flex; gap: 10px; flex-wrap: wrap; }

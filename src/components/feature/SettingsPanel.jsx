@@ -3,7 +3,6 @@ import { useSettings } from '../../hooks/use-settings.js';
 
 export function SettingsPanel() {
   const {
-    compactTriggerMode,
     counterTiers,
     defaultWindowWidth,
     defaultWindowHeight,
@@ -12,7 +11,6 @@ export function SettingsPanel() {
     hideEntryStats,
     newEntryHotkey,
     resetWindow,
-    setCompactTriggerMode,
     setCounterTiers,
     setDefaultWindowWidth,
     setDefaultWindowHeight,
@@ -24,21 +22,6 @@ export function SettingsPanel() {
 
   return (
     <div className="settings-panel">
-
-      {/* ── Trigger input ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Compact trigger mode</span>
-          <input
-            type="checkbox"
-            checked={compactTriggerMode}
-            onChange={(e) => setCompactTriggerMode(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          Show triggers as a single text field instead of individual chips.
-        </div>
-      </div>
 
       {/* ── Suggestions tray ── */}
       <div className="settings-group">
@@ -160,7 +143,7 @@ export function SettingsPanel() {
         <div className="settings-hint">
           <kbd>Alt+{newEntryHotkey.toUpperCase()}</kbd> New entry &nbsp;·&nbsp;
           <kbd>Ctrl+Z</kbd> Undo &nbsp;·&nbsp;
-          <kbd>Ctrl+Shift+Z</kbd> Redo
+          <kbd>Ctrl+Y</kbd> Redo
         </div>
       </div>
 

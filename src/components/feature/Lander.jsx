@@ -1,7 +1,8 @@
-// Static lander page — shown as the scrollable background behind the floating window
+// Launch view — shown inside the floating window on page load; dismissed via "Start Building"
 import { exportToTxtBlob }  from '../../services/txt-export.js';
 import { exportToDocxBlob } from '../../services/docx-export.js';
 import { downloadBlob }     from '../../services/json-export.js';
+import { useUiStore }       from '../../state/ui-store.js';
 
 const TEMPLATE_LOREBOOK = {
   id:   'template',
@@ -24,9 +25,15 @@ const TEMPLATE_LOREBOOK = {
   ],
 };
 
-const GH_PAGES_URL = 'https://mrkingpingus.github.io/mkp-lorebook-builder/';
-
 export function Lander() {
+  const setShowLander = useUiStore((s) => s.setShowLander);
+  const setActiveTab  = useUiStore((s) => s.setActiveTab);
+
+  function enterBuilder() {
+    setActiveTab('build');
+    setShowLander(false);
+  }
+
   function downloadTxtTemplate() {
     const blob = exportToTxtBlob(TEMPLATE_LOREBOOK);
     downloadBlob(blob, 'lorebook-template.txt');
@@ -45,11 +52,9 @@ export function Lander() {
         <p className="lander-tagline">
           Build rich AI lorebooks with triggers, descriptions, and type-aware suggestions — right in your browser.
         </p>
-        <div className="lander-cta-row">
-          <a className="lander-cta-btn" href={GH_PAGES_URL} target="_blank" rel="noopener noreferrer">
-            Open on GitHub Pages ↗
-          </a>
-        </div>
+        <button className="lander-start-btn" onClick={enterBuilder}>
+          Start Building →
+        </button>
       </div>
 
       <div className="lander-section">
@@ -64,14 +69,14 @@ export function Lander() {
       </div>
 
       <div className="lander-section">
-        <h2 className="lander-section-title">Desktop Setup</h2>
+        <h2 className="lander-section-title">How It Works</h2>
         <ol className="lander-steps">
-          <li>Open the app in your browser at the GitHub Pages link above.</li>
-          <li>Use the floating window to create entries with names, types, triggers, and descriptions.</li>
+          <li>Click <strong>Start Building</strong> above to open the builder.</li>
+          <li>Create entries with names, types, triggers, and descriptions.</li>
           <li>Your lorebook is saved automatically — just leave the tab open.</li>
           <li>When you're done, export as <strong>JSON</strong> (for AI tools), <strong>TXT</strong>, or <strong>DOCX</strong> from the <em>Import / Export</em> tab.</li>
-          <li>To import an existing lorebook, drag-drop or browse for a <code>.json</code>, <code>.txt</code>, or <code>.docx</code> file in the Import / Export tab.</li>
-          <li>Use <kbd>Alt+N</kbd> to add a new entry quickly, <kbd>Ctrl+Z</kbd> to undo, and <kbd>Ctrl+Shift+Z</kbd> to redo.</li>
+          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, or <code>.docx</code> file.</li>
+          <li>Use <kbd>Alt+N</kbd> to add a new entry quickly, <kbd>Ctrl+Z</kbd> to undo, and <kbd>Ctrl+Y</kbd> to redo.</li>
         </ol>
       </div>
     </div>

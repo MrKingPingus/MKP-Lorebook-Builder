@@ -1,4 +1,4 @@
-// Bind global keydown handlers for Alt+<hotkey> (new entry), Ctrl+Z (undo), Ctrl+Shift+Z (redo)
+// Bind global keydown handlers for Alt+<hotkey> (new entry), Ctrl+Z (undo), Ctrl+Y (redo)
 import { useEffect } from 'react';
 
 export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, hotkey = 'n' }) {
@@ -10,14 +10,14 @@ export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, hotkey = 'n' 
         onNewEntry?.();
         return;
       }
-      // Ctrl+Shift+Z — redo
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+      // Ctrl+Y — redo
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault();
         onRedo?.();
         return;
       }
       // Ctrl+Z — undo
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         onUndo?.();
       }
