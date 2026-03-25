@@ -56,7 +56,7 @@ export function EntryList({ entries, groupByType }) {
       >
         <EntryCard
           entry={entry}
-          index={idx}
+          index={idx + 1}
           onUpdate={updateEntry}
           onRemove={removeEntry}
         />
