@@ -1,12 +1,20 @@
 // Scrollable sortable list of EntryCard components with drag-and-drop reorder support
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { EntryCard }   from './EntryCard.jsx';
 import { useEntries }  from '../../hooks/use-entries.js';
 import { ENTRY_TYPES } from '../../constants/entry-types.js';
 
 export function EntryList({ entries, groupByType }) {
   const { updateEntry, removeEntry, reorderEntries } = useEntries();
-  const dragIdx = useRef(null);
+  const dragIdx          = useRef(null);
+  const isDragFromHandle = useRef(false);
+
+  // Reset the drag-handle flag on every mouseup so stale state can't bleed into the next gesture
+  useEffect(() => {
+    function resetFlag() { isDragFromHandle.current = false; }
+    window.addEventListener('mouseup', resetFlag);
+    return () => window.removeEventListener('mouseup', resetFlag);
+  }, []);
 
   if (!entries || entries.length === 0) {
     return (
@@ -49,9 +57,13 @@ export function EntryList({ entries, groupByType }) {
       <div
         key={entry.id}
         draggable
-        onDragStart={() => onDragStart(idx)}
+        onDragStart={(e) => {
+          // Only allow drag when the gesture originated from the dedicated drag handle
+          if (!isDragFromHandle.current) { e.preventDefault(); return; }
+          onDragStart(idx);
+        }}
         onDragOver={(e) => onDragOver(e, idx)}
-        onDragEnd={() => { dragIdx.current = null; }}
+        onDragEnd={() => { dragIdx.current = null; isDragFromHandle.current = false; }}
         className="entry-list-item"
       >
         <EntryCard
@@ -59,6 +71,7 @@ export function EntryList({ entries, groupByType }) {
           index={idx + 1}
           onUpdate={updateEntry}
           onRemove={removeEntry}
+          onDragHandleMouseDown={() => { isDragFromHandle.current = true; }}
         />
       </div>
     );

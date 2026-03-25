@@ -11,7 +11,7 @@ import { useUiStore }      from '../../state/ui-store.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
-export function EntryCard({ entry, index, onUpdate, onRemove }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { hideEntryStats } = useSettings();
   const expandAll    = useUiStore((s) => s.expandAll);
@@ -57,7 +57,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
     >
       {/* ── Card header ── */}
       <div className="entry-card-header">
-        <span className="drag-handle" title="Drag to reorder">⠿</span>
+        <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
         <TypeColorDot type={entry.type} />
         {nameHtml ? (
           <span
