@@ -25,15 +25,18 @@ export function WindowHeader() {
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
-      {/* Lorebook name — centered */}
-      <input
-        className="lorebook-name-input"
-        value={activeLorebook?.name ?? ''}
-        onChange={(e) => renameLorebook(e.target.value)}
-        placeholder="Lorebook name…"
-        onPointerDown={(e) => e.stopPropagation()}
-        spellCheck={false}
-      />
+      {/* Lorebook name — auto-sizes to content, centered in flex-grow region */}
+      <div className="lorebook-name-sizer">
+        <input
+          className="lorebook-name-input"
+          value={activeLorebook?.name ?? ''}
+          onChange={(e) => renameLorebook(e.target.value)}
+          placeholder="Lorebook name…"
+          size={Math.max(10, (activeLorebook?.name?.length ?? 0) + 2)}
+          onPointerDown={(e) => e.stopPropagation()}
+          spellCheck={false}
+        />
+      </div>
 
       {/* Lorebook count badge */}
       <button

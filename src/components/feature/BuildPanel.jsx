@@ -2,6 +2,8 @@
 import { useEntries }    from '../../hooks/use-entries.js';
 import { useSearch }     from '../../hooks/use-search.js';
 import { useTypeFilter } from '../../hooks/use-type-filter.js';
+import { useUiStore }    from '../../state/ui-store.js';
+import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { SearchBar }     from './SearchBar.jsx';
 import { TypeFilterBar } from './TypeFilterBar.jsx';
 import { EntryList }     from './EntryList.jsx';
@@ -11,6 +13,12 @@ export function BuildPanel() {
   const { filteredEntries: searchFiltered, matchCount,
           entryMatchCount, searchQuery }                 = useSearch(entries);
   const { filteredEntries }                              = useTypeFilter(searchFiltered);
+  const groupByType                                      = useUiStore((s) => s.groupByType);
+
+  // When groupByType is active, reorder entries into type-grouped blocks
+  const displayEntries = groupByType
+    ? ENTRY_TYPES.flatMap((t) => filteredEntries.filter((e) => e.type === t.id))
+    : filteredEntries;
 
   return (
     <div className="build-panel">
@@ -20,7 +28,7 @@ export function BuildPanel() {
         entryMatchCount={entryMatchCount}
       />
       <TypeFilterBar entries={entries} />
-      <EntryList entries={filteredEntries} />
+      <EntryList entries={displayEntries} groupByType={groupByType} />
     </div>
   );
 }

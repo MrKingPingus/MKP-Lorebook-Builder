@@ -14,11 +14,12 @@ import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 export function EntryCard({ entry, index, onUpdate, onRemove }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { compactTriggerMode } = useSettings();
-  const expandAll = useUiStore((s) => s.expandAll);
+  const expandAll   = useUiStore((s) => s.expandAll);
+  const collapseAll = useUiStore((s) => s.collapseAll);
   const [delimiter, setDelimiter] = useState(',');
 
-  // expandAll overrides local collapsed state
-  const collapsed = expandAll ? false : localCollapsed;
+  // expandAll/collapseAll override local collapsed state
+  const collapsed = expandAll ? false : (collapseAll ? true : localCollapsed);
 
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';

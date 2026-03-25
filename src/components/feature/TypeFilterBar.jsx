@@ -5,10 +5,22 @@ import { useUiStore }    from '../../state/ui-store.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
-  const expandAll   = useUiStore((s) => s.expandAll);
-  const groupByType = useUiStore((s) => s.groupByType);
+  const expandAll    = useUiStore((s) => s.expandAll);
+  const collapseAll  = useUiStore((s) => s.collapseAll);
+  const groupByType  = useUiStore((s) => s.groupByType);
   const setExpandAll   = useUiStore((s) => s.setExpandAll);
+  const setCollapseAll = useUiStore((s) => s.setCollapseAll);
   const setGroupByType = useUiStore((s) => s.setGroupByType);
+
+  function handleExpandAll() {
+    setExpandAll(true);
+    setCollapseAll(false);
+  }
+
+  function handleCollapseAll() {
+    setCollapseAll(true);
+    setExpandAll(false);
+  }
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -67,9 +79,15 @@ export function TypeFilterBar({ entries }) {
         </button>
         <button
           className={`filter-action-btn${expandAll ? ' filter-action-btn--active' : ''}`}
-          onClick={() => setExpandAll(!expandAll)}
+          onClick={handleExpandAll}
         >
-          {expandAll ? 'Collapse All' : 'Expand All'}
+          Expand All
+        </button>
+        <button
+          className={`filter-action-btn${collapseAll ? ' filter-action-btn--active' : ''}`}
+          onClick={handleCollapseAll}
+        >
+          Collapse All
         </button>
       </div>
     </div>

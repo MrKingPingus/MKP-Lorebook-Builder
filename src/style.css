@@ -146,9 +146,15 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* Lorebook name */
-.lorebook-name-input {
+.lorebook-name-sizer {
   flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+.lorebook-name-input {
   min-width: 60px;
+  max-width: 100%;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -471,6 +477,19 @@ input:focus, textarea:focus, select:focus {
 .entry-list-item { cursor: grab; }
 .entry-list-item:active { cursor: grabbing; }
 
+.type-group-header {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--type-color, var(--muted));
+  border-left: 3px solid var(--type-color, var(--border));
+  background: var(--surface);
+  margin-top: 4px;
+  cursor: default;
+}
+
 .entry-list-empty {
   flex: 1;
   display: flex;
@@ -703,6 +722,31 @@ input:focus, textarea:focus, select:focus {
   color: var(--muted2);
 }
 .trigger-input::placeholder { color: var(--muted); }
+
+/* Trigger chips wrapper and footer */
+.trigger-chips-wrapper { display: flex; flex-direction: column; gap: 3px; }
+.trigger-chips-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 16px;
+}
+.trigger-counter {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 0.2s;
+}
+.trigger-dupe-error {
+  font-size: 11px;
+  color: var(--coral);
+  animation: flash-in 0.15s ease;
+}
+@keyframes flash-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* Compact trigger mode */
 .trigger-compact { display: flex; gap: 6px; }
