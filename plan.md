@@ -50,26 +50,26 @@ User can create 3 entries each with a name, type, 2+ triggers, and a description
 
 ### Features
 
-- [ ] Draggable resizable window — floating window moves on header drag; the app's core UI metaphor, unusable without it
-- [ ] Yellow corner resize handles — four corner drag handles to resize; required for the window to be user-controlled
-- [ ] Viewport boundary clamping — prevents drag and resize from moving the window off-screen; safety requirement for drag/resize
-- [ ] Undo stack — pushes a state snapshot before each mutation; protects against accidental edits
-- [ ] Redo stack — restores undone snapshots; completes the undo/redo pair
-- [ ] Undo/redo button state sync — enables and disables undo/redo buttons based on stack depth; required feedback
-- [ ] Undo/redo buttons — UI buttons in the window header wired to the stacks; exposes undo/redo to the user
-- [ ] Drag-and-drop reorder — drag an entry header to reorder the list; required for organizing entries
-- [ ] Entry collapse/expand — hides/shows entry body via button or double-click on header; needed when managing long lorebooks
-- [ ] Collapse All button — folds every entry body at once; depends on collapse being built
-- [ ] Live full-text search — filters visible entries by name, triggers, or description as user types; essential for navigation
-- [ ] Search bar with clear button — text input with one-click × clear; required UI for live search
-- [ ] Type filter pill bar — toggle-pill row for filtering by entry type; required UI for type filter
-- [ ] Type filter — hides/shows entries by selected types; the logic behind the pill bar
-- [ ] Trigger/char stats badge — shows trigger count + char count in the collapsed entry header; needed once entries can be collapsed
-- [ ] Tiered character counter — color-coded char count (green/yellow/red) against the 1500-char limit; actionable in-place guidance
-- [ ] Trigger counter badge — shows current/max (25) trigger count with color warning inside the trigger area; pairs with trigger chips
-- [ ] Duplicate trigger prevention — flashes an error if an added trigger already exists (case-insensitive); data integrity
-- [ ] Bulk trigger paste — pastes a comma/semicolon-separated list to add multiple triggers at once; unblocks rapid data entry
-- [ ] Auto-resize lorebook name input — the lorebook name field in the header expands/contracts to fit its text; small UX fix, trivial at this stage
+- [x] Draggable resizable window — floating window moves on header drag; the app's core UI metaphor, unusable without it
+- [x] Yellow corner resize handles — four corner drag handles to resize; required for the window to be user-controlled
+- [x] Viewport boundary clamping — prevents drag and resize from moving the window off-screen; safety requirement for drag/resize
+- [x] Undo stack — pushes a state snapshot before each mutation; protects against accidental edits
+- [x] Redo stack — restores undone snapshots; completes the undo/redo pair
+- [x] Undo/redo button state sync — enables and disables undo/redo buttons based on stack depth; required feedback
+- [x] Undo/redo buttons — UI buttons in the window header wired to the stacks; exposes undo/redo to the user
+- [x] Drag-and-drop reorder — drag an entry header to reorder the list; required for organizing entries
+- [x] Entry collapse/expand — hides/shows entry body via button or double-click on header; needed when managing long lorebooks
+- [x] Collapse All button — folds every entry body at once; depends on collapse being built
+- [x] Live full-text search — filters visible entries by name, triggers, or description as user types; essential for navigation
+- [x] Search bar with clear button — text input with one-click × clear; required UI for live search
+- [x] Type filter pill bar — toggle-pill row for filtering by entry type; required UI for type filter
+- [x] Type filter — hides/shows entries by selected types; the logic behind the pill bar
+- [x] Trigger/char stats badge — shows trigger count + char count in the collapsed entry header; needed once entries can be collapsed
+- [x] Tiered character counter — color-coded char count (green/yellow/red) against the 1500-char limit; actionable in-place guidance
+- [x] Trigger counter badge — shows current/max (25) trigger count with color warning inside the trigger area; pairs with trigger chips
+- [x] Duplicate trigger prevention — flashes an error if an added trigger already exists (case-insensitive); data integrity
+- [x] Bulk trigger paste — pastes a comma/semicolon-separated list to add multiple triggers at once; unblocks rapid data entry
+- [x] Auto-resize lorebook name input — the lorebook name field in the header expands/contracts to fit its text; small UX fix, trivial at this stage
 
 ### Stop Condition
 
@@ -86,78 +86,78 @@ User can drag the window to a corner and confirm it stops at the viewport edge; 
 ### Features
 
 **Search & Find-Replace (remaining):**
-- [ ] HTML/regex escape utilities — XSS-safe HTML escaping and regex escaping; prerequisite for search highlight and safe find-replace operations
-- [ ] Search mode switcher — toggles between Search and Find & Replace modes; gate for the F&R row
-- [ ] Find & Replace row — second input row shown only in F&R mode; depends on mode switcher
-- [ ] Find & Replace All — bulk-replaces text across all entries' triggers and descriptions; depends on html-escape and F&R row
-- [ ] Post-replace deduplication — removes duplicate triggers created by a replace operation; must follow F&R All
-- [ ] Match counter display — shows "X matches in Y entries" alongside the search bar; informational, depends on live search
-- [ ] Search highlight — yellow-marks matching text within visible entry name and trigger fields; depends on html-escape
-- [ ] Group by Type button — reorganizes visible entries into type-grouped blocks; completes the filter feature set
-- [ ] Group by Type (logic) — the reordering logic behind the group-by-type button; pairs with the button
+- [x] HTML/regex escape utilities — XSS-safe HTML escaping and regex escaping; prerequisite for search highlight and safe find-replace operations
+- [x] Search mode switcher — toggles between Search and Find & Replace modes; gate for the F&R row
+- [x] Find & Replace row — second input row shown only in F&R mode; depends on mode switcher
+- [x] Find & Replace All — bulk-replaces text across all entries' triggers and descriptions; depends on html-escape and F&R row
+- [x] Post-replace deduplication — removes duplicate triggers created by a replace operation; must follow F&R All
+- [x] Match counter display — shows "X matches in Y entries" alongside the search bar; informational, depends on live search
+- [x] Search highlight — yellow-marks matching text within visible entry name and trigger fields; depends on html-escape
+- [x] Group by Type button — reorganizes visible entries into type-grouped blocks; completes the filter feature set
+- [x] Group by Type (logic) — the reordering logic behind the group-by-type button; pairs with the button
 
 **Entry Card (remaining):**
-- [ ] Inline tag chip editing — double-click chip label to edit trigger text in-place; refinement of chip UX
-- [ ] Compact trigger text mode — single text field with a delimiter instead of chips; alternate input mode
-- [ ] Delimiter switcher — toggles comma vs semicolon separator in compact mode; completes compact mode
-- [ ] Description resize handle — draggable tab at the bottom of the textarea for manual height control; user control of layout
-- [ ] Collapsible suggestions tray — per-entry expand/collapse tray; prerequisite for all suggestion display features
-- [ ] Trigger suggestions engine — generates context-aware keyword suggestions from entry name/type/description; prerequisite for suggestions display
-- [ ] Type-aware suggestion variants — filters suggestions by entry type; depends on suggestion engine
-- [ ] Trigger suggestions display — shows up to 12 suggestions per entry inside the tray; depends on engine and tray
-- [ ] Suggestion reroll — rotates to the next batch of suggestions with a spin animation; depends on suggestions display
-- [ ] One-click suggestion add — adds a suggestion chip directly to triggers on click; depends on suggestions display
+- [x] Inline tag chip editing — double-click chip label to edit trigger text in-place; refinement of chip UX
+- [x] Compact trigger text mode — single text field with a delimiter instead of chips; alternate input mode
+- [x] Delimiter switcher — toggles comma vs semicolon separator in compact mode; completes compact mode
+- [x] Description resize handle — draggable tab at the bottom of the textarea for manual height control; user control of layout
+- [x] Collapsible suggestions tray — per-entry expand/collapse tray; prerequisite for all suggestion display features
+- [x] Trigger suggestions engine — generates context-aware keyword suggestions from entry name/type/description; prerequisite for suggestions display
+- [x] Type-aware suggestion variants — filters suggestions by entry type; depends on suggestion engine
+- [x] Trigger suggestions display — shows up to 12 suggestions per entry inside the tray; depends on engine and tray
+- [x] Suggestion reroll — rotates to the next batch of suggestions with a spin animation; depends on suggestions display
+- [x] One-click suggestion add — adds a suggestion chip directly to triggers on click; depends on suggestions display
 
 **Import/Export (full suite):**
-- [ ] TXT template export builder — serializes lorebook to === header === block plain-text format; standalone export path
-- [ ] TXT export — downloads lorebook as a .txt file; depends on TXT builder
-- [ ] ZIP archive builder — produces a valid ZIP binary with CRC32 and central directory; prerequisite for DOCX export
-- [ ] DOCX export builder — builds a minimal OOXML .docx blob using the ZIP builder; depends on ZIP builder
-- [ ] DOCX export — downloads lorebook as a .docx file; depends on DOCX builder
-- [ ] Parse plain-text import — parses key:value or === block === format text into entry objects; first import path
-- [ ] Parse TXT template files — handles structured .txt with LOREBOOK: header; extends plain-text parser
-- [ ] Parse DOCX files via Mammoth.js — dynamically loads Mammoth from CDN and extracts text; depends on TXT parser
-- [ ] Import preview — shows parsed entries before committing to the store; depends on all three parsers
-- [ ] File drag & drop upload — accepts dragged .txt/.docx files on the drop zone; depends on import parsers
-- [ ] File browse upload — opens OS file picker on click of drop zone; completes the upload UI
-- [ ] JSON generate & copy — builds JSON string and copies to clipboard with success feedback; clipboard variant of JSON export
-- [ ] JSON import with validation — parses and validates JSON structure before loading; required for safe import
-- [ ] Template downloads — downloads blank .txt and .docx import templates for user reference; depends on TXT/DOCX builders
-- [ ] Clear all — deletes all entries and resets the lorebook name; required data management action
-- [ ] Load state — restores a full state object into the store; called after import confirm and lorebook switch
+- [x] TXT template export builder — serializes lorebook to === header === block plain-text format; standalone export path
+- [x] TXT export — downloads lorebook as a .txt file; depends on TXT builder
+- [x] ZIP archive builder — produces a valid ZIP binary with CRC32 and central directory; prerequisite for DOCX export
+- [x] DOCX export builder — builds a minimal OOXML .docx blob using the ZIP builder; depends on ZIP builder
+- [x] DOCX export — downloads lorebook as a .docx file; depends on DOCX builder
+- [x] Parse plain-text import — parses key:value or === block === format text into entry objects; first import path
+- [x] Parse TXT template files — handles structured .txt with LOREBOOK: header; extends plain-text parser
+- [x] Parse DOCX files via Mammoth.js — dynamically loads Mammoth from CDN and extracts text; depends on TXT parser
+- [x] Import preview — shows parsed entries before committing to the store; depends on all three parsers
+- [x] File drag & drop upload — accepts dragged .txt/.docx files on the drop zone; depends on import parsers
+- [x] File browse upload — opens OS file picker on click of drop zone; completes the upload UI
+- [x] JSON generate & copy — builds JSON string and copies to clipboard with success feedback; clipboard variant of JSON export
+- [x] JSON import with validation — parses and validates JSON structure before loading; required for safe import
+- [x] Template downloads — downloads blank .txt and .docx import templates for user reference; depends on TXT/DOCX builders
+- [x] Clear all — deletes all entries and resets the lorebook name; required data management action
+- [x] Load state — restores a full state object into the store; called after import confirm and lorebook switch
 
 **Lorebook Navigation:**
-- [ ] Multi-lorebook index management — tracks metadata (name, timestamp) for up to 10 saved lorebooks; prerequisite for all switcher features
-- [ ] Recent lorebook promotion — moves the most recently accessed lorebook to the front of the index; depends on index management
-- [ ] Lorebook count badge — shows the number of saved lorebooks on the switcher button; depends on index management
-- [ ] Lorebook switcher dropdown — dropdown listing all saved lorebooks with names and timestamps; depends on index management
-- [ ] Lorebook timestamp display — shows "Saved Xm ago" relative time next to each lorebook in the dropdown; depends on switcher
-- [ ] Lorebook delete — one-click delete of a lorebook entry in the switcher; depends on switcher
-- [ ] Save prompt before switch — warns user and offers JSON/TXT download before switching away from current lorebook; depends on export + switcher
-- [ ] Download-and-switch — downloads current lorebook and then immediately switches; depends on save prompt
-- [ ] New lorebook creation — creates a new empty lorebook and switches to it; depends on index management
-- [ ] Lorebook switch — loads a different saved lorebook into the active state; depends on index management
+- [x] Multi-lorebook index management — tracks metadata (name, timestamp) for up to 10 saved lorebooks; prerequisite for all switcher features
+- [x] Recent lorebook promotion — moves the most recently accessed lorebook to the front of the index; depends on index management
+- [x] Lorebook count badge — shows the number of saved lorebooks on the switcher button; depends on index management
+- [x] Lorebook switcher dropdown — dropdown listing all saved lorebooks with names and timestamps; depends on index management
+- [x] Lorebook timestamp display — shows "Saved Xm ago" relative time next to each lorebook in the dropdown; depends on switcher
+- [x] Lorebook delete — one-click delete of a lorebook entry in the switcher; depends on switcher
+- [x] Save prompt before switch — warns user and offers JSON/TXT download before switching away from current lorebook; depends on export + switcher
+- [x] Download-and-switch — downloads current lorebook and then immediately switches; depends on save prompt
+- [x] New lorebook creation — creates a new empty lorebook and switches to it; depends on index management
+- [x] Lorebook switch — loads a different saved lorebook into the active state; depends on index management
 
 **Settings Panel:**
-- [ ] Default window size dropdown — chooses Column (⅓ viewport) or Full Page as the default window size
-- [ ] Reset window to default size — re-centers and resizes window to the chosen default
-- [ ] Tiered character counter toggle — enables/disables the three-zone color coding on char count
-- [ ] Compact trigger mode toggle — switches trigger input globally from chips to single text field
-- [ ] Suggestions tray collapsed by default toggle — starts every entry's suggestions tray collapsed
-- [ ] Hide entry stats toggle — hides trigger/char count badges from entry headers
-- [ ] Hotkey input — customizes the Alt+key shortcut for new entry creation
-- [ ] Settings preference persistence — saves all settings to localStorage on every change
+- [x] Default window size dropdown — chooses Column (⅓ viewport) or Full Page as the default window size
+- [x] Reset window to default size — re-centers and resizes window to the chosen default
+- [x] Tiered character counter toggle — enables/disables the three-zone color coding on char count
+- [x] Compact trigger mode toggle — switches trigger input globally from chips to single text field
+- [x] Suggestions tray collapsed by default toggle — starts every entry's suggestions tray collapsed
+- [x] Hide entry stats toggle — hides trigger/char count badges from entry headers
+- [x] Hotkey input — customizes the Alt+key shortcut for new entry creation
+- [x] Settings preference persistence — saves all settings to localStorage on every change
 
 **Keyboard Shortcuts:**
-- [ ] Alt+N (configurable) new entry — creates a new entry without the mouse; depends on hotkey input setting
-- [ ] Ctrl+Z undo — keyboard trigger for undo action; depends on undo stack
-- [ ] Ctrl+Shift+Z / Ctrl+Y redo — keyboard trigger for redo action; depends on redo stack
+- [x] Alt+N (configurable) new entry — creates a new entry without the mouse; depends on hotkey input setting
+- [x] Ctrl+Z undo — keyboard trigger for undo action; depends on undo stack
+- [x] Ctrl+Shift+Z / Ctrl+Y redo — keyboard trigger for redo action; depends on redo stack
 
 **Lander & Initialization:**
-- [ ] Desktop app launch button — opens the floating window from the lander page
-- [ ] GitHub Pages direct link — links to the hosted version from the lander
-- [ ] Template download links — downloads .txt and .docx templates directly from the lander
-- [ ] Setup instructions — static step-by-step guide for desktop use on the lander
+- [x] Desktop app launch button — opens the floating window from the lander page
+- [x] GitHub Pages direct link — links to the hosted version from the lander
+- [x] Template download links — downloads .txt and .docx templates directly from the lander
+- [x] Setup instructions — static step-by-step guide for desktop use on the lander
 
 ### Stop Condition
 

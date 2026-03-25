@@ -1,7 +1,8 @@
 // Single trigger keyword chip with an editable label (double-click) and a × delete button
 import { useState, useRef } from 'react';
+import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
-export function Chip({ label, onDelete, onRename, color }) {
+export function Chip({ label, onDelete, onRename, color, highlight }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft]     = useState(label);
   const inputRef = useRef(null);
@@ -35,7 +36,22 @@ export function Chip({ label, onDelete, onRename, color }) {
           onKeyDown={onKeyDown}
         />
       ) : (
-        <span className="chip-label" onDoubleClick={startEdit}>{label}</span>
+        <span
+          className="chip-label"
+          onDoubleClick={startEdit}
+          {...(highlight
+            ? {
+                dangerouslySetInnerHTML: {
+                  __html: escapeHtml(label).replace(
+                    new RegExp(`(${escapeRegex(escapeHtml(highlight))})`, 'gi'),
+                    '<mark class="search-mark">$1</mark>'
+                  ),
+                },
+              }
+            : {})}
+        >
+          {highlight ? undefined : label}
+        </span>
       )}
       <button className="chip-delete" onClick={onDelete} title="Remove trigger">×</button>
     </span>

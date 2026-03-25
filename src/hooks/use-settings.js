@@ -1,27 +1,45 @@
 // Read and persist all user preference fields through settings-store and storage-service
 import { useSettingsStore } from '../state/settings-store.js';
-import { writeJson } from '../services/storage-service.js';
-import { SETTINGS_KEY } from '../constants/storage-keys.js';
+import { useUiStore }       from '../state/ui-store.js';
+import { writeJson }        from '../services/storage-service.js';
+import { SETTINGS_KEY }     from '../constants/storage-keys.js';
+import { DEFAULT_WINDOW }   from '../constants/defaults.js';
 
 export function useSettings() {
-  const compactTriggerMode   = useSettingsStore((s) => s.compactTriggerMode);
-  const counterTiers         = useSettingsStore((s) => s.counterTiers);
-  const defaultWindowWidth   = useSettingsStore((s) => s.defaultWindowWidth);
-  const defaultWindowHeight  = useSettingsStore((s) => s.defaultWindowHeight);
-  const applySettings        = useSettingsStore((s) => s.applySettings);
+  const compactTriggerMode       = useSettingsStore((s) => s.compactTriggerMode);
+  const counterTiers             = useSettingsStore((s) => s.counterTiers);
+  const defaultWindowWidth       = useSettingsStore((s) => s.defaultWindowWidth);
+  const defaultWindowHeight      = useSettingsStore((s) => s.defaultWindowHeight);
+  const tieredCounterEnabled     = useSettingsStore((s) => s.tieredCounterEnabled);
+  const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
+  const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
+  const newEntryHotkey           = useSettingsStore((s) => s.newEntryHotkey);
+  const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
     const patch = { [key]: value };
     applySettings(patch);
-    // Persist merged settings
     const current = {
       compactTriggerMode,
       counterTiers,
       defaultWindowWidth,
       defaultWindowHeight,
+      tieredCounterEnabled,
+      hideSuggestionsByDefault,
+      hideEntryStats,
+      newEntryHotkey,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
+  }
+
+  function resetWindow() {
+    const w = defaultWindowWidth  || DEFAULT_WINDOW.width;
+    const h = defaultWindowHeight || DEFAULT_WINDOW.height;
+    const x = Math.max(0, Math.round((window.innerWidth  - w) / 2));
+    const y = Math.max(0, Math.round((window.innerHeight - h) / 4));
+    useUiStore.getState().setWindowPos({ x, y });
+    useUiStore.getState().setWindowSize({ width: w, height: h });
   }
 
   return {
@@ -29,9 +47,18 @@ export function useSettings() {
     counterTiers,
     defaultWindowWidth,
     defaultWindowHeight,
-    setCompactTriggerMode: (v) => updateSetting('compactTriggerMode', v),
-    setCounterTiers:       (v) => updateSetting('counterTiers', v),
-    setDefaultWindowWidth: (v) => updateSetting('defaultWindowWidth', v),
-    setDefaultWindowHeight:(v) => updateSetting('defaultWindowHeight', v),
+    tieredCounterEnabled,
+    hideSuggestionsByDefault,
+    hideEntryStats,
+    newEntryHotkey,
+    resetWindow,
+    setCompactTriggerMode:       (v) => updateSetting('compactTriggerMode', v),
+    setCounterTiers:             (v) => updateSetting('counterTiers', v),
+    setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
+    setDefaultWindowHeight:      (v) => updateSetting('defaultWindowHeight', v),
+    setTieredCounterEnabled:     (v) => updateSetting('tieredCounterEnabled', v),
+    setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
+    setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
+    setNewEntryHotkey:           (v) => updateSetting('newEntryHotkey', v),
   };
 }

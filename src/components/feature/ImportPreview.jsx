@@ -1,7 +1,7 @@
 // Read-only preview of parsed lorebook entries before the user confirms the import
 import { ENTRY_TYPES } from '../../constants/entry-types.js';
 
-export function ImportPreview({ entries, onConfirm, onCancel }) {
+export function ImportPreview({ entries, onConfirm, onCancel, replaceMode = false }) {
   if (!entries || entries.length === 0) return null;
 
   return (
@@ -28,8 +28,11 @@ export function ImportPreview({ entries, onConfirm, onCancel }) {
         })}
       </div>
       <div className="preview-actions">
+        {replaceMode && (
+          <div className="preview-replace-note">⚠ This will replace all current entries.</div>
+        )}
         <button className="import-confirm-btn" onClick={onConfirm}>
-          Import {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+          {replaceMode ? 'Load' : 'Import'} {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
         </button>
         <button className="import-cancel-btn" onClick={onCancel}>Cancel</button>
       </div>

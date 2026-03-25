@@ -5,10 +5,14 @@ import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
 export const DEFAULT_WINDOW = { width: 760, height: 620, x: 60, y: 40 };
 
 export const DEFAULT_SETTINGS = {
-  compactTriggerMode:  false,
-  counterTiers:        { yellow: CHAR_WARN_YELLOW, red: CHAR_WARN_RED },
-  defaultWindowWidth:  DEFAULT_WINDOW.width,
-  defaultWindowHeight: DEFAULT_WINDOW.height,
+  compactTriggerMode:       false,
+  counterTiers:             { yellow: CHAR_WARN_YELLOW, red: CHAR_WARN_RED },
+  defaultWindowWidth:       DEFAULT_WINDOW.width,
+  defaultWindowHeight:      DEFAULT_WINDOW.height,
+  tieredCounterEnabled:     true,
+  hideSuggestionsByDefault: false,
+  hideEntryStats:           false,
+  newEntryHotkey:           'n',
 };
 
 export const DEFAULT_ENTRY = {

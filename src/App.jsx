@@ -11,6 +11,7 @@ import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
+import { Lander }                from './components/feature/Lander.jsx';
 import {
   LOREBOOK_INDEX_KEY,
   LOREBOOK_KEY_PREFIX,
@@ -70,11 +71,13 @@ export default function App() {
 
   const { addEntry }   = useEntries();
   const { undo, redo } = useUndoRedo();
+  const newEntryHotkey = useSettingsStore((s) => s.newEntryHotkey);
 
-  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo });
+  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, hotkey: newEntryHotkey });
 
   return (
     <div className="app-root">
+      <Lander />
       <FloatingWindow />
     </div>
   );
