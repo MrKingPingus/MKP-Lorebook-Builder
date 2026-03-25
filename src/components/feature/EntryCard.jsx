@@ -14,8 +14,10 @@ import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 export function EntryCard({ entry, index, onUpdate, onRemove }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { compactTriggerMode } = useSettings();
-  const expandAll   = useUiStore((s) => s.expandAll);
-  const collapseAll = useUiStore((s) => s.collapseAll);
+  const expandAll    = useUiStore((s) => s.expandAll);
+  const collapseAll  = useUiStore((s) => s.collapseAll);
+  const setExpandAll  = useUiStore((s) => s.setExpandAll);
+  const setCollapseAll = useUiStore((s) => s.setCollapseAll);
   const [delimiter, setDelimiter] = useState(',');
 
   // expandAll/collapseAll override local collapsed state
@@ -53,7 +55,11 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
           />
           <button
             className="card-action-btn"
-            onClick={() => setLocalCollapsed((c) => !c)}
+            onClick={() => {
+              setLocalCollapsed(!collapsed);
+              setExpandAll(false);
+              setCollapseAll(false);
+            }}
           >
             {collapsed ? '▼ Expand' : '▲ Collapse'}
           </button>

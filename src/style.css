@@ -881,7 +881,7 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid transparent;
   border-radius: var(--radius);
   overflow: hidden;
-  z-index: 0;
+  z-index: 2;
 }
 
 .search-mark {

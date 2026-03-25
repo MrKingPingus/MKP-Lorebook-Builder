@@ -13,23 +13,23 @@ export const useHistoryStore = create((set, get) => ({
       redoStack: [],
     })),
 
-  undo: () => {
+  undo: (currentSnapshot) => {
     const { undoStack, redoStack } = get();
     if (undoStack.length === 0) return null;
     const snapshot = undoStack[undoStack.length - 1];
     set({
       undoStack: undoStack.slice(0, -1),
-      redoStack: [...redoStack, snapshot],
+      redoStack: currentSnapshot ? [...redoStack, currentSnapshot] : redoStack,
     });
     return snapshot;
   },
 
-  redo: () => {
+  redo: (currentSnapshot) => {
     const { undoStack, redoStack } = get();
     if (redoStack.length === 0) return null;
     const snapshot = redoStack[redoStack.length - 1];
     set({
-      undoStack: [...undoStack, snapshot],
+      undoStack: currentSnapshot ? [...undoStack, currentSnapshot] : undoStack,
       redoStack: redoStack.slice(0, -1),
     });
     return snapshot;
