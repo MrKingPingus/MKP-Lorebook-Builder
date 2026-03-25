@@ -4,7 +4,6 @@ import { TypeColorDot }    from '../ui/TypeColorDot.jsx';
 import { StatsBadge }      from '../ui/StatsBadge.jsx';
 import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
-import { TriggerCompact }  from './TriggerCompact.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
@@ -14,7 +13,7 @@ import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
-  const { compactTriggerMode, hideEntryStats } = useSettings();
+  const { hideEntryStats } = useSettings();
   const expandAll    = useUiStore((s) => s.expandAll);
   const collapseAll  = useUiStore((s) => s.collapseAll);
   const searchQuery  = useUiStore((s) => s.searchQuery);
@@ -136,20 +135,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
               </select>
             </div>
 
-            {compactTriggerMode ? (
-              <TriggerCompact
-                triggers={entry.triggers}
-                onUpdate={(triggers) => update({ triggers })}
-              />
-            ) : (
-              <TriggerChips
-                triggers={entry.triggers}
-                type={entry.type}
-                delimiter={delimiter}
-                searchQuery={searchQuery}
-                onUpdate={(triggers) => update({ triggers })}
-              />
-            )}
+            <TriggerChips
+              triggers={entry.triggers}
+              type={entry.type}
+              delimiter={delimiter}
+              searchQuery={searchQuery}
+              onUpdate={(triggers) => update({ triggers })}
+            />
           </div>
 
           {/* Row 3: Suggestions tray */}

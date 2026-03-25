@@ -13,6 +13,7 @@ export const useUiStore = create((set) => ({
   expandAll:   false,
   groupByType: false,
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
+  showLander:  true,        // true on every page load; dismissed when user enters the builder
 
   setActiveTab:   (activeTab)   => set({ activeTab }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -24,6 +25,7 @@ export const useUiStore = create((set) => ({
   setExpandAll:   (expandAll)   => set({ expandAll }),
   setGroupByType: (groupByType) => set({ groupByType }),
   setSavedAt:     (savedAt)     => set({ savedAt }),
+  setShowLander:  (showLander)  => set({ showLander }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

@@ -69,7 +69,7 @@ export function ExportPanel() {
   }
 
   function clearAll() {
-    if (!window.confirm('Delete all entries and reset the lorebook name? Entries can be recovered with Ctrl+Z, but the lorebook name will be cleared permanently.')) return;
+    if (!window.confirm('Are you sure?')) return;
     pushSnapshot({ entries: [...entries] });
     updateActiveEntries([]);
     renameLorebook('');

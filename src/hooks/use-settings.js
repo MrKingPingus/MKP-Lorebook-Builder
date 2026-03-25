@@ -6,7 +6,6 @@ import { SETTINGS_KEY }     from '../constants/storage-keys.js';
 import { DEFAULT_WINDOW }   from '../constants/defaults.js';
 
 export function useSettings() {
-  const compactTriggerMode       = useSettingsStore((s) => s.compactTriggerMode);
   const counterTiers             = useSettingsStore((s) => s.counterTiers);
   const defaultWindowWidth       = useSettingsStore((s) => s.defaultWindowWidth);
   const defaultWindowHeight      = useSettingsStore((s) => s.defaultWindowHeight);
@@ -20,7 +19,6 @@ export function useSettings() {
     const patch = { [key]: value };
     applySettings(patch);
     const current = {
-      compactTriggerMode,
       counterTiers,
       defaultWindowWidth,
       defaultWindowHeight,
@@ -43,7 +41,6 @@ export function useSettings() {
   }
 
   return {
-    compactTriggerMode,
     counterTiers,
     defaultWindowWidth,
     defaultWindowHeight,
@@ -52,7 +49,6 @@ export function useSettings() {
     hideEntryStats,
     newEntryHotkey,
     resetWindow,
-    setCompactTriggerMode:       (v) => updateSetting('compactTriggerMode', v),
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
     setDefaultWindowHeight:      (v) => updateSetting('defaultWindowHeight', v),

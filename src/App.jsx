@@ -11,7 +11,6 @@ import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
-import { Lander }                from './components/feature/Lander.jsx';
 import {
   LOREBOOK_INDEX_KEY,
   LOREBOOK_KEY_PREFIX,
@@ -77,7 +76,6 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <Lander />
       <FloatingWindow />
     </div>
   );
