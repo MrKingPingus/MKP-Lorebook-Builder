@@ -10,13 +10,15 @@ import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useUiStore }      from '../../state/ui-store.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
+import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
-  const { compactTriggerMode } = useSettings();
+  const { compactTriggerMode, hideEntryStats } = useSettings();
   const expandAll    = useUiStore((s) => s.expandAll);
   const collapseAll  = useUiStore((s) => s.collapseAll);
-  const setExpandAll  = useUiStore((s) => s.setExpandAll);
+  const searchQuery  = useUiStore((s) => s.searchQuery);
+  const setExpandAll   = useUiStore((s) => s.setExpandAll);
   const setCollapseAll = useUiStore((s) => s.setCollapseAll);
   const [delimiter, setDelimiter] = useState(',');
 
@@ -36,6 +38,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
     }
   }
 
+  // Build highlighted entry name HTML for the collapsed header
+  function highlightedName() {
+    const displayName = entry.name || '(unnamed)';
+    if (!searchQuery) return null; // will use plain text
+    const safe = escapeHtml(displayName);
+    return safe.replace(
+      new RegExp(`(${escapeRegex(escapeHtml(searchQuery))})`, 'gi'),
+      '<mark class="search-mark">$1</mark>'
+    );
+  }
+
+  const nameHtml = highlightedName();
+
   return (
     <div
       className="entry-card"
@@ -45,14 +60,24 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
       <div className="entry-card-header">
         <span className="drag-handle" title="Drag to reorder">⠿</span>
         <TypeColorDot type={entry.type} />
-        <span className="entry-label" style={{ color: typeColor }}>
-          #{index}: {entry.name || '(unnamed)'}
-        </span>
-        <div className="entry-card-header-right">
-          <StatsBadge
-            triggerCount={entry.triggers.length}
-            charCount={entry.description.length}
+        {nameHtml ? (
+          <span
+            className="entry-label"
+            style={{ color: typeColor }}
+            dangerouslySetInnerHTML={{ __html: `#${index}: ${nameHtml}` }}
           />
+        ) : (
+          <span className="entry-label" style={{ color: typeColor }}>
+            #{index}: {entry.name || '(unnamed)'}
+          </span>
+        )}
+        <div className="entry-card-header-right">
+          {!hideEntryStats && (
+            <StatsBadge
+              triggerCount={entry.triggers.length}
+              charCount={entry.description.length}
+            />
+          )}
           <button
             className="card-action-btn"
             onClick={() => {
@@ -121,6 +146,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove }) {
                 triggers={entry.triggers}
                 type={entry.type}
                 delimiter={delimiter}
+                searchQuery={searchQuery}
                 onUpdate={(triggers) => update({ triggers })}
               />
             )}

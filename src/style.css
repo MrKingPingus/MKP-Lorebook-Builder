@@ -72,9 +72,9 @@ input:focus, textarea:focus, select:focus {
 /* --- App root --- */
 .app-root {
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
   background: var(--bg);
 }
 
@@ -855,7 +855,7 @@ input:focus, textarea:focus, select:focus {
 
 .description-textarea {
   width: 100%;
-  resize: vertical;
+  resize: none;
   padding: 8px 10px;
   border-radius: var(--radius);
   font-size: 13px;
@@ -1083,6 +1083,186 @@ kbd {
   background: var(--surface3); border: 1px solid var(--border);
   border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--text);
 }
+
+/* ============================================================
+   Phase 3 additions
+   ============================================================ */
+
+/* Description resize handle */
+.description-resize-handle {
+  height: 8px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.description-resize-handle::after {
+  content: '';
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border2);
+  transition: background var(--transition);
+}
+.description-resize-handle:hover::after { background: var(--accent); }
+
+/* Save prompt (lorebook switcher) */
+.switcher-prompt {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 400;
+  min-width: 280px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow);
+}
+.switcher-prompt-text { font-size: 12px; color: var(--text); line-height: 1.5; }
+.switcher-prompt-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.switcher-prompt-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.switcher-prompt-btn:hover { background: var(--border); }
+.switcher-prompt-btn--cancel { color: var(--muted); }
+
+/* ExportPanel danger zone */
+.export-btn--danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+.export-btn--danger:hover { background: rgba(245,101,101,.12); }
+
+/* Import preview replace note */
+.preview-replace-note {
+  font-size: 11px;
+  color: var(--yellow);
+  padding: 4px 0;
+}
+
+/* Settings panel additions */
+.settings-reset-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background var(--transition);
+}
+.settings-reset-btn:hover { background: var(--border); color: var(--text); }
+
+.settings-row--hotkey { align-items: center; }
+
+.hotkey-input {
+  width: 36px;
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: center;
+  font-family: var(--mono);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+.hotkey-input:focus { border-color: var(--accent); outline: none; }
+
+/* ============================================================
+   Lander page
+   ============================================================ */
+.lander {
+  min-height: 100vh;
+  padding: 80px 24px 120px;
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  pointer-events: none; /* let floating window intercept events by default */
+}
+.lander * { pointer-events: auto; }
+
+.lander-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.lander-logo { font-size: 48px; line-height: 1; }
+.lander-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.lander-tagline { font-size: 14px; color: var(--muted2); line-height: 1.7; max-width: 460px; }
+
+.lander-cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.lander-cta-btn {
+  padding: 9px 22px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--transition);
+}
+.lander-cta-btn:hover { background: #3a5ab5; }
+
+.lander-section { display: flex; flex-direction: column; gap: 12px; }
+.lander-section-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.lander-section-text { font-size: 13px; color: var(--muted2); line-height: 1.6; }
+
+.lander-template-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.lander-template-btn {
+  padding: 7px 16px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.lander-template-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.lander-steps {
+  font-size: 13px;
+  color: var(--muted2);
+  line-height: 2;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lander-steps li { line-height: 1.6; padding: 2px 0; }
+.lander-steps strong { color: var(--text); }
+.lander-steps code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text);
+}
+.lander-steps em { color: var(--text); font-style: normal; font-weight: 500; }
 
 /* ============================================================
    Scrollbars (global)

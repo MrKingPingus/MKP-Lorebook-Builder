@@ -5,7 +5,7 @@ import { MAX_TRIGGERS } from '../../constants/limits.js';
 
 const TRIGGER_WARN_YELLOW = 20;
 
-export function TriggerChips({ triggers, type, onUpdate, delimiter = ',' }) {
+export function TriggerChips({ triggers, type, onUpdate, delimiter = ',', searchQuery = '' }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
@@ -73,6 +73,7 @@ export function TriggerChips({ triggers, type, onUpdate, delimiter = ',' }) {
             label={t}
             onDelete={() => deleteTrigger(i)}
             onRename={(v) => renameTrigger(i, v)}
+            highlight={searchQuery || undefined}
           />
         ))}
         {triggers.length < MAX_TRIGGERS && (
