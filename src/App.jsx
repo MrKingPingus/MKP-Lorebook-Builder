@@ -11,6 +11,7 @@ import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
+import { useViewportResize }     from './hooks/use-viewport-resize.js';
 import {
   LOREBOOK_INDEX_KEY,
   LOREBOOK_KEY_PREFIX,
@@ -25,16 +26,18 @@ function useBootstrap() {
   const setLorebook         = useLorebookStore((s) => s.setLorebook);
   const applySettings       = useSettingsStore((s) => s.applySettings);
   const setWindowSize       = useUiStore((s) => s.setWindowSize);
+  const setWindowPos        = useUiStore((s) => s.setWindowPos);
 
   useEffect(() => {
     // Load settings
     const settings = readJson(SETTINGS_KEY);
     if (settings) {
       applySettings(settings);
-      if (settings.defaultWindowWidth && settings.defaultWindowHeight) {
-        setWindowSize({ width: settings.defaultWindowWidth, height: settings.defaultWindowHeight });
-      }
     }
+
+    // Always start window at middle third, full height
+    setWindowSize({ width: Math.floor(window.innerWidth / 3), height: window.innerHeight });
+    setWindowPos({ x: Math.floor(window.innerWidth / 3), y: 0 });
 
     // Load lorebook index
     const index = readJson(LOREBOOK_INDEX_KEY, []);
@@ -67,6 +70,7 @@ function useBootstrap() {
 export default function App() {
   useBootstrap();
   useAutosave();
+  useViewportResize();
 
   const { addEntry }   = useEntries();
   const { undo, redo } = useUndoRedo();
