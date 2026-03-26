@@ -50,6 +50,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   const nameHtml = highlightedName();
 
+  function onHeaderDoubleClick(e) {
+    if (e.target.closest('button, .stats-badge')) return;
+    setLocalCollapsed(!collapsed);
+    setExpandAll(false);
+    setCollapseAll(false);
+  }
+
   return (
     <div
       id={`entry-${entry.id}`}
@@ -57,7 +64,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       style={{ '--type-color': typeColor }}
     >
       {/* ── Card header ── */}
-      <div className="entry-card-header">
+      <div className="entry-card-header" onDoubleClick={onHeaderDoubleClick}>
         <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
         <TypeColorDot type={entry.type} />
         {nameHtml ? (
