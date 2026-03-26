@@ -26,6 +26,7 @@ export function BuildPanel() {
         entries={entries}
         matchCount={matchCount}
         entryMatchCount={entryMatchCount}
+        firstMatchId={filteredEntries[0]?.id}
       />
       <TypeFilterBar entries={entries} />
       <EntryList entries={displayEntries} groupByType={groupByType} />

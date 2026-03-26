@@ -52,6 +52,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   return (
     <div
+      id={`entry-${entry.id}`}
       className="entry-card"
       style={{ '--type-color': typeColor }}
     >
