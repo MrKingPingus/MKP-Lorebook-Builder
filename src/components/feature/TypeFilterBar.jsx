@@ -78,7 +78,7 @@ export function TypeFilterBar({ entries }) {
           Group by type
         </button>
         <button
-          className={`filter-action-btn${(expandAll || collapseAll) ? ' filter-action-btn--active' : ''}`}
+          className="filter-action-btn"
           onClick={expandAll ? handleCollapseAll : handleExpandAll}
         >
           {expandAll ? 'Collapse All' : 'Expand All'}
