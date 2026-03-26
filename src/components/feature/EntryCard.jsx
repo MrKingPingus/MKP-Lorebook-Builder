@@ -106,7 +106,15 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
       {/* ── Card body (expanded) ── */}
       {!collapsed && (
-        <div className="entry-card-body">
+        <div
+          className="entry-card-body"
+          onDoubleClick={(e) => {
+            if (e.target.closest('button')) return;
+            setLocalCollapsed(true);
+            setExpandAll(false);
+            setCollapseAll(false);
+          }}
+        >
           {/* Row 1: Entry Name + Entry Type */}
           <div className="entry-fields-row">
             <div className="entry-field entry-field--name">

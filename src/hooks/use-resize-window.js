@@ -39,9 +39,13 @@ export function useResizeWindow() {
         if (corner.includes('s')) { newH = Math.max(MIN_HEIGHT, startH + 2 * dy); newY = startPosY - dy; }
         if (corner.includes('n')) { newH = Math.max(MIN_HEIGHT, startH - 2 * dy); newY = startPosY + dy; }
 
-        // Clamp to viewport
+        // Clamp position to viewport
         newX = Math.max(0, Math.min(newX, window.innerWidth  - MIN_WIDTH));
         newY = Math.max(0, Math.min(newY, window.innerHeight - MIN_HEIGHT));
+
+        // Clamp size so opposite edges stay within viewport
+        if (newX + newW > window.innerWidth)  newW = Math.max(MIN_WIDTH,  window.innerWidth  - newX);
+        if (newY + newH > window.innerHeight) newH = Math.max(MIN_HEIGHT, window.innerHeight - newY);
 
         setWindowSize({ width: newW, height: newH });
         setWindowPos({ x: newX, y: newY });

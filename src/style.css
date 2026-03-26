@@ -477,8 +477,8 @@ input:focus, textarea:focus, select:focus {
 .entry-list::-webkit-scrollbar-track { background: transparent; }
 .entry-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-.entry-list-item { cursor: grab; }
-.entry-list-item:active { cursor: grabbing; }
+.entry-list-item { cursor: default; }
+.entry-list-item:active { cursor: default; }
 
 .type-group-header {
   padding: 6px 12px 4px;
