@@ -808,6 +808,16 @@ input:focus, textarea:focus, select:focus {
   background: var(--border);
   color: var(--text);
 }
+.suggestions-phrase-btn--active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.suggestion-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
 
 .suggestions-chips {
   display: flex;
@@ -911,52 +921,27 @@ input:focus, textarea:focus, select:focus {
 }
 .phrase-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 
-/* Tokens — suggestion chip and freeform text */
-.phrase-token {
+/* Phrase pills — word bubbles, click to select for two-click swap */
+.phrase-pill {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   border-radius: 12px;
-  padding: 2px 7px;
+  padding: 2px 7px 2px 10px;
   font-size: 12px;
-  cursor: grab;
-  user-select: none;
-}
-.phrase-token--chip {
   background: var(--surface3);
-  border: 1px solid var(--accent);
+  border: 1px solid var(--border);
   color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--transition), background var(--transition);
 }
-.phrase-token--text {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  color: var(--muted2);
-  font-style: italic;
+.phrase-pill:hover { border-color: var(--border2); }
+.phrase-pill--selected {
+  border-color: var(--accent);
+  background: rgba(91,141,246,.15);
 }
-.phrase-token:active { cursor: grabbing; }
-
-/* Insertion slots */
-.phrase-slot-btn {
-  font-size: 11px;
-  color: var(--muted);
-  padding: 1px 4px;
-  background: none;
-  border: 1px dashed var(--border);
-  border-radius: 4px;
-  line-height: 1.4;
-}
-.phrase-slot-btn:hover { color: var(--text); border-color: var(--border2); }
-.phrase-slot-input {
-  font-size: 12px;
-  font-family: inherit;
-  background: var(--surface2);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 1px 6px;
-  color: var(--text);
-  width: 90px;
-}
-.phrase-slot-input:focus { outline: none; }
+.phrase-pills-empty { font-size: 11px; color: var(--muted); }
 
 .pill-delete { color: var(--red); font-size: 13px; }
 .phrase-actions { display: flex; gap: 6px; }

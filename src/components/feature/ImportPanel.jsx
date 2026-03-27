@@ -31,16 +31,22 @@ export function ImportPanel() {
   const currentAccept = FORMATS.find((f) => f.id === format)?.accept ?? '.txt';
 
   async function handleFile(file) {
+    // Auto-detect format from file extension so drag-and-drop always works
+    const ext = file.name.split('.').pop().toLowerCase();
+    const detected = FORMATS.find((f) => f.accept === `.${ext}`);
+    const activeFormat = detected ? detected.id : format;
+    if (detected && detected.id !== format) setFormat(detected.id);
+
     setError('');
     setPreview(null);
     setImportedName(null);
     setLoading(true);
     try {
       let parsed;
-      if (format === 'txt') {
+      if (activeFormat === 'txt') {
         const text = await readTxtFile(file);
         parsed = parseTxtToEntries(text);
-      } else if (format === 'docx') {
+      } else if (activeFormat === 'docx') {
         parsed = await importFromDocx(file);
       } else {
         const raw = await readJsonFile(file);
