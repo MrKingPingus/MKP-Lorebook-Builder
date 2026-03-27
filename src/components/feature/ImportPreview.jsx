@@ -12,6 +12,8 @@ export function ImportPreview({ entries, onConfirm, onCancel, replaceMode = fals
       <div className="preview-list">
         {entries.map((entry, idx) => {
           const typeDef = ENTRY_TYPES.find((t) => t.id === entry.type);
+          const triggerCount = entry.triggers.length;
+          const charCount = entry.description.length;
           return (
             <div key={idx} className="preview-item">
               <span
@@ -20,8 +22,11 @@ export function ImportPreview({ entries, onConfirm, onCancel, replaceMode = fals
               />
               <span className="preview-name">{entry.name || '(unnamed)'}</span>
               <span className="preview-type">{typeDef?.label ?? entry.type}</span>
-              {entry.triggers.length > 0 && (
-                <span className="preview-triggers">{entry.triggers.slice(0, 3).join(', ')}{entry.triggers.length > 3 ? '…' : ''}</span>
+              {triggerCount > 0 && (
+                <span className="preview-triggers">{triggerCount} {triggerCount === 1 ? 'trigger' : 'triggers'}</span>
+              )}
+              {charCount > 0 && (
+                <span className="preview-triggers">{charCount} chars</span>
               )}
             </div>
           );
