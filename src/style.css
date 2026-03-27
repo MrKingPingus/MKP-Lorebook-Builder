@@ -740,7 +740,7 @@ input:focus, textarea:focus, select:focus {
 .trigger-chips-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   min-height: 16px;
 }
@@ -885,7 +885,7 @@ input:focus, textarea:focus, select:focus {
 
 .description-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .char-counter {
