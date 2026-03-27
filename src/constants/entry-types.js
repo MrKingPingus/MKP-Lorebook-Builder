@@ -1,10 +1,10 @@
 // Entry type definitions: id, label, and color value for each type (Character, Item, PlotEvent, Location, Other)
 export const ENTRY_TYPES = [
-  { id: 'character',  label: 'Character',  color: '#a855f7' },
-  { id: 'item',       label: 'Item',       color: '#3b82f6' },
-  { id: 'plot_event', label: 'PlotEvent',  color: '#ef4444' },
-  { id: 'location',   label: 'Location',   color: '#eab308' },
-  { id: 'other',      label: 'Other',      color: '#14b8a6' },
+  { id: 'character',  label: 'Character',  color: '#c084fc' },
+  { id: 'item',       label: 'Item',       color: '#60a5fa' },
+  { id: 'plot_event', label: 'PlotEvent',  color: '#f87171' },
+  { id: 'location',   label: 'Location',   color: '#fbbf24' },
+  { id: 'other',      label: 'Other',      color: '#0d9488' },
 ];
 
 export const DEFAULT_TYPE = 'character';
