@@ -1,52 +1,56 @@
-// Phrase builder state: token sequence (chip | text), ordering, insert, commit, and cancel
+// Phrase builder state: collect words from suggestion chips, reorder via two-click swap, commit as trigger
 import { useState } from 'react';
 
 export function usePhraseBuilder(onCommit) {
-  const [tokens, setTokens] = useState([]);
-  const [active, setActive] = useState(false);
+  const [phraseMode, setPhraseMode]               = useState(false);
+  const [phraseQueue, setPhraseQueue]             = useState([]);
+  const [selectedPhraseIdx, setSelectedPhraseIdx] = useState(-1);
 
   function open() {
-    setTokens([]);
-    setActive(true);
+    setPhraseQueue([]);
+    setSelectedPhraseIdx(-1);
+    setPhraseMode(true);
   }
 
   function close() {
-    setTokens([]);
-    setActive(false);
+    setPhraseQueue([]);
+    setSelectedPhraseIdx(-1);
+    setPhraseMode(false);
   }
 
-  function addChip(text) {
-    setTokens((prev) => [...prev, { type: 'chip', text }]);
+  function addWord(word) {
+    if (phraseQueue.includes(word)) return;
+    setPhraseQueue((prev) => [...prev, word]);
   }
 
-  function insertText(idx, text) {
-    if (!text.trim()) return;
-    setTokens((prev) => {
-      const next = [...prev];
-      next.splice(idx, 0, { type: 'text', text: text.trim() });
-      return next;
-    });
+  // Two-click swap: first click selects; second click on same pill deselects; on a different pill → swap
+  function selectPill(idx) {
+    if (selectedPhraseIdx === -1) {
+      setSelectedPhraseIdx(idx);
+    } else if (selectedPhraseIdx === idx) {
+      setSelectedPhraseIdx(-1);
+    } else {
+      const next = [...phraseQueue];
+      const tmp = next[selectedPhraseIdx];
+      next[selectedPhraseIdx] = next[idx];
+      next[idx] = tmp;
+      setPhraseQueue(next);
+      setSelectedPhraseIdx(-1);
+    }
   }
 
-  function removeToken(idx) {
-    setTokens((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function moveToken(fromIdx, toIdx) {
-    setTokens((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(fromIdx, 1);
-      next.splice(toIdx, 0, moved);
-      return next;
-    });
+  function removeWord(idx) {
+    const newQueue = phraseQueue.filter((_, i) => i !== idx);
+    setPhraseQueue(newQueue);
+    setSelectedPhraseIdx(-1);
+    if (newQueue.length === 0) setPhraseMode(false);
   }
 
   function commit() {
-    if (tokens.length > 0) {
-      onCommit(tokens.map((t) => t.text).join(' '));
-    }
+    if (phraseQueue.length === 0) return;
+    onCommit(phraseQueue.join(' '));
     close();
   }
 
-  return { tokens, active, open, close, addChip, insertText, removeToken, moveToken, commit };
+  return { phraseMode, phraseQueue, selectedPhraseIdx, open, close, addWord, selectPill, removeWord, commit };
 }
