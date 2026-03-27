@@ -23,10 +23,10 @@ export function SuggestionsTray({ entry, onAddTrigger }) {
       {/* Phrase builder */}
       {phrase.active && (
         <PhraseBuilder
-          words={phrase.words}
-          onRemove={phrase.removeWord}
-          onMove={phrase.moveWord}
-          onEdit={phrase.editWord}
+          tokens={phrase.tokens}
+          onInsert={phrase.insertText}
+          onRemove={phrase.removeToken}
+          onMove={phrase.moveToken}
           onCommit={phrase.commit}
           onCancel={phrase.close}
         />
@@ -42,7 +42,7 @@ export function SuggestionsTray({ entry, onAddTrigger }) {
               <button
                 key={s}
                 className="suggestion-chip"
-                onClick={() => phrase.active ? phrase.addWord(s) : addSuggestion(s)}
+                onClick={() => phrase.active ? phrase.addChip(s) : addSuggestion(s)}
                 title={phrase.active ? `Add "${s}" to phrase` : `Add "${s}" as trigger`}
               >
                 {s}

@@ -1,32 +1,39 @@
-// Phrase builder state: selected suggestion words, ordering, commit to trigger, and cancel
+// Phrase builder state: token sequence (chip | text), ordering, insert, commit, and cancel
 import { useState } from 'react';
 
 export function usePhraseBuilder(onCommit) {
-  const [words, setWords] = useState([]);
+  const [tokens, setTokens] = useState([]);
   const [active, setActive] = useState(false);
 
   function open() {
-    setWords([]);
+    setTokens([]);
     setActive(true);
   }
 
   function close() {
-    setWords([]);
+    setTokens([]);
     setActive(false);
   }
 
-  function addWord(word) {
-    if (!words.includes(word)) {
-      setWords((prev) => [...prev, word]);
-    }
+  function addChip(text) {
+    setTokens((prev) => [...prev, { type: 'chip', text }]);
   }
 
-  function removeWord(word) {
-    setWords((prev) => prev.filter((w) => w !== word));
+  function insertText(idx, text) {
+    if (!text.trim()) return;
+    setTokens((prev) => {
+      const next = [...prev];
+      next.splice(idx, 0, { type: 'text', text: text.trim() });
+      return next;
+    });
   }
 
-  function moveWord(fromIdx, toIdx) {
-    setWords((prev) => {
+  function removeToken(idx) {
+    setTokens((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function moveToken(fromIdx, toIdx) {
+    setTokens((prev) => {
       const next = [...prev];
       const [moved] = next.splice(fromIdx, 1);
       next.splice(toIdx, 0, moved);
@@ -34,16 +41,12 @@ export function usePhraseBuilder(onCommit) {
     });
   }
 
-  function editWord(idx, newWord) {
-    setWords((prev) => prev.map((w, i) => (i === idx ? newWord : w)));
-  }
-
   function commit() {
-    if (words.length > 0) {
-      onCommit(words.join(' '));
+    if (tokens.length > 0) {
+      onCommit(tokens.map((t) => t.text).join(' '));
     }
     close();
   }
 
-  return { words, active, open, close, addWord, removeWord, moveWord, editWord, commit };
+  return { tokens, active, open, close, addChip, insertText, removeToken, moveToken, commit };
 }
