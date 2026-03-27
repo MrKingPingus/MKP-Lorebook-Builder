@@ -253,6 +253,15 @@ input:focus, textarea:focus, select:focus {
   gap: 8px;
 }
 
+.footer-left,
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.footer-right { justify-content: flex-end; }
+
 .footer-btn {
   padding: 6px 14px;
   background: var(--surface2);
@@ -731,7 +740,7 @@ input:focus, textarea:focus, select:focus {
 .trigger-chips-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   min-height: 16px;
 }
@@ -745,6 +754,10 @@ input:focus, textarea:focus, select:focus {
   font-size: 11px;
   color: var(--coral);
   animation: flash-in 0.15s ease;
+}
+.trigger-overlimit-warn {
+  font-size: 11px;
+  color: var(--yellow);
 }
 @keyframes flash-in {
   from { opacity: 0; transform: translateY(-2px); }
@@ -876,7 +889,7 @@ input:focus, textarea:focus, select:focus {
 
 .description-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .char-counter {
@@ -910,6 +923,18 @@ input:focus, textarea:focus, select:focus {
 .pill-arrow { color: var(--muted); font-size: 13px; }
 .pill-arrow:disabled { opacity: 0.3; cursor: default; }
 .pill-word { padding: 0 3px; }
+.pill-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border2);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 0 2px;
+  min-width: 20px;
+  text-align: center;
+}
+.pill-input:focus { outline: none; border-bottom-color: var(--accent); }
 .pill-delete { color: var(--red); font-size: 13px; }
 .phrase-actions { display: flex; gap: 6px; }
 .phrase-commit {

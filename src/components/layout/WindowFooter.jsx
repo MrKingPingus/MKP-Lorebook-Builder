@@ -16,9 +16,19 @@ export function WindowFooter() {
 
   return (
     <div className="window-footer">
-      <button className="footer-btn" onClick={handleClearAll}>
-        Clear All
-      </button>
+      <div className="footer-left">
+        <button className="footer-btn" onClick={handleClearAll}>
+          Clear All
+        </button>
+        <button
+          className="footer-btn"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+        >
+          ↩ Undo
+        </button>
+      </div>
 
       <button
         className="footer-fab"
@@ -28,31 +38,23 @@ export function WindowFooter() {
         +
       </button>
 
-      <button
-        className="footer-btn"
-        onClick={undo}
-        disabled={!canUndo}
-        title="Undo (Ctrl+Z)"
-      >
-        ↩ Undo
-      </button>
-
-      <button
-        className="footer-btn"
-        onClick={redo}
-        disabled={!canRedo}
-        title="Redo (Ctrl+Shift+Z)"
-      >
-        ↪ Redo
-      </button>
-
-      <button
-        className="footer-btn"
-        onClick={() => setActiveTab('import-export')}
-        title="Go to Import / Export"
-      >
-        ↓ Import Entries
-      </button>
+      <div className="footer-right">
+        <button
+          className="footer-btn"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Shift+Z)"
+        >
+          ↪ Redo
+        </button>
+        <button
+          className="footer-btn"
+          onClick={() => setActiveTab('import-export')}
+          title="Go to Import / Export"
+        >
+          ↓ Import Entries
+        </button>
+      </div>
     </div>
   );
 }

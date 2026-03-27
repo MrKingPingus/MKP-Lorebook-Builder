@@ -26,6 +26,7 @@ export function SuggestionsTray({ entry, onAddTrigger }) {
           words={phrase.words}
           onRemove={phrase.removeWord}
           onMove={phrase.moveWord}
+          onEdit={phrase.editWord}
           onCommit={phrase.commit}
           onCancel={phrase.close}
         />

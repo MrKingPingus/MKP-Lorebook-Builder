@@ -87,6 +87,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           )}
           <button
             className="card-action-btn"
+            title="double-click the entry to expand or collapse it!"
             onClick={() => {
               setLocalCollapsed(!collapsed);
               setExpandAll(false);

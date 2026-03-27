@@ -34,6 +34,10 @@ export function usePhraseBuilder(onCommit) {
     });
   }
 
+  function editWord(idx, newWord) {
+    setWords((prev) => prev.map((w, i) => (i === idx ? newWord : w)));
+  }
+
   function commit() {
     if (words.length > 0) {
       onCommit(words.join(' '));
@@ -41,5 +45,5 @@ export function usePhraseBuilder(onCommit) {
     close();
   }
 
-  return { words, active, open, close, addWord, removeWord, moveWord, commit };
+  return { words, active, open, close, addWord, removeWord, moveWord, editWord, commit };
 }
