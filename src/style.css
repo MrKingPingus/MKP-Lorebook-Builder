@@ -253,6 +253,15 @@ input:focus, textarea:focus, select:focus {
   gap: 8px;
 }
 
+.footer-left,
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.footer-right { justify-content: flex-end; }
+
 .footer-btn {
   padding: 6px 14px;
   background: var(--surface2);
