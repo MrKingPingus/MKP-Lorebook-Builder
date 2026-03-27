@@ -1,62 +1,93 @@
-// Parse the === block === plain-text template format into an array of entry objects
+// Parse plain-text (template or freeform) into an array of entry objects.
+// Strategy A: split on --- dividers (existing template format)
+// Strategy B: split on blank lines (freeform fallback when no --- or === headers found)
 import { createEmptyEntry } from './entry-factory.js';
 import { ENTRY_TYPES, DEFAULT_TYPE } from '../constants/entry-types.js';
 
 const VALID_TYPES = new Set(ENTRY_TYPES.map((t) => t.id));
 
+const TRIGGER_PREFIX = /^(Triggers|Keywords|Tags|Aliases):\s*/i;
+
 /**
- * Parse the === Name [type] === block format from a plain-text string.
- * Returns an array of entry objects.
+ * Parse a single text block into one entry.
+ * Supports both === Name [type] === header format and freeform (first line = name).
  */
-export function parseTxtToEntries(text) {
-  // Split on section dividers or double-newlines before a header
-  const headerPattern = /^===\s+(.+?)\s+===$/m;
-  const sections = text.split(/^---$/m).map((s) => s.trim()).filter(Boolean);
+function parseBlock(block) {
+  const lines = block.split('\n');
 
-  const entries = [];
+  // Find first non-empty line
+  let lineIdx = 0;
+  while (lineIdx < lines.length && !lines[lineIdx].trim()) lineIdx++;
+  if (lineIdx >= lines.length) return null;
 
-  for (const section of sections) {
-    const lines = section.split('\n');
-    const firstLine = lines[0] ?? '';
-    const headerMatch = firstLine.match(/^===\s+(.+?)\s+===$/);
+  const firstLine = lines[lineIdx].trim();
+  let name = '';
+  let type = DEFAULT_TYPE;
 
-    let name = '';
-    let type = DEFAULT_TYPE;
-
-    if (headerMatch) {
-      const full = headerMatch[1];
-      // Extract optional [type] suffix: "Entry Name [character]"
-      const typeMatch = full.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
-      if (typeMatch) {
-        name = typeMatch[1].trim();
-        const rawType = typeMatch[2].toLowerCase().replace(/\s+/g, '_');
-        type = VALID_TYPES.has(rawType) ? rawType : DEFAULT_TYPE;
-      } else {
-        name = full;
-      }
+  // Try === Name [type] === template header
+  const templateMatch = firstLine.match(/^===\s+(.+?)\s+===$/);
+  if (templateMatch) {
+    const full = templateMatch[1];
+    const typeMatch = full.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+    if (typeMatch) {
+      name = typeMatch[1].trim();
+      const rawType = typeMatch[2].toLowerCase().replace(/\s+/g, '_');
+      type = VALID_TYPES.has(rawType) ? rawType : DEFAULT_TYPE;
     } else {
-      // Fallback: treat entire block as description
-      entries.push(createEmptyEntry({ description: section }));
-      continue;
+      name = full;
     }
+    lineIdx++;
+  } else {
+    // Freeform: first line is the name, with optional [type] suffix
+    const typeMatch = firstLine.match(/^(.*?)\s*\[([^\]]+)\]\s*$/);
+    if (typeMatch) {
+      name = typeMatch[1].trim();
+      const rawType = typeMatch[2].toLowerCase().replace(/\s+/g, '_');
+      type = VALID_TYPES.has(rawType) ? rawType : DEFAULT_TYPE;
+    } else {
+      name = firstLine;
+    }
+    lineIdx++;
+  }
 
-    // Parse triggers line
-    const triggerLine = lines.find((l) => /^Triggers:/i.test(l)) ?? '';
-    const triggers = triggerLine
-      .replace(/^Triggers:\s*/i, '')
+  const remaining = lines.slice(lineIdx);
+
+  // Scan for a trigger line (Triggers: / Keywords: / Tags: / Aliases:)
+  const triggerIdx = remaining.findIndex((l) => TRIGGER_PREFIX.test(l));
+  let triggers = [];
+  let descLines;
+
+  if (triggerIdx !== -1) {
+    triggers = remaining[triggerIdx]
+      .replace(TRIGGER_PREFIX, '')
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean);
-
-    // Everything after the triggers line is the description
-    const triggerLineIdx = lines.findIndex((l) => /^Triggers:/i.test(l));
-    const descStart = triggerLineIdx !== -1 ? triggerLineIdx + 1 : 1;
-    const description = lines.slice(descStart).join('\n').trim();
-
-    entries.push(createEmptyEntry({ name, type, triggers, description }));
+    descLines = remaining.filter((_, i) => i !== triggerIdx);
+  } else {
+    descLines = remaining;
   }
 
-  return entries;
+  const description = descLines.join('\n').trim();
+  return createEmptyEntry({ name, type, triggers, description });
+}
+
+/**
+ * Parse a plain-text string into an array of entry objects.
+ * Tries --- splitting first; falls back to blank-line paragraph splitting
+ * for freeform files that lack --- delimiters and === headers.
+ */
+export function parseTxtToEntries(text) {
+  // Strategy A: split on --- dividers
+  let sections = text.split(/^---$/m).map((s) => s.trim()).filter(Boolean);
+
+  // Strategy B: if only one section and it has no === header, split on blank lines
+  if (sections.length === 1 && !sections[0].match(/^===\s+.+?\s+===$/m)) {
+    const paragraphs = text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+    if (paragraphs.length > 1) sections = paragraphs;
+  }
+
+  return sections.map(parseBlock).filter(Boolean);
 }
 
 export async function readTxtFile(file) {
