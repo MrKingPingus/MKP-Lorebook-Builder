@@ -12,7 +12,7 @@ import { useHistoryStore }  from '../../state/history-store.js';
 
 const FORMATS = [
   { id: 'txt',  label: 'TXT',  accept: '.txt' },
-  { id: 'docx', label: 'DOCX', accept: '.docx' },
+  { id: 'docx', label: 'DOCX/ODT', accept: '.docx,.odt' },
   { id: 'json', label: 'JSON', accept: '.json' },
 ];
 
