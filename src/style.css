@@ -234,6 +234,7 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
 }
 .window-body--lander {
   overflow-y: auto;
@@ -1076,6 +1077,53 @@ input:focus, textarea:focus, select:focus {
 .import-confirm-btn:hover { background: #dc2626; }
 .import-cancel-btn { padding: 5px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; color: var(--muted2); transition: background var(--transition); }
 .import-cancel-btn:hover { background: var(--surface3); }
+
+/* Import Panel save-before-replace prompt */
+.import-save-prompt {
+  display: flex; flex-direction: column; gap: 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px; background: var(--surface2);
+}
+.import-save-warning { font-size: 13px; font-weight: 600; color: var(--yellow); }
+.import-save-label { font-size: 12px; color: var(--muted2); }
+.import-save-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.import-save-btn {
+  padding: 5px 12px; font-size: 12px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface3); color: var(--text);
+  transition: background var(--transition);
+}
+.import-save-btn:hover { background: var(--border); }
+.import-save-btn--new { border-color: var(--green); color: var(--green); }
+.import-save-btn--new:hover { background: rgba(52,211,153,.12); }
+.import-save-btn--cancel { color: var(--muted); }
+.import-save-divider { font-size: 11px; color: var(--muted); text-align: center; }
+
+/* Append Import overlay (footer "Import Entries" button) */
+.append-import-overlay {
+  position: absolute; inset: 0; z-index: 300;
+  background: rgba(15,23,42,.85);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.append-import-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  width: 100%; max-width: 440px;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px;
+}
+.append-import-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.append-import-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.append-import-close {
+  width: 22px; height: 22px; border-radius: var(--radius);
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted2); font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+.append-import-close:hover { background: var(--surface3); color: var(--text); }
 
 .export-panel--empty { color: var(--muted); font-size: 13px; }
 .export-info { font-size: 12px; color: var(--muted2); }

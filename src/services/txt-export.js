@@ -1,25 +1,26 @@
-// Serialize lorebook entries to the === header === block plain-text format as a Blob
+// Serialize lorebook entries to the Entry:/Type:/Triggers:/Description: format as a Blob
 
 /**
- * Convert a lorebook to the plain-text template format:
+ * Convert a lorebook to the plain-text labeled format:
  *
- *   === Entry Name [Type] ===
+ *   Entry: Entry Name
+ *   Type: type
  *   Triggers: trigger1, trigger2
- *
+ *   Description:
  *   description text...
  *
- *   === Next Entry ===
+ *   Entry: Next Entry
+ *   ...
  */
 export function exportToTxtBlob(lorebook) {
   const blocks = lorebook.entries.map((entry) => {
-    const header = `=== ${entry.name || '(unnamed)'} [${entry.type}] ===`;
     const triggers = entry.triggers.length
       ? `Triggers: ${entry.triggers.join(', ')}`
       : 'Triggers:';
     const body = entry.description || '';
-    return [header, triggers, '', body].join('\n');
+    return [`Entry: ${entry.name || '(unnamed)'}`, `Type: ${entry.type}`, triggers, 'Description:', body].join('\n');
   });
 
-  const text = blocks.join('\n\n---\n\n');
+  const text = blocks.join('\n\n');
   return new Blob([text], { type: 'text/plain' });
 }
