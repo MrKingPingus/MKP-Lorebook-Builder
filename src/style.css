@@ -252,6 +252,7 @@ input:focus, textarea:focus, select:focus {
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   gap: 8px;
+  position: relative;
 }
 
 .footer-left,
@@ -280,24 +281,27 @@ input:focus, textarea:focus, select:focus {
 .footer-btn:disabled { opacity: 0.38; cursor: default; }
 
 .footer-fab {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  background: var(--coral);
+  background: var(--accent);
   color: #fff;
-  font-size: 22px;
+  font-size: 1.6rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 3px 12px rgba(239,68,68,.4);
+  box-shadow: rgba(0,0,0,.4) 0px 3px 10px;
   transition: background var(--transition), transform var(--transition);
   line-height: 1;
   padding: 0;
   border: none;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
-.footer-fab:hover { background: #dc2626; transform: scale(1.07); }
+.footer-fab:hover { background: #dc2626; transform: translateX(-50%) scale(1.07); }
 
 /* ============================================================
    Resize Handles
