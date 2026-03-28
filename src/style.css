@@ -574,10 +574,9 @@ input:focus, textarea:focus, select:focus {
   margin-left: auto;
 }
 
-/* Stats badge — green in card header */
+/* Stats badge — each half is colored independently by inline style */
 .stats-badge {
   font-size: 11px;
-  color: var(--green);
   white-space: nowrap;
   flex-shrink: 0;
 }

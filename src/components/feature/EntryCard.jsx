@@ -13,7 +13,7 @@ import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
-  const { hideEntryStats } = useSettings();
+  const { hideEntryStats, counterTiers, tieredCounterEnabled } = useSettings();
   const expandAll    = useUiStore((s) => s.expandAll);
   const collapseAll  = useUiStore((s) => s.collapseAll);
   const searchQuery  = useUiStore((s) => s.searchQuery);
@@ -83,6 +83,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             <StatsBadge
               triggerCount={entry.triggers.length}
               charCount={entry.description.length}
+              counterTiers={counterTiers}
+              tieredEnabled={tieredCounterEnabled}
             />
           )}
           <button
