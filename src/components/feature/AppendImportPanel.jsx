@@ -1,25 +1,53 @@
 // Overlay for appending entries to the active lorebook — triggered by the footer "Import Entries" button
-import { useAppendImport } from '../../hooks/use-append-import.js';
-import { DropZone }        from '../ui/DropZone.jsx';
-import { ImportPreview }   from './ImportPreview.jsx';
+import { useState }          from 'react';
+import { useAppendImport }   from '../../hooks/use-append-import.js';
+import { ImportPreview }     from './ImportPreview.jsx';
 
 export function AppendImportPanel() {
-  const { preview, loading, error, handleFile, confirmAppend, cancel } = useAppendImport();
+  const { preview, loading, error, handleText, handleFile, confirmAppend, cancel } = useAppendImport();
+  const [text, setText]       = useState('');
+  const [dragging, setDragging] = useState(false);
+
+  function onDragEnter(e) { e.preventDefault(); setDragging(true); }
+  function onDragOver(e)  { e.preventDefault(); }
+  function onDragLeave(e) { if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false); }
+  function onDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
 
   return (
     <div className="append-import-overlay">
-      <div className="append-import-panel">
+      <div
+        className="append-import-panel"
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
         <div className="append-import-header">
           <span className="append-import-title">Add Entries</span>
           <button className="append-import-close" onClick={cancel} title="Close">×</button>
         </div>
 
         {!preview && (
-          <DropZone onFile={handleFile} accept=".txt,.docx,.odt,.json">
-            <div className="drop-zone-content">
-              {loading ? '⏳ Parsing…' : 'Drop a file here or click to browse (TXT, DOCX, ODT, JSON)'}
-            </div>
-          </DropZone>
+          <>
+            <textarea
+              className="append-text-area"
+              placeholder={'Paste entries here, or drag a file onto this panel…\n\nSupported formats: TXT, DOCX, ODT, JSON'}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            <button
+              className="append-parse-btn"
+              onClick={() => handleText(text)}
+              disabled={!text.trim() || loading}
+            >
+              {loading ? 'Parsing…' : 'Parse'}
+            </button>
+          </>
         )}
 
         {error && <div className="import-error">{error}</div>}
@@ -31,6 +59,10 @@ export function AppendImportPanel() {
             onConfirm={confirmAppend}
             onCancel={cancel}
           />
+        )}
+
+        {dragging && (
+          <div className="append-drop-overlay">Drop file to import</div>
         )}
       </div>
     </div>

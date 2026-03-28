@@ -20,6 +20,18 @@ export function useAppendImport() {
   const pushSnapshot         = useHistoryStore((s) => s.pushSnapshot);
   const setShowAppendImport  = useUiStore((s) => s.setShowAppendImport);
 
+  function handleText(text) {
+    setError('');
+    setPreview(null);
+    try {
+      const parsed = parseTxtToEntries(text.trim());
+      if (!parsed.length) { setError('No entries found. Check your formatting.'); return; }
+      setPreview(parsed);
+    } catch (e) {
+      setError(e.message ?? 'Failed to parse text.');
+    }
+  }
+
   async function handleFile(file) {
     const ext = file.name.split('.').pop().toLowerCase();
     const fmt = EXT_TO_FORMAT[ext];
@@ -63,5 +75,5 @@ export function useAppendImport() {
     setShowAppendImport(false);
   }
 
-  return { preview, loading, error, handleFile, confirmAppend, cancel };
+  return { preview, loading, error, handleText, handleFile, confirmAppend, cancel };
 }
