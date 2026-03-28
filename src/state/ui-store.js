@@ -13,7 +13,8 @@ export const useUiStore = create((set) => ({
   expandAll:   false,
   groupByType: false,
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
-  showLander:  true,        // true on every page load; dismissed when user enters the builder
+  showLander:       true,        // true on every page load; dismissed when user enters the builder
+  showAppendImport: false,       // true when footer "Import Entries" overlay is open
 
   setActiveTab:   (activeTab)   => set({ activeTab }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -24,8 +25,9 @@ export const useUiStore = create((set) => ({
   setCollapseAll: (collapseAll) => set({ collapseAll }),
   setExpandAll:   (expandAll)   => set({ expandAll }),
   setGroupByType: (groupByType) => set({ groupByType }),
-  setSavedAt:     (savedAt)     => set({ savedAt }),
-  setShowLander:  (showLander)  => set({ showLander }),
+  setSavedAt:          (savedAt)          => set({ savedAt }),
+  setShowLander:       (showLander)       => set({ showLander }),
+  setShowAppendImport: (showAppendImport) => set({ showAppendImport }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

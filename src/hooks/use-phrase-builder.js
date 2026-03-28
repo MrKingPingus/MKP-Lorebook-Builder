@@ -1,45 +1,56 @@
-// Phrase builder state: selected suggestion words, ordering, commit to trigger, and cancel
+// Phrase builder state: collect words from suggestion chips, reorder via two-click swap, commit as trigger
 import { useState } from 'react';
 
 export function usePhraseBuilder(onCommit) {
-  const [words, setWords] = useState([]);
-  const [active, setActive] = useState(false);
+  const [phraseMode, setPhraseMode]               = useState(false);
+  const [phraseQueue, setPhraseQueue]             = useState([]);
+  const [selectedPhraseIdx, setSelectedPhraseIdx] = useState(-1);
 
   function open() {
-    setWords([]);
-    setActive(true);
+    setPhraseQueue([]);
+    setSelectedPhraseIdx(-1);
+    setPhraseMode(true);
   }
 
   function close() {
-    setWords([]);
-    setActive(false);
+    setPhraseQueue([]);
+    setSelectedPhraseIdx(-1);
+    setPhraseMode(false);
   }
 
   function addWord(word) {
-    if (!words.includes(word)) {
-      setWords((prev) => [...prev, word]);
+    if (phraseQueue.includes(word)) return;
+    setPhraseQueue((prev) => [...prev, word]);
+  }
+
+  // Two-click swap: first click selects; second click on same pill deselects; on a different pill → swap
+  function selectPill(idx) {
+    if (selectedPhraseIdx === -1) {
+      setSelectedPhraseIdx(idx);
+    } else if (selectedPhraseIdx === idx) {
+      setSelectedPhraseIdx(-1);
+    } else {
+      const next = [...phraseQueue];
+      const tmp = next[selectedPhraseIdx];
+      next[selectedPhraseIdx] = next[idx];
+      next[idx] = tmp;
+      setPhraseQueue(next);
+      setSelectedPhraseIdx(-1);
     }
   }
 
-  function removeWord(word) {
-    setWords((prev) => prev.filter((w) => w !== word));
-  }
-
-  function moveWord(fromIdx, toIdx) {
-    setWords((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(fromIdx, 1);
-      next.splice(toIdx, 0, moved);
-      return next;
-    });
+  function removeWord(idx) {
+    const newQueue = phraseQueue.filter((_, i) => i !== idx);
+    setPhraseQueue(newQueue);
+    setSelectedPhraseIdx(-1);
+    if (newQueue.length === 0) setPhraseMode(false);
   }
 
   function commit() {
-    if (words.length > 0) {
-      onCommit(words.join(' '));
-    }
+    if (phraseQueue.length === 0) return;
+    onCommit(phraseQueue.join(' '));
     close();
   }
 
-  return { words, active, open, close, addWord, removeWord, moveWord, commit };
+  return { phraseMode, phraseQueue, selectedPhraseIdx, open, close, addWord, selectPill, removeWord, commit };
 }

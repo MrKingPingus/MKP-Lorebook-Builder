@@ -3,9 +3,10 @@ import { ENTRY_TYPES } from '../../constants/entry-types.js';
 
 export function TypeSelector({ value, onChange }) {
   function onWheel(e) {
+    if (!e.shiftKey) return;
     e.preventDefault();
     const idx  = ENTRY_TYPES.findIndex((t) => t.id === value);
-    const next = (idx + (e.deltaY > 0 ? 1 : -1) + ENTRY_TYPES.length) % ENTRY_TYPES.length;
+    const next = Math.min(ENTRY_TYPES.length - 1, Math.max(0, idx + (e.deltaY > 0 ? 1 : -1)));
     onChange(ENTRY_TYPES[next].id);
   }
 

@@ -34,20 +34,18 @@ export function useResizeWindow() {
         let newX = startPosX;
         let newY = startPosY;
 
-        if (corner.includes('e')) newW = Math.max(MIN_WIDTH, startW + dx);
-        if (corner.includes('w')) {
-          newW = Math.max(MIN_WIDTH, startW - dx);
-          newX = startPosX + (startW - newW);
-        }
-        if (corner.includes('s')) newH = Math.max(MIN_HEIGHT, startH + dy);
-        if (corner.includes('n')) {
-          newH = Math.max(MIN_HEIGHT, startH - dy);
-          newY = startPosY + (startH - newH);
-        }
+        if (corner.includes('e')) { newW = Math.max(MIN_WIDTH,  startW + 2 * dx); newX = startPosX - dx; }
+        if (corner.includes('w')) { newW = Math.max(MIN_WIDTH,  startW - 2 * dx); newX = startPosX + dx; }
+        if (corner.includes('s')) { newH = Math.max(MIN_HEIGHT, startH + 2 * dy); newY = startPosY - dy; }
+        if (corner.includes('n')) { newH = Math.max(MIN_HEIGHT, startH - 2 * dy); newY = startPosY + dy; }
 
-        // Clamp to viewport
+        // Clamp position to viewport
         newX = Math.max(0, Math.min(newX, window.innerWidth  - MIN_WIDTH));
         newY = Math.max(0, Math.min(newY, window.innerHeight - MIN_HEIGHT));
+
+        // Clamp size so opposite edges stay within viewport
+        if (newX + newW > window.innerWidth)  newW = Math.max(MIN_WIDTH,  window.innerWidth  - newX);
+        if (newY + newH > window.innerHeight) newH = Math.max(MIN_HEIGHT, window.innerHeight - newY);
 
         setWindowSize({ width: newW, height: newH });
         setWindowPos({ x: newX, y: newY });

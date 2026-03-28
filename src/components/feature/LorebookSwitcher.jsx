@@ -1,5 +1,5 @@
 // Dropdown listing up to 10 saved lorebooks with relative timestamps, per-item delete, and save prompt
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
 import { useLorebookStore }    from '../../state/lorebook-store.js';
 import { exportToJsonBlob, downloadBlob } from '../../services/json-export.js';
@@ -9,7 +9,19 @@ export function LorebookSwitcher() {
   const { items, createLorebook, switchLorebook, deleteLorebook } = useLorebookSwitcher();
   const [open, setOpen]           = useState(false);
   const [pendingId, setPendingId] = useState(null);
-  const btnRef = useRef(null);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function onMouseDown(e) {
+      if (!open && !pendingId) return;
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+        setPendingId(null);
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [open, pendingId]);
 
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
   const lorebooks        = useLorebookStore((s) => s.lorebooks);
@@ -69,9 +81,8 @@ export function LorebookSwitcher() {
     : '';
 
   return (
-    <div className="lorebook-switcher">
+    <div className="lorebook-switcher" ref={wrapperRef}>
       <button
-        ref={btnRef}
         className="switcher-btn"
         onClick={() => setOpen((v) => !v)}
         title="Switch lorebook"

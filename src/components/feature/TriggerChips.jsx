@@ -23,7 +23,7 @@ export function TriggerChips({ triggers, type, onUpdate, delimiter = ',', search
     for (const p of parts) {
       if (next.some((t) => t.toLowerCase() === p.toLowerCase())) {
         dupFound = true;
-      } else if (next.length < MAX_TRIGGERS) {
+      } else {
         next.push(p);
       }
     }
@@ -76,24 +76,27 @@ export function TriggerChips({ triggers, type, onUpdate, delimiter = ',', search
             highlight={searchQuery || undefined}
           />
         ))}
-        {triggers.length < MAX_TRIGGERS && (
-          <input
-            ref={inputRef}
-            className="trigger-input"
-            placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
-            onKeyDown={onKeyDown}
-            onPaste={onPaste}
-            onBlur={(e) => {
-              if (e.target.value.trim()) { addTrigger(e.target.value); e.target.value = ''; }
-            }}
-          />
-        )}
+        <input
+          ref={inputRef}
+          className="trigger-input"
+          placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
+          onKeyDown={onKeyDown}
+          onPaste={onPaste}
+          onBlur={(e) => {
+            if (e.target.value.trim()) { addTrigger(e.target.value); e.target.value = ''; }
+          }}
+        />
       </div>
       <div className="trigger-chips-footer">
         {flashDupe && <span className="trigger-dupe-error">Already exists</span>}
         <span className="trigger-counter" style={{ color: triggerColor }}>
           {triggers.length}/{MAX_TRIGGERS}
         </span>
+        {triggers.length > MAX_TRIGGERS && (
+          <span className="trigger-overlimit-warn">
+            Entries with over 25 triggers might not function correctly
+          </span>
+        )}
       </div>
     </div>
   );

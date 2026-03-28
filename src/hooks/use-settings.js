@@ -3,7 +3,6 @@ import { useSettingsStore } from '../state/settings-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { writeJson }        from '../services/storage-service.js';
 import { SETTINGS_KEY }     from '../constants/storage-keys.js';
-import { DEFAULT_WINDOW }   from '../constants/defaults.js';
 
 export function useSettings() {
   const counterTiers             = useSettingsStore((s) => s.counterTiers);
@@ -32,10 +31,10 @@ export function useSettings() {
   }
 
   function resetWindow() {
-    const w = defaultWindowWidth  || DEFAULT_WINDOW.width;
-    const h = defaultWindowHeight || DEFAULT_WINDOW.height;
+    const w = defaultWindowWidth  || Math.floor(window.innerWidth  / 3);
+    const h = defaultWindowHeight || window.innerHeight;
     const x = Math.max(0, Math.round((window.innerWidth  - w) / 2));
-    const y = Math.max(0, Math.round((window.innerHeight - h) / 4));
+    const y = 0;
     useUiStore.getState().setWindowPos({ x, y });
     useUiStore.getState().setWindowSize({ width: w, height: h });
   }

@@ -3,17 +3,19 @@ import { useUiStore }     from '../../state/ui-store.js';
 import { WindowHeader }   from './WindowHeader.jsx';
 import { WindowFooter }   from './WindowFooter.jsx';
 import { ResizeHandles }  from './ResizeHandles.jsx';
-import { BuildPanel }     from '../feature/BuildPanel.jsx';
-import { ImportPanel }    from '../feature/ImportPanel.jsx';
-import { ExportPanel }    from '../feature/ExportPanel.jsx';
-import { SettingsPanel }  from '../feature/SettingsPanel.jsx';
-import { Lander }         from '../feature/Lander.jsx';
+import { BuildPanel }         from '../feature/BuildPanel.jsx';
+import { ImportPanel }        from '../feature/ImportPanel.jsx';
+import { ExportPanel }        from '../feature/ExportPanel.jsx';
+import { SettingsPanel }      from '../feature/SettingsPanel.jsx';
+import { Lander }             from '../feature/Lander.jsx';
+import { AppendImportPanel }  from '../feature/AppendImportPanel.jsx';
 
 export function FloatingWindow() {
   const windowPos  = useUiStore((s) => s.windowPos);
   const windowSize = useUiStore((s) => s.windowSize);
-  const activeTab  = useUiStore((s) => s.activeTab);
-  const showLander = useUiStore((s) => s.showLander);
+  const activeTab        = useUiStore((s) => s.activeTab);
+  const showLander       = useUiStore((s) => s.showLander);
+  const showAppendImport = useUiStore((s) => s.showAppendImport);
 
   const style = {
     left:   windowPos.x,
@@ -57,6 +59,9 @@ export function FloatingWindow() {
             <div style={panelStyle('settings')}>
               <SettingsPanel />
             </div>
+
+            {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
+            {showAppendImport && <AppendImportPanel />}
           </div>
 
           <WindowFooter />

@@ -6,7 +6,7 @@ import { useUiStore }  from '../../state/ui-store.js';
 export function WindowFooter() {
   const { addEntry, clearAllEntries } = useEntries();
   const { undo, redo, canUndo, canRedo } = useUndoRedo();
-  const setActiveTab = useUiStore((s) => s.setActiveTab);
+  const setShowAppendImport = useUiStore((s) => s.setShowAppendImport);
 
   function handleClearAll() {
     if (window.confirm('Clear all entries? This can be undone.')) {
@@ -16,9 +16,19 @@ export function WindowFooter() {
 
   return (
     <div className="window-footer">
-      <button className="footer-btn" onClick={handleClearAll}>
-        Clear All
-      </button>
+      <div className="footer-left">
+        <button className="footer-btn" onClick={handleClearAll}>
+          Clear All
+        </button>
+        <button
+          className="footer-btn"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+        >
+          ↩ Undo
+        </button>
+      </div>
 
       <button
         className="footer-fab"
@@ -28,31 +38,23 @@ export function WindowFooter() {
         +
       </button>
 
-      <button
-        className="footer-btn"
-        onClick={undo}
-        disabled={!canUndo}
-        title="Undo (Ctrl+Z)"
-      >
-        ↩ Undo
-      </button>
-
-      <button
-        className="footer-btn"
-        onClick={redo}
-        disabled={!canRedo}
-        title="Redo (Ctrl+Shift+Z)"
-      >
-        ↪ Redo
-      </button>
-
-      <button
-        className="footer-btn"
-        onClick={() => setActiveTab('import-export')}
-        title="Go to Import / Export"
-      >
-        ↓ Import Entries
-      </button>
+      <div className="footer-right">
+        <button
+          className="footer-btn"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Shift+Z)"
+        >
+          ↪ Redo
+        </button>
+        <button
+          className="footer-btn"
+          onClick={() => setShowAppendImport(true)}
+          title="Copy/Paste additional entries to the current lorebook!"
+        >
+          ↓ Import Entries
+        </button>
+      </div>
     </div>
   );
 }

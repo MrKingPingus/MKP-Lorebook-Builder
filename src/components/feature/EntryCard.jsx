@@ -50,13 +50,21 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   const nameHtml = highlightedName();
 
+  function onHeaderDoubleClick(e) {
+    if (e.target.closest('button, .stats-badge')) return;
+    setLocalCollapsed(!collapsed);
+    setExpandAll(false);
+    setCollapseAll(false);
+  }
+
   return (
     <div
+      id={`entry-${entry.id}`}
       className="entry-card"
       style={{ '--type-color': typeColor }}
     >
       {/* ── Card header ── */}
-      <div className="entry-card-header">
+      <div className="entry-card-header" onDoubleClick={onHeaderDoubleClick}>
         <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
         <TypeColorDot type={entry.type} />
         {nameHtml ? (
@@ -79,6 +87,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           )}
           <button
             className="card-action-btn"
+            title="double-click the entry to expand or collapse it!"
             onClick={() => {
               setLocalCollapsed(!collapsed);
               setExpandAll(false);
@@ -98,7 +107,15 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
       {/* ── Card body (expanded) ── */}
       {!collapsed && (
-        <div className="entry-card-body">
+        <div
+          className="entry-card-body"
+          onDoubleClick={(e) => {
+            if (e.target.closest('button')) return;
+            setLocalCollapsed(true);
+            setExpandAll(false);
+            setCollapseAll(false);
+          }}
+        >
           {/* Row 1: Entry Name + Entry Type */}
           <div className="entry-fields-row">
             <div className="entry-field entry-field--name">

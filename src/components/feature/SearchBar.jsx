@@ -3,7 +3,7 @@ import { useUiStore }   from '../../state/ui-store.js';
 import { MatchCounter } from '../ui/MatchCounter.jsx';
 import { FindReplace }  from './FindReplace.jsx';
 
-export function SearchBar({ entries, matchCount, entryMatchCount }) {
+export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }) {
   const searchQuery    = useUiStore((s) => s.searchQuery);
   const searchMode     = useUiStore((s) => s.searchMode);
   const setSearchQuery = useUiStore((s) => s.setSearchQuery);
@@ -21,6 +21,11 @@ export function SearchBar({ entries, matchCount, entryMatchCount }) {
           className="search-input"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && firstMatchId) {
+              document.getElementById(`entry-${firstMatchId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }}
           placeholder="Search entries..."
         />
         {searchQuery && (

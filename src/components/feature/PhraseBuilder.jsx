@@ -1,30 +1,40 @@
-// Reorderable pill row for assembling multi-word compound trigger phrases with confirm and cancel
-export function PhraseBuilder({ words, onRemove, onMove, onCommit, onCancel }) {
-  function moveLeft(idx) {
-    if (idx > 0) onMove(idx, idx - 1);
-  }
-
-  function moveRight(idx) {
-    if (idx < words.length - 1) onMove(idx, idx + 1);
-  }
-
+// Phrase builder: ordered word pills with two-click swap reordering and commit/cancel actions
+export function PhraseBuilder({ phraseQueue, selectedPhraseIdx, onSelect, onRemove, onCommit, onCancel }) {
   return (
     <div className="phrase-builder">
       <div className="phrase-pills">
-        {words.map((word, idx) => (
-          <span key={idx} className="phrase-pill">
-            <button className="pill-arrow" onClick={() => moveLeft(idx)}  disabled={idx === 0}>‹</button>
-            <span className="pill-word">{word}</span>
-            <button className="pill-arrow" onClick={() => moveRight(idx)} disabled={idx === words.length - 1}>›</button>
-            <button className="pill-delete" onClick={() => onRemove(word)}>×</button>
+        {phraseQueue.length === 0 && (
+          <span className="phrase-pills-empty">Click suggestion chips to add words…</span>
+        )}
+        {phraseQueue.map((word, idx) => (
+          <span
+            key={idx}
+            className={`phrase-pill${selectedPhraseIdx === idx ? ' phrase-pill--selected' : ''}`}
+            onClick={() => onSelect(idx)}
+            title={
+              selectedPhraseIdx === -1
+                ? 'Click to select for swap'
+                : selectedPhraseIdx === idx
+                  ? 'Click again to deselect'
+                  : 'Click to swap with selected'
+            }
+          >
+            {word}
+            <button
+              className="pill-delete"
+              onClick={(e) => { e.stopPropagation(); onRemove(idx); }}
+              title="Remove"
+            >×</button>
           </span>
         ))}
       </div>
       <div className="phrase-actions">
-        <button className="phrase-commit" onClick={onCommit} disabled={words.length === 0}>
-          Add phrase
-        </button>
-        <button className="phrase-cancel" onClick={onCancel}>Cancel</button>
+        <button
+          className="phrase-commit"
+          disabled={phraseQueue.length === 0}
+          onClick={onCommit}
+        >✓ Add phrase</button>
+        <button className="phrase-cancel" onClick={onCancel}>✕ Cancel</button>
       </div>
     </div>
   );

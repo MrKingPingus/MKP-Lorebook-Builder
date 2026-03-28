@@ -15,17 +15,22 @@ export function SuggestionsTray({ entry, onAddTrigger }) {
           {open ? '▼' : '▶'} TRIGGER WORD SUGGESTIONS
         </button>
         <button className="suggestions-reroll" onClick={reroll} title="Regenerate suggestions">↺</button>
-        <button className="suggestions-phrase-btn" onClick={phrase.open} title="Phrase builder">
+        <button
+          className={`suggestions-phrase-btn${phrase.phraseMode ? ' suggestions-phrase-btn--active' : ''}`}
+          onClick={phrase.phraseMode ? phrase.close : phrase.open}
+          title="Phrase builder"
+        >
           + Phrase
         </button>
       </div>
 
       {/* Phrase builder */}
-      {phrase.active && (
+      {phrase.phraseMode && (
         <PhraseBuilder
-          words={phrase.words}
+          phraseQueue={phrase.phraseQueue}
+          selectedPhraseIdx={phrase.selectedPhraseIdx}
+          onSelect={phrase.selectPill}
           onRemove={phrase.removeWord}
-          onMove={phrase.moveWord}
           onCommit={phrase.commit}
           onCancel={phrase.close}
         />
@@ -41,8 +46,9 @@ export function SuggestionsTray({ entry, onAddTrigger }) {
               <button
                 key={s}
                 className="suggestion-chip"
-                onClick={() => phrase.active ? phrase.addWord(s) : addSuggestion(s)}
-                title={phrase.active ? `Add "${s}" to phrase` : `Add "${s}" as trigger`}
+                disabled={phrase.phraseMode && phrase.phraseQueue.includes(s)}
+                onClick={() => phrase.phraseMode ? phrase.addWord(s) : addSuggestion(s)}
+                title={phrase.phraseMode ? `Add "${s}" to phrase` : `Add "${s}" as trigger`}
               >
                 {s}
               </button>
