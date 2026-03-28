@@ -2,5 +2,5 @@
 export const MAX_TRIGGERS    = 25;
 export const MAX_LOREBOOKS   = 10;
 export const CHAR_LIMIT      = 1500;
-export const CHAR_WARN_YELLOW = 400;
-export const CHAR_WARN_RED    = 600;
+export const CHAR_WARN_YELLOW = 750;
+export const CHAR_WARN_RED    = 1000;

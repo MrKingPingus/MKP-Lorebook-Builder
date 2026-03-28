@@ -142,11 +142,14 @@ export function ImportPanel() {
 
       {/* Drop zone — hidden once a file has been parsed */}
       {!savePending && !preview && (
+        <>
+        <p className="import-label">IMPORT</p>
         <DropZone onFile={handleFile} accept=".txt,.docx,.odt,.json">
           <div className="drop-zone-content">
             {loading ? '⏳ Parsing…' : 'Drop a file here or click to browse (TXT, DOCX, ODT, JSON)'}
           </div>
         </DropZone>
+        </>
       )}
 
       {error && <div className="import-error">{error}</div>}

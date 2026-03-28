@@ -294,6 +294,8 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 3px 12px rgba(239,68,68,.4);
   transition: background var(--transition), transform var(--transition);
   line-height: 1;
+  padding: 0;
+  border: none;
 }
 .footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 
@@ -1043,6 +1045,14 @@ input:focus, textarea:focus, select:focus {
 }
 .format-tab:hover { border-color: var(--border2); color: var(--text); }
 .format-tab--active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.import-label {
+  text-align: center;
+  text-decoration: underline;
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
 
 .drop-zone {
   border: 2px dashed var(--border2);
