@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { useUiStore } from '../state/ui-store.js';
 
-const MIN_WIDTH  = 400;
+const MIN_WIDTH  = 480;
 const MIN_HEIGHT = 300;
 
 export function useResizeWindow() {
