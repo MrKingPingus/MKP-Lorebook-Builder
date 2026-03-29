@@ -14,7 +14,7 @@ export function useLorebook() {
   const setLorebooks        = useLorebookStore((s) => s.setLorebooks);
   const setLorebookIndex    = useLorebookStore((s) => s.setLorebookIndex);
   const setLorebook         = useLorebookStore((s) => s.setLorebook);
-  const removeLorebok       = useLorebookStore((s) => s.removeLorebook);
+  const removeLorebook      = useLorebookStore((s) => s.removeLorebook);
   const updateActiveName    = useLorebookStore((s) => s.updateActiveName);
   const clearHistory        = useHistoryStore((s) => s.clear);
 
@@ -48,7 +48,7 @@ export function useLorebook() {
 
   function deleteLorebook(id) {
     removeItem(LOREBOOK_KEY_PREFIX + id);
-    removeLorebok(id);
+    removeLorebook(id);
     const newIndex = removeFromIndex(lorebookIndex, id);
     setLorebookIndex(newIndex);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);

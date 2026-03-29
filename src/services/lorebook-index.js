@@ -36,10 +36,3 @@ export function promoteInIndex(index, id) {
   const rest = index.filter((item) => item.id !== id);
   return [{ ...entry, updatedAt: Date.now() }, ...rest];
 }
-
-/** Update a lorebook's name in the index. */
-export function updateIndexName(index, id, name) {
-  return index.map((item) =>
-    item.id === id ? { ...item, name, updatedAt: Date.now() } : item
-  );
-}

@@ -9,11 +9,12 @@ import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
-import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
+import { useHtmlEscape } from '../../hooks/use-html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { hideEntryStats, counterTiers, tieredCounterEnabled } = useSettings();
+  const { escapeHtml, escapeRegex } = useHtmlEscape();
   const expandAll    = useUi((s) => s.expandAll);
   const collapseAll  = useUi((s) => s.collapseAll);
   const searchQuery  = useUi((s) => s.searchQuery);
@@ -156,7 +157,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
             <TriggerChips
               triggers={entry.triggers}
-              type={entry.type}
               delimiter={delimiter}
               searchQuery={searchQuery}
               onUpdate={(triggers) => update({ triggers })}

@@ -1,8 +1,9 @@
 // Single trigger keyword chip with an editable label (double-click) and a × delete button
 import { useState, useRef } from 'react';
-import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
+import { useHtmlEscape } from '../../hooks/use-html-escape.js';
 
 export function Chip({ label, onDelete, onRename, color, highlight }) {
+  const { escapeHtml, escapeRegex } = useHtmlEscape();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft]     = useState(label);
   const inputRef = useRef(null);
