@@ -1,5 +1,7 @@
 // Generate trigger keyword suggestions from entry name and description text;
 // proper nouns (capitalized words) are weighted first
+import { SUGGESTION_LIMIT, SUGGESTION_DESC_WORD_LIMIT } from '../constants/limits.js';
+
 const STOP_WORDS = new Set([
   'the','a','an','and','or','but','in','on','at','to','for','of','with',
   'by','from','as','is','was','are','were','be','been','being','have','has',
@@ -38,7 +40,7 @@ function unique(arr) {
  * Generate up to `limit` trigger keyword suggestions for an entry.
  * Draws from name and description text; proper nouns are weighted first.
  */
-export function generateSuggestions(entry, existingTriggers = [], limit = 12) {
+export function generateSuggestions(entry, existingTriggers = [], limit = SUGGESTION_LIMIT) {
   const existing = new Set(existingTriggers.map((t) => t.toLowerCase()));
   const nameText = entry.name  || '';
   const descText = entry.description || '';
@@ -59,8 +61,8 @@ export function generateSuggestions(entry, existingTriggers = [], limit = 12) {
   // All tokens from name
   candidates.push(...extractTokens(nameText));
 
-  // All tokens from description (cap to first 60 words to avoid noise)
-  const descWords = descText.split(/\s+/).slice(0, 60).join(' ');
+  // All tokens from description (cap to first N words to avoid noise)
+  const descWords = descText.split(/\s+/).slice(0, SUGGESTION_DESC_WORD_LIMIT).join(' ');
   candidates.push(...extractTokens(descWords));
 
   // Multi-word phrases: adjacent proper-noun pairs from description

@@ -1,9 +1,9 @@
 // Chip-per-trigger input with inline label editing, × delete, bulk paste, counter badge, and dupe flash
 import { useRef, useState } from 'react';
 import { Chip } from '../ui/Chip.jsx';
-import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW } from '../../constants/limits.js';
+import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW, DUPE_FLASH_MS } from '../../constants/limits.js';
 
-export function TriggerChips({ triggers, type, onUpdate, delimiter = ',', searchQuery = '' }) {
+export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '' }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
@@ -11,7 +11,7 @@ export function TriggerChips({ triggers, type, onUpdate, delimiter = ',', search
   function flashDupeError() {
     clearTimeout(dupeTimer.current);
     setFlashDupe(true);
-    dupeTimer.current = setTimeout(() => setFlashDupe(false), 1500);
+    dupeTimer.current = setTimeout(() => setFlashDupe(false), DUPE_FLASH_MS);
   }
 
   function addTrigger(raw) {
