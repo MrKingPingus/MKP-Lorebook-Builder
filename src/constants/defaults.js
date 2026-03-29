@@ -28,3 +28,24 @@ export const DEFAULT_LOREBOOK = {
   name:    'New Lorebook',
   entries: [],
 };
+
+export const TEMPLATE_LOREBOOK = {
+  id:   'template',
+  name: 'Template Lorebook',
+  entries: [
+    {
+      id:          'tpl-1',
+      name:        'Character Name',
+      type:        'character',
+      triggers:    ['name', 'nickname', 'alias'],
+      description: 'Enter a description of this character here.',
+    },
+    {
+      id:          'tpl-2',
+      name:        'Location Name',
+      type:        'location',
+      triggers:    ['place', 'location name'],
+      description: 'Describe this location here.',
+    },
+  ],
+};

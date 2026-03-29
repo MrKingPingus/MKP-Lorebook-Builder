@@ -5,3 +5,5 @@ export const CHAR_LIMIT          = 1500;
 export const CHAR_WARN_YELLOW    = 750;
 export const CHAR_WARN_RED       = 1000;
 export const TRIGGER_WARN_YELLOW = 20;
+export const MIN_WINDOW_WIDTH    = 480;
+export const MIN_WINDOW_HEIGHT   = 300;

@@ -1,47 +1,15 @@
 // Launch view — shown inside the floating window on page load; dismissed via "Start Building"
-import { exportToTxtBlob }  from '../../services/txt-export.js';
-import { exportToDocxBlob } from '../../services/docx-export.js';
-import { downloadBlob }     from '../../services/json-export.js';
-import { useUiStore }       from '../../state/ui-store.js';
-
-const TEMPLATE_LOREBOOK = {
-  id:   'template',
-  name: 'Template Lorebook',
-  entries: [
-    {
-      id:          'tpl-1',
-      name:        'Character Name',
-      type:        'character',
-      triggers:    ['name', 'nickname', 'alias'],
-      description: 'Enter a description of this character here.',
-    },
-    {
-      id:          'tpl-2',
-      name:        'Location Name',
-      type:        'location',
-      triggers:    ['place', 'location name'],
-      description: 'Describe this location here.',
-    },
-  ],
-};
+import { useUiStore }          from '../../state/ui-store.js';
+import { useExport }           from '../../hooks/use-export.js';
 
 export function Lander() {
   const setShowLander = useUiStore((s) => s.setShowLander);
   const setActiveTab  = useUiStore((s) => s.setActiveTab);
+  const { downloadTxtTemplate, downloadDocxTemplate } = useExport();
 
   function enterBuilder() {
     setActiveTab('build');
     setShowLander(false);
-  }
-
-  function downloadTxtTemplate() {
-    const blob = exportToTxtBlob(TEMPLATE_LOREBOOK);
-    downloadBlob(blob, 'lorebook-template.txt');
-  }
-
-  function downloadDocxTemplate() {
-    const blob = exportToDocxBlob(TEMPLATE_LOREBOOK);
-    downloadBlob(blob, 'lorebook-template.docx');
   }
 
   return (

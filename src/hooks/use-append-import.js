@@ -1,14 +1,10 @@
 // Hook for the footer "Import Entries" overlay — parses a file and appends entries to the active lorebook
 import { useState } from 'react';
-import { parseTxtToEntries, readTxtFile } from '../services/txt-import.js';
-import { importFromDocx }                 from '../services/docx-import.js';
-import { readJsonFile, importFromJson }   from '../services/json-import.js';
+import { useImport }        from './use-import.js';
 import { useEntries }       from './use-entries.js';
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
-
-const EXT_TO_FORMAT = { txt: 'txt', docx: 'docx', odt: 'docx', json: 'json' };
 
 export function useAppendImport() {
   const [preview, setPreview] = useState(null);
@@ -16,6 +12,7 @@ export function useAppendImport() {
   const [error, setError]     = useState('');
 
   const { entries }          = useEntries();
+  const { parseFile, parseTxt } = useImport();
   const updateActiveEntries  = useLorebookStore((s) => s.updateActiveEntries);
   const pushSnapshot         = useHistoryStore((s) => s.pushSnapshot);
   const setShowAppendImport  = useUiStore((s) => s.setShowAppendImport);
@@ -24,7 +21,7 @@ export function useAppendImport() {
     setError('');
     setPreview(null);
     try {
-      const parsed = parseTxtToEntries(text.trim());
+      const parsed = parseTxt(text);
       if (!parsed.length) { setError('No entries found. Check your formatting.'); return; }
       setPreview(parsed);
     } catch (e) {
@@ -33,27 +30,12 @@ export function useAppendImport() {
   }
 
   async function handleFile(file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    const fmt = EXT_TO_FORMAT[ext];
-    if (!fmt) { setError('Unsupported file type.'); return; }
-
     setError('');
     setPreview(null);
     setLoading(true);
     try {
-      let parsed;
-      if (fmt === 'txt') {
-        const text = await readTxtFile(file);
-        parsed = parseTxtToEntries(text);
-      } else if (fmt === 'docx') {
-        parsed = await importFromDocx(file);
-      } else {
-        const raw = await readJsonFile(file);
-        const result = importFromJson(raw);
-        if (!result.ok) { setError(result.error); return; }
-        parsed = result.lorebook.entries;
-      }
-      setPreview(parsed);
+      const result = await parseFile(file);
+      setPreview(result.entries);
     } catch (e) {
       setError(e.message ?? 'Failed to parse file.');
     } finally {

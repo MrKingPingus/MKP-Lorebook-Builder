@@ -2,8 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
 import { useLorebookStore }    from '../../state/lorebook-store.js';
-import { exportToJsonBlob, downloadBlob } from '../../services/json-export.js';
-import { exportToTxtBlob }               from '../../services/txt-export.js';
+import { useExport }           from '../../hooks/use-export.js';
 
 export function LorebookSwitcher() {
   const { items, createLorebook, switchLorebook, deleteLorebook } = useLorebookSwitcher();
@@ -26,6 +25,7 @@ export function LorebookSwitcher() {
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
   const lorebooks        = useLorebookStore((s) => s.lorebooks);
   const activeLorebook   = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
+  const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
 
   function requestSwitch(id) {
     if (id === activeLorebookId) { setOpen(false); return; }
@@ -46,18 +46,16 @@ export function LorebookSwitcher() {
 
   function downloadJson() {
     if (activeLorebook) {
-      const blob = exportToJsonBlob(activeLorebook);
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
-      downloadBlob(blob, `${safe}.json`);
+      doExportJson(activeLorebook, `${safe}.json`);
     }
     doSwitch();
   }
 
   function downloadTxt() {
     if (activeLorebook) {
-      const blob = exportToTxtBlob(activeLorebook);
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
-      downloadBlob(blob, `${safe}.txt`);
+      doExportTxt(activeLorebook, `${safe}.txt`);
     }
     doSwitch();
   }

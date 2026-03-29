@@ -1,9 +1,10 @@
 // Corner drag-handle resize logic with viewport boundary clamping; writes size to ui-store
 import { useCallback } from 'react';
 import { useUiStore } from '../state/ui-store.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../constants/limits.js';
 
-const MIN_WIDTH  = 480;
-const MIN_HEIGHT = 300;
+const MIN_WIDTH  = MIN_WINDOW_WIDTH;
+const MIN_HEIGHT = MIN_WINDOW_HEIGHT;
 
 export function useResizeWindow() {
   const windowPos  = useUiStore((s) => s.windowPos);
