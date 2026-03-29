@@ -40,10 +40,15 @@ export function useEntries() {
     updateActiveEntries(next);
   }
 
+  function replaceEntries(newEntries) {
+    snapshot();
+    updateActiveEntries(newEntries);
+  }
+
   function clearAllEntries() {
     snapshot();
     updateActiveEntries([]);
   }
 
-  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, clearAllEntries };
+  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, replaceEntries, clearAllEntries };
 }

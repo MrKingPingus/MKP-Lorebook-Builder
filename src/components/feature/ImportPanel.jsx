@@ -2,17 +2,10 @@
 import { useState } from 'react';
 import { DropZone }      from '../ui/DropZone.jsx';
 import { ImportPreview } from './ImportPreview.jsx';
-import { parseTxtToEntries, readTxtFile } from '../../services/txt-import.js';
-import { importFromDocx }                 from '../../services/docx-import.js';
-import { readJsonFile, importFromJson }   from '../../services/json-import.js';
-import { exportToJsonBlob, downloadBlob } from '../../services/json-export.js';
-import { exportToTxtBlob }               from '../../services/txt-export.js';
 import { useEntries }       from '../../hooks/use-entries.js';
 import { useLorebook }      from '../../hooks/use-lorebook.js';
-import { useLorebookStore } from '../../state/lorebook-store.js';
-import { useHistoryStore }  from '../../state/history-store.js';
-
-const EXT_TO_FORMAT = { txt: 'txt', docx: 'docx', odt: 'docx', json: 'json' };
+import { useImport }        from '../../hooks/use-import.js';
+import { useExport }        from '../../hooks/use-export.js';
 
 export function ImportPanel() {
   const [preview, setPreview]           = useState(null);
@@ -22,10 +15,10 @@ export function ImportPanel() {
   const [savePending, setSavePending]   = useState(false);
   const [asNewLorebook, setAsNewLorebook] = useState(false);
 
-  const { entries }                    = useEntries();
+  const { entries, replaceEntries }     = useEntries();
   const { activeLorebook, renameLorebook, createLorebook } = useLorebook();
-  const updateActiveEntries            = useLorebookStore((s) => s.updateActiveEntries);
-  const pushSnapshot                   = useHistoryStore((s) => s.pushSnapshot);
+  const { parseFile }                  = useImport();
+  const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
 
   function resetAll() {
     setPreview(null);
@@ -36,10 +29,6 @@ export function ImportPanel() {
   }
 
   async function handleFile(file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    const fmt = EXT_TO_FORMAT[ext];
-    if (!fmt) { setError('Unsupported file type.'); return; }
-
     setError('');
     setPreview(null);
     setImportedName(null);
@@ -47,20 +36,9 @@ export function ImportPanel() {
     setAsNewLorebook(false);
     setLoading(true);
     try {
-      let parsed;
-      if (fmt === 'txt') {
-        const text = await readTxtFile(file);
-        parsed = parseTxtToEntries(text);
-      } else if (fmt === 'docx') {
-        parsed = await importFromDocx(file);
-      } else {
-        const raw = await readJsonFile(file);
-        const result = importFromJson(raw);
-        if (!result.ok) { setError(result.error); return; }
-        parsed = result.lorebook.entries;
-        setImportedName(result.lorebook.name ?? null);
-      }
-      setPreview(parsed);
+      const result = await parseFile(file);
+      setPreview(result.entries);
+      if (result.name != null) setImportedName(result.name);
       setSavePending(true);
     } catch (e) {
       setError(e.message ?? 'Failed to parse file.');
@@ -72,9 +50,8 @@ export function ImportPanel() {
   // Save current lorebook as JSON then proceed to preview
   function saveAsJson() {
     if (activeLorebook) {
-      const blob = exportToJsonBlob(activeLorebook);
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
-      downloadBlob(blob, `${safe}.json`);
+      doExportJson(activeLorebook, `${safe}.json`);
     }
     setSavePending(false);
   }
@@ -82,9 +59,8 @@ export function ImportPanel() {
   // Save current lorebook as TXT then proceed to preview
   function saveAsTxt() {
     if (activeLorebook) {
-      const blob = exportToTxtBlob(activeLorebook);
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
-      downloadBlob(blob, `${safe}.txt`);
+      doExportTxt(activeLorebook, `${safe}.txt`);
     }
     setSavePending(false);
   }
@@ -98,8 +74,7 @@ export function ImportPanel() {
   // Confirm: replace active lorebook entries (and optionally name)
   function confirm() {
     if (!preview) return;
-    pushSnapshot({ entries: [...entries] });
-    updateActiveEntries(preview);
+    replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
   }
@@ -108,7 +83,7 @@ export function ImportPanel() {
   function confirmAsNew() {
     if (!preview) return;
     createLorebook();
-    updateActiveEntries(preview);
+    replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
   }
@@ -142,11 +117,14 @@ export function ImportPanel() {
 
       {/* Drop zone — hidden once a file has been parsed */}
       {!savePending && !preview && (
+        <>
+        <p className="import-label">IMPORT</p>
         <DropZone onFile={handleFile} accept=".txt,.docx,.odt,.json">
           <div className="drop-zone-content">
             {loading ? '⏳ Parsing…' : 'Drop a file here or click to browse (TXT, DOCX, ODT, JSON)'}
           </div>
         </DropZone>
+        </>
       )}
 
       {error && <div className="import-error">{error}</div>}

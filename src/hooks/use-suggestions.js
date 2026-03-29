@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateSuggestions }  from '../services/suggestion-engine.js';
 import { useSettingsStore }     from '../state/settings-store.js';
+import { SUGGESTION_LIMIT }    from '../constants/limits.js';
 
 export function useSuggestions(entry, onAddTrigger) {
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
@@ -10,15 +11,14 @@ export function useSuggestions(entry, onAddTrigger) {
   const [open, setOpen] = useState(initiallyOpen);
 
   const refresh = useCallback(() => {
-    const generated = generateSuggestions(entry, entry.triggers ?? [], 12);
+    const generated = generateSuggestions(entry, entry.triggers ?? [], SUGGESTION_LIMIT);
     setSuggestions(generated);
   }, [entry]);
 
-  // Populate suggestions on mount if tray starts open
+  // Populate suggestions when tray is open or entry content changes
   useEffect(() => {
-    if (initiallyOpen) refresh();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (open) refresh();
+  }, [open, refresh]);
 
   function toggle() {
     if (!open) refresh();

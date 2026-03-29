@@ -1,7 +1,6 @@
 // Zustand store: undo and redo stacks holding full lorebook state snapshots
 import { create } from 'zustand';
-
-const MAX_HISTORY = 50;
+import { MAX_HISTORY } from '../constants/limits.js';
 
 export const useHistoryStore = create((set, get) => ({
   undoStack: [], // array of lorebook snapshots (oldest at index 0)

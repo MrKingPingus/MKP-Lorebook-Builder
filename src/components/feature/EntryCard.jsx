@@ -7,18 +7,19 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
-import { useUiStore }      from '../../state/ui-store.js';
+import { useUi }           from '../../hooks/use-ui.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
-import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
+import { useHtmlEscape } from '../../hooks/use-html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
-  const { hideEntryStats } = useSettings();
-  const expandAll    = useUiStore((s) => s.expandAll);
-  const collapseAll  = useUiStore((s) => s.collapseAll);
-  const searchQuery  = useUiStore((s) => s.searchQuery);
-  const setExpandAll   = useUiStore((s) => s.setExpandAll);
-  const setCollapseAll = useUiStore((s) => s.setCollapseAll);
+  const { hideEntryStats, counterTiers, tieredCounterEnabled } = useSettings();
+  const { escapeHtml, escapeRegex } = useHtmlEscape();
+  const expandAll    = useUi((s) => s.expandAll);
+  const collapseAll  = useUi((s) => s.collapseAll);
+  const searchQuery  = useUi((s) => s.searchQuery);
+  const setExpandAll   = useUi((s) => s.setExpandAll);
+  const setCollapseAll = useUi((s) => s.setCollapseAll);
   const [delimiter, setDelimiter] = useState(',');
 
   // expandAll/collapseAll override local collapsed state
@@ -83,6 +84,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             <StatsBadge
               triggerCount={entry.triggers.length}
               charCount={entry.description.length}
+              counterTiers={counterTiers}
+              tieredEnabled={tieredCounterEnabled}
             />
           )}
           <button
@@ -154,7 +157,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
             <TriggerChips
               triggers={entry.triggers}
-              type={entry.type}
               delimiter={delimiter}
               searchQuery={searchQuery}
               onUpdate={(triggers) => update({ triggers })}

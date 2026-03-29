@@ -17,6 +17,7 @@ import {
   LOREBOOK_KEY_PREFIX,
   SETTINGS_KEY,
 } from './constants/storage-keys.js';
+import { DEFAULT_WINDOW_FRACTION } from './constants/defaults.js';
 
 /** Bootstrap: load persisted state from localStorage into stores on first mount. */
 function useBootstrap() {
@@ -35,9 +36,10 @@ function useBootstrap() {
       applySettings(settings);
     }
 
-    // Always start window at middle third, full height
-    setWindowSize({ width: Math.floor(window.innerWidth / 3), height: window.innerHeight });
-    setWindowPos({ x: Math.floor(window.innerWidth / 3), y: 0 });
+    // Always start window at middle two-thirds, full height
+    const w = Math.floor(window.innerWidth * DEFAULT_WINDOW_FRACTION);
+    setWindowSize({ width: w, height: window.innerHeight });
+    setWindowPos({ x: Math.floor((window.innerWidth - w) / 2), y: 0 });
 
     // Load lorebook index
     const index = readJson(LOREBOOK_INDEX_KEY, []);
