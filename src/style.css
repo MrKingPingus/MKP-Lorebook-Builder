@@ -1355,3 +1355,103 @@ kbd {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+/* ============================================================
+   Mobile — max-width: 767px
+   ============================================================ */
+@media (max-width: 767px) {
+  body { font-size: 14px; }
+
+  /* Full-screen window: fills the entire viewport */
+  .floating-window--mobile {
+    position: fixed;
+    inset: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    min-width: unset;
+    min-height: unset;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Hide desktop-only chrome */
+  .floating-window--mobile .corner { display: none; }
+  .floating-window--mobile .window-header { cursor: default; }
+
+  /* Extra bottom padding in window-body so content clears the mobile nav bar */
+  .floating-window--mobile .window-body { padding-bottom: 0; }
+
+  /* ── Mobile nav bar ── */
+  .mobile-nav {
+    display: flex;
+    flex-shrink: 0;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+
+  .mobile-nav-tab {
+    flex: 1;
+    min-height: 48px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    border-top: 2px solid transparent;
+    transition: color var(--transition), border-color var(--transition);
+  }
+
+  .mobile-nav-tab--active {
+    color: var(--accent);
+    border-top-color: var(--accent);
+  }
+
+  /* ── Touch targets ── */
+  .entry-card-header      { min-height: 48px; padding: 10px 10px; }
+  .card-action-btn        { min-height: 36px; padding: 4px 10px; }
+  .chip                   { min-height: 32px; align-items: center; }
+  .chip-delete            { min-width: 28px; min-height: 28px; }
+  .footer-btn             { min-height: 40px; padding: 0 14px; }
+  .footer-fab             { width: 44px; height: 44px; }
+  .header-tab             { min-height: 40px; }
+
+  /* ── Reorder buttons ── */
+  .entry-reorder-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex-shrink: 0;
+  }
+
+  .reorder-btn {
+    font-size: 10px;
+    line-height: 1;
+    padding: 2px 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--muted2);
+    min-width: 22px;
+    min-height: 18px;
+    transition: color var(--transition), border-color var(--transition);
+  }
+
+  .reorder-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .reorder-btn:not(:disabled):hover {
+    color: var(--text);
+    border-color: var(--border2);
+  }
+
+  /* ── Entry fields: stack vertically on narrow screens ── */
+  .entry-fields-row { flex-direction: column; gap: 8px; }
+  .entry-field--type { width: 100%; }
+
+  /* ── Tab split (import/export): stack vertically ── */
+  .tab-split { flex-direction: column; }
+
+  /* ── Window footer: allow wrapping on very narrow screens ── */
+  .window-footer { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+}

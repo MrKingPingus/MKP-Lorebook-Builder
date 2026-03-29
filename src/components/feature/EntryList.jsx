@@ -2,10 +2,12 @@
 import { useRef, useEffect } from 'react';
 import { EntryCard }   from './EntryCard.jsx';
 import { useEntries }  from '../../hooks/use-entries.js';
+import { useMobile }   from '../../hooks/use-mobile.js';
 import { ENTRY_TYPES } from '../../constants/entry-types.js';
 
 export function EntryList({ entries, groupByType }) {
   const { updateEntry, removeEntry, reorderEntries } = useEntries();
+  const isMobile         = useMobile();
   const dragIdx          = useRef(null);
   const isDragFromHandle = useRef(false);
 
@@ -53,17 +55,22 @@ export function EntryList({ entries, groupByType }) {
       );
       lastType = entry.type;
     }
+
+    // Desktop: drag attributes enabled. Mobile: omitted.
+    const dragProps = isMobile ? {} : {
+      draggable: true,
+      onDragStart: (e) => {
+        if (!isDragFromHandle.current) { e.preventDefault(); return; }
+        onDragStart(idx);
+      },
+      onDragOver: (e) => onDragOver(e, idx),
+      onDragEnd:  () => { dragIdx.current = null; isDragFromHandle.current = false; },
+    };
+
     items.push(
       <div
         key={entry.id}
-        draggable
-        onDragStart={(e) => {
-          // Only allow drag when the gesture originated from the dedicated drag handle
-          if (!isDragFromHandle.current) { e.preventDefault(); return; }
-          onDragStart(idx);
-        }}
-        onDragOver={(e) => onDragOver(e, idx)}
-        onDragEnd={() => { dragIdx.current = null; isDragFromHandle.current = false; }}
+        {...dragProps}
         className="entry-list-item"
       >
         <EntryCard
@@ -71,7 +78,9 @@ export function EntryList({ entries, groupByType }) {
           index={idx + 1}
           onUpdate={updateEntry}
           onRemove={removeEntry}
-          onDragHandleMouseDown={() => { isDragFromHandle.current = true; }}
+          onDragHandleMouseDown={isMobile ? undefined : () => { isDragFromHandle.current = true; }}
+          onMoveUp={isMobile && idx > 0 ? () => reorderEntries(idx, idx - 1) : null}
+          onMoveDown={isMobile && idx < entries.length - 1 ? () => reorderEntries(idx, idx + 1) : null}
         />
       </div>
     );

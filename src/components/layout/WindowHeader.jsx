@@ -1,8 +1,9 @@
 // Window title bar — logo, lorebook name, lorebook switcher, inline tabs, close button
-import { useDragWindow }      from '../../hooks/use-drag-window.js';
-import { useLorebook }        from '../../hooks/use-lorebook.js';
-import { useUi }              from '../../hooks/use-ui.js';
-import { LorebookSwitcher }   from '../feature/LorebookSwitcher.jsx';
+import { useDragWindow }    from '../../hooks/use-drag-window.js';
+import { useLorebook }      from '../../hooks/use-lorebook.js';
+import { useMobile }        from '../../hooks/use-mobile.js';
+import { useUi }            from '../../hooks/use-ui.js';
+import { LorebookSwitcher } from '../feature/LorebookSwitcher.jsx';
 
 const TABS = [
   { id: 'build',         label: 'Build' },
@@ -11,13 +12,17 @@ const TABS = [
 ];
 
 export function WindowHeader() {
-  const { onPointerDown }          = useDragWindow();
+  const isMobile                           = useMobile();
+  const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
-  const activeTab                  = useUi((s) => s.activeTab);
-  const setActiveTab               = useUi((s) => s.setActiveTab);
+  const activeTab                          = useUi((s) => s.activeTab);
+  const setActiveTab                       = useUi((s) => s.setActiveTab);
 
   return (
-    <div className="window-header" onPointerDown={onPointerDown}>
+    <div
+      className="window-header"
+      onPointerDown={isMobile ? undefined : onPointerDown}
+    >
       {/* Logo */}
       <div className="header-logo" onPointerDown={(e) => e.stopPropagation()}>
         <span className="logo-icon">📖</span>
@@ -42,27 +47,31 @@ export function WindowHeader() {
         <LorebookSwitcher />
       </div>
 
-      {/* Inline tabs */}
-      <nav className="header-tabs" onPointerDown={(e) => e.stopPropagation()}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            className={`header-tab${activeTab === tab.id ? ' header-tab--active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      {/* Inline tabs — hidden on mobile (tabs live in MobileNav on mobile) */}
+      {!isMobile && (
+        <nav className="header-tabs" onPointerDown={(e) => e.stopPropagation()}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              className={`header-tab${activeTab === tab.id ? ' header-tab--active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      )}
 
-      {/* Close / no-op */}
-      <button
-        className="header-close"
-        title="Close (no-op in browser)"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        ×
-      </button>
+      {/* Close — no-op in browser; hidden on mobile (no floating window to close) */}
+      {!isMobile && (
+        <button
+          className="header-close"
+          title="Close (no-op in browser)"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }

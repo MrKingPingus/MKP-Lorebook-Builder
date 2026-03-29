@@ -1,23 +1,27 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
-import { useUi }          from '../../hooks/use-ui.js';
-import { WindowHeader }   from './WindowHeader.jsx';
-import { WindowFooter }   from './WindowFooter.jsx';
-import { ResizeHandles }  from './ResizeHandles.jsx';
-import { BuildPanel }         from '../feature/BuildPanel.jsx';
-import { ImportPanel }        from '../feature/ImportPanel.jsx';
-import { ExportPanel }        from '../feature/ExportPanel.jsx';
-import { SettingsPanel }      from '../feature/SettingsPanel.jsx';
-import { Lander }             from '../feature/Lander.jsx';
-import { AppendImportPanel }  from '../feature/AppendImportPanel.jsx';
+import { useUi }             from '../../hooks/use-ui.js';
+import { useMobile }         from '../../hooks/use-mobile.js';
+import { WindowHeader }      from './WindowHeader.jsx';
+import { WindowFooter }      from './WindowFooter.jsx';
+import { ResizeHandles }     from './ResizeHandles.jsx';
+import { MobileNav }         from './MobileNav.jsx';
+import { BuildPanel }        from '../feature/BuildPanel.jsx';
+import { ImportPanel }       from '../feature/ImportPanel.jsx';
+import { ExportPanel }       from '../feature/ExportPanel.jsx';
+import { SettingsPanel }     from '../feature/SettingsPanel.jsx';
+import { Lander }            from '../feature/Lander.jsx';
+import { AppendImportPanel } from '../feature/AppendImportPanel.jsx';
 
 export function FloatingWindow() {
-  const windowPos  = useUi((s) => s.windowPos);
-  const windowSize = useUi((s) => s.windowSize);
-  const activeTab        = useUi((s) => s.activeTab);
-  const showLander       = useUi((s) => s.showLander);
+  const isMobile       = useMobile();
+  const windowPos      = useUi((s) => s.windowPos);
+  const windowSize     = useUi((s) => s.windowSize);
+  const activeTab      = useUi((s) => s.activeTab);
+  const showLander     = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
 
-  const style = {
+  // On mobile: no inline position/size — CSS fills the viewport via .floating-window--mobile
+  const style = isMobile ? {} : {
     left:   windowPos.x,
     top:    windowPos.y,
     width:  windowSize.width,
@@ -31,8 +35,8 @@ export function FloatingWindow() {
   }
 
   return (
-    <div className="floating-window" style={style}>
-      {/* Golden corner bracket decorations */}
+    <div className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`} style={style}>
+      {/* Golden corner bracket decorations — hidden on mobile via CSS */}
       <span className="corner corner--nw" />
       <span className="corner corner--ne" />
       <span className="corner corner--sw" />
@@ -65,10 +69,12 @@ export function FloatingWindow() {
           </div>
 
           <WindowFooter />
+          {isMobile && <MobileNav />}
         </>
       )}
 
-      <ResizeHandles />
+      {/* Resize handles only on desktop */}
+      {!isMobile && <ResizeHandles />}
     </div>
   );
 }
