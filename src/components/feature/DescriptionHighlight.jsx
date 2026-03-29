@@ -5,7 +5,6 @@ import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 export function DescriptionHighlight({ text, query, style }) {
   const html = useMemo(() => {
     if (!query) return escapeHtml(text);
-    const pattern = new RegExp(`(${escapeRegex(query)})`, 'gi');
     return escapeHtml(text).replace(
       new RegExp(`(${escapeRegex(escapeHtml(query))})`, 'gi'),
       '<mark class="search-mark">$1</mark>'
