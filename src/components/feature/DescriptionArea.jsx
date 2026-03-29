@@ -3,13 +3,13 @@ import { useRef, useLayoutEffect } from 'react';
 import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
-import { useUiStore }   from '../../state/ui-store.js';
+import { useUi }        from '../../hooks/use-ui.js';
 import { CHAR_LIMIT }   from '../../constants/limits.js';
 
 export function DescriptionArea({ value, onChange }) {
   const textareaRef = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
-  const searchQuery = useUiStore((s) => s.searchQuery);
+  const searchQuery = useUi((s) => s.searchQuery);
 
   // Autogrow: after every render where value has changed, resize to content
   useLayoutEffect(() => {

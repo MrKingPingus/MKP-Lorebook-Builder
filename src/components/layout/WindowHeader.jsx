@@ -1,7 +1,7 @@
 // Window title bar — logo, lorebook name, lorebook switcher, inline tabs, close button
 import { useDragWindow }      from '../../hooks/use-drag-window.js';
 import { useLorebook }        from '../../hooks/use-lorebook.js';
-import { useUiStore }         from '../../state/ui-store.js';
+import { useUi }              from '../../hooks/use-ui.js';
 import { LorebookSwitcher }   from '../feature/LorebookSwitcher.jsx';
 
 const TABS = [
@@ -13,8 +13,8 @@ const TABS = [
 export function WindowHeader() {
   const { onPointerDown }          = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
-  const activeTab                  = useUiStore((s) => s.activeTab);
-  const setActiveTab               = useUiStore((s) => s.setActiveTab);
+  const activeTab                  = useUi((s) => s.activeTab);
+  const setActiveTab               = useUi((s) => s.setActiveTab);
 
   return (
     <div className="window-header" onPointerDown={onPointerDown}>

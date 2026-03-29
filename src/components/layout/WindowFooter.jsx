@@ -1,12 +1,12 @@
 // Window footer — Clear All, + FAB, Undo, Redo, Import Entries
 import { useEntries }  from '../../hooks/use-entries.js';
 import { useUndoRedo } from '../../hooks/use-undo-redo.js';
-import { useUiStore }  from '../../state/ui-store.js';
+import { useUi }       from '../../hooks/use-ui.js';
 
 export function WindowFooter() {
   const { addEntry, clearAllEntries } = useEntries();
   const { undo, redo, canUndo, canRedo } = useUndoRedo();
-  const setShowAppendImport = useUiStore((s) => s.setShowAppendImport);
+  const setShowAppendImport = useUi((s) => s.setShowAppendImport);
 
   function handleClearAll() {
     if (window.confirm('Clear all entries? This can be undone.')) {

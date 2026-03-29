@@ -6,8 +6,6 @@ import { useEntries }       from '../../hooks/use-entries.js';
 import { useLorebook }      from '../../hooks/use-lorebook.js';
 import { useImport }        from '../../hooks/use-import.js';
 import { useExport }        from '../../hooks/use-export.js';
-import { useLorebookStore } from '../../state/lorebook-store.js';
-import { useHistoryStore }  from '../../state/history-store.js';
 
 export function ImportPanel() {
   const [preview, setPreview]           = useState(null);
@@ -17,12 +15,10 @@ export function ImportPanel() {
   const [savePending, setSavePending]   = useState(false);
   const [asNewLorebook, setAsNewLorebook] = useState(false);
 
-  const { entries }                    = useEntries();
+  const { entries, replaceEntries }     = useEntries();
   const { activeLorebook, renameLorebook, createLorebook } = useLorebook();
   const { parseFile }                  = useImport();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
-  const updateActiveEntries            = useLorebookStore((s) => s.updateActiveEntries);
-  const pushSnapshot                   = useHistoryStore((s) => s.pushSnapshot);
 
   function resetAll() {
     setPreview(null);
@@ -78,8 +74,7 @@ export function ImportPanel() {
   // Confirm: replace active lorebook entries (and optionally name)
   function confirm() {
     if (!preview) return;
-    pushSnapshot({ entries: [...entries] });
-    updateActiveEntries(preview);
+    replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
   }
@@ -88,7 +83,7 @@ export function ImportPanel() {
   function confirmAsNew() {
     if (!preview) return;
     createLorebook();
-    updateActiveEntries(preview);
+    replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
   }
