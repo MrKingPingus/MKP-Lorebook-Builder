@@ -218,15 +218,60 @@ function parseBlock(block) {
 }
 
 /**
+ * Parse the markdown-bold-label format used by AI-generated lorebook text.
+ *
+ * Each entry begins with a "**Entry Name:** Name" anchor line.
+ * Lines before the first anchor (AI preamble text) are silently skipped.
+ * Recognised field labels (after stripping ** markers):
+ *   Entry Type:  → entry type
+ *   Triggers:    → comma-separated trigger list
+ *   Description: → marks start of description content
+ */
+function parseMarkdownBoldFormat(lines) {
+  const entryIndices = [];
+  lines.forEach((l, i) => {
+    if (/^\*\*Entry Name:\*\*\s+\S/i.test(l.trim())) entryIndices.push(i);
+  });
+  if (entryIndices.length === 0) return [];
+
+  const entries = [];
+  for (let e = 0; e < entryIndices.length; e++) {
+    const segment = lines.slice(entryIndices[e], e + 1 < entryIndices.length ? entryIndices[e + 1] : lines.length);
+    const name    = segment[0].replace(/^\*\*Entry Name:\*\*\s*/i, '').replace(/\*\*/g, '').trim();
+
+    let type = IMPORT_DEFAULT, triggers = [];
+    const descParts = [];
+    let inDescription = false;
+
+    for (let i = 1; i < segment.length; i++) {
+      const raw      = segment[i];
+      const stripped = raw.replace(/\*\*/g, '').trim();
+      if (inDescription) { descParts.push(raw); continue; }
+      if      (/^Entry Type:\s*\S/i.test(stripped)) { type = normalizeType(stripped.replace(/^Entry Type:\s*/i, '').trim()); }
+      else if (TRIGGER_PREFIX.test(stripped))        { triggers = stripped.replace(TRIGGER_PREFIX, '').split(',').map((s) => s.trim()).filter(Boolean); }
+      else if (/^Description:\s*/i.test(stripped))  { inDescription = true; const inline = stripped.replace(/^Description:\s*/i, ''); if (inline) descParts.push(inline); }
+      else if (stripped)                             { descParts.push(stripped); }
+    }
+    entries.push(createEmptyEntry({ name, type, triggers, description: descParts.join('\n').trim() }));
+  }
+  return entries;
+}
+
+/**
  * Parse a plain-text string into an array of entry objects.
  * Auto-detects format in priority order:
- *   1. Entry-labeled  (Entry: anchors present)
- *   2. Type-anchored  (Type: anchors present, no Entry: labels)
- *   3. Template       (--- dividers + === headers)
- *   4. Freeform       (blank-line paragraph fallback)
+ *   1. Markdown-bold-label (**Entry Name:** / **Entry Type:** / etc.)
+ *   2. Entry-labeled  (Entry: anchors present)
+ *   3. Type-anchored  (Type: anchors present, no Entry: labels)
+ *   4. Template       (--- dividers + === headers)
+ *   5. Freeform       (blank-line paragraph fallback)
  */
 export function parseTxtToEntries(text) {
   const lines = text.split('\n');
+
+  if (lines.some((l) => /^\*\*Entry Name:\*\*/i.test(l.trim()))) {
+    return parseMarkdownBoldFormat(lines);
+  }
 
   if (lines.some((l) => /^Entry:\s*/i.test(l.trim()))) {
     return parseEntryLabeledFormat(lines);

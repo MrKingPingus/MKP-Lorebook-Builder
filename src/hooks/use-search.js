@@ -3,8 +3,10 @@ import { useUiStore } from '../state/ui-store.js';
 import { escapeRegex } from '../services/html-escape.js';
 
 export function useSearch(entries) {
-  const searchQuery  = useUiStore((s) => s.searchQuery);
+  const searchQuery    = useUiStore((s) => s.searchQuery);
   const setSearchQuery = useUiStore((s) => s.setSearchQuery);
+  const searchMode     = useUiStore((s) => s.searchMode);
+  const setSearchMode  = useUiStore((s) => s.setSearchMode);
 
   const query = searchQuery.trim();
 
@@ -37,5 +39,5 @@ export function useSearch(entries) {
     }
   }
 
-  return { searchQuery, setSearchQuery, filteredEntries, matchCount, entryMatchCount, query };
+  return { searchQuery, setSearchQuery, searchMode, setSearchMode, filteredEntries, matchCount, entryMatchCount, query };
 }

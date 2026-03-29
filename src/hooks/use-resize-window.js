@@ -1,9 +1,10 @@
 // Corner drag-handle resize logic with viewport boundary clamping; writes size to ui-store
 import { useCallback } from 'react';
 import { useUiStore } from '../state/ui-store.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../constants/limits.js';
 
-const MIN_WIDTH  = 400;
-const MIN_HEIGHT = 300;
+const MIN_WIDTH  = MIN_WINDOW_WIDTH;
+const MIN_HEIGHT = MIN_WINDOW_HEIGHT;
 
 export function useResizeWindow() {
   const windowPos  = useUiStore((s) => s.windowPos);
@@ -34,10 +35,13 @@ export function useResizeWindow() {
         let newX = startPosX;
         let newY = startPosY;
 
-        if (corner.includes('e')) { newW = Math.max(MIN_WIDTH,  startW + 2 * dx); newX = startPosX - dx; }
-        if (corner.includes('w')) { newW = Math.max(MIN_WIDTH,  startW - 2 * dx); newX = startPosX + dx; }
-        if (corner.includes('s')) { newH = Math.max(MIN_HEIGHT, startH + 2 * dy); newY = startPosY - dy; }
-        if (corner.includes('n')) { newH = Math.max(MIN_HEIGHT, startH - 2 * dy); newY = startPosY + dy; }
+        if (corner.includes('e')) { newW = Math.max(MIN_WIDTH,  startW + 2 * dx); }
+        if (corner.includes('w')) { newW = Math.max(MIN_WIDTH,  startW - 2 * dx); }
+        if (corner.includes('s')) { newH = Math.max(MIN_HEIGHT, startH + 2 * dy); }
+        if (corner.includes('n')) { newH = Math.max(MIN_HEIGHT, startH - 2 * dy); }
+        // Recompute position from clamped size to preserve center point (prevents drift at min size)
+        if (corner.includes('e') || corner.includes('w')) { newX = startPosX + (startW - newW) / 2; }
+        if (corner.includes('s') || corner.includes('n')) { newY = startPosY + (startH - newH) / 2; }
 
         // Clamp position to viewport
         newX = Math.max(0, Math.min(newX, window.innerWidth  - MIN_WIDTH));

@@ -1,22 +1,24 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
-import { useUiStore }     from '../../state/ui-store.js';
-import { useMobile }      from '../../hooks/use-mobile.js';
-import { WindowHeader }   from './WindowHeader.jsx';
-import { WindowFooter }   from './WindowFooter.jsx';
-import { ResizeHandles }  from './ResizeHandles.jsx';
-import { MobileNav }      from './MobileNav.jsx';
-import { BuildPanel }     from '../feature/BuildPanel.jsx';
-import { ImportPanel }    from '../feature/ImportPanel.jsx';
-import { ExportPanel }    from '../feature/ExportPanel.jsx';
-import { SettingsPanel }  from '../feature/SettingsPanel.jsx';
-import { Lander }         from '../feature/Lander.jsx';
+import { useUi }             from '../../hooks/use-ui.js';
+import { useMobile }         from '../../hooks/use-mobile.js';
+import { WindowHeader }      from './WindowHeader.jsx';
+import { WindowFooter }      from './WindowFooter.jsx';
+import { ResizeHandles }     from './ResizeHandles.jsx';
+import { MobileNav }         from './MobileNav.jsx';
+import { BuildPanel }        from '../feature/BuildPanel.jsx';
+import { ImportPanel }       from '../feature/ImportPanel.jsx';
+import { ExportPanel }       from '../feature/ExportPanel.jsx';
+import { SettingsPanel }     from '../feature/SettingsPanel.jsx';
+import { Lander }            from '../feature/Lander.jsx';
+import { AppendImportPanel } from '../feature/AppendImportPanel.jsx';
 
 export function FloatingWindow() {
-  const isMobile   = useMobile();
-  const windowPos  = useUiStore((s) => s.windowPos);
-  const windowSize = useUiStore((s) => s.windowSize);
-  const activeTab  = useUiStore((s) => s.activeTab);
-  const showLander = useUiStore((s) => s.showLander);
+  const isMobile       = useMobile();
+  const windowPos      = useUi((s) => s.windowPos);
+  const windowSize     = useUi((s) => s.windowSize);
+  const activeTab      = useUi((s) => s.activeTab);
+  const showLander     = useUi((s) => s.showLander);
+  const showAppendImport = useUi((s) => s.showAppendImport);
 
   // On mobile: no inline position/size — CSS fills the viewport via .floating-window--mobile
   const style = isMobile ? {} : {
@@ -61,6 +63,9 @@ export function FloatingWindow() {
             <div style={panelStyle('settings')}>
               <SettingsPanel />
             </div>
+
+            {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
+            {showAppendImport && <AppendImportPanel />}
           </div>
 
           <WindowFooter />

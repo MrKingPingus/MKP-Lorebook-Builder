@@ -1,19 +1,29 @@
 // Dropdown listing up to 10 saved lorebooks with relative timestamps, per-item delete, and save prompt
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
-import { useLorebookStore }    from '../../state/lorebook-store.js';
-import { exportToJsonBlob, downloadBlob } from '../../services/json-export.js';
-import { exportToTxtBlob }               from '../../services/txt-export.js';
+import { useLorebook }         from '../../hooks/use-lorebook.js';
+import { useExport }           from '../../hooks/use-export.js';
 
 export function LorebookSwitcher() {
   const { items, createLorebook, switchLorebook, deleteLorebook } = useLorebookSwitcher();
   const [open, setOpen]           = useState(false);
   const [pendingId, setPendingId] = useState(null);
-  const btnRef = useRef(null);
+  const wrapperRef = useRef(null);
 
-  const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
-  const lorebooks        = useLorebookStore((s) => s.lorebooks);
-  const activeLorebook   = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
+  useEffect(() => {
+    function onMouseDown(e) {
+      if (!open && !pendingId) return;
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+        setPendingId(null);
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [open, pendingId]);
+
+  const { activeLorebookId, activeLorebook } = useLorebook();
+  const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
 
   function requestSwitch(id) {
     if (id === activeLorebookId) { setOpen(false); return; }
@@ -34,18 +44,16 @@ export function LorebookSwitcher() {
 
   function downloadJson() {
     if (activeLorebook) {
-      const blob = exportToJsonBlob(activeLorebook);
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
-      downloadBlob(blob, `${safe}.json`);
+      doExportJson(activeLorebook, `${safe}.json`);
     }
     doSwitch();
   }
 
   function downloadTxt() {
     if (activeLorebook) {
-      const blob = exportToTxtBlob(activeLorebook);
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
-      downloadBlob(blob, `${safe}.txt`);
+      doExportTxt(activeLorebook, `${safe}.txt`);
     }
     doSwitch();
   }
@@ -69,9 +77,8 @@ export function LorebookSwitcher() {
     : '';
 
   return (
-    <div className="lorebook-switcher">
+    <div className="lorebook-switcher" ref={wrapperRef}>
       <button
-        ref={btnRef}
         className="switcher-btn"
         onClick={() => setOpen((v) => !v)}
         title="Switch lorebook"

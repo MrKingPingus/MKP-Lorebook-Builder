@@ -1,5 +1,6 @@
 // Settings tab content — all user preference controls
 import { useSettings } from '../../hooks/use-settings.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../../constants/limits.js';
 
 export function SettingsPanel() {
   const {
@@ -104,7 +105,7 @@ export function SettingsPanel() {
             Width
             <input
               type="number"
-              min={400}
+              min={MIN_WINDOW_WIDTH}
               value={defaultWindowWidth}
               onChange={(e) => setDefaultWindowWidth(Number(e.target.value))}
             />
@@ -113,7 +114,7 @@ export function SettingsPanel() {
             Height
             <input
               type="number"
-              min={300}
+              min={MIN_WINDOW_HEIGHT}
               value={defaultWindowHeight}
               onChange={(e) => setDefaultWindowHeight(Number(e.target.value))}
             />

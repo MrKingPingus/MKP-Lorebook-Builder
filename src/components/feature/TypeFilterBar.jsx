@@ -1,16 +1,16 @@
 // Filter bar: FILTER label, All pill, type pills, shift-click hint, Group by type + Expand All
 import { ENTRY_TYPES }  from '../../constants/entry-types.js';
 import { useTypeFilter } from '../../hooks/use-type-filter.js';
-import { useUiStore }    from '../../state/ui-store.js';
+import { useUi }         from '../../hooks/use-ui.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
-  const expandAll    = useUiStore((s) => s.expandAll);
-  const collapseAll  = useUiStore((s) => s.collapseAll);
-  const groupByType  = useUiStore((s) => s.groupByType);
-  const setExpandAll   = useUiStore((s) => s.setExpandAll);
-  const setCollapseAll = useUiStore((s) => s.setCollapseAll);
-  const setGroupByType = useUiStore((s) => s.setGroupByType);
+  const expandAll    = useUi((s) => s.expandAll);
+  const collapseAll  = useUi((s) => s.collapseAll);
+  const groupByType  = useUi((s) => s.groupByType);
+  const setExpandAll   = useUi((s) => s.setExpandAll);
+  const setCollapseAll = useUi((s) => s.setCollapseAll);
+  const setGroupByType = useUi((s) => s.setGroupByType);
 
   function handleExpandAll() {
     setExpandAll(true);
@@ -31,10 +31,7 @@ export function TypeFilterBar({ entries }) {
       if (typeFilter.length === 1 && typeFilter[0] === typeId) {
         clearFilter();
       } else {
-        // Single-select (clear others, select this)
-        useTypeFilter.clearAndSet?.(typeId);
-        // fallback: toggle through the store
-        const { setTypeFilter } = useUiStore.getState();
+        const { setTypeFilter } = useUi.getState();
         setTypeFilter([typeId]);
       }
     }
