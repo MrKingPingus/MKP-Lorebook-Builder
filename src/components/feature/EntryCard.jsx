@@ -7,13 +7,15 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
+import { useMobile }       from '../../hooks/use-mobile.js';
 import { useUiStore }      from '../../state/ui-store.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
-export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, onMoveUp, onMoveDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { hideEntryStats } = useSettings();
+  const isMobile     = useMobile();
   const expandAll    = useUiStore((s) => s.expandAll);
   const collapseAll  = useUiStore((s) => s.collapseAll);
   const searchQuery  = useUiStore((s) => s.searchQuery);
@@ -50,11 +52,22 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   const nameHtml = highlightedName();
 
-  function onHeaderDoubleClick(e) {
-    if (e.target.closest('button, .stats-badge')) return;
+  function toggleCollapse() {
     setLocalCollapsed(!collapsed);
     setExpandAll(false);
     setCollapseAll(false);
+  }
+
+  // Desktop: double-click header (skip if clicking a button or badge)
+  function onHeaderDoubleClick(e) {
+    if (e.target.closest('button, .stats-badge')) return;
+    toggleCollapse();
+  }
+
+  // Mobile: single tap on header (skip if clicking a button or badge)
+  function onHeaderClick(e) {
+    if (e.target.closest('button, .stats-badge')) return;
+    toggleCollapse();
   }
 
   return (
@@ -64,8 +77,31 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       style={{ '--type-color': typeColor }}
     >
       {/* ── Card header ── */}
-      <div className="entry-card-header" onDoubleClick={onHeaderDoubleClick}>
-        <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
+      <div
+        className="entry-card-header"
+        onDoubleClick={isMobile ? undefined : onHeaderDoubleClick}
+        onClick={isMobile ? onHeaderClick : undefined}
+      >
+        {/* Mobile: ▲/▼ reorder buttons. Desktop: drag handle. */}
+        {isMobile ? (
+          <span className="entry-reorder-btns">
+            <button
+              className="reorder-btn"
+              onClick={onMoveUp ?? undefined}
+              disabled={!onMoveUp}
+              title="Move up"
+            >▲</button>
+            <button
+              className="reorder-btn"
+              onClick={onMoveDown ?? undefined}
+              disabled={!onMoveDown}
+              title="Move down"
+            >▼</button>
+          </span>
+        ) : (
+          <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
+        )}
+
         <TypeColorDot type={entry.type} />
         {nameHtml ? (
           <span
@@ -87,12 +123,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           )}
           <button
             className="card-action-btn"
-            title="double-click the entry to expand or collapse it!"
-            onClick={() => {
-              setLocalCollapsed(!collapsed);
-              setExpandAll(false);
-              setCollapseAll(false);
-            }}
+            title={isMobile ? 'Tap header to expand or collapse' : 'double-click the entry to expand or collapse it!'}
+            onClick={toggleCollapse}
           >
             {collapsed ? '▼ Expand' : '▲ Collapse'}
           </button>
@@ -109,7 +141,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       {!collapsed && (
         <div
           className="entry-card-body"
-          onDoubleClick={(e) => {
+          onDoubleClick={isMobile ? undefined : (e) => {
             if (e.target.closest('button')) return;
             setLocalCollapsed(true);
             setExpandAll(false);

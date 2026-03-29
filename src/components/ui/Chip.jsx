@@ -1,11 +1,13 @@
-// Single trigger keyword chip with an editable label (double-click) and a × delete button
+// Single trigger keyword chip with an editable label (double-click on desktop, tap on mobile) and a × delete button
 import { useState, useRef } from 'react';
+import { useMobile }           from '../../hooks/use-mobile.js';
 import { escapeHtml, escapeRegex } from '../../services/html-escape.js';
 
 export function Chip({ label, onDelete, onRename, color, highlight }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft]     = useState(label);
   const inputRef = useRef(null);
+  const isMobile = useMobile();
 
   function startEdit() {
     setDraft(label);
@@ -38,7 +40,8 @@ export function Chip({ label, onDelete, onRename, color, highlight }) {
       ) : (
         <span
           className="chip-label"
-          onDoubleClick={startEdit}
+          onClick={isMobile ? startEdit : undefined}
+          onDoubleClick={isMobile ? undefined : startEdit}
           {...(highlight
             ? {
                 dangerouslySetInnerHTML: {

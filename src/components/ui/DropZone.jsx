@@ -33,7 +33,7 @@ export function DropZone({ onFile, accept, children }) {
         style={{ display: 'none' }}
         onChange={handleChange}
       />
-      {children ?? <span>Drop a file here or click to browse</span>}
+      {children ?? <span>Drop a file here or tap / click to browse</span>}
     </div>
   );
 }
