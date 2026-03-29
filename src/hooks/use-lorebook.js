@@ -18,7 +18,7 @@ export function useLorebook() {
   const updateActiveName    = useLorebookStore((s) => s.updateActiveName);
   const clearHistory        = useHistoryStore((s) => s.clear);
 
-  const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
+  const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
   function createLorebook() {
     const lb = createEmptyLorebook();
@@ -69,6 +69,7 @@ export function useLorebook() {
   }
 
   return {
+    activeLorebookId,
     activeLorebook,
     lorebookIndex,
     createLorebook,

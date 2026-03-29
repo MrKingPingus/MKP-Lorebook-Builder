@@ -1,7 +1,7 @@
 // Dropdown listing up to 10 saved lorebooks with relative timestamps, per-item delete, and save prompt
 import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
-import { useLorebookStore }    from '../../state/lorebook-store.js';
+import { useLorebook }         from '../../hooks/use-lorebook.js';
 import { useExport }           from '../../hooks/use-export.js';
 
 export function LorebookSwitcher() {
@@ -22,9 +22,7 @@ export function LorebookSwitcher() {
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [open, pendingId]);
 
-  const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
-  const lorebooks        = useLorebookStore((s) => s.lorebooks);
-  const activeLorebook   = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
+  const { activeLorebookId, activeLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
 
   function requestSwitch(id) {

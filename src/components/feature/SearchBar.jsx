@@ -1,13 +1,10 @@
 // Search input with mode <select> dropdown (Search / Find & Replace) and MatchCounter
-import { useUiStore }   from '../../state/ui-store.js';
+import { useSearch }    from '../../hooks/use-search.js';
 import { MatchCounter } from '../ui/MatchCounter.jsx';
 import { FindReplace }  from './FindReplace.jsx';
 
 export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }) {
-  const searchQuery    = useUiStore((s) => s.searchQuery);
-  const searchMode     = useUiStore((s) => s.searchMode);
-  const setSearchQuery = useUiStore((s) => s.setSearchQuery);
-  const setSearchMode  = useUiStore((s) => s.setSearchMode);
+  const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
 
   function onModeChange(e) {
     setSearchMode(e.target.value);

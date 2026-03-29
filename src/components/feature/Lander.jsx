@@ -1,10 +1,10 @@
 // Launch view — shown inside the floating window on page load; dismissed via "Start Building"
-import { useUiStore }          from '../../state/ui-store.js';
+import { useUi }               from '../../hooks/use-ui.js';
 import { useExport }           from '../../hooks/use-export.js';
 
 export function Lander() {
-  const setShowLander = useUiStore((s) => s.setShowLander);
-  const setActiveTab  = useUiStore((s) => s.setActiveTab);
+  const setShowLander = useUi((s) => s.setShowLander);
+  const setActiveTab  = useUi((s) => s.setActiveTab);
   const { downloadTxtTemplate, downloadDocxTemplate } = useExport();
 
   function enterBuilder() {
