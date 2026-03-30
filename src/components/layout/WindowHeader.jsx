@@ -1,22 +1,13 @@
-// Window title bar — logo, lorebook name, lorebook switcher, inline tabs, close button
-import { useDragWindow }    from '../../hooks/use-drag-window.js';
-import { useLorebook }      from '../../hooks/use-lorebook.js';
-import { useMobile }        from '../../hooks/use-mobile.js';
-import { useUi }            from '../../hooks/use-ui.js';
-import { LorebookSwitcher } from '../feature/LorebookSwitcher.jsx';
-
-const TABS = [
-  { id: 'build',         label: 'Build' },
-  { id: 'import-export', label: 'Import / Export' },
-  { id: 'settings',      label: 'Settings' },
-];
+// Window title bar — logo, lorebook name, menu button, close button
+import { useDragWindow } from '../../hooks/use-drag-window.js';
+import { useLorebook }   from '../../hooks/use-lorebook.js';
+import { useMobile }     from '../../hooks/use-mobile.js';
+import { MenuButton }    from './MenuButton.jsx';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
-  const activeTab                          = useUi((s) => s.activeTab);
-  const setActiveTab                       = useUi((s) => s.setActiveTab);
 
   return (
     <div
@@ -42,27 +33,10 @@ export function WindowHeader() {
         />
       </div>
 
-      {/* Lorebook switcher */}
-      <div onPointerDown={(e) => e.stopPropagation()}>
-        <LorebookSwitcher />
-      </div>
+      {/* Menu button — desktop only; mobile uses MobileNav */}
+      {!isMobile && <MenuButton />}
 
-      {/* Inline tabs — hidden on mobile (tabs live in MobileNav on mobile) */}
-      {!isMobile && (
-        <nav className="header-tabs" onPointerDown={(e) => e.stopPropagation()}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`header-tab${activeTab === tab.id ? ' header-tab--active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      )}
-
-      {/* Close — no-op in browser; hidden on mobile (no floating window to close) */}
+      {/* Close — no-op in browser; hidden on mobile */}
       {!isMobile && (
         <button
           className="header-close"

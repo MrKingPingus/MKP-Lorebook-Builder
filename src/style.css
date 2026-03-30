@@ -187,28 +187,47 @@ input:focus, textarea:focus, select:focus {
 }
 .lorebook-count-badge:hover { background: var(--surface3); }
 
-/* Inline tabs */
-.header-tabs {
+/* Menu button + dropdown */
+.menu-btn-wrap { position: relative; flex-shrink: 0; }
+.menu-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.menu-btn:hover,
+.menu-btn--open { background: var(--surface3); color: var(--text); }
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  min-width: 160px;
+  z-index: 200;
+  padding: 4px;
 }
 
-.header-tab {
-  padding: 4px 12px;
-  border-radius: 20px;
+.menu-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: var(--radius);
   font-size: 13px;
   color: var(--muted2);
   transition: background var(--transition), color var(--transition);
-  white-space: nowrap;
 }
-.header-tab:hover { color: var(--text); }
-.header-tab--active {
-  background: #fff;
-  color: #111827;
-  font-weight: 600;
-}
+.menu-dropdown-item:hover { background: var(--surface3); color: var(--text); }
+.menu-dropdown-item--active { color: var(--accent); }
 
 /* Close button */
 .header-close {
@@ -235,6 +254,10 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   min-height: 0;
   position: relative;
+}
+/* Desktop: row layout so Build and side panel sit side by side */
+.floating-window:not(.floating-window--mobile) .window-body {
+  flex-direction: row;
 }
 .window-body--lander {
   overflow-y: auto;
@@ -1412,7 +1435,6 @@ kbd {
   .chip-delete            { min-width: 28px; min-height: 28px; }
   .footer-btn             { min-height: 40px; padding: 0 14px; }
   .footer-fab             { width: 44px; height: 44px; }
-  .header-tab             { min-height: 40px; }
 
   /* ── Reorder buttons ── */
   .entry-reorder-btns {
@@ -1454,4 +1476,77 @@ kbd {
 
   /* ── Window footer: allow wrapping on very narrow screens ── */
   .window-footer { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+}
+
+/* ============================================================
+   Menu Panel (desktop side panel)
+   ============================================================ */
+.menu-panel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.menu-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.menu-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.menu-panel-close {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.menu-panel-close:hover { background: rgba(239,68,68,.15); color: var(--accent); }
+
+.menu-panel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Lorebook Panel (always-expanded lorebook list in menu panel)
+   ============================================================ */
+.lorebook-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.lorebook-panel .switcher-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: none; /* override the fixed max-height used in the popup version */
+}
+.lorebook-panel-prompt {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface2);
+  flex-shrink: 0;
 }
