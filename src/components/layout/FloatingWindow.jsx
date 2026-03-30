@@ -1,10 +1,12 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
 import { useUi }             from '../../hooks/use-ui.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
+import { useMenuPanel }      from '../../hooks/use-menu-panel.js';
 import { WindowHeader }      from './WindowHeader.jsx';
 import { WindowFooter }      from './WindowFooter.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MobileNav }         from './MobileNav.jsx';
+import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }        from '../feature/BuildPanel.jsx';
 import { ImportPanel }       from '../feature/ImportPanel.jsx';
 import { ExportPanel }       from '../feature/ExportPanel.jsx';
@@ -13,12 +15,15 @@ import { Lander }            from '../feature/Lander.jsx';
 import { AppendImportPanel } from '../feature/AppendImportPanel.jsx';
 
 export function FloatingWindow() {
-  const isMobile       = useMobile();
-  const windowPos      = useUi((s) => s.windowPos);
-  const windowSize     = useUi((s) => s.windowSize);
-  const activeTab      = useUi((s) => s.activeTab);
-  const showLander     = useUi((s) => s.showLander);
+  const isMobile         = useMobile();
+  const windowPos        = useUi((s) => s.windowPos);
+  const windowSize       = useUi((s) => s.windowSize);
+  const activeTab        = useUi((s) => s.activeTab);
+  const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
+
+  // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
+  useMenuPanel();
 
   // On mobile: no inline position/size — CSS fills the viewport via .floating-window--mobile
   const style = isMobile ? {} : {
@@ -28,6 +33,7 @@ export function FloatingWindow() {
     height: windowSize.height,
   };
 
+  // Mobile only: show/hide panels by tab
   function panelStyle(id) {
     return activeTab === id
       ? { flex: 1, minHeight: 0 }
@@ -51,18 +57,29 @@ export function FloatingWindow() {
           <WindowHeader />
 
           <div className="window-body">
-            {/* All three panels are always mounted; inactive ones are hidden with display:none
-                so React state (entry expand/collapse, etc.) survives tab switches. */}
-            <div style={panelStyle('build')}>
-              <BuildPanel />
-            </div>
-            <div className="tab-split" style={panelStyle('import-export')}>
-              <ImportPanel />
-              <ExportPanel />
-            </div>
-            <div style={panelStyle('settings')}>
-              <SettingsPanel />
-            </div>
+            {isMobile ? (
+              // Mobile: tab-based panel switching via MobileNav — unchanged
+              <>
+                <div style={panelStyle('build')}>
+                  <BuildPanel />
+                </div>
+                <div className="tab-split" style={panelStyle('import-export')}>
+                  <ImportPanel />
+                  <ExportPanel />
+                </div>
+                <div style={panelStyle('settings')}>
+                  <SettingsPanel />
+                </div>
+              </>
+            ) : (
+              // Desktop: Build always visible; side panel opens via menu button
+              <>
+                <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+                  <BuildPanel />
+                </div>
+                <MenuPanel />
+              </>
+            )}
 
             {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
             {showAppendImport && <AppendImportPanel />}

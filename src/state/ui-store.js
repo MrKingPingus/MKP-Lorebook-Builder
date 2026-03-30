@@ -3,7 +3,8 @@ import { create } from 'zustand';
 import { DEFAULT_WINDOW } from '../constants/defaults.js';
 
 export const useUiStore = create((set) => ({
-  activeTab:   'build',     // 'build' | 'import-export' | 'settings'
+  activeTab:        'build',  // 'build' | 'import-export' | 'settings' — used by MobileNav
+  activeMenuPanel:  null,     // null | 'lorebooks' | 'import-export' | 'settings' — desktop side panel
   searchQuery: '',
   searchMode:  'search',    // 'search' | 'find-replace'
   typeFilter:  [],          // empty = show all
@@ -17,6 +18,7 @@ export const useUiStore = create((set) => ({
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
 
   setActiveTab:   (activeTab)   => set({ activeTab }),
+  setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchMode:  (searchMode)  => set({ searchMode }),
   setTypeFilter:  (typeFilter)  => set({ typeFilter }),
