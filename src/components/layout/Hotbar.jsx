@@ -22,7 +22,8 @@ function HotbarSlot({ action }) {
       disabled={disabled}
       title={descriptor.title}
     >
-      {descriptor.icon} <span className="hotbar-slot-text">{descriptor.label}</span>
+      <span className="hotbar-slot-icon">{descriptor.icon} </span>
+      <span className="hotbar-slot-text">{descriptor.label}</span>
     </button>
   );
 }
