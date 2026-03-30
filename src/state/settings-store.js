@@ -12,6 +12,7 @@ export const useSettingsStore = create((set) => ({
   setHideSuggestionsByDefault: (hideSuggestionsByDefault) => set({ hideSuggestionsByDefault }),
   setHideEntryStats:           (hideEntryStats)           => set({ hideEntryStats }),
   setNewEntryHotkey:           (newEntryHotkey)           => set({ newEntryHotkey }),
+  setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),
 
   applySettings: (settings) => set(settings),
 }));
