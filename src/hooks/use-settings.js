@@ -12,6 +12,7 @@ export function useSettings() {
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
   const newEntryHotkey           = useSettingsStore((s) => s.newEntryHotkey);
+  const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -25,6 +26,7 @@ export function useSettings() {
       hideSuggestionsByDefault,
       hideEntryStats,
       newEntryHotkey,
+      hotbarSlots,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -47,6 +49,7 @@ export function useSettings() {
     hideSuggestionsByDefault,
     hideEntryStats,
     newEntryHotkey,
+    hotbarSlots,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -55,5 +58,6 @@ export function useSettings() {
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
     setNewEntryHotkey:           (v) => updateSetting('newEntryHotkey', v),
+    setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
   };
 }

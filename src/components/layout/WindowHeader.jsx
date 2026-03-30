@@ -33,8 +33,8 @@ export function WindowHeader() {
         />
       </div>
 
-      {/* Menu button — desktop only; mobile uses MobileNav */}
-      {!isMobile && <MenuButton />}
+      {/* Menu button — opens slide tray on both desktop and mobile */}
+      <MenuButton />
 
       {/* Close — no-op in browser; hidden on mobile */}
       {!isMobile && (
