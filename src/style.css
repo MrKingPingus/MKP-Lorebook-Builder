@@ -325,11 +325,8 @@ input:focus, textarea:focus, select:focus {
   line-height: 1;
   padding: 0;
   border: none;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
 }
-.footer-fab:hover { background: #dc2626; transform: translateX(-50%) scale(1.07); }
+.footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 
 /* ============================================================
    Resize Handles
@@ -1418,7 +1415,11 @@ kbd {
     border-left: none;
     border-top: 1px solid var(--border);
     z-index: 10;
+    background: var(--surface);
   }
+
+  /* ── Hotbar: icon-only slots on narrow screens ── */
+  .hotbar-slot-text { display: none; }
 
   /* ── Touch targets ── */
   .entry-card-header      { min-height: 48px; padding: 10px 10px; }
