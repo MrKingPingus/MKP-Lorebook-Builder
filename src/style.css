@@ -1426,7 +1426,7 @@ kbd {
   .footer-fab {
     position: absolute;
     right: 41px;
-    bottom: calc(100% + 12px);
+    bottom: calc(100% + 41px);
     z-index: 10;
   }
   .hotbar { justify-content: flex-start; gap: 0; }

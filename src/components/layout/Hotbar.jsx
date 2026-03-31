@@ -1,5 +1,7 @@
 // Unified hotbar — 3 configurable slots, pinned + FAB, 3 configurable slots; renders on both platforms
 import { useHotbarActions } from '../../hooks/use-hotbar-actions.js';
+import { useUi }            from '../../hooks/use-ui.js';
+import { useMobile }        from '../../hooks/use-mobile.js';
 
 function HotbarSlot({ action }) {
   if (!action) {
@@ -30,6 +32,8 @@ function HotbarSlot({ action }) {
 
 export function Hotbar() {
   const { slots, addEntry } = useHotbarActions();
+  const isMobile            = useMobile();
+  const activeMenuPanel     = useUi((s) => s.activeMenuPanel);
 
   const leftSlots  = slots.slice(0, 3);
   const rightSlots = slots.slice(3, 6);
@@ -46,6 +50,7 @@ export function Hotbar() {
         className="footer-fab"
         onClick={addEntry}
         title="Add entry (Alt+N)"
+        style={isMobile && activeMenuPanel ? { display: 'none' } : undefined}
       >
         +
       </button>
