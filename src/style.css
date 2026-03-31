@@ -287,10 +287,12 @@ input:focus, textarea:focus, select:focus {
 .hotbar-group--right { justify-content: flex-end; }
 
 .hotbar-slot--empty {
-  /* invisible spacer — maintains layout when slot is unassigned */
-  width: 0;
-  flex-shrink: 0;
+  /* invisible spacer — matches filled button width to maintain symmetry */
+  flex: 1;
+  visibility: hidden;
 }
+
+.hotbar .footer-btn { flex: 1; }
 
 .footer-btn {
   padding: 6px 14px;
@@ -309,8 +311,8 @@ input:focus, textarea:focus, select:focus {
 .footer-btn:disabled { opacity: 0.38; cursor: default; }
 
 .footer-fab {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
@@ -1408,7 +1410,9 @@ kbd {
   .floating-window--mobile .window-body { padding-bottom: 0; }
 
   /* ── MenuPanel: full-screen overlay on mobile ── */
-  .menu-panel {
+  /* Use .floating-window--mobile .menu-panel (2 classes) so this beats the base
+     .menu-panel { width: 320px } rule that comes later in the cascade */
+  .floating-window--mobile .menu-panel {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -1421,13 +1425,14 @@ kbd {
   /* ── Hotbar: FAB floats above-right; slots fill full width ── */
   .footer-fab {
     position: absolute;
-    right: 16px;
-    bottom: calc(100% + 12px);
+    right: 41px;
+    bottom: calc(100% + 41px);
     z-index: 10;
   }
-  .hotbar { justify-content: space-evenly; gap: 0; }
+  .hotbar { justify-content: flex-start; gap: 0; }
   .hotbar-group,
   .hotbar-group--right { display: contents; }
+  .hotbar-slot--empty { display: none; }
 
   /* ── Hotbar: text labels at reduced size, no icon symbols ── */
   .hotbar-slot-icon { display: none; }
@@ -1440,7 +1445,7 @@ kbd {
   .chip                   { min-height: 32px; align-items: center; }
   .chip-delete            { min-width: 28px; min-height: 28px; }
   .footer-btn             { min-height: 40px; padding: 0 14px; }
-  .footer-fab             { width: 44px; height: 44px; }
+  .footer-fab             { width: 50px; height: 50px; }
 
   /* ── Reorder buttons ── */
   .entry-reorder-btns {
