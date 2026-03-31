@@ -311,12 +311,13 @@ input:focus, textarea:focus, select:focus {
 .footer-btn:disabled { opacity: 0.38; cursor: default; }
 
 .footer-fab {
-  width: 50px;
-  height: 50px;
+  /* width/height/font-size driven by inline style from Hotbar.jsx (settings-based) */
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -838,7 +839,7 @@ input:focus, textarea:focus, select:focus {
    ============================================================ */
 .entry-card--mobile {
   cursor: pointer;
-  padding: 10px 12px 8px;
+  padding: 7px 12px 5px;
   user-select: none;
 }
 .entry-card--mobile:active { opacity: 0.7; }
@@ -846,7 +847,7 @@ input:focus, textarea:focus, select:focus {
 .entry-card-mobile-index {
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .entry-card-mobile-row {
@@ -857,7 +858,7 @@ input:focus, textarea:focus, select:focus {
 
 .entry-card-mobile-name {
   flex: 1;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -889,7 +890,7 @@ input:focus, textarea:focus, select:focus {
 .entry-card-mobile-type {
   font-size: 12px;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ============================================================
@@ -996,6 +997,27 @@ input:focus, textarea:focus, select:focus {
 }
 .entry-type-btn:hover { background: var(--surface3); color: var(--text); }
 .entry-type-btn--active { color: #fff; }
+
+/* Entry type compact dropdown (default view in detail panel) */
+.entry-type-dropdown-wrap { width: 100%; }
+.entry-type-dropdown-wrap .type-selector {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 14px;
+}
+
+/* FAB custom size input row (in SettingsPanel) */
+.fab-custom-size-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.fab-custom-size-row input { width: 64px; }
+.fab-custom-size-label {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 /* ============================================================
    Suggestions Tray
@@ -1621,11 +1643,11 @@ kbd {
     background: var(--surface);
   }
 
-  /* ── Hotbar: FAB floats above-right; slots fill full width ── */
+  /* ── Hotbar: FAB floats above-right; equidistant 20px gap from right and above hotbar ── */
   .footer-fab {
     position: absolute;
-    right: 41px;
-    bottom: calc(100% + 41px);
+    right: 20px;
+    bottom: calc(100% + 20px);
     z-index: 10;
   }
   .hotbar { justify-content: flex-start; gap: 0; }

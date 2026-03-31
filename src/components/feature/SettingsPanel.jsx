@@ -13,6 +13,9 @@ export function SettingsPanel() {
     hideEntryStats,
     newEntryHotkey,
     hotbarSlots,
+    entryTypeView,
+    fabSize,
+    fabCustomSize,
     resetWindow,
     setCounterTiers,
     setDefaultWindowWidth,
@@ -22,6 +25,9 @@ export function SettingsPanel() {
     setHideEntryStats,
     setNewEntryHotkey,
     setHotbarSlots,
+    setEntryTypeView,
+    setFabSize,
+    setFabCustomSize,
   } = useSettings();
 
   function updateSlot(index, value) {
@@ -155,6 +161,48 @@ export function SettingsPanel() {
           <kbd>Ctrl+Z</kbd> Undo &nbsp;·&nbsp;
           <kbd>Ctrl+Y</kbd> Redo
         </div>
+      </div>
+
+      {/* ── Entry type selector style (mobile detail panel) ── */}
+      <div className="settings-group">
+        <label className="settings-label">
+          <span>Full type button grid in entry editor</span>
+          <input
+            type="checkbox"
+            checked={entryTypeView === 'buttons'}
+            onChange={(e) => setEntryTypeView(e.target.checked ? 'buttons' : 'dropdown')}
+          />
+        </label>
+        <div className="settings-hint">
+          Shows large type buttons instead of a compact dropdown when editing an entry.
+        </div>
+      </div>
+
+      {/* ── FAB button size ── */}
+      <div className="settings-group">
+        <div className="settings-label">FAB button size</div>
+        <select
+          className="hotbar-slot-select"
+          value={fabSize}
+          onChange={(e) => setFabSize(e.target.value)}
+        >
+          <option value="small">Small (44px)</option>
+          <option value="medium">Medium (54px)</option>
+          <option value="large">Large (64px)</option>
+          <option value="custom">Custom</option>
+        </select>
+        {fabSize === 'custom' && (
+          <div className="fab-custom-size-row">
+            <input
+              type="number"
+              min={32}
+              max={100}
+              value={fabCustomSize}
+              onChange={(e) => setFabCustomSize(Number(e.target.value))}
+            />
+            <span className="fab-custom-size-label">px</span>
+          </div>
+        )}
       </div>
 
       {/* ── Hotbar slots ── */}

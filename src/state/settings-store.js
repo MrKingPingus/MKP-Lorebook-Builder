@@ -13,6 +13,9 @@ export const useSettingsStore = create((set) => ({
   setHideEntryStats:           (hideEntryStats)           => set({ hideEntryStats }),
   setNewEntryHotkey:           (newEntryHotkey)           => set({ newEntryHotkey }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),
+  setEntryTypeView:            (entryTypeView)            => set({ entryTypeView }),
+  setFabSize:                  (fabSize)                  => set({ fabSize }),
+  setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
 
   applySettings: (settings) => set(settings),
 }));
