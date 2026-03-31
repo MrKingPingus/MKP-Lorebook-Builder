@@ -1,4 +1,4 @@
-// Scrollable sortable list of EntryCard components with drag-and-drop reorder support
+// Scrollable sortable list of EntryCard components with drag-and-drop reorder support (desktop only)
 import { useRef, useEffect } from 'react';
 import { EntryCard }   from './EntryCard.jsx';
 import { useEntries }  from '../../hooks/use-entries.js';
@@ -56,7 +56,7 @@ export function EntryList({ entries, groupByType }) {
       lastType = entry.type;
     }
 
-    // Desktop: drag attributes enabled. Mobile: omitted.
+    // Desktop: drag attributes enabled. Mobile: no drag.
     const dragProps = isMobile ? {} : {
       draggable: true,
       onDragStart: (e) => {
@@ -79,8 +79,6 @@ export function EntryList({ entries, groupByType }) {
           onUpdate={updateEntry}
           onRemove={removeEntry}
           onDragHandleMouseDown={isMobile ? undefined : () => { isDragFromHandle.current = true; }}
-          onMoveUp={isMobile && idx > 0 ? () => reorderEntries(idx, idx - 1) : null}
-          onMoveDown={isMobile && idx < entries.length - 1 ? () => reorderEntries(idx, idx + 1) : null}
         />
       </div>
     );

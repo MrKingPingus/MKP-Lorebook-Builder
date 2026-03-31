@@ -1,7 +1,8 @@
-// Filter bar: FILTER label, All pill, type pills, shift-click hint, Group by type + Expand All
-import { ENTRY_TYPES }  from '../../constants/entry-types.js';
+// Filter bar: type pills, Group by type toggle (mobile inline), Expand All (desktop only)
+import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { useTypeFilter } from '../../hooks/use-type-filter.js';
 import { useUi }         from '../../hooks/use-ui.js';
+import { useMobile }     from '../../hooks/use-mobile.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
@@ -11,6 +12,7 @@ export function TypeFilterBar({ entries }) {
   const setExpandAll   = useUi((s) => s.setExpandAll);
   const setCollapseAll = useUi((s) => s.setCollapseAll);
   const setGroupByType = useUi((s) => s.setGroupByType);
+  const isMobile       = useMobile();
 
   function handleExpandAll() {
     setExpandAll(true);
@@ -24,10 +26,8 @@ export function TypeFilterBar({ entries }) {
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
-      // Shift+click: toggle this type in addition to existing selection
       toggleTypeFilter(typeId);
     } else {
-      // Normal click: if only this type active, clear; else set only this type
       if (typeFilter.length === 1 && typeFilter[0] === typeId) {
         clearFilter();
       } else {
@@ -39,8 +39,6 @@ export function TypeFilterBar({ entries }) {
 
   return (
     <div className="type-filter-bar">
-      <span className="filter-label">FILTER:</span>
-
       {/* All pill */}
       <button
         className={`type-pill${typeFilter.length === 0 ? ' type-pill--active' : ''}`}
@@ -65,22 +63,23 @@ export function TypeFilterBar({ entries }) {
         );
       })}
 
-      <span className="filter-hint">Shift+click for multi</span>
+      {/* Group by type — inline pill on mobile; desktop keeps it in the filter row too */}
+      <button
+        className={`type-pill type-pill--dashed${groupByType ? ' type-pill--dashed-active' : ''}`}
+        onClick={() => setGroupByType(!groupByType)}
+      >
+        Group by type
+      </button>
 
-      <div className="filter-right">
-        <button
-          className={`filter-action-btn${groupByType ? ' filter-action-btn--active' : ''}`}
-          onClick={() => setGroupByType(!groupByType)}
-        >
-          Group by type
-        </button>
+      {/* Expand All / Collapse All — desktop only (mobile uses slide-in detail panel) */}
+      {!isMobile && (
         <button
           className="filter-action-btn"
           onClick={expandAll ? handleCollapseAll : handleExpandAll}
         >
           {expandAll ? 'Collapse All' : 'Expand All'}
         </button>
-      </div>
+      )}
     </div>
   );
 }
