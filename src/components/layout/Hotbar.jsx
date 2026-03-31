@@ -2,6 +2,9 @@
 import { useHotbarActions } from '../../hooks/use-hotbar-actions.js';
 import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
+import { useSettings }      from '../../hooks/use-settings.js';
+
+const FAB_SIZES = { small: 44, medium: 54, large: 64 };
 
 function HotbarSlot({ action }) {
   if (!action) {
@@ -31,12 +34,23 @@ function HotbarSlot({ action }) {
 }
 
 export function Hotbar() {
-  const { slots, addEntry } = useHotbarActions();
-  const isMobile            = useMobile();
-  const activeMenuPanel     = useUi((s) => s.activeMenuPanel);
+  const { slots, addEntry }           = useHotbarActions();
+  const isMobile                      = useMobile();
+  const activeMenuPanel               = useUi((s) => s.activeMenuPanel);
+  const { fabSize, fabCustomSize }    = useSettings();
 
   const leftSlots  = slots.slice(0, 3);
   const rightSlots = slots.slice(3, 6);
+
+  const fabPx       = fabSize === 'custom' ? fabCustomSize : (FAB_SIZES[fabSize] ?? 64);
+  const fabFontSize = `${Math.round(fabPx * 0.45)}px`;
+
+  const fabStyle = {
+    width:    fabPx,
+    height:   fabPx,
+    fontSize: fabFontSize,
+    ...(isMobile && activeMenuPanel ? { display: 'none' } : {}),
+  };
 
   return (
     <div className="hotbar">
@@ -50,7 +64,7 @@ export function Hotbar() {
         className="footer-fab"
         onClick={addEntry}
         title="Add entry (Alt+N)"
-        style={isMobile && activeMenuPanel ? { display: 'none' } : undefined}
+        style={fabStyle}
       >
         +
       </button>

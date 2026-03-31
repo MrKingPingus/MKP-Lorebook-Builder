@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { useEntryDetail }  from '../../hooks/use-entry-detail.js';
 import { useEntries }      from '../../hooks/use-entries.js';
 import { useUi }           from '../../hooks/use-ui.js';
+import { useSettings }     from '../../hooks/use-settings.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
+import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
@@ -11,7 +13,8 @@ import { SuggestionsTray } from './SuggestionsTray.jsx';
 export function EntryDetailPanel() {
   const { activeEntryId, closeEntry } = useEntryDetail();
   const { entries, updateEntry, removeEntry } = useEntries();
-  const searchQuery = useUi((s) => s.searchQuery);
+  const searchQuery    = useUi((s) => s.searchQuery);
+  const { entryTypeView } = useSettings();
   const [delimiter, setDelimiter] = useState(',');
 
   const entry = entries.find((e) => e.id === activeEntryId) ?? null;
@@ -62,24 +65,30 @@ export function EntryDetailPanel() {
             />
           </div>
 
-          {/* Entry Type — button grid */}
+          {/* Entry Type — dropdown (default) or full button grid (setting) */}
           <div className="entry-detail-section">
             <div className="field-label">ENTRY TYPE</div>
-            <div className="entry-type-buttons">
-              {ENTRY_TYPES.map((t) => {
-                const active = entry.type === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    className={`entry-type-btn${active ? ' entry-type-btn--active' : ''}`}
-                    style={active ? { background: t.color, borderColor: t.color, color: '#fff' } : {}}
-                    onClick={() => update({ type: t.id })}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
+            {entryTypeView === 'buttons' ? (
+              <div className="entry-type-buttons">
+                {ENTRY_TYPES.map((t) => {
+                  const active = entry.type === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      className={`entry-type-btn${active ? ' entry-type-btn--active' : ''}`}
+                      style={active ? { background: t.color, borderColor: t.color, color: '#fff' } : {}}
+                      onClick={() => update({ type: t.id })}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="entry-type-dropdown-wrap">
+                <TypeSelector value={entry.type} onChange={(type) => update({ type })} />
+              </div>
+            )}
           </div>
 
           {/* Trigger Keywords */}

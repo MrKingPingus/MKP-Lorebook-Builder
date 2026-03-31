@@ -15,6 +15,11 @@ export const DEFAULT_SETTINGS = {
   newEntryHotkey:           'n',
   // 6 hotbar slots: 3 left of FAB, 3 right. null = empty slot.
   hotbarSlots:              ['undo', 'redo', 'clear_entries', 'append_import', null, null],
+  // Entry type selector style in the mobile detail panel
+  entryTypeView:            'dropdown',  // 'dropdown' | 'buttons'
+  // FAB (+ button) size
+  fabSize:                  'large',     // 'small' | 'medium' | 'large' | 'custom'
+  fabCustomSize:            60,          // px, used only when fabSize === 'custom'
 };
 
 export const DEFAULT_ENTRY = {
