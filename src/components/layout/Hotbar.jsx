@@ -38,7 +38,7 @@ export function Hotbar() {
     <div className="hotbar">
       <div className="hotbar-group">
         {leftSlots.map((action, i) => (
-          <HotbarSlot key={action?.descriptor.id ?? `left-${i}`} action={action} />
+          <HotbarSlot key={`left-${i}`} action={action} />
         ))}
       </div>
 
@@ -52,7 +52,7 @@ export function Hotbar() {
 
       <div className="hotbar-group hotbar-group--right">
         {rightSlots.map((action, i) => (
-          <HotbarSlot key={action?.descriptor.id ?? `right-${i}`} action={action} />
+          <HotbarSlot key={`right-${i}`} action={action} />
         ))}
       </div>
     </div>
