@@ -1,4 +1,4 @@
-// Full interactive entry card — collapsed/expanded with left type-color border
+// Full interactive entry card — mobile: slim tap-to-open row; desktop: collapsed/expanded with left type-color border
 import { useState } from 'react';
 import { TypeColorDot }    from '../ui/TypeColorDot.jsx';
 import { StatsBadge }      from '../ui/StatsBadge.jsx';
@@ -9,10 +9,13 @@ import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useMobile }       from '../../hooks/use-mobile.js';
 import { useUi }           from '../../hooks/use-ui.js';
-import { ENTRY_TYPES }     from '../../constants/entry-types.js';
-import { useHtmlEscape }   from '../../hooks/use-html-escape.js';
+import { useEntryDetail }  from '../../hooks/use-entry-detail.js';
+import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
+import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
+         CHAR_LIMIT }                               from '../../constants/limits.js';
+import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
 
-export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, onMoveUp, onMoveDown }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed] = useState(true);
   const { hideEntryStats, counterTiers, tieredCounterEnabled } = useSettings();
   const { escapeHtml, escapeRegex } = useHtmlEscape();
@@ -22,9 +25,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const searchQuery  = useUi((s) => s.searchQuery);
   const setExpandAll   = useUi((s) => s.setExpandAll);
   const setCollapseAll = useUi((s) => s.setCollapseAll);
+  const { openEntry }  = useEntryDetail();
   const [delimiter, setDelimiter] = useState(',');
 
-  // expandAll/collapseAll override local collapsed state
+  // expandAll/collapseAll override local collapsed state (desktop only)
   const collapsed = expandAll ? false : (collapseAll ? true : localCollapsed);
 
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
@@ -43,7 +47,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   // Build highlighted entry name HTML for the collapsed header
   function highlightedName() {
     const displayName = entry.name || '(unnamed)';
-    if (!searchQuery) return null; // will use plain text
+    if (!searchQuery) return null;
     const safe = escapeHtml(displayName);
     return safe.replace(
       new RegExp(`(${escapeRegex(escapeHtml(searchQuery))})`, 'gi'),
@@ -65,12 +69,39 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     toggleCollapse();
   }
 
-  // Mobile: single tap on header (skip if clicking a button or badge)
-  function onHeaderClick(e) {
-    if (e.target.closest('button, .stats-badge')) return;
-    toggleCollapse();
+  // ── Mobile card — slim tap-to-open row ──────────────────────────────────────
+  if (isMobile) {
+    return (
+      <div
+        className="entry-card entry-card--mobile"
+        style={{ '--type-color': typeColor }}
+        onClick={() => openEntry(entry.id)}
+      >
+        <div className="entry-card-mobile-index">#{index}</div>
+        <div className="entry-card-mobile-row">
+          <span className="entry-card-mobile-name">
+            {entry.name || '(unnamed)'}
+          </span>
+          <div className="entry-card-mobile-right">
+            {!hideEntryStats && (
+              <div className="entry-card-mobile-stats">
+                <span style={{ color: entry.triggers.length >= MAX_TRIGGERS ? 'var(--red)' : entry.triggers.length >= TRIGGER_WARN_YELLOW ? 'var(--yellow)' : 'var(--green)' }}>
+                  {entry.triggers.length}/{MAX_TRIGGERS} trg
+                </span>
+                <span style={{ color: tieredCounterEnabled ? (entry.description.length >= counterTiers?.red ? 'var(--red)' : entry.description.length >= counterTiers?.yellow ? 'var(--yellow)' : 'var(--green)') : 'var(--muted2)' }}>
+                  {entry.description.length}/{CHAR_LIMIT} chr
+                </span>
+              </div>
+            )}
+            <span className="entry-card-mobile-chevron">›</span>
+          </div>
+        </div>
+        <div className="entry-card-mobile-type">{typeDef?.label ?? entry.type}</div>
+      </div>
+    );
   }
 
+  // ── Desktop card — expand/collapse in place (unchanged) ─────────────────────
   return (
     <div
       id={`entry-${entry.id}`}
@@ -80,28 +111,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       {/* ── Card header ── */}
       <div
         className="entry-card-header"
-        onDoubleClick={isMobile ? undefined : onHeaderDoubleClick}
-        onClick={isMobile ? onHeaderClick : undefined}
+        onDoubleClick={onHeaderDoubleClick}
       >
-        {/* Mobile: ▲/▼ reorder buttons. Desktop: drag handle. */}
-        {isMobile ? (
-          <span className="entry-reorder-btns">
-            <button
-              className="reorder-btn"
-              onClick={onMoveUp ?? undefined}
-              disabled={!onMoveUp}
-              title="Move up"
-            >▲</button>
-            <button
-              className="reorder-btn"
-              onClick={onMoveDown ?? undefined}
-              disabled={!onMoveDown}
-              title="Move down"
-            >▼</button>
-          </span>
-        ) : (
-          <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
-        )}
+        <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
 
         <TypeColorDot type={entry.type} />
         {nameHtml ? (
@@ -126,7 +138,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           )}
           <button
             className="card-action-btn"
-            title={isMobile ? 'Tap header to expand or collapse' : 'double-click the entry to expand or collapse it!'}
+            title="double-click the entry to expand or collapse it!"
             onClick={toggleCollapse}
           >
             {collapsed ? '▼ Expand' : '▲ Collapse'}
@@ -144,7 +156,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       {!collapsed && (
         <div
           className="entry-card-body"
-          onDoubleClick={isMobile ? undefined : (e) => {
+          onDoubleClick={(e) => {
             if (e.target.closest('button')) return;
             setLocalCollapsed(true);
             setExpandAll(false);

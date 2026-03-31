@@ -1,4 +1,4 @@
-// Window title bar — logo, lorebook name, menu button, close button
+// Window title bar — logo, lorebook name (desktop only), menu button, close button
 import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
@@ -20,18 +20,20 @@ export function WindowHeader() {
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
-      {/* Lorebook name — auto-sizes to content, centered in flex-grow region */}
-      <div className="lorebook-name-sizer">
-        <input
-          className="lorebook-name-input"
-          value={activeLorebook?.name ?? ''}
-          onChange={(e) => renameLorebook(e.target.value)}
-          placeholder="Lorebook name…"
-          size={Math.max(10, (activeLorebook?.name?.length ?? 0) + 2)}
-          onPointerDown={(e) => e.stopPropagation()}
-          spellCheck={false}
-        />
-      </div>
+      {/* Lorebook name — desktop only; on mobile it lives in the build panel */}
+      {!isMobile && (
+        <div className="lorebook-name-sizer">
+          <input
+            className="lorebook-name-input"
+            value={activeLorebook?.name ?? ''}
+            onChange={(e) => renameLorebook(e.target.value)}
+            placeholder="Lorebook name…"
+            size={Math.max(10, (activeLorebook?.name?.length ?? 0) + 2)}
+            onPointerDown={(e) => e.stopPropagation()}
+            spellCheck={false}
+          />
+        </div>
+      )}
 
       {/* Menu button — opens slide tray on both desktop and mobile */}
       <MenuButton />

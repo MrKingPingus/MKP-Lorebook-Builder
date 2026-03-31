@@ -9,6 +9,7 @@ import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }        from '../feature/BuildPanel.jsx';
 import { Lander }            from '../feature/Lander.jsx';
 import { AppendImportPanel } from '../feature/AppendImportPanel.jsx';
+import { EntryDetailPanel }  from '../feature/EntryDetailPanel.jsx';
 
 export function FloatingWindow() {
   const isMobile         = useMobile();
@@ -55,6 +56,9 @@ export function FloatingWindow() {
           </div>
 
           <Hotbar />
+
+          {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
+          {isMobile && <EntryDetailPanel />}
         </>
       )}
 
