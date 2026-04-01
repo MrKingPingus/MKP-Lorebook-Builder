@@ -64,6 +64,32 @@ Always use selector syntax: `const foo = useStore((s) => s.foo)`.
 ### Bootstrap
 `App.jsx` contains a `useBootstrap` hook that runs once on mount: reads `localStorage`, populates all four stores, or creates a default lorebook on first run.
 
+### Component layers (`src/components/`)
+Three sub-folders, each with a distinct role:
+
+| Layer | Purpose |
+|-------|---------|
+| `feature/` | Feature-specific, stateful components (entry cards, panels, toolbars) |
+| `layout/` | Structural shell components (FloatingWindow, WindowHeader, Hotbar, MenuPanel) |
+| `ui/` | Stateless, reusable primitives (Chip, DropZone, StatsBadge, CharCounter, TypeColorDot) |
+
+### Services (`src/services/`)
+Plain JS modules — no React imports:
+
+| File | Responsibility |
+|------|---------------|
+| `storage-service.js` | **Only** file that reads/writes `localStorage` |
+| `autosave.js` | Debounced subscriber that persists active lorebook |
+| `entry-factory.js` | Creates new entry objects with default shape |
+| `lorebook-index.js` | Builds/maintains the lorebook index |
+| `suggestion-engine.js` | Generates trigger/keyword suggestions |
+| `find-replace.js` | Find & replace logic over entry fields |
+| `html-escape.js` | Sanitises strings for safe HTML rendering |
+| `json-export.js` / `json-import.js` | JSON lorebook format |
+| `txt-export.js` / `txt-import.js` | Plain-text lorebook format |
+| `docx-export.js` / `docx-import.js` | DOCX lorebook format |
+| `zip-builder.js` | Packages multi-file exports into a ZIP |
+
 ### Import path depth
 Components live at `src/components/[layer]/File.jsx` — two levels deep from `src/`. To reach `src/state/` or `src/services/` use `../../state/` and `../../services/`, not `../../../`.
 
@@ -72,6 +98,7 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 - `src/constants/limits.js` — `MAX_TRIGGERS = 25`, `MAX_LOREBOOKS = 10`, `CHAR_LIMIT = 1500`
 - `src/constants/storage-keys.js` — all localStorage key strings
 - `src/constants/defaults.js` — default shapes for new entries, lorebooks, settings, window size
+- `src/constants/hotbar-actions.js` — action definitions for the hotbar toolbar
 
 ## CSS / theming
 All colors are CSS custom properties defined in `src/style.css`. The entry card left-border color is driven by a `--type-color` CSS variable set inline per card. The floating window uses four `.corner--nw/ne/sw/se` spans for the golden bracket decoration.
