@@ -10,7 +10,7 @@ MKP Lorebook Builder is a browser-only SPA for authoring AI lorebooks — struct
 
 ## Shared Systems
 
-Three reusable infrastructure pieces that multiple future phases depend on. Each should be built generically the first time it is needed rather than as a one-off.
+Four reusable infrastructure pieces that multiple future phases depend on. Each should be built generically the first time it is needed rather than as a one-off.
 
 ### Warning / Notification System
 First needed in **Phase 7**. Used by: Trigger Crosstalk, Empty Field Notification, Entry Duplicate Warning, Entry Split chip. Should be a reusable UI primitive (and possibly a small entry-health evaluator service) so each consuming feature plugs in rather than invents its own alert pattern.
@@ -18,8 +18,11 @@ First needed in **Phase 7**. Used by: Trigger Crosstalk, Empty Field Notificatio
 ### Content Scanning Service (`scan-service.js`)
 First needed in **Phase 7** (Trigger Crosstalk). Used by: Trigger Crosstalk, Entry Duplicate Warning, Entry Planner proper noun scanner. Pattern: accept the lorebook and a predicate, return findings. One service, multiple callsites.
 
+### Comparison Panel
+First needed in **Phase 8** (Entry Duplicate Warning merge, Entry Splitting preview). A panel-within-window component that slides in as a secondary pane within the existing floating window, following the same architectural pattern as `MenuPanel`. Holds two entry cards side by side for review and decision-making. Context-triggered (opens in response to a specific operation, not a standalone button). In Phase 9 the diff system layers field-level delta highlighting on top of this same panel — no rebuild required.
+
 ### Diff System (`diff-service.js`)
-First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (core feature), Entry Duplicate Warning merge flow. Compares two entry objects field by field and returns a structured delta. Can be deferred until Phase 9 — nothing in Phases 6–8 strictly requires it.
+First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (core feature), Entry Duplicate Warning merge flow. Compares two entry objects field by field and returns a structured delta. Plugs into the Comparison Panel built in Phase 8. Can be deferred until Phase 9 — nothing in Phases 6–8 strictly requires it.
 
 ---
 
@@ -57,7 +60,7 @@ User can switch sort mode to alphabetical and confirm entries reorder A–Z; swi
 
 ## Phase 7 — Trigger Enhancements
 
-**Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, suggestions are smarter and category-aware, and the Blurb Box gives users a natural way to add context that feeds better suggestions.
+**Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, and suggestions are smarter and category-aware.
 
 ### Features
 
@@ -75,13 +78,11 @@ User can switch sort mode to alphabetical and confirm entries reorder A–Z; swi
 - [ ] Crosstalk indicator — surfaces shared trigger warnings on affected entries so users can spot conflicts in large lorebooks
 
 **Suggestions:**
-- [ ] Category-weighted suggestion variants — `suggestion-engine.js` applies different suggestion weights based on entry type; built alongside Blurb Box to avoid touching the file twice
-- [ ] Blurb Box field — new optional textarea on entry cards for additional entry context; added to entry schema in `entry-factory.js` and `defaults.js`; backwards-compatible default
-- [ ] Blurb Box feeds suggestion engine — `suggestion-engine.js` reads blurb content as an additional input source for trigger suggestions
+- [ ] Category-weighted suggestion variants — `suggestion-engine.js` applies different suggestion weights based on entry type
 
 ### Stop Condition
 
-User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; observe that suggestions for a character entry differ meaningfully from suggestions for a location entry; add content to the Blurb Box and confirm new suggestions reflect it.
+User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; observe that suggestions for a character entry differ meaningfully from suggestions for a location entry.
 
 **Estimated Complexity:** Medium
 
@@ -92,6 +93,10 @@ User can switch compact trigger mode to a hyphen delimiter and confirm triggers 
 **Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, and an optional splitting system for entries that have grown too long.
 
 ### Features
+
+**Comparison Panel (prerequisite):**
+- [ ] `ComparisonPanel` component — panel-within-window that slides in as a secondary pane following the `MenuPanel` pattern; holds two entry cards side by side; context-triggered by duplicate warning and split preview workflows
+- [ ] Comparison panel hook — manages open/closed state and which two entries are loaded into the panel; wired to `ui-store`
 
 **Entry Authoring:**
 - [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
