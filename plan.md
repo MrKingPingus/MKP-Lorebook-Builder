@@ -10,7 +10,7 @@ MKP Lorebook Builder is a browser-only SPA for authoring AI lorebooks — struct
 
 ## Shared Systems
 
-Three reusable infrastructure pieces that multiple future phases depend on. Each should be built generically the first time it is needed rather than as a one-off.
+Four reusable infrastructure pieces that multiple future phases depend on. Each should be built generically the first time it is needed rather than as a one-off.
 
 ### Warning / Notification System
 First needed in **Phase 7**. Used by: Trigger Crosstalk, Empty Field Notification, Entry Duplicate Warning, Entry Split chip. Should be a reusable UI primitive (and possibly a small entry-health evaluator service) so each consuming feature plugs in rather than invents its own alert pattern.
@@ -18,8 +18,11 @@ First needed in **Phase 7**. Used by: Trigger Crosstalk, Empty Field Notificatio
 ### Content Scanning Service (`scan-service.js`)
 First needed in **Phase 7** (Trigger Crosstalk). Used by: Trigger Crosstalk, Entry Duplicate Warning, Entry Planner proper noun scanner. Pattern: accept the lorebook and a predicate, return findings. One service, multiple callsites.
 
+### Comparison Panel
+First needed in **Phase 8** (Entry Duplicate Warning merge, Entry Splitting preview). A panel-within-window component that slides in as a secondary pane within the existing floating window, following the same architectural pattern as `MenuPanel`. Holds two entry cards side by side for review and decision-making. Context-triggered (opens in response to a specific operation, not a standalone button). In Phase 9 the diff system layers field-level delta highlighting on top of this same panel — no rebuild required.
+
 ### Diff System (`diff-service.js`)
-First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (core feature), Entry Duplicate Warning merge flow. Compares two entry objects field by field and returns a structured delta. Can be deferred until Phase 9 — nothing in Phases 6–8 strictly requires it.
+First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (core feature), Entry Duplicate Warning merge flow. Compares two entry objects field by field and returns a structured delta. Plugs into the Comparison Panel built in Phase 8. Can be deferred until Phase 9 — nothing in Phases 6–8 strictly requires it.
 
 ---
 
@@ -57,7 +60,7 @@ User can switch sort mode to alphabetical and confirm entries reorder A–Z; swi
 
 ## Phase 7 — Trigger Enhancements
 
-**Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, suggestions are smarter and category-aware, and the Blurb Box gives users a natural way to add context that feeds better suggestions.
+**Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, and suggestions are smarter and category-aware.
 
 ### Features
 
@@ -75,13 +78,11 @@ User can switch sort mode to alphabetical and confirm entries reorder A–Z; swi
 - [ ] Crosstalk indicator — surfaces shared trigger warnings on affected entries so users can spot conflicts in large lorebooks
 
 **Suggestions:**
-- [ ] Category-weighted suggestion variants — `suggestion-engine.js` applies different suggestion weights based on entry type; built alongside Blurb Box to avoid touching the file twice
-- [ ] Blurb Box field — new optional textarea on entry cards for additional entry context; added to entry schema in `entry-factory.js` and `defaults.js`; backwards-compatible default
-- [ ] Blurb Box feeds suggestion engine — `suggestion-engine.js` reads blurb content as an additional input source for trigger suggestions
+- [ ] Category-weighted suggestion variants — `suggestion-engine.js` applies different suggestion weights based on entry type
 
 ### Stop Condition
 
-User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; observe that suggestions for a character entry differ meaningfully from suggestions for a location entry; add content to the Blurb Box and confirm new suggestions reflect it.
+User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; observe that suggestions for a character entry differ meaningfully from suggestions for a location entry.
 
 **Estimated Complexity:** Medium
 
@@ -89,9 +90,13 @@ User can switch compact trigger mode to a hyphen delimiter and confirm triggers 
 
 ## Phase 8 — Entry Enhancements
 
-**Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, and an optional splitting system for entries that have grown too long.
+**Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, an optional splitting system for entries that have grown too long, and an opt-in rollback system for saving and restoring entry states.
 
 ### Features
+
+**Comparison Panel (prerequisite):**
+- [ ] `ComparisonPanel` component — panel-within-window that slides in as a secondary pane following the `MenuPanel` pattern; holds two entry cards side by side; context-triggered by duplicate warning and split preview workflows
+- [ ] Comparison panel hook — manages open/closed state and which two entries are loaded into the panel; wired to `ui-store`
 
 **Entry Authoring:**
 - [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
@@ -109,11 +114,24 @@ User can switch compact trigger mode to a hyphen delimiter and confirm triggers 
 - [ ] Split chip — small badge on split entries indicating they are part of a pair; uses warning system visual layer
 - [ ] Character limit override — allows entries in split mode to temporarily exceed `CHAR_LIMIT` until the split is confirmed
 
+**Entry Rollback System (opt-in):**
+- [ ] `entry.snapshots` array on entry schema — capped array of snapshot objects `{ content, triggers, timestamp, label }`; added to `entry-factory.js` and `defaults.js`; backwards-compatible default of empty array
+- [ ] Rollback settings in `settings-store.js` — rollback enabled toggle (default **Off**, per-lorebook); snapshot count selector: Off / 1 / 3 / 5 / Go with God (custom integer 1–10); count pre-selects 3 when first enabled; global "always enable rollback for new lorebooks" toggle
+- [ ] Storage warning — surfaced in settings UI when count exceeds 5; explains localStorage pressure
+- [ ] Greyed rollback button on entry card — visible but disabled when rollback is Off; hover tooltip explains how to enable it in settings; active when rollback is On
+- [ ] Auto-snapshot on first edit — when rollback is enabled and a user edits an entry for the first time in a session, a snapshot is silently taken before the edit; every entry gets one free backup automatically
+- [ ] Navigate-away prompt — when rollback is enabled and the entry has been edited since the last snapshot, collapsing the entry (desktop) or closing the panel (mobile) triggers a prompt: "Replace or Save New" with a "Don't ask again this session" option
+- [ ] Manual rollback save — when prompts are suppressed, the rollback button saves a snapshot on demand; includes option to re-enable the prompt
+- [ ] Rollback dropdown UI — lists saved snapshots; each labeled with timestamp by default, user-editable to a custom title
+- [ ] Rollback Comparison Panel integration — selecting a snapshot opens the Comparison Panel showing snapshot vs. current entry state; includes a "Highlight Differences" button that is inert in Phase 8 (placeholder for Phase 9)
+- [ ] Rollback restore — confirm action within the Comparison Panel replaces current entry content with the snapshot; action is undoable via existing undo/redo stack
+- [ ] Independent from undo/redo — rollback system has no connection to `history-store.js`; they operate entirely separately
+
 ### Stop Condition
 
-User can insert a markdown bold marker via the dropdown and confirm it appears in the description; create two entries with the same name and confirm a duplicate warning appears; dismiss or merge them and confirm the result; create an entry exceeding the character limit, confirm split suggestions appear, split it, confirm two entries exist with matching triggers, and confirm the second entry has a bridging prefix when linear mode was selected.
+User can insert a markdown bold marker via the dropdown and confirm it appears in the description; create two entries with the same name and confirm a duplicate warning appears; dismiss or merge them and confirm the result; create an entry exceeding the character limit, confirm split suggestions appear, split it, confirm two entries exist with matching triggers, and confirm the second entry has a bridging prefix when linear mode was selected; enable rollback in settings, edit an entry, navigate away and confirm the "Replace or Save New" prompt appears, save a new snapshot with a custom label, open the rollback dropdown, select a snapshot, confirm the Comparison Panel opens showing both states, and restore the snapshot.
 
-**Estimated Complexity:** Medium–High
+**Estimated Complexity:** High
 
 ---
 
@@ -124,7 +142,8 @@ User can insert a markdown bold marker via the dropdown and confirm it appears i
 ### Features
 
 **Diff System (prerequisite):**
-- [ ] `diff-service.js` — compares two entry objects field by field and returns a structured delta; used by Lorebook Crosstalk and Entry Duplicate merge
+- [ ] `diff-service.js` — compares two entry objects field by field and returns a structured delta; used by Lorebook Crosstalk, Entry Duplicate merge, and rollback highlighting
+- [ ] Rollback diff highlighting — wires `diff-service.js` into the rollback Comparison Panel; activates the previously inert "Highlight Differences" button; field-level delta highlighting renders between snapshot and current entry state
 
 **Lorebook Crosstalk:**
 - [ ] Secondary lorebook loader — loads a second saved lorebook into a read-only comparison instance without disturbing the active lorebook
@@ -139,24 +158,26 @@ User can insert a markdown bold marker via the dropdown and confirm it appears i
 
 ### Stop Condition
 
-User can load a second lorebook into crosstalk mode, confirm that entries present in both are diff'd and discrepancies surfaced, and run a search that returns results from both; user can create a planner note, convert it to an entry stub, and filter the build page to show only unfilled stubs.
+User can load a second lorebook into crosstalk mode, confirm that entries present in both are diff'd and discrepancies surfaced, and run a search that returns results from both; user can create a planner note, convert it to an entry stub, and filter the build page to show only unfilled stubs; user can open a saved rollback snapshot in the Comparison Panel and click "Highlight Differences" to see field-level changes highlighted.
 
 **Estimated Complexity:** High
 
 ---
 
-## Phase 10 — 2.0 / Deferred
+## Future Features
 
-**Goal:** Long-horizon features that require significant design work or depend on the full Phase 6–9 foundation being stable.
+Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
 
-### Features (unordered — sequence TBD)
+---
 
-- [ ] **Lookup Table Trigger System** — categorised and genre-separated reference tables for trigger suggestions; weighted by active filters; separate from the live suggestion engine
-- [ ] **Version history** — per-entry snapshot array (capped, stored on the entry); restore replaces current content; diff UI deferred until `diff-service.js` is stable
-- [ ] **Entry Planner smart assistance** — extends the basic planner with proper noun scanning via `scan-service.js` to detect mentioned names without existing entries and prompt creation; scope and design TBD
+**Lookup Table Trigger System**
+A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.
 
-### Stop Condition
+**Undo/Redo Overhaul**
+The current undo/redo system is overzealous — it captures too many intermediate states. Needs a rethink of what constitutes a meaningful snapshot. Entirely independent of the rollback system. No dependencies, but low urgency until user feedback identifies specific pain points.
 
-TBD per feature at planning time.
+**Entry Planner Smart Assistance**
+Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-service.js` — detects names mentioned in planner notes that don't have existing entries and prompts the user to create them. Depends on: Entry Planner (Phase 9) and `scan-service.js` (Phase 7) both being complete.
 
-**Estimated Complexity:** High
+**Lorebook Crosstalk — Second Window Mode**
+The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power users comparing large lorebooks, a second floating window may be more practical. Depends on: Phase 9 Lorebook Crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
