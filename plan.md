@@ -76,23 +76,23 @@ User can switch sort to A–Z and confirm entries reorder alphabetically (case-i
 ### Features
 
 **Bug Fixes:**
-- [ ] Full type button grid setting has no effect — investigate and restore the toggle's effect on the type selector layout in the entry editor
+- [x] Full type button grid setting has no effect — investigate and restore the toggle's effect on the type selector layout in the entry editor
 
 **UI Fixes:**
-- [ ] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
-- [ ] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
-- [ ] Find & Replace layout — when Find & Replace mode is active, the regular search input is hidden and the sort button remains; Find and Replace fields are shortened to fit on a single row alongside the sort button (desktop and mobile)
-- [ ] Mobile search results dropdown — the results dropdown is too narrow to be usable on mobile; widen it to fit available viewport width; tapping a result must scroll to and expand the correct entry (depends on Phase 6 search results dropdown)
-- [ ] Mobile menu button position — the Menu button drifts to the middle of the header on mobile; it should remain anchored to the far right
+- [x] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
+- [x] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
+- [x] Find & Replace layout — when Find & Replace mode is active, the regular search input is hidden and the sort button remains; Find and Replace fields are shortened to fit on a single row alongside the sort button (desktop and mobile)
+- [x] Mobile search results dropdown — the results dropdown is too narrow to be usable on mobile; widen it to fit available viewport width; tapping a result must scroll to and expand the correct entry (depends on Phase 6 search results dropdown)
+- [x] Mobile menu button position — the Menu button drifts to the middle of the header on mobile; it should remain anchored to the far right
 
 **Settings Corrections:**
-- [ ] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
-- [ ] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
+- [x] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
+- [x] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
 
 **Quality of Life Adjustments:**
-- [ ] New entry auto-focus — when a new entry is created, focus is placed on the entry name field immediately so the user can start typing without an extra click
-- [ ] Search ↔ Find/Replace text transfer — when switching between Search and Find/Replace modes, the current text carries over to the corresponding field in the new mode (search query → find field, and vice versa)
-- [ ] Search results dropdown re-open on focus — after a user selects a result and the dropdown closes, clicking or tapping back into the search field re-opens the dropdown if a search term is still present (depends on Phase 6 search results dropdown)
+- [x] New entry auto-focus — when a new entry is created, focus is placed on the entry name field immediately so the user can start typing without an extra click
+- [x] Search ↔ Find/Replace text transfer — when switching between Search and Find/Replace modes, the current text carries over to the corresponding field in the new mode (search query → find field, and vice versa)
+- [x] Search results dropdown re-open on focus — after a user selects a result and the dropdown closes, clicking or tapping back into the search field re-opens the dropdown if a search term is still present (depends on Phase 6 search results dropdown)
 
 ### Stop Condition
 
@@ -242,4 +242,4 @@ Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed 
 
 **Full Type Button Grid Setting Has No Effect**
 The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
-Status: **Open** — assigned to Polish Pass
+Status: **Open** — deferred; setting now displays a "currently broken" hint in the UI
