@@ -1,4 +1,4 @@
-// Search query state, filtered entry derivation, highlight positions, and match count
+// Search query state, filtered entry derivation, highlight positions, match count, and match location details
 import { useUiStore } from '../state/ui-store.js';
 import { escapeRegex } from '../services/html-escape.js';
 
@@ -13,6 +13,8 @@ export function useSearch(entries) {
   let filteredEntries = entries;
   let matchCount = 0;
   let entryMatchCount = 0;
+  // matchLocations: Map<entryId, string[]> — which fields matched ('name'|'trigger'|'description')
+  const matchLocations = new Map();
 
   if (query) {
     const pattern = new RegExp(escapeRegex(query), 'gi');
@@ -25,19 +27,25 @@ export function useSearch(entries) {
 
     for (const e of filteredEntries) {
       let entryMatches = 0;
+      const locations = [];
       const countIn = (str) => {
         const m = str.match(new RegExp(escapeRegex(query), 'gi'));
         return m ? m.length : 0;
       };
-      entryMatches += countIn(e.name);
-      e.triggers.forEach((t) => { entryMatches += countIn(t); });
-      entryMatches += countIn(e.description);
+      const nameCount = countIn(e.name);
+      if (nameCount > 0) { entryMatches += nameCount; locations.push('name'); }
+      let triggerCount = 0;
+      e.triggers.forEach((t) => { triggerCount += countIn(t); });
+      if (triggerCount > 0) { entryMatches += triggerCount; locations.push('trigger'); }
+      const descCount = countIn(e.description);
+      if (descCount > 0) { entryMatches += descCount; locations.push('description'); }
       if (entryMatches > 0) {
         matchCount += entryMatches;
         entryMatchCount++;
+        matchLocations.set(e.id, locations);
       }
     }
   }
 
-  return { searchQuery, setSearchQuery, searchMode, setSearchMode, filteredEntries, matchCount, entryMatchCount, query };
+  return { searchQuery, setSearchQuery, searchMode, setSearchMode, filteredEntries, matchCount, entryMatchCount, query, matchLocations };
 }

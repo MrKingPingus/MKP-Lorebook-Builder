@@ -20,16 +20,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const { hideEntryStats, counterTiers, tieredCounterEnabled } = useSettings();
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
-  const expandAll    = useUi((s) => s.expandAll);
-  const collapseAll  = useUi((s) => s.collapseAll);
-  const searchQuery  = useUi((s) => s.searchQuery);
-  const setExpandAll   = useUi((s) => s.setExpandAll);
-  const setCollapseAll = useUi((s) => s.setCollapseAll);
-  const { openEntry }  = useEntryDetail();
+  const expandAll         = useUi((s) => s.expandAll);
+  const collapseAll       = useUi((s) => s.collapseAll);
+  const searchQuery       = useUi((s) => s.searchQuery);
+  const searchFocusedId   = useUi((s) => s.searchFocusedId);
+  const setExpandAll      = useUi((s) => s.setExpandAll);
+  const setCollapseAll    = useUi((s) => s.setCollapseAll);
+  const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
+  const { openEntry }     = useEntryDetail();
   const [delimiter, setDelimiter] = useState(',');
 
-  // expandAll/collapseAll override local collapsed state (desktop only)
-  const collapsed = expandAll ? false : (collapseAll ? true : localCollapsed);
+  // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
+  const isSearchFocused = searchFocusedId === entry.id;
+  const collapsed = isSearchFocused ? false : (expandAll ? false : (collapseAll ? true : localCollapsed));
 
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';
@@ -58,6 +61,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const nameHtml = highlightedName();
 
   function toggleCollapse() {
+    if (isSearchFocused) setSearchFocusedId(null);
     setLocalCollapsed(!collapsed);
     setExpandAll(false);
     setCollapseAll(false);
