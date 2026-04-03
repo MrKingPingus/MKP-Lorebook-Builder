@@ -186,3 +186,44 @@ Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-se
 
 **Lorebook Crosstalk — Second Window Mode**
 The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power users comparing large lorebooks, a second floating window may be more practical. Depends on: Phase 9 Lorebook Crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
+
+**Search Results Dropdown**
+When a term is typed in the search field, a dropdown lists every entry the term appears in, with an indicator of where the match occurs (title, trigger, description, or a combination). Complements the Enter-key navigation added in Phase 6. Scope and interaction design TBD — discuss before planning.
+
+---
+
+## Queued Adjustments
+
+Small improvements and fixes that have been identified but not yet assigned to a phase. Move each item into the appropriate phase once placement is decided.
+
+---
+
+**Undo / Redo Hotkey Customization**
+The hotbar currently supports a customizable hotkey for adding a new entry but not for undo or redo. Both should be customizable to match.
+
+**Character Counter Color Scope & Default**
+The "Tiered character counter colors" setting currently turns counters grey when disabled — it should default to green. The setting should also affect the trigger count, not just the description character counter. The setting title should be updated to reflect that it covers both counters.
+
+**Export Section Header**
+The Import/Export tab has an "I M P O R T" header for the import section but no equivalent header for the export section. Add "E X P O R T" in the same format (spaced letters, underlined) for consistency.
+
+**Enter-Key Search Navigation**
+Pressing Enter while a search term is active should open (expand/scroll to) the first matching entry. Pressing Enter again should advance to the next match. Wraps at the end of the list.
+
+**Find & Replace Replaces Search Field**
+When Find & Replace mode is active, the regular search field should be hidden — replaced by the find and replace fields. No reason for all three to be visible simultaneously.
+
+**Shift+Click Tooltip on "All" Option**
+The "shift+click for multi select" tooltip currently appears on type filter chips but not on the "All" option. It should.
+
+---
+
+## Known Bugs
+
+Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed bugs note the phase or commit where they were resolved.
+
+---
+
+**Full Type Button Grid Setting Has No Effect**
+The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
+Status: **Open**
