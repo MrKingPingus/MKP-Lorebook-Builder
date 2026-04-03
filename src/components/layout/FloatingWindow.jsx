@@ -1,38 +1,37 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
-import { useUi }          from '../../hooks/use-ui.js';
-import { WindowHeader }   from './WindowHeader.jsx';
-import { WindowFooter }   from './WindowFooter.jsx';
-import { ResizeHandles }  from './ResizeHandles.jsx';
-import { BuildPanel }         from '../feature/BuildPanel.jsx';
-import { ImportPanel }        from '../feature/ImportPanel.jsx';
-import { ExportPanel }        from '../feature/ExportPanel.jsx';
-import { SettingsPanel }      from '../feature/SettingsPanel.jsx';
-import { Lander }             from '../feature/Lander.jsx';
-import { AppendImportPanel }  from '../feature/AppendImportPanel.jsx';
+import { useUi }             from '../../hooks/use-ui.js';
+import { useMobile }         from '../../hooks/use-mobile.js';
+import { useMenuPanel }      from '../../hooks/use-menu-panel.js';
+import { WindowHeader }      from './WindowHeader.jsx';
+import { Hotbar }            from './Hotbar.jsx';
+import { ResizeHandles }     from './ResizeHandles.jsx';
+import { MenuPanel }         from './MenuPanel.jsx';
+import { BuildPanel }        from '../feature/BuildPanel.jsx';
+import { Lander }            from '../feature/Lander.jsx';
+import { AppendImportPanel } from '../feature/AppendImportPanel.jsx';
+import { EntryDetailPanel }  from '../feature/EntryDetailPanel.jsx';
 
 export function FloatingWindow() {
-  const windowPos  = useUi((s) => s.windowPos);
-  const windowSize = useUi((s) => s.windowSize);
-  const activeTab        = useUi((s) => s.activeTab);
+  const isMobile         = useMobile();
+  const windowPos        = useUi((s) => s.windowPos);
+  const windowSize       = useUi((s) => s.windowSize);
   const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
 
-  const style = {
+  // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
+  useMenuPanel();
+
+  // On mobile: no inline position/size — CSS fills the viewport via .floating-window--mobile
+  const style = isMobile ? {} : {
     left:   windowPos.x,
     top:    windowPos.y,
     width:  windowSize.width,
     height: windowSize.height,
   };
 
-  function panelStyle(id) {
-    return activeTab === id
-      ? { flex: 1, minHeight: 0 }
-      : { display: 'none' };
-  }
-
   return (
-    <div className="floating-window" style={style}>
-      {/* Golden corner bracket decorations */}
+    <div className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`} style={style}>
+      {/* Golden corner bracket decorations — hidden on mobile via CSS */}
       <span className="corner corner--nw" />
       <span className="corner corner--ne" />
       <span className="corner corner--sw" />
@@ -47,28 +46,24 @@ export function FloatingWindow() {
           <WindowHeader />
 
           <div className="window-body">
-            {/* All three panels are always mounted; inactive ones are hidden with display:none
-                so React state (entry expand/collapse, etc.) survives tab switches. */}
-            <div style={panelStyle('build')}>
+            <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
               <BuildPanel />
             </div>
-            <div className="tab-split" style={panelStyle('import-export')}>
-              <ImportPanel />
-              <ExportPanel />
-            </div>
-            <div style={panelStyle('settings')}>
-              <SettingsPanel />
-            </div>
+            <MenuPanel />
 
             {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
             {showAppendImport && <AppendImportPanel />}
           </div>
 
-          <WindowFooter />
+          <Hotbar />
+
+          {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
+          {isMobile && <EntryDetailPanel />}
         </>
       )}
 
-      <ResizeHandles />
+      {/* Resize handles only on desktop */}
+      {!isMobile && <ResizeHandles />}
     </div>
   );
 }

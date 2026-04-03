@@ -2,215 +2,237 @@
 
 ---
 
-## Phase 1 — MVP ✅
+## Project Overview
 
-**Goal:** A user can create a lorebook with named, typed entries containing triggers and descriptions, auto-save it to localStorage, and download it as a JSON file.
+MKP Lorebook Builder is a browser-only SPA for authoring AI lorebooks — structured collections of named entries with triggers, types, and descriptions that activate contextual information in LLM sessions. No backend, no accounts, no installation. All state lives in localStorage.
+
+---
+
+## Shared Systems
+
+Four reusable infrastructure pieces that multiple future phases depend on. Each should be built generically the first time it is needed rather than as a one-off.
+
+### Warning / Notification System
+First needed in **Phase 7**. Used by: Trigger Crosstalk, Empty Field Notification, Entry Duplicate Warning, Entry Split chip. Should be a reusable UI primitive (and possibly a small entry-health evaluator service) so each consuming feature plugs in rather than invents its own alert pattern.
+
+### Content Scanning Service (`scan-service.js`)
+First needed in **Phase 7** (Trigger Crosstalk). Used by: Trigger Crosstalk, Entry Duplicate Warning, Entry Planner proper noun scanner. Pattern: accept the lorebook and a predicate, return findings. One service, multiple callsites.
+
+### Comparison Panel
+First needed in **Phase 8** (Entry Duplicate Warning merge, Entry Splitting preview). A panel-within-window component that slides in as a secondary pane within the existing floating window, following the same architectural pattern as `MenuPanel`. Holds two entry cards side by side for review and decision-making. Context-triggered (opens in response to a specific operation, not a standalone button). In Phase 9 the diff system layers field-level delta highlighting on top of this same panel — no rebuild required.
+
+### Diff System (`diff-service.js`)
+First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (core feature), Entry Duplicate Warning merge flow. Compares two entry objects field by field and returns a structured delta. Plugs into the Comparison Panel built in Phase 8. Can be deferred until Phase 9 — nothing in Phases 6–8 strictly requires it.
+
+---
+
+## Phases 1–5 — Completed ✅
+
+All original planned features are implemented. Summary of what was built:
+
+- **Phase 1 — MVP:** localStorage persistence, autosave, floating window shell, entry cards with name/type/description/triggers, JSON export
+- **Phase 2 — Functional Baseline:** draggable/resizable window with viewport clamping, undo/redo, drag-to-reorder, collapse/expand, live search, type filter, char/trigger counters, duplicate prevention, bulk paste
+- **Phase 3 — Feature Complete:** find & replace with deduplication, search highlight, group-by-type, inline chip editing, compact trigger mode, suggestions engine with tray/reroll/add, full import/export suite (JSON/TXT/DOCX/ZIP), import preview, multi-lorebook navigation, settings panel, keyboard shortcuts, lander
+- **Phase 4 — Polish & Hardening:** description highlight overlay, Enter-key scroll-to-first-match, Shift+scroll type cycling
+- **Phase 5 — Phrase Builder:** phrase builder mode, pill row with drag reorder, confirm/cancel
+
+---
+
+## Phase 6 — Search & Sort Enhancements
+
+**Goal:** The entry list can be sorted alphabetically or by last modified date; search gains keyboard navigation and a results dropdown that shows where each match occurs.
 
 ### Features
 
-- [x] Lorebook key bootstrap — creates the default storage slot on first launch; nothing can persist without it
-- [x] New lorebook key allocation — assigns unique keys for lorebook storage; prerequisite for bootstrap
-- [x] LocalStorage state persistence — read/write layer for all lorebook data; everything else depends on this
-- [x] State snapshot builder — serializes current name + entries into a plain object; required by autosave and export
-- [x] Debounced auto-save — writes to localStorage on a timer after changes; core durability contract of the app
-- [x] Immediate save — forces a save on page unload and visibility change; prevents data loss when tab closes
-- [x] Initial bootstrap — runs on launch to ensure a key exists and loads saved state; required to restore prior work
-- [x] Load state — restores entries from a saved state object; called by bootstrap on every page load
-- [x] Center-third default size — positions the window at first launch without user interaction; required before drag/resize is built
-- [x] Tab bar (Build / Import/Export / Settings) — switches between panels; required to reach the export UI
-- [x] Add Entry FAB — the primary way to create an entry; core action
-- [x] Footer hint text — static "Alt+N — new entry" label; trivial markup, included here
-- [x] Save badge — shows "✓ Saved" in the header; required UX feedback that autosave is working
-- [x] Entry card factory — renders the entry card container; prerequisite for all entry field components
-- [x] Entry name input — text field for the entry name; core entry datum
-- [x] Type selector dropdown — choose from 5 entry types; core entry datum
-- [x] Type color dot — colored stripe on the card header; required for type to be visually meaningful
-- [x] Entry enum badge — auto-number label (#1 – Name); required for renumber to have visible effect
-- [x] Description textarea — freeform text field for entry body; core entry datum
-- [x] Description auto-grow — textarea expands as user types; without this, long descriptions break the UX
-- [x] Trigger tag chips — add keyword triggers to an entry; core entry datum (triggers activate entries in AI)
-- [x] Tag chip deletion — × button on each chip; minimum required editing for triggers
-- [x] Add entry — creates a new blank entry; core action
-- [x] Entry deletion — removes an entry with undo; core action
-- [x] Renumber entries — re-labels enum badges after add/remove; required for coherent display
-- [x] JSON export builder — serializes lorebook state to a structured JSON object; required for primary output
-- [x] JSON download — triggers file download of the JSON blob; required for primary output
+**Sort:**
+- [ ] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
+- [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
+- [ ] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
+- [ ] All sort modes are display-only — sort never mutates the underlying entry array; `default` always restores the user's drag-arranged order
+- [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
+- [ ] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
+
+**Window Size & Position Persistence:**
+- [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
+- [ ] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
+
+**Search Navigation & Results Dropdown:**
+- [ ] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
+- [ ] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
+- [ ] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
 
 ### Stop Condition
 
-User can create 3 entries each with a name, type, 2+ triggers, and a description; observe "✓ Saved" appear automatically; download a .json file containing all 3 entries; reload the page; and see all 3 entries restored exactly as left.
+User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved; resize and reposition the floating window, reload the page, and confirm both size and position are restored; type a search term, confirm the results dropdown appears with location tags, click a result and confirm the entry opens; press Enter and confirm keyboard navigation advances through matches in list order.
+
+**Estimated Complexity:** Low–Medium
+
+---
+
+## Polish Pass — Adjustments & Bug Fixes
+
+**Goal:** Clear the backlog of small UI fixes, setting corrections, and the known bug before Phase 7 adds new complexity.
+
+### Features
+
+**Bug Fixes:**
+- [ ] Full type button grid setting has no effect — investigate and restore the toggle's effect on the type selector layout in the entry editor
+
+**UI Fixes:**
+- [ ] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
+- [ ] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
+- [ ] Find & Replace replaces search field — when Find & Replace mode is active, the regular search input is hidden; only the find and replace fields are shown
+
+**Settings Corrections:**
+- [ ] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
+- [ ] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
+
+### Stop Condition
+
+User can confirm the full type button grid toggle visibly changes the type selector layout; confirm the "All" filter chip shows the shift+click tooltip on hover; confirm the Export header appears; switch to Find & Replace mode and confirm the regular search field is hidden; disable tiered counter colors and confirm both the description and trigger counters show green; confirm undo and redo hotkeys are configurable in settings and the new bindings function correctly.
+
+**Estimated Complexity:** Low
+
+---
+
+## Phase 7 — Trigger Enhancements
+
+**Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, and suggestions are smarter and category-aware.
+
+### Features
+
+**Warning / Notification System (prerequisite):**
+- [ ] Reusable warning UI primitive — consistent in-app alert component used across all warning features in this and later phases
+- [ ] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display
+
+**Delimiter Dropdown:**
+- [ ] Expanded delimiter options — extends existing compact trigger mode to support hyphen, tilde, forward slash, and backslash in addition to comma and semicolon
+- [ ] Delimiter selector dropdown — replaces existing two-option toggle with a dropdown; wired to `settings-store`
+
+**Trigger Crosstalk:**
+- [ ] `scan-service.js` — generic lorebook scanner built here as the first consumer; accepts a predicate, returns findings; reused by later phases
+- [ ] Trigger crosstalk scan — uses `scan-service.js` to find triggers shared across two or more entries; reports findings via warning system
+- [ ] Crosstalk indicator — surfaces shared trigger warnings on affected entries so users can spot conflicts in large lorebooks
+
+**Suggestions:**
+- [ ] Category-weighted suggestion variants — `suggestion-engine.js` applies different suggestion weights based on entry type
+
+### Stop Condition
+
+User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; observe that suggestions for a character entry differ meaningfully from suggestions for a location entry.
 
 **Estimated Complexity:** Medium
 
 ---
 
-## Phase 2 — Functional Baseline
+## Phase 8 — Entry Enhancements
 
-**Goal:** The window is interactive and resizable, entries can be reordered and collapsed, undo protects work, and basic search and type filtering make large lorebooks navigable.
-
-### Features
-
-- [x] Draggable resizable window — floating window moves on header drag; the app's core UI metaphor, unusable without it
-- [x] Yellow corner resize handles — four corner drag handles to resize; required for the window to be user-controlled
-- [x] Viewport boundary clamping — prevents drag and resize from moving the window off-screen; safety requirement for drag/resize
-- [x] Undo stack — pushes a state snapshot before each mutation; protects against accidental edits
-- [x] Redo stack — restores undone snapshots; completes the undo/redo pair
-- [x] Undo/redo button state sync — enables and disables undo/redo buttons based on stack depth; required feedback
-- [x] Undo/redo buttons — UI buttons in the window header wired to the stacks; exposes undo/redo to the user
-- [x] Drag-and-drop reorder — drag an entry header to reorder the list; required for organizing entries
-- [x] Entry collapse/expand — hides/shows entry body via button or double-click on header; needed when managing long lorebooks
-- [x] Collapse All button — folds every entry body at once; depends on collapse being built
-- [x] Live full-text search — filters visible entries by name, triggers, or description as user types; essential for navigation
-- [x] Search bar with clear button — text input with one-click × clear; required UI for live search
-- [x] Type filter pill bar — toggle-pill row for filtering by entry type; required UI for type filter
-- [x] Type filter — hides/shows entries by selected types; the logic behind the pill bar
-- [x] Trigger/char stats badge — shows trigger count + char count in the collapsed entry header; needed once entries can be collapsed
-- [x] Tiered character counter — color-coded char count (green/yellow/red) against the 1500-char limit; actionable in-place guidance
-- [x] Trigger counter badge — shows current/max (25) trigger count with color warning inside the trigger area; pairs with trigger chips
-- [x] Duplicate trigger prevention — flashes an error if an added trigger already exists (case-insensitive); data integrity
-- [x] Bulk trigger paste — pastes a comma/semicolon-separated list to add multiple triggers at once; unblocks rapid data entry
-- [x] Auto-resize lorebook name input — the lorebook name field in the header expands/contracts to fit its text; small UX fix, trivial at this stage
-
-### Stop Condition
-
-User can drag the window to a corner and confirm it stops at the viewport edge; resize from all four corners; undo a deletion and redo it; use search to find an entry by trigger keyword; filter by two types simultaneously; collapse all entries; drag an entry to a new position in the list; paste 5 comma-separated triggers at once; and observe a flash error when adding a duplicate trigger.
-
-**Estimated Complexity:** Medium
-
----
-
-## Phase 3 — Feature Complete
-
-**Goal:** Every planned feature is implemented — full import/export suite in all formats, multi-lorebook navigation, settings panel, suggestion engine with phrase builder, find-and-replace, group-by-type, and keyboard shortcuts.
+**Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, an optional splitting system for entries that have grown too long, and an opt-in rollback system for saving and restoring entry states.
 
 ### Features
 
-**Search & Find-Replace (remaining):**
-- [x] HTML/regex escape utilities — XSS-safe HTML escaping and regex escaping; prerequisite for search highlight and safe find-replace operations
-- [x] Search mode switcher — toggles between Search and Find & Replace modes; gate for the F&R row
-- [x] Find & Replace row — second input row shown only in F&R mode; depends on mode switcher
-- [x] Find & Replace All — bulk-replaces text across all entries' triggers and descriptions; depends on html-escape and F&R row
-- [x] Post-replace deduplication — removes duplicate triggers created by a replace operation; must follow F&R All
-- [x] Match counter display — shows "X matches in Y entries" alongside the search bar; informational, depends on live search
-- [x] Search highlight — yellow-marks matching text within visible entry name and trigger fields; depends on html-escape
-- [x] Group by Type button — reorganizes visible entries into type-grouped blocks; completes the filter feature set
-- [x] Group by Type (logic) — the reordering logic behind the group-by-type button; pairs with the button
+**Comparison Panel (prerequisite):**
+- [ ] `ComparisonPanel` component — panel-within-window that slides in as a secondary pane following the `MenuPanel` pattern; holds two entry cards side by side; context-triggered by duplicate warning and split preview workflows
+- [ ] Comparison panel hook — manages open/closed state and which two entries are loaded into the panel; wired to `ui-store`
 
-**Entry Card (remaining):**
-- [x] Inline tag chip editing — double-click chip label to edit trigger text in-place; refinement of chip UX
-- [x] Compact trigger text mode — single text field with a delimiter instead of chips; alternate input mode
-- [x] Delimiter switcher — toggles comma vs semicolon separator in compact mode; completes compact mode
-- [x] Description resize handle — draggable tab at the bottom of the textarea for manual height control; user control of layout
-- [x] Collapsible suggestions tray — per-entry expand/collapse tray; prerequisite for all suggestion display features
-- [x] Trigger suggestions engine — generates context-aware keyword suggestions from entry name/type/description; prerequisite for suggestions display
-- [x] Type-aware suggestion variants — filters suggestions by entry type; depends on suggestion engine
-- [x] Trigger suggestions display — shows up to 12 suggestions per entry inside the tray; depends on engine and tray
-- [x] Suggestion reroll — rotates to the next batch of suggestions with a spin animation; depends on suggestions display
-- [x] One-click suggestion add — adds a suggestion chip directly to triggers on click; depends on suggestions display
+**Entry Authoring:**
+- [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
+- [ ] Empty triggers/description notification — warning system alert when an entry has no triggers or an empty description
 
-**Import/Export (full suite):**
-- [x] TXT template export builder — serializes lorebook to === header === block plain-text format; standalone export path
-- [x] TXT export — downloads lorebook as a .txt file; depends on TXT builder
-- [x] ZIP archive builder — produces a valid ZIP binary with CRC32 and central directory; prerequisite for DOCX export
-- [x] DOCX export builder — builds a minimal OOXML .docx blob using the ZIP builder; depends on ZIP builder
-- [x] DOCX export — downloads lorebook as a .docx file; depends on DOCX builder
-- [x] Parse plain-text import — parses key:value or === block === format text into entry objects; first import path
-- [x] Parse TXT template files — handles structured .txt with LOREBOOK: header; extends plain-text parser
-- [x] Parse DOCX files via Mammoth.js — dynamically loads Mammoth from CDN and extracts text; depends on TXT parser
-- [x] Import preview — shows parsed entries before committing to the store; depends on all three parsers
-- [x] File drag & drop upload — accepts dragged .txt/.docx files on the drop zone; depends on import parsers
-- [x] File browse upload — opens OS file picker on click of drop zone; completes the upload UI
-- [x] JSON generate & copy — builds JSON string and copies to clipboard with success feedback; clipboard variant of JSON export
-- [x] JSON import with validation — parses and validates JSON structure before loading; required for safe import
-- [x] Template downloads — downloads blank .txt and .docx import templates for user reference; depends on TXT/DOCX builders
-- [x] Clear all — deletes all entries and resets the lorebook name; required data management action
-- [x] Load state — restores a full state object into the store; called after import confirm and lorebook switch
+**Entry Duplicate Warning:**
+- [ ] Duplicate entry detection — uses `scan-service.js` to identify entries with identical or near-identical names or trigger sets
+- [ ] Duplicate warning display — surfaces findings via warning system; prompts user to review, merge, or dismiss
+- [ ] Entry merge — merges two entries into one after user review; presents side-by-side fields for confirmation; uses `diff-service.js` once available in Phase 9, otherwise plain side-by-side display
 
-**Lorebook Navigation:**
-- [x] Multi-lorebook index management — tracks metadata (name, timestamp) for up to 10 saved lorebooks; prerequisite for all switcher features
-- [x] Recent lorebook promotion — moves the most recently accessed lorebook to the front of the index; depends on index management
-- [x] Lorebook count badge — shows the number of saved lorebooks on the switcher button; depends on index management
-- [x] Lorebook switcher dropdown — dropdown listing all saved lorebooks with names and timestamps; depends on index management
-- [x] Lorebook timestamp display — shows "Saved Xm ago" relative time next to each lorebook in the dropdown; depends on switcher
-- [x] Lorebook delete — one-click delete of a lorebook entry in the switcher; depends on switcher
-- [x] Save prompt before switch — warns user and offers JSON/TXT download before switching away from current lorebook; depends on export + switcher
-- [x] Download-and-switch — downloads current lorebook and then immediately switches; depends on save prompt
-- [x] New lorebook creation — creates a new empty lorebook and switches to it; depends on index management
-- [x] Lorebook switch — loads a different saved lorebook into the active state; depends on index management
+**Entry Splitting:**
+- [ ] Split detection — identifies when an entry exceeds a threshold and suggests potential split points
+- [ ] Entry split action — splits one entry into two; the second entry inherits all triggers from the first and a system-generated name suffix
+- [ ] Linear/non-linear prompt — asks whether the split content is chronologically sequential; linear splits inject a bridging prefix phrase into the second entry's description
+- [ ] Split chip — small badge on split entries indicating they are part of a pair; uses warning system visual layer
+- [ ] Character limit override — allows entries in split mode to temporarily exceed `CHAR_LIMIT` until the split is confirmed
 
-**Settings Panel:**
-- [x] Default window size dropdown — chooses Column (⅓ viewport) or Full Page as the default window size
-- [x] Reset window to default size — re-centers and resizes window to the chosen default
-- [x] Tiered character counter toggle — enables/disables the three-zone color coding on char count
-- [x] Compact trigger mode toggle — switches trigger input globally from chips to single text field
-- [x] Suggestions tray collapsed by default toggle — starts every entry's suggestions tray collapsed
-- [x] Hide entry stats toggle — hides trigger/char count badges from entry headers
-- [x] Hotkey input — customizes the Alt+key shortcut for new entry creation
-- [x] Settings preference persistence — saves all settings to localStorage on every change
-
-**Keyboard Shortcuts:**
-- [x] Alt+N (configurable) new entry — creates a new entry without the mouse; depends on hotkey input setting
-- [x] Ctrl+Z undo — keyboard trigger for undo action; depends on undo stack
-- [x] Ctrl+Shift+Z / Ctrl+Y redo — keyboard trigger for redo action; depends on redo stack
-
-**Lander & Initialization:**
-- [x] Desktop app launch button — opens the floating window from the lander page
-- [x] GitHub Pages direct link — links to the hosted version from the lander
-- [x] Template download links — downloads .txt and .docx templates directly from the lander
-- [x] Setup instructions — static step-by-step guide for desktop use on the lander
+**Entry Rollback System (opt-in):**
+- [ ] `entry.snapshots` array on entry schema — capped array of snapshot objects `{ content, triggers, timestamp, label }`; added to `entry-factory.js` and `defaults.js`; backwards-compatible default of empty array
+- [ ] Rollback settings in `settings-store.js` — rollback enabled toggle (default **Off**, per-lorebook); snapshot count selector: Off / 1 / 3 / 5 / Go with God (custom integer 1–10); count pre-selects 3 when first enabled; global "always enable rollback for new lorebooks" toggle
+- [ ] Storage warning — surfaced in settings UI when count exceeds 5; explains localStorage pressure
+- [ ] Greyed rollback button on entry card — visible but disabled when rollback is Off; hover tooltip explains how to enable it in settings; active when rollback is On
+- [ ] Auto-snapshot on first edit — when rollback is enabled and a user edits an entry for the first time in a session, a snapshot is silently taken before the edit; every entry gets one free backup automatically
+- [ ] Navigate-away prompt — when rollback is enabled and the entry has been edited since the last snapshot, collapsing the entry (desktop) or closing the panel (mobile) triggers a prompt: "Replace or Save New" with a "Don't ask again this session" option
+- [ ] Manual rollback save — when prompts are suppressed, the rollback button saves a snapshot on demand; includes option to re-enable the prompt
+- [ ] Rollback dropdown UI — lists saved snapshots; each labeled with timestamp by default, user-editable to a custom title
+- [ ] Rollback Comparison Panel integration — selecting a snapshot opens the Comparison Panel showing snapshot vs. current entry state; includes a "Highlight Differences" button that is inert in Phase 8 (placeholder for Phase 9)
+- [ ] Rollback restore — confirm action within the Comparison Panel replaces current entry content with the snapshot; action is undoable via existing undo/redo stack
+- [ ] Independent from undo/redo — rollback system has no connection to `history-store.js`; they operate entirely separately
 
 ### Stop Condition
 
-Every feature from the input list (except Phase 4 and 5 items) is implemented. User can: complete a full import/export round trip in JSON, TXT, and DOCX; switch between 3 lorebooks with working relative timestamps; run Find & Replace All and confirm duplicate triggers are removed; configure all settings and reload to verify they persist; use Alt+N, Ctrl+Z, and Ctrl+Shift+Z; and use the lander to open the app and download templates.
+User can insert a markdown bold marker via the dropdown and confirm it appears in the description; create two entries with the same name and confirm a duplicate warning appears; dismiss or merge them and confirm the result; create an entry exceeding the character limit, confirm split suggestions appear, split it, confirm two entries exist with matching triggers, and confirm the second entry has a bridging prefix when linear mode was selected; enable rollback in settings, edit an entry, navigate away and confirm the "Replace or Save New" prompt appears, save a new snapshot with a custom label, open the rollback dropdown, select a snapshot, confirm the Comparison Panel opens showing both states, and restore the snapshot.
 
 **Estimated Complexity:** High
 
 ---
 
-## Phase 4 — Polish & Hardening
+## Phase 9 — Global Features
 
-**Goal:** Overlay rendering for search highlights in descriptions is complete, scroll-based UX shortcuts are wired, and edge-case interactions in search are handled; the app feels complete and robust.
-
-### Features
-
-- [ ] Description highlight overlay — yellow highlights showing search matches inside the description textarea
-- [ ] Enter key scroll-to-first — pressing Enter in the search bar scrolls to and focuses the first matching entry
-- [ ] Scroll-wheel type switching — Shift+scroll on the type dropdown cycles through types
-
-### Stop Condition
-
-Search highlights appear correctly inside description textareas as the user types; pressing Enter in the search bar scrolls to the first match; Shift+scroll on any type dropdown cycles through all five types without interfering with any other scroll behavior.
-
-**Estimated Complexity:** Low
-
----
-
-## Phase 5 — Advanced / Nice-to-Have
-
-**Goal:** The phrase builder provides a guided multi-word compound trigger authoring flow that enhances the suggestion experience for power users.
+**Goal:** The app can compare two lorebooks side by side for congruency, and users have a dedicated planner for drafting future entries.
 
 ### Features
 
-- [ ] Phrase builder mode — activates a compound trigger building mode from the suggestions tray
-- [ ] Phrase pill row — displays selected suggestion words as reorderable pills in the builder
-- [ ] Phrase confirm/cancel — commits the built phrase as a single trigger or discards it
+**Diff System (prerequisite):**
+- [ ] `diff-service.js` — compares two entry objects field by field and returns a structured delta; used by Lorebook Crosstalk, Entry Duplicate merge, and rollback highlighting
+- [ ] Rollback diff highlighting — wires `diff-service.js` into the rollback Comparison Panel; activates the previously inert "Highlight Differences" button; field-level delta highlighting renders between snapshot and current entry state
+
+**Lorebook Crosstalk:**
+- [ ] Secondary lorebook loader — loads a second saved lorebook into a read-only comparison instance without disturbing the active lorebook
+- [ ] Cross-lorebook entry diff — uses `diff-service.js` to compare matching entries across both lorebooks and surface discrepancies
+- [ ] Lateral search — extends search to operate across both lorebooks simultaneously
+- [ ] Lateral find & replace — extends find & replace to operate across both lorebooks with per-lorebook confirmation
+
+**Entry Planner:**
+- [ ] Planner panel — dedicated panel for notes and planned entry stubs; separate from the build panel
+- [ ] Entry stub creation — converts a planner note into a blank entry shell in the active lorebook
+- [ ] Stub filter on build page — filter toggle to show only entries created from stubs that have not been fully authored yet
 
 ### Stop Condition
 
-User can click into phrase builder mode, select 3 suggestion words, drag them into a different order, confirm, and see the resulting space-joined phrase added as a single trigger chip. Cancelling at any step discards all selections with no side effects.
+User can load a second lorebook into crosstalk mode, confirm that entries present in both are diff'd and discrepancies surfaced, and run a search that returns results from both; user can create a planner note, convert it to an entry stub, and filter the build page to show only unfilled stubs; user can open a saved rollback snapshot in the Comparison Panel and click "Highlight Differences" to see field-level changes highlighted.
 
-**Estimated Complexity:** Low
+**Estimated Complexity:** High
 
 ---
 
-## Claude Code Prompt Sequence
+## Future Features
 
-**Prompt 1:** "Build Phase 1 MVP — implement localStorage persistence, autosave, the basic floating window shell, entry card with name/type/description/trigger chips, add/delete/renumber, and JSON download; scope to `src/services/storage-service.js`, `src/services/autosave.js`, `src/services/entry-factory.js`, `src/services/json-export.js`, `src/state/lorebook-store.js`, `src/state/history-store.js`, `src/constants/`, `src/hooks/use-autosave.js`, `src/hooks/use-lorebook.js`, `src/hooks/use-entries.js`, `src/components/layout/FloatingWindow.jsx`, `src/components/layout/TabBar.jsx`, `src/components/layout/WindowHeader.jsx`, `src/components/layout/WindowFooter.jsx`, `src/components/feature/EntryList.jsx`, `src/components/feature/EntryCard.jsx`, `src/components/feature/EntryName.jsx`, `src/components/feature/TypeSelector.jsx`, `src/components/feature/TriggerChips.jsx`, `src/components/feature/DescriptionArea.jsx`, and the relevant UI primitives; stop before drag/resize, search, undo, or export formats other than JSON."
+Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
 
-**Prompt 2:** "Build Phase 2 Functional Baseline — implement window drag, corner resize with viewport clamping, undo/redo stack with buttons, drag-to-reorder entries, collapse/expand with Collapse All, live search with type filter, tiered char counter, trigger counter badge, duplicate prevention, and bulk paste; scope to `src/hooks/use-drag-window.js`, `src/hooks/use-resize-window.js`, `src/hooks/use-undo-redo.js`, `src/hooks/use-entries.js`, `src/hooks/use-search.js`, `src/hooks/use-type-filter.js`, `src/state/history-store.js`, `src/state/ui-store.js`, `src/components/layout/ResizeHandles.jsx`, `src/components/feature/SearchBar.jsx`, `src/components/feature/TypeFilterBar.jsx`, and the stats/counter UI primitives; stop before find-replace, suggestions, import, multi-lorebook, or settings."
+---
 
-**Prompt 3:** "Build Phase 3 Feature Complete — implement html-escape utilities, find-and-replace with deduplication, search highlight, group-by-type, inline chip editing, compact trigger mode, description resize handle, collapsible suggestions tray with engine/display/reroll/add, all import/export formats (TXT/ZIP/DOCX/JSON-import), import preview, drag-drop upload, multi-lorebook index with switcher/timestamps/delete/switch/create/save-prompt/download-and-switch, full settings panel with persistence, keyboard shortcuts (Alt+N / Ctrl+Z / Ctrl+Shift+Z), and the lander section; scope to all remaining files in `src/services/`, `src/hooks/`, `src/components/feature/`, and `src/state/settings-store.js`; stop before description overlay, Enter-scroll, scroll-wheel type switching, and phrase builder."
+**Lookup Table Trigger System**
+A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.
 
-**Prompt 4:** "Build Phase 4 Polish & Hardening — implement the description highlight overlay in `src/components/feature/DescriptionHighlight.jsx`, Enter-key scroll-to-first-match in `src/hooks/use-search.js`, and Shift+scroll type cycling in `src/components/feature/TypeSelector.jsx`; stop before phrase builder."
+**Undo/Redo Overhaul**
+The current undo/redo system is overzealous — it captures too many intermediate states. Needs a rethink of what constitutes a meaningful snapshot. Entirely independent of the rollback system. No dependencies, but low urgency until user feedback identifies specific pain points.
 
-**Prompt 5:** "Build Phase 5 Phrase Builder — implement phrase builder mode, pill row with drag reorder, and confirm/cancel in `src/hooks/use-phrase-builder.js` and `src/components/feature/PhraseBuilder.jsx`; wire into `src/components/feature/SuggestionsTray.jsx`."
+**Entry Planner Smart Assistance**
+Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-service.js` — detects names mentioned in planner notes that don't have existing entries and prompts the user to create them. Depends on: Entry Planner (Phase 9) and `scan-service.js` (Phase 7) both being complete.
+
+**Lorebook Crosstalk — Second Window Mode**
+The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power users comparing large lorebooks, a second floating window may be more practical. Depends on: Phase 9 Lorebook Crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
+
+---
+
+## Queued Adjustments
+
+Items are moved into phases as they are assigned. Add new items here when discovered.
+
+---
+
+## Known Bugs
+
+Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed bugs note the phase or commit where they were resolved.
+
+---
+
+**Full Type Button Grid Setting Has No Effect**
+The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
+Status: **Open** — assigned to Polish Pass

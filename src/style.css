@@ -187,28 +187,47 @@ input:focus, textarea:focus, select:focus {
 }
 .lorebook-count-badge:hover { background: var(--surface3); }
 
-/* Inline tabs */
-.header-tabs {
+/* Menu button + dropdown */
+.menu-btn-wrap { position: relative; flex-shrink: 0; }
+.menu-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 16px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.menu-btn:hover,
+.menu-btn--open { background: var(--surface3); color: var(--text); }
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  min-width: 160px;
+  z-index: 200;
+  padding: 4px;
 }
 
-.header-tab {
-  padding: 4px 12px;
-  border-radius: 20px;
+.menu-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: var(--radius);
   font-size: 13px;
   color: var(--muted2);
   transition: background var(--transition), color var(--transition);
-  white-space: nowrap;
 }
-.header-tab:hover { color: var(--text); }
-.header-tab--active {
-  background: #fff;
-  color: #111827;
-  font-weight: 600;
-}
+.menu-dropdown-item:hover { background: var(--surface3); color: var(--text); }
+.menu-dropdown-item--active { color: var(--accent); }
 
 /* Close button */
 .header-close {
@@ -236,14 +255,18 @@ input:focus, textarea:focus, select:focus {
   min-height: 0;
   position: relative;
 }
+/* Desktop: row layout so Build and side panel sit side by side */
+.floating-window:not(.floating-window--mobile) .window-body {
+  flex-direction: row;
+}
 .window-body--lander {
   overflow-y: auto;
 }
 
 /* ============================================================
-   Window Footer
+   Hotbar (unified footer on desktop + mobile)
    ============================================================ */
-.window-footer {
+.hotbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -255,14 +278,21 @@ input:focus, textarea:focus, select:focus {
   position: relative;
 }
 
-.footer-left,
-.footer-right {
+.hotbar-group {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1;
 }
-.footer-right { justify-content: flex-end; }
+.hotbar-group--right { justify-content: flex-end; }
+
+.hotbar-slot--empty {
+  /* invisible spacer — matches filled button width to maintain symmetry */
+  flex: 1;
+  visibility: hidden;
+}
+
+.hotbar .footer-btn { flex: 1; }
 
 .footer-btn {
   padding: 6px 14px;
@@ -281,12 +311,13 @@ input:focus, textarea:focus, select:focus {
 .footer-btn:disabled { opacity: 0.38; cursor: default; }
 
 .footer-fab {
-  width: 40px;
-  height: 40px;
+  /* width/height/font-size driven by inline style from Hotbar.jsx (settings-based) */
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -297,11 +328,8 @@ input:focus, textarea:focus, select:focus {
   line-height: 1;
   padding: 0;
   border: none;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
 }
-.footer-fab:hover { background: #dc2626; transform: translateX(-50%) scale(1.07); }
+.footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 
 /* ============================================================
    Resize Handles
@@ -325,6 +353,30 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  position: relative;
+}
+
+/* Lorebook name field at the top of build panel — mobile only */
+.build-lorebook-name {
+  flex-shrink: 0;
+  padding: 12px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.build-lorebook-name-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 10px;
+  transition: border-color var(--transition);
+  box-sizing: border-box;
+}
+.build-lorebook-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 /* ============================================================
@@ -374,8 +426,48 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--radius);
   color: var(--text);
   cursor: pointer;
-  min-width: 130px;
+  min-width: 105px;
 }
+
+.sort-btn-wrap { position: relative; flex-shrink: 0; }
+.sort-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.sort-btn:hover { background: var(--surface3); color: var(--text); }
+.sort-btn--active { color: var(--accent); }
+
+.sort-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  min-width: 140px;
+  z-index: 200;
+  padding: 4px;
+}
+.sort-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--muted2);
+  transition: background var(--transition), color var(--transition);
+}
+.sort-dropdown-item:hover { background: var(--surface3); color: var(--text); }
+.sort-dropdown-item--active { color: var(--accent); }
 
 /* Match counter */
 .match-counter {
@@ -446,6 +538,17 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface3);
   border-color: var(--border2);
   color: var(--text);
+}
+
+/* "Group by type" — dashed-border pill variant */
+.type-pill--dashed {
+  border-style: dashed;
+}
+.type-pill--dashed-active {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--text);
+  border-style: dashed;
 }
 
 .filter-hint {
@@ -770,6 +873,191 @@ input:focus, textarea:focus, select:focus {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+
+/* ============================================================
+   Mobile Entry Card (slim tap-to-open row)
+   ============================================================ */
+.entry-card--mobile {
+  cursor: pointer;
+  padding: 7px 12px 5px;
+  user-select: none;
+}
+.entry-card--mobile:active { opacity: 0.7; }
+
+.entry-card-mobile-index {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 1px;
+}
+
+.entry-card-mobile-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entry-card-mobile-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-card-mobile-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.entry-card-mobile-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.entry-card-mobile-chevron {
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.entry-card-mobile-type {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* ============================================================
+   Entry Detail Panel (mobile full-screen slide-in editor)
+   ============================================================ */
+.entry-detail-panel {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  background: var(--surface);
+  z-index: 10;
+}
+.entry-detail-panel--open {
+  display: flex;
+}
+
+.entry-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.entry-detail-back {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.entry-detail-back:hover { opacity: 0.8; }
+
+.entry-detail-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.entry-detail-remove {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 13px;
+  padding: 4px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color var(--transition), border-color var(--transition);
+}
+.entry-detail-remove:hover { color: var(--coral); border-color: var(--coral); }
+
+.entry-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.entry-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entry-name-field--detail {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Entry type button grid in detail panel */
+.entry-type-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.entry-type-buttons .entry-type-btn:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.entry-type-btn {
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  color: var(--muted2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.entry-type-btn:hover { background: var(--surface3); color: var(--text); }
+.entry-type-btn--active { color: #fff; }
+
+/* Entry type compact dropdown (default view in detail panel) */
+.entry-type-dropdown-wrap { width: 100%; }
+.entry-type-dropdown-wrap .type-selector {
+  width: 100%;
+  padding: 9px 10px;
+  font-size: 14px;
+}
+
+/* FAB custom size input row (in SettingsPanel) */
+.fab-custom-size-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.fab-custom-size-row input { width: 64px; }
+.fab-custom-size-label {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 /* ============================================================
    Suggestions Tray
@@ -1355,3 +1643,217 @@ kbd {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+/* ============================================================
+   Mobile — max-width: 767px
+   ============================================================ */
+@media (max-width: 767px) {
+  body { font-size: 14px; }
+
+  /* Full-screen window: fills the entire viewport */
+  .floating-window--mobile {
+    position: fixed;
+    inset: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    min-width: unset;
+    min-height: unset;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Hide desktop-only chrome */
+  .floating-window--mobile .corner { display: none; }
+  .floating-window--mobile .window-header { cursor: default; }
+
+  /* Extra bottom padding in window-body so content clears the mobile nav bar */
+  .floating-window--mobile .window-body { padding-bottom: 0; }
+
+  /* ── MenuPanel: full-screen overlay on mobile ── */
+  /* Use .floating-window--mobile .menu-panel (2 classes) so this beats the base
+     .menu-panel { width: 320px } rule that comes later in the cascade */
+  .floating-window--mobile .menu-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    z-index: 10;
+    background: var(--surface);
+  }
+
+  /* ── Hotbar: FAB floats above-right; equidistant 20px gap from right and above hotbar ── */
+  .footer-fab {
+    position: absolute;
+    right: 20px;
+    bottom: calc(100% + 20px);
+    z-index: 10;
+  }
+  .hotbar { justify-content: flex-start; gap: 0; }
+  .hotbar-group,
+  .hotbar-group--right { display: contents; }
+  .hotbar-slot--empty { display: none; }
+
+  /* ── Hotbar: text labels at reduced size, no icon symbols ── */
+  .hotbar-slot-icon { display: none; }
+  .hotbar-slot-text { display: inline; }
+  .hotbar .footer-btn { font-size: 11px; padding: 0 8px; }
+
+  /* ── Touch targets ── */
+  .entry-card-header      { min-height: 48px; padding: 10px 10px; }
+  .card-action-btn        { min-height: 36px; padding: 4px 10px; }
+  .chip                   { min-height: 32px; align-items: center; }
+  .chip-delete            { min-width: 28px; min-height: 28px; }
+  .footer-btn             { min-height: 40px; padding: 0 14px; }
+  .footer-fab             { width: 50px; height: 50px; }
+
+  /* ── Reorder buttons ── */
+  .entry-reorder-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex-shrink: 0;
+  }
+
+  .reorder-btn {
+    font-size: 10px;
+    line-height: 1;
+    padding: 2px 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--muted2);
+    min-width: 22px;
+    min-height: 18px;
+    transition: color var(--transition), border-color var(--transition);
+  }
+
+  .reorder-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .reorder-btn:not(:disabled):hover {
+    color: var(--text);
+    border-color: var(--border2);
+  }
+
+  /* ── Entry fields: stack vertically on narrow screens ── */
+  .entry-fields-row { flex-direction: column; gap: 8px; }
+  .entry-field--type { width: 100%; }
+
+  /* ── Tab split (import/export): stack vertically ── */
+  .tab-split { flex-direction: column; }
+
+  /* ── Hotbar: allow wrapping on very narrow screens ── */
+  .hotbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+}
+
+/* ============================================================
+   Menu Panel (desktop side panel)
+   ============================================================ */
+.menu-panel {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.menu-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.menu-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.menu-panel-close {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.menu-panel-close:hover { background: rgba(239,68,68,.15); color: var(--accent); }
+
+.menu-panel-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Lorebook Panel (always-expanded lorebook list in menu panel)
+   ============================================================ */
+.lorebook-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.lorebook-panel .switcher-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: none; /* override the fixed max-height used in the popup version */
+}
+.lorebook-panel-prompt {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Hotbar slot config (Settings panel)
+   ============================================================ */
+.hotbar-slot-config {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.hotbar-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hotbar-slot-label {
+  font-size: 12px;
+  color: var(--muted);
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.hotbar-slot-select {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 8px;
+  transition: border-color var(--transition);
+}
+.hotbar-slot-select:focus { outline: none; border-color: var(--border2); }

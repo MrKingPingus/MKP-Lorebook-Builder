@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>MKP Lorebook Builder — Menu Redesign Mockup</title>
+<style>
+/* ── Design tokens (matching real app) ── */
+:root {
+  --bg:        #0f172a;
+  --surface:   #111827;
+  --surface2:  #1f2937;
+  --surface3:  #1e293b;
+  --border:    #374151;
+  --border2:   #4b5563;
+  --text:      #e5e7eb;
+  --muted:     #6b7280;
+  --muted2:    #9ca3af;
+  --accent:    #ef4444;
+  --gold:      #eab308;
+  --green:     #34d399;
+  --radius:    5px;
+  --radius-lg: 8px;
+  --shadow:    0 12px 40px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.5);
+  --font:      'Inter', system-ui, sans-serif;
+  --transition: 0.12s ease;
+  --panel-w:   320px;
+  --header-h:  46px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body { font-family: var(--font); font-size: 13px; background: var(--bg); color: var(--text); line-height: 1.5; }
+button { cursor: pointer; font-family: inherit; font-size: inherit; border: none; background: none; color: inherit; }
+
+/* ── Floating window ── */
+#window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  /* width/height/left/top set by JS */
+  transition: left 0.18s ease, width 0.18s ease;
+  /* ↑ smooth shift + expand */
+}
+
+/* Golden corner brackets */
+.corner {
+  position: absolute;
+  width: 12px; height: 12px;
+  border-color: var(--gold);
+  border-style: solid;
+  border-width: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.corner--nw { top: 4px; left: 4px;  border-top-width: 2px;    border-left-width: 2px; }
+.corner--ne { top: 4px; right: 4px; border-top-width: 2px;    border-right-width: 2px; }
+.corner--sw { bottom: 4px; left: 4px;  border-bottom-width: 2px; border-left-width: 2px; }
+.corner--se { bottom: 4px; right: 4px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* ── Header ── */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+  min-height: var(--header-h);
+  position: relative;
+}
+#header:active { cursor: grabbing; }
+
+.header-logo { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.logo-icon { font-size: 16px; }
+.logo-text { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted2); }
+
+.lorebook-name-sizer { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.lorebook-name-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  transition: background var(--transition);
+  min-width: 80px;
+}
+.lorebook-name-input:hover { background: var(--surface3); }
+.lorebook-name-input:focus { background: var(--surface3); border: 1px solid var(--border2); }
+
+/* ── Menu button + dropdown ── */
+.menu-btn-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.menu-btn {
+  width: 30px; height: 30px;
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.menu-btn:hover, .menu-btn.active { background: var(--surface3); color: var(--text); }
+.menu-btn.active { color: var(--accent); }
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0,0,0,.6);
+  min-width: 160px;
+  z-index: 100;
+  padding: 4px;
+  display: none;
+}
+.menu-dropdown.open { display: block; }
+
+.menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 13px;
+  transition: background var(--transition), color var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-item:hover { background: var(--surface3); color: var(--text); }
+.menu-item.active { color: var(--accent); background: rgba(239,68,68,0.08); }
+.menu-item-icon { font-size: 14px; width: 18px; text-align: center; }
+
+/* Close button */
+.header-close {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition);
+}
+.header-close:hover { background: #ef444422; color: var(--accent); }
+
+/* ── Window body (flex-row on desktop) ── */
+#body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Build area ── */
+#build-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.build-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+}
+.search-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--muted2);
+}
+
+.type-chips {
+  display: flex;
+  gap: 5px;
+  padding: 0 14px 8px;
+  flex-shrink: 0;
+}
+.chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+.chip:hover { opacity: 0.8; }
+
+.entry-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entry-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.entry-card-name { font-weight: 600; font-size: 13px; }
+.entry-card-type { font-size: 11px; color: var(--muted); }
+.entry-card-desc { font-size: 12px; color: var(--muted2); line-height: 1.4; }
+
+/* ── Footer ── */
+#footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.footer-info { color: var(--muted); font-size: 12px; }
+.footer-btns { display: flex; gap: 6px; }
+.footer-btn {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface3);
+  color: var(--muted2);
+  border: 1px solid var(--border);
+  transition: background var(--transition), color var(--transition);
+}
+.footer-btn:hover { background: var(--border); color: var(--text); }
+.footer-btn--primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.footer-btn--primary:hover { opacity: 0.85; }
+
+/* ── Side panel ── */
+#menu-panel {
+  width: var(--panel-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+  /* hidden when no panel is open */
+  display: none;
+}
+#menu-panel.open { display: flex; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.panel-title { font-weight: 700; font-size: 13px; color: var(--text); }
+.panel-close {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius);
+  transition: background var(--transition), color var(--transition);
+}
+.panel-close:hover { background: #ef444422; color: var(--accent); }
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Panel content sections */
+.panel-section { display: none; flex-direction: column; flex: 1; }
+.panel-section.active { display: flex; }
+
+/* Lorebooks panel */
+.lorebook-list { display: flex; flex-direction: column; gap: 2px; padding: 8px; }
+.lb-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lb-item:hover { background: var(--surface3); }
+.lb-item.active-lb { background: rgba(239,68,68,0.1); }
+.lb-item-left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lb-item-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-item.active-lb .lb-item-name { color: var(--accent); }
+.lb-item-time { font-size: 11px; color: var(--muted); }
+.lb-item-del {
+  font-size: 16px; color: var(--muted); width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius); flex-shrink: 0;
+  transition: background var(--transition), color var(--transition);
+}
+.lb-item-del:hover { background: #ef444422; color: var(--accent); }
+.lb-new {
+  margin: 4px 8px 8px;
+  width: calc(100% - 16px);
+  padding: 8px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 12px;
+  text-align: center;
+  transition: background var(--transition), color var(--transition);
+}
+.lb-new:hover { background: var(--surface3); color: var(--text); }
+
+/* Import/Export panel */
+.ie-panel { display: flex; flex-direction: column; flex: 1; }
+.ie-section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.ie-section-title { font-weight: 700; font-size: 11px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+.ie-dropzone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.ie-dropzone:hover { border-color: var(--muted2); color: var(--muted2); }
+.ie-formats { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.ie-format-btn {
+  padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: var(--surface3); border: 1px solid var(--border); color: var(--muted2);
+  transition: background var(--transition), color var(--transition);
+}
+.ie-format-btn:hover { background: var(--border); color: var(--text); }
+.ie-format-btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Settings panel */
+.settings-panel { padding: 12px 14px; display: flex; flex-direction: column; gap: 14px; }
+.settings-group { display: flex; flex-direction: column; gap: 6px; }
+.settings-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.settings-row-label { font-size: 13px; color: var(--muted2); }
+.toggle {
+  width: 34px; height: 18px;
+  background: var(--border2);
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.2s;
+}
+.toggle.on::after { left: 18px; }
+
+/* ── Resize handles (corners only) ── */
+.resize-handle {
+  position: absolute;
+  width: 20px; height: 20px;
+  z-index: 20;
+}
+.resize-handle--nw { top: -2px; left: -2px; cursor: nw-resize; }
+.resize-handle--ne { top: -2px; right: -2px; cursor: ne-resize; }
+.resize-handle--sw { bottom: -2px; left: -2px; cursor: sw-resize; }
+.resize-handle--se { bottom: -2px; right: -2px; cursor: se-resize; }
+
+/* ── Hint bar ── */
+#hint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 12px;
+  color: var(--muted2);
+  pointer-events: none;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<!-- Floating window -->
+<div id="window">
+  <span class="corner corner--nw"></span>
+  <span class="corner corner--ne"></span>
+  <span class="corner corner--sw"></span>
+  <span class="corner corner--se"></span>
+
+  <!-- Header -->
+  <div id="header">
+    <div class="header-logo" onpointerdown="event.stopPropagation()">
+      <span class="logo-icon">📖</span>
+      <span class="logo-text">LOREBOOK BUILDER</span>
+    </div>
+
+    <div class="lorebook-name-sizer" onpointerdown="event.stopPropagation()">
+      <input class="lorebook-name-input" value="My Campaign" size="14" />
+    </div>
+
+    <!-- Menu button -->
+    <div class="menu-btn-wrap" onpointerdown="event.stopPropagation()" id="menu-wrap">
+      <button class="menu-btn" id="menu-btn" title="Menu" onclick="toggleMenu()">☰</button>
+      <div class="menu-dropdown" id="menu-dropdown">
+        <button class="menu-item" onclick="openPanel('lorebooks')">
+          <span class="menu-item-icon">📚</span> Lorebooks
+        </button>
+        <button class="menu-item" onclick="openPanel('import-export')">
+          <span class="menu-item-icon">⇅</span> Import / Export
+        </button>
+        <button class="menu-item" onclick="openPanel('settings')">
+          <span class="menu-item-icon">⚙</span> Settings
+        </button>
+      </div>
+    </div>
+
+    <button class="header-close" onpointerdown="event.stopPropagation()" title="Close">×</button>
+  </div>
+
+  <!-- Body -->
+  <div id="body">
+
+    <!-- Build area (always visible) -->
+    <div id="build-area">
+      <div class="build-toolbar">
+        <input class="search-input" placeholder="Search entries…" />
+      </div>
+      <div class="type-chips">
+        <span class="chip" style="color:#a78bfa;border-color:#a78bfa;">Character</span>
+        <span class="chip" style="color:#60a5fa;border-color:#60a5fa;">Location</span>
+        <span class="chip" style="color:#34d399;border-color:#34d399;">Item</span>
+        <span class="chip" style="color:#f87171;border-color:#f87171;">Plot Event</span>
+        <span class="chip" style="color:#9ca3af;border-color:#9ca3af;">Other</span>
+      </div>
+      <div class="entry-list">
+        <div class="entry-card" style="border-left-color:#a78bfa">
+          <div class="entry-card-name">Aria Moonwhisper</div>
+          <div class="entry-card-type">Character · 3 triggers</div>
+          <div class="entry-card-desc">An elven ranger from the northern woodlands, known for her silver hair and uncanny ability to communicate with animals…</div>
+        </div>
+        <div class="entry-card" style="border-left-color:#60a5fa">
+          <div class="entry-card-name">The Shattered Keep</div>
+          <div class="entry-card-type">Location · 2 triggers</div>
+          <div class="entry-card-desc">A ruined fortress perched atop the Greymist Cliffs, said to have fallen during the Age of Sorrows…</div>
+        </div>
+        <div class="entry-card" style="border-left-color:#34d399">
+          <div class="entry-card-name">Moonstone Amulet</div>
+          <div class="entry-card-type">Item · 4 triggers</div>
+          <div class="entry-card-desc">A faintly glowing pendant that hums when danger is near. Belonged to Aria's mother…</div>
+        </div>
+        <div class="entry-card" style="border-left-color:#f87171">
+          <div class="entry-card-name">The Great Betrayal</div>
+          <div class="entry-card-type">Plot Event · 1 trigger</div>
+          <div class="entry-card-desc">The night the council turned on the High Mage, sending the kingdom into civil war…</div>
+        </div>
+        <div class="entry-card" style="border-left-color:#9ca3af">
+          <div class="entry-card-name">Old Trade Tongue</div>
+          <div class="entry-card-type">Other · 2 triggers</div>
+          <div class="entry-card-desc">A pidgin language used by merchants across three kingdoms. Few still speak it fluently…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div id="menu-panel">
+      <div class="panel-header">
+        <span class="panel-title" id="panel-title">Panel</span>
+        <button class="panel-close" onclick="closePanel()">×</button>
+      </div>
+      <div class="panel-body">
+
+        <!-- Lorebooks section -->
+        <div class="panel-section" id="section-lorebooks">
+          <div class="lorebook-list">
+            <div class="lb-item active-lb">
+              <div class="lb-item-left">
+                <span class="lb-item-name">My Campaign</span>
+                <span class="lb-item-time">saved 2 min ago</span>
+              </div>
+              <button class="lb-item-del" title="Delete">×</button>
+            </div>
+            <div class="lb-item">
+              <div class="lb-item-left">
+                <span class="lb-item-name">Starfall Chronicles</span>
+                <span class="lb-item-time">saved yesterday</span>
+              </div>
+              <button class="lb-item-del" title="Delete">×</button>
+            </div>
+            <div class="lb-item">
+              <div class="lb-item-left">
+                <span class="lb-item-name">One-Shot: The Vault</span>
+                <span class="lb-item-time">saved 3 days ago</span>
+              </div>
+              <button class="lb-item-del" title="Delete">×</button>
+            </div>
+          </div>
+          <button class="lb-new">+ New lorebook</button>
+        </div>
+
+        <!-- Import/Export section -->
+        <div class="panel-section" id="section-import-export">
+          <div class="ie-panel">
+            <div class="ie-section">
+              <div class="ie-section-title">Import</div>
+              <div class="ie-dropzone">Drop a .json or .txt file here<br><br>or click to browse</div>
+            </div>
+            <div class="ie-section">
+              <div class="ie-section-title">Export</div>
+              <div class="ie-formats">
+                <button class="ie-format-btn ie-format-btn--primary">⬇ JSON</button>
+                <button class="ie-format-btn">⬇ TXT</button>
+                <button class="ie-format-btn">⬇ DOCX</button>
+                <button class="ie-format-btn">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings section -->
+        <div class="panel-section" id="section-settings">
+          <div class="settings-panel">
+            <div class="settings-group">
+              <div class="settings-label">Display</div>
+              <div class="settings-row">
+                <span class="settings-row-label">Tiered character counter</span>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="settings-row">
+                <span class="settings-row-label">Hide suggestions by default</span>
+                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="settings-row">
+                <span class="settings-row-label">Hide entry stats</span>
+                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="settings-row">
+                <span class="settings-row-label">Group entries by type</span>
+                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-label">Hotkeys</div>
+              <div class="settings-row">
+                <span class="settings-row-label">New entry</span>
+                <input style="width:60px;text-align:center;" value="N" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- Footer -->
+  <div id="footer">
+    <span class="footer-info">5 entries</span>
+    <div class="footer-btns">
+      <button class="footer-btn">Import Entries</button>
+      <button class="footer-btn footer-btn--primary">+ New Entry</button>
+    </div>
+  </div>
+
+  <!-- Resize handles -->
+  <div class="resize-handle resize-handle--nw" data-corner="nw"></div>
+  <div class="resize-handle resize-handle--ne" data-corner="ne"></div>
+  <div class="resize-handle resize-handle--sw" data-corner="sw"></div>
+  <div class="resize-handle resize-handle--se" data-corner="se"></div>
+</div>
+
+<div id="hint">Click ☰ to open a panel — window re-centers · Try maximizing the window first to see the shrink behavior</div>
+
+<script>
+// ── State ──
+const WIN_W = 760, WIN_H = 580;
+const PANEL_W = 320;
+const MIN_W = 480, MIN_H = 300;
+
+const win = document.getElementById('window');
+let wx = Math.max(20, (window.innerWidth  - WIN_W) / 2);
+let wy = Math.max(20, (window.innerHeight - WIN_H) / 2);
+let ww = WIN_W, wh = WIN_H;
+let activePanel = null;
+let savedW = null; // width before panel opened
+
+function applyWindow(animate) {
+  if (!animate) win.style.transition = 'none';
+  win.style.left   = wx + 'px';
+  win.style.top    = wy + 'px';
+  win.style.width  = ww + 'px';
+  win.style.height = wh + 'px';
+  if (!animate) requestAnimationFrame(() => { win.style.transition = ''; });
+}
+applyWindow(false);
+
+// ── Menu ──
+function toggleMenu() {
+  const dd = document.getElementById('menu-dropdown');
+  const btn = document.getElementById('menu-btn');
+  const isOpen = dd.classList.contains('open');
+  dd.classList.toggle('open', !isOpen);
+  btn.classList.toggle('active', !isOpen);
+}
+
+// Close dropdown on outside click
+document.addEventListener('mousedown', (e) => {
+  const wrap = document.getElementById('menu-wrap');
+  if (!wrap.contains(e.target)) {
+    document.getElementById('menu-dropdown').classList.remove('open');
+    document.getElementById('menu-btn').classList.remove('active');
+  }
+});
+
+function openPanel(id) {
+  // Close dropdown
+  document.getElementById('menu-dropdown').classList.remove('open');
+  document.getElementById('menu-btn').classList.remove('active');
+
+  // Toggle off if same panel
+  if (activePanel === id) {
+    closePanel();
+    return;
+  }
+
+  const wasOpen = activePanel !== null;
+
+  // Update active menu item highlights
+  document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.menu-item[onclick="openPanel('${id}')"]`).classList.add('active');
+
+  // Show panel content
+  document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+
+  // Panel title
+  const titles = { lorebooks: 'Lorebooks', 'import-export': 'Import / Export', settings: 'Settings' };
+  document.getElementById('panel-title').textContent = titles[id];
+
+  if (!wasOpen) {
+    // Save current build width, compute new total (shrink build if viewport too narrow),
+    // then re-center the window horizontally.
+    savedW = ww;
+    const totalW = Math.min(ww + PANEL_W, window.innerWidth);
+    ww = totalW;
+    wx = Math.max(0, (window.innerWidth - totalW) / 2);
+    applyWindow(true);
+    document.getElementById('menu-panel').classList.add('open');
+  }
+
+  activePanel = id;
+}
+
+function closePanel() {
+  if (!activePanel) return;
+  activePanel = null;
+
+  document.getElementById('menu-panel').classList.remove('open');
+  document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+
+  // Restore build width and re-center.
+  if (savedW !== null) {
+    ww = savedW;
+    wx = Math.max(0, (window.innerWidth - ww) / 2);
+    savedW = null;
+    applyWindow(true);
+  }
+}
+
+// ── Drag to move ──
+const header = document.getElementById('header');
+let dragging = false, dragStartX, dragStartY, dragWinX, dragWinY;
+
+header.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  if (e.target !== header && !e.target.classList.contains('header-logo') && !e.target.classList.contains('logo-text') && !e.target.classList.contains('logo-icon') && !e.target.classList.contains('lorebook-name-sizer')) return;
+  dragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragWinX = wx; dragWinY = wy;
+  header.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+
+header.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  wx = dragWinX + (e.clientX - dragStartX);
+  wy = dragWinY + (e.clientY - dragStartY);
+  // Clamp
+  wx = Math.max(0, Math.min(wx, window.innerWidth  - MIN_W));
+  wy = Math.max(0, Math.min(wy, window.innerHeight - MIN_H));
+  applyWindow(false);
+});
+
+header.addEventListener('pointerup', () => { dragging = false; });
+
+// ── Resize ──
+let resizing = false, resizeCorner, resStartX, resStartY, resStartW, resStartH, resStartWx, resStartWy;
+
+document.querySelectorAll('.resize-handle').forEach(handle => {
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    resizing = true;
+    resizeCorner = handle.dataset.corner;
+    resStartX = e.clientX; resStartY = e.clientY;
+    resStartW = ww; resStartH = wh;
+    resStartWx = wx; resStartWy = wy;
+    handle.setPointerCapture(e.pointerId);
+  });
+});
+
+document.addEventListener('pointermove', (e) => {
+  if (!resizing) return;
+  const dx = e.clientX - resStartX;
+  const dy = e.clientY - resStartY;
+  let nw = resStartW, nh = resStartH, nx = resStartWx, ny = resStartWy;
+  if (resizeCorner.includes('e')) nw = Math.max(MIN_W, resStartW + 2 * dx);
+  if (resizeCorner.includes('w')) nw = Math.max(MIN_W, resStartW - 2 * dx);
+  if (resizeCorner.includes('s')) nh = Math.max(MIN_H, resStartH + 2 * dy);
+  if (resizeCorner.includes('n')) nh = Math.max(MIN_H, resStartH - 2 * dy);
+  if (resizeCorner.includes('e') || resizeCorner.includes('w')) nx = resStartWx + (resStartW - nw) / 2;
+  if (resizeCorner.includes('s') || resizeCorner.includes('n')) ny = resStartWy + (resStartH - nh) / 2;
+  nx = Math.max(0, Math.min(nx, window.innerWidth  - MIN_W));
+  ny = Math.max(0, Math.min(ny, window.innerHeight - MIN_H));
+  if (nx + nw > window.innerWidth)  nw = Math.max(MIN_W, window.innerWidth  - nx);
+  if (ny + nh > window.innerHeight) nh = Math.max(MIN_H, window.innerHeight - ny);
+  wx = nx; wy = ny; ww = nw; wh = nh;
+  // Keep savedW in sync with build area width during resize
+  if (activePanel && savedW !== null) {
+    savedW = ww - PANEL_W;
+  }
+  applyWindow(false);
+});
+
+document.addEventListener('pointerup', () => { resizing = false; });
+</script>
+</body>
+</html>

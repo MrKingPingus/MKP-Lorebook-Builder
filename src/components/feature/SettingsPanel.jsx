@@ -1,5 +1,6 @@
 // Settings tab content — all user preference controls
-import { useSettings } from '../../hooks/use-settings.js';
+import { useSettings }    from '../../hooks/use-settings.js';
+import { HOTBAR_ACTIONS } from '../../constants/hotbar-actions.js';
 import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../../constants/limits.js';
 
 export function SettingsPanel() {
@@ -11,6 +12,10 @@ export function SettingsPanel() {
     hideSuggestionsByDefault,
     hideEntryStats,
     newEntryHotkey,
+    hotbarSlots,
+    entryTypeView,
+    fabSize,
+    fabCustomSize,
     resetWindow,
     setCounterTiers,
     setDefaultWindowWidth,
@@ -19,7 +24,17 @@ export function SettingsPanel() {
     setHideSuggestionsByDefault,
     setHideEntryStats,
     setNewEntryHotkey,
+    setHotbarSlots,
+    setEntryTypeView,
+    setFabSize,
+    setFabCustomSize,
   } = useSettings();
+
+  function updateSlot(index, value) {
+    const next = [...hotbarSlots];
+    next[index] = value || null;
+    setHotbarSlots(next);
+  }
 
   return (
     <div className="settings-panel">
@@ -145,6 +160,77 @@ export function SettingsPanel() {
           <kbd>Alt+{newEntryHotkey.toUpperCase()}</kbd> New entry &nbsp;·&nbsp;
           <kbd>Ctrl+Z</kbd> Undo &nbsp;·&nbsp;
           <kbd>Ctrl+Y</kbd> Redo
+        </div>
+      </div>
+
+      {/* ── Entry type selector style (mobile detail panel) ── */}
+      <div className="settings-group">
+        <label className="settings-label">
+          <span>Full type button grid in entry editor</span>
+          <input
+            type="checkbox"
+            checked={entryTypeView === 'buttons'}
+            onChange={(e) => setEntryTypeView(e.target.checked ? 'buttons' : 'dropdown')}
+          />
+        </label>
+        <div className="settings-hint">
+          Shows large type buttons instead of a compact dropdown when editing an entry.
+        </div>
+      </div>
+
+      {/* ── FAB button size ── */}
+      <div className="settings-group">
+        <div className="settings-label">FAB button size</div>
+        <select
+          className="hotbar-slot-select"
+          value={fabSize}
+          onChange={(e) => setFabSize(e.target.value)}
+        >
+          <option value="small">Small (44px)</option>
+          <option value="medium">Medium (54px)</option>
+          <option value="large">Large (64px)</option>
+          <option value="custom">Custom</option>
+        </select>
+        {fabSize === 'custom' && (
+          <div className="fab-custom-size-row">
+            <input
+              type="number"
+              min={32}
+              max={100}
+              value={fabCustomSize}
+              onChange={(e) => setFabCustomSize(Number(e.target.value))}
+            />
+            <span className="fab-custom-size-label">px</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Hotbar slots ── */}
+      <div className="settings-group">
+        <div className="settings-label">Hotbar slots</div>
+        <div className="settings-hint">
+          6 slots flank the + button (3 left, 3 right). Choose an action or leave empty.
+        </div>
+        <div className="hotbar-slot-config">
+          {hotbarSlots.map((slotId, i) => (
+            <label key={i} className="hotbar-slot-row">
+              <span className="hotbar-slot-label">
+                {i < 3 ? `Left ${i + 1}` : `Right ${i - 2}`}
+              </span>
+              <select
+                className="hotbar-slot-select"
+                value={slotId ?? ''}
+                onChange={(e) => updateSlot(i, e.target.value)}
+              >
+                <option value="">(empty)</option>
+                {HOTBAR_ACTIONS.map((action) => (
+                  <option key={action.id} value={action.id}>
+                    {action.icon} {action.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
         </div>
       </div>
 

@@ -6,7 +6,7 @@ function uid() {
 }
 
 export function createEmptyEntry(overrides = {}) {
-  return { ...DEFAULT_ENTRY, id: uid(), ...overrides };
+  return { ...DEFAULT_ENTRY, id: uid(), lastModified: Date.now(), ...overrides };
 }
 
 export function createEmptyLorebook(overrides = {}) {

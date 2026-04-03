@@ -4,11 +4,9 @@ import { useExport }           from '../../hooks/use-export.js';
 
 export function Lander() {
   const setShowLander = useUi((s) => s.setShowLander);
-  const setActiveTab  = useUi((s) => s.setActiveTab);
   const { downloadTxtTemplate, downloadDocxTemplate } = useExport();
 
   function enterBuilder() {
-    setActiveTab('build');
     setShowLander(false);
   }
 

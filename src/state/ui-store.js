@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { DEFAULT_WINDOW } from '../constants/defaults.js';
 
 export const useUiStore = create((set) => ({
-  activeTab:   'build',     // 'build' | 'import-export' | 'settings'
+  activeMenuPanel:  null,     // null | 'lorebooks' | 'import-export' | 'settings' — slide tray panel
   searchQuery: '',
   searchMode:  'search',    // 'search' | 'find-replace'
   typeFilter:  [],          // empty = show all
@@ -12,11 +12,13 @@ export const useUiStore = create((set) => ({
   collapseAll: false,
   expandAll:   false,
   groupByType: false,
+  sortMode:    'default',    // 'default' | 'alpha-asc' | 'alpha-desc' | 'last-modified'
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
   showLander:       true,        // true on every page load; dismissed when user enters the builder
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
+  activeEntryId:    null,        // mobile entry detail panel — id of the entry being edited, or null
 
-  setActiveTab:   (activeTab)   => set({ activeTab }),
+  setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchMode:  (searchMode)  => set({ searchMode }),
   setTypeFilter:  (typeFilter)  => set({ typeFilter }),
@@ -25,9 +27,11 @@ export const useUiStore = create((set) => ({
   setCollapseAll: (collapseAll) => set({ collapseAll }),
   setExpandAll:   (expandAll)   => set({ expandAll }),
   setGroupByType: (groupByType) => set({ groupByType }),
+  setSortMode:    (sortMode)    => set({ sortMode }),
   setSavedAt:          (savedAt)          => set({ savedAt }),
   setShowLander:       (showLander)       => set({ showLander }),
   setShowAppendImport: (showAppendImport) => set({ showAppendImport }),
+  setActiveEntryId:    (activeEntryId)    => set({ activeEntryId }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {
