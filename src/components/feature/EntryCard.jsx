@@ -63,6 +63,12 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     // Signal stays set — EntryDetailPanel clears it after focusing the name input
   }, [pendingFocusEntryId, entry.id, isMobile]);
 
+  // Mobile: open detail panel when search navigation targets this entry
+  useEffect(() => {
+    if (!isMobile || !isSearchFocused) return;
+    openEntry(entry.id);
+  }, [isSearchFocused, isMobile]);
+
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';
 
@@ -106,6 +112,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   if (isMobile) {
     return (
       <div
+        id={`entry-${entry.id}`}
         className="entry-card entry-card--mobile"
         style={{ '--type-color': typeColor }}
         onClick={() => openEntry(entry.id)}
