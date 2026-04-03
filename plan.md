@@ -44,15 +44,20 @@ All original planned features are implemented. Summary of what was built:
 
 ### Features
 
-- [ ] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` on every entry mutation; backwards-compatible default for existing saved entries
-- [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (creation order), `alpha`, `last-modified`
-- [ ] Sort mode UI — control added to the search bar area; wired to sort state
-- [ ] Alphabetical sort — sorts visible entry list A–Z by entry name; applied in display layer
-- [ ] Last modified sort — sorts visible entry list by `lastModified` descending; most recently edited entry first
+- [ ] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
+- [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
+- [ ] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
+- [ ] All sort modes are display-only — sort never mutates the underlying entry array; `default` always restores the user's drag-arranged order
+- [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; both interact with group-by-type per the open question below
+- [ ] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
+
+### Open Question
+
+**Alphabetical + group-by-type interaction:** Last Modified overrides group-by-type (flat chronological list). Alphabetical is ambiguous — sorting A–Z within each type group is plausible and potentially useful. Decision needed before implementation.
 
 ### Stop Condition
 
-User can switch sort mode to alphabetical and confirm entries reorder A–Z; switch to last modified and confirm the entry most recently edited appears first; edit an entry and confirm it moves to the top of the last modified view; reload the page and confirm sort resets to default order.
+User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved.
 
 **Estimated Complexity:** Low
 
