@@ -1,12 +1,7 @@
-// Find and Replace row — second input for replacement text and a Replace All action button
-import { useFindReplace } from '../../hooks/use-find-replace.js';
-
-export function FindReplace({ entries }) {
-  const { findText, setFindText, replaceText, setReplaceText, matchCount, replaceAll } =
-    useFindReplace(entries);
-
+// Find and Replace fields — rendered inside SearchBar's single row; receives state as props
+export function FindReplace({ findText, setFindText, replaceText, setReplaceText, matchCount, replaceAll }) {
   return (
-    <div className="find-replace-row">
+    <>
       <input
         className="find-input"
         value={findText}
@@ -26,6 +21,6 @@ export function FindReplace({ entries }) {
       >
         Replace all ({matchCount})
       </button>
-    </div>
+    </>
   );
 }

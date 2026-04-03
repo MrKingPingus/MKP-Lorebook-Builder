@@ -12,6 +12,8 @@ export const useSettingsStore = create((set) => ({
   setHideSuggestionsByDefault: (hideSuggestionsByDefault) => set({ hideSuggestionsByDefault }),
   setHideEntryStats:           (hideEntryStats)           => set({ hideEntryStats }),
   setNewEntryHotkey:           (newEntryHotkey)           => set({ newEntryHotkey }),
+  setUndoHotkey:               (undoHotkey)               => set({ undoHotkey }),
+  setRedoHotkey:               (redoHotkey)               => set({ redoHotkey }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),
   setEntryTypeView:            (entryTypeView)            => set({ entryTypeView }),
   setFabSize:                  (fabSize)                  => set({ fabSize }),

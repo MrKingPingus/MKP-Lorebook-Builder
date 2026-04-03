@@ -12,6 +12,8 @@ export function useSettings() {
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
   const newEntryHotkey           = useSettingsStore((s) => s.newEntryHotkey);
+  const undoHotkey               = useSettingsStore((s) => s.undoHotkey);
+  const redoHotkey               = useSettingsStore((s) => s.redoHotkey);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
   const entryTypeView            = useSettingsStore((s) => s.entryTypeView);
   const fabSize                  = useSettingsStore((s) => s.fabSize);
@@ -29,6 +31,8 @@ export function useSettings() {
       hideSuggestionsByDefault,
       hideEntryStats,
       newEntryHotkey,
+      undoHotkey,
+      redoHotkey,
       hotbarSlots,
       entryTypeView,
       fabSize,
@@ -55,6 +59,8 @@ export function useSettings() {
     hideSuggestionsByDefault,
     hideEntryStats,
     newEntryHotkey,
+    undoHotkey,
+    redoHotkey,
     hotbarSlots,
     entryTypeView,
     fabSize,
@@ -67,6 +73,8 @@ export function useSettings() {
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
     setNewEntryHotkey:           (v) => updateSetting('newEntryHotkey', v),
+    setUndoHotkey:               (v) => updateSetting('undoHotkey', v),
+    setRedoHotkey:               (v) => updateSetting('redoHotkey', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
     setEntryTypeView:            (v) => updateSetting('entryTypeView', v),
     setFabSize:                  (v) => updateSetting('fabSize', v),

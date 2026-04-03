@@ -1,9 +1,10 @@
 // Search input with mode select, sort button, match counter, Enter-key navigation, and results dropdown
 import { useState, useRef, useEffect } from 'react';
-import { useSearch }    from '../../hooks/use-search.js';
-import { useUi }        from '../../hooks/use-ui.js';
-import { MatchCounter } from '../ui/MatchCounter.jsx';
-import { FindReplace }  from './FindReplace.jsx';
+import { useSearch }      from '../../hooks/use-search.js';
+import { useUi }          from '../../hooks/use-ui.js';
+import { useFindReplace } from '../../hooks/use-find-replace.js';
+import { MatchCounter }   from '../ui/MatchCounter.jsx';
+import { FindReplace }    from './FindReplace.jsx';
 
 const SORT_OPTIONS = [
   { value: 'default',       label: 'Default' },
@@ -17,6 +18,8 @@ const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc'
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
 export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
+  const { findText, setFindText, replaceText, setReplaceText, matchCount: frMatchCount, replaceAll } =
+    useFindReplace(entries);
   const sortMode           = useUi((s) => s.sortMode);
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
@@ -65,8 +68,14 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
   }, [searchQuery]);
 
   function onModeChange(e) {
-    setSearchMode(e.target.value);
-    setSearchQuery('');
+    const newMode = e.target.value;
+    if (newMode === 'find-replace') {
+      setFindText(searchQuery);
+      setSearchQuery('');
+    } else {
+      setSearchQuery(findText);
+    }
+    setSearchMode(newMode);
   }
 
   function handleSortSelect(value) {
@@ -103,6 +112,10 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
     setDropdownOpen(false);
   }
 
+  function openDropdownIfResults() {
+    if (searchQuery.trim() && matchDetails?.length > 0) setDropdownOpen(true);
+  }
+
   const showDropdown = dropdownOpen && searchQuery.trim() && matchDetails?.length > 0;
 
   return (
@@ -115,7 +128,8 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
               className="search-input"
               value={searchQuery}
               onChange={onInputChange}
-              onFocus={() => { if (searchQuery.trim() && matchDetails?.length > 0) setDropdownOpen(true); }}
+              onFocus={openDropdownIfResults}
+              onClick={openDropdownIfResults}
               onKeyDown={onKeyDown}
               placeholder="Search entries..."
             />
@@ -143,6 +157,16 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
               </div>
             )}
           </div>
+        )}
+        {searchMode === 'find-replace' && (
+          <FindReplace
+            findText={findText}
+            setFindText={setFindText}
+            replaceText={replaceText}
+            setReplaceText={setReplaceText}
+            matchCount={frMatchCount}
+            replaceAll={replaceAll}
+          />
         )}
         <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />
         <select
@@ -176,7 +200,6 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
           )}
         </div>
       </div>
-      {searchMode === 'find-replace' && <FindReplace entries={entries} />}
     </div>
   );
 }
