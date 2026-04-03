@@ -34,6 +34,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const nameInputRef = useRef(null);
   const shouldFocusName = useRef(false);
 
+  // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
+  const isSearchFocused = searchFocusedId === entry.id;
+  const collapsed = isSearchFocused ? false : (expandAll ? false : (collapseAll ? true : localCollapsed));
+
   // Desktop: auto-expand and focus name input when a new entry is created
   useEffect(() => {
     if (isMobile || pendingFocusEntryId !== entry.id) return;
@@ -58,10 +62,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     openEntry(entry.id);
     // Signal stays set — EntryDetailPanel clears it after focusing the name input
   }, [pendingFocusEntryId, entry.id, isMobile]);
-
-  // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
-  const isSearchFocused = searchFocusedId === entry.id;
-  const collapsed = isSearchFocused ? false : (expandAll ? false : (collapseAll ? true : localCollapsed));
 
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';
