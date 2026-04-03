@@ -51,9 +51,13 @@ All original planned features are implemented. Summary of what was built:
 - [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
 - [ ] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
 
+**Window Size & Position Persistence:**
+- [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
+- [ ] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
+
 ### Stop Condition
 
-User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved.
+User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved; resize and reposition the floating window, reload the page, and confirm both size and position are restored.
 
 **Estimated Complexity:** Low
 
