@@ -1,6 +1,8 @@
 // Pointer-event drag logic for the floating window header; writes position to ui-store
 import { useCallback } from 'react';
-import { useUiStore } from '../state/ui-store.js';
+import { useUiStore }  from '../state/ui-store.js';
+import { writeJson }   from '../services/storage-service.js';
+import { WINDOW_STATE_KEY } from '../constants/storage-keys.js';
 
 export function useDragWindow() {
   const windowPos  = useUiStore((s) => s.windowPos);
@@ -31,6 +33,10 @@ export function useDragWindow() {
         ev.currentTarget?.releasePointerCapture?.(ev.pointerId);
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
+        // Persist final position (size unchanged during drag)
+        const finalX = Math.max(0, Math.min(ev.clientX - startX, window.innerWidth  - snapW));
+        const finalY = Math.max(0, Math.min(ev.clientY - startY, window.innerHeight - snapH));
+        writeJson(WINDOW_STATE_KEY, { pos: { x: finalX, y: finalY }, size: { width: snapW, height: snapH } });
       }
 
       window.addEventListener('pointermove', onMove);

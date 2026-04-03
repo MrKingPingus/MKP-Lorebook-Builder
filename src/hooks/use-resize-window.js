@@ -1,6 +1,8 @@
 // Corner drag-handle resize logic with viewport boundary clamping; writes size to ui-store
 import { useCallback } from 'react';
-import { useUiStore } from '../state/ui-store.js';
+import { useUiStore }  from '../state/ui-store.js';
+import { writeJson }   from '../services/storage-service.js';
+import { WINDOW_STATE_KEY }              from '../constants/storage-keys.js';
 import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../constants/limits.js';
 
 const MIN_WIDTH  = MIN_WINDOW_WIDTH;
@@ -59,6 +61,23 @@ export function useResizeWindow() {
         ev.currentTarget?.releasePointerCapture?.(ev.pointerId);
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
+        // Persist final size and position after resize ends
+        // Read committed store values via the module-level ref approach isn't available here,
+        // so we recompute from captured start values and the final pointer position.
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        let fW = startW, fH = startH, fX = startPosX, fY = startPosY;
+        if (corner.includes('e')) { fW = Math.max(MIN_WIDTH,  startW + 2 * dx); }
+        if (corner.includes('w')) { fW = Math.max(MIN_WIDTH,  startW - 2 * dx); }
+        if (corner.includes('s')) { fH = Math.max(MIN_HEIGHT, startH + 2 * dy); }
+        if (corner.includes('n')) { fH = Math.max(MIN_HEIGHT, startH - 2 * dy); }
+        if (corner.includes('e') || corner.includes('w')) { fX = startPosX + (startW - fW) / 2; }
+        if (corner.includes('s') || corner.includes('n')) { fY = startPosY + (startH - fH) / 2; }
+        fX = Math.max(0, Math.min(fX, window.innerWidth  - MIN_WIDTH));
+        fY = Math.max(0, Math.min(fY, window.innerHeight - MIN_HEIGHT));
+        if (fX + fW > window.innerWidth)  fW = Math.max(MIN_WIDTH,  window.innerWidth  - fX);
+        if (fY + fH > window.innerHeight) fH = Math.max(MIN_HEIGHT, window.innerHeight - fY);
+        writeJson(WINDOW_STATE_KEY, { pos: { x: fX, y: fY }, size: { width: fW, height: fH } });
       }
 
       window.addEventListener('pointermove', onMove);

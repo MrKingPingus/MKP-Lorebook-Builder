@@ -17,6 +17,7 @@ export const useUiStore = create((set) => ({
   showLander:       true,        // true on every page load; dismissed when user enters the builder
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
   activeEntryId:    null,        // mobile entry detail panel — id of the entry being edited, or null
+  searchFocusedId:  null,        // entry id forced-expanded by search navigation; null = no override
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -28,6 +29,7 @@ export const useUiStore = create((set) => ({
   setExpandAll:   (expandAll)   => set({ expandAll }),
   setGroupByType: (groupByType) => set({ groupByType }),
   setSortMode:    (sortMode)    => set({ sortMode }),
+  setSearchFocusedId:  (searchFocusedId)  => set({ searchFocusedId }),
   setSavedAt:          (savedAt)          => set({ savedAt }),
   setShowLander:       (showLander)       => set({ showLander }),
   setShowAppendImport: (showAppendImport) => set({ showAppendImport }),

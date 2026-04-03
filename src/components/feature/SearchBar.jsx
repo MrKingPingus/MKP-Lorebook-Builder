@@ -1,4 +1,4 @@
-// Search input with mode <select> dropdown (Search / Find & Replace), sort icon button, and MatchCounter
+// Search input with mode select, sort button, match counter, Enter-key navigation, and results dropdown
 import { useState, useRef, useEffect } from 'react';
 import { useSearch }    from '../../hooks/use-search.js';
 import { useUi }        from '../../hooks/use-ui.js';
@@ -12,14 +12,26 @@ const SORT_OPTIONS = [
   { value: 'last-modified', label: 'Last Modified' },
 ];
 
-export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }) {
+const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
+
+// matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
+export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
-  const sortMode    = useUi((s) => s.sortMode);
-  const setSortMode = useUi((s) => s.setSortMode);
+  const sortMode           = useUi((s) => s.sortMode);
+  const setSortMode        = useUi((s) => s.setSortMode);
+  const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
 
-  const [sortOpen, setSortOpen] = useState(false);
-  const sortWrapRef = useRef(null);
+  const [sortOpen,      setSortOpen]      = useState(false);
+  const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const [navIndex,      setNavIndex]      = useState(-1);
 
+  const sortWrapRef    = useRef(null);
+  const dropdownRef    = useRef(null);
+  const searchInputRef = useRef(null);
+  // Track query at last navigation press to reset index when query changes
+  const lastNavQuery   = useRef('');
+
+  // Close sort dropdown on outside click
   useEffect(() => {
     function onMouseDown(e) {
       if (!sortOpen) return;
@@ -31,6 +43,27 @@ export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [sortOpen]);
 
+  // Close results dropdown on outside click
+  useEffect(() => {
+    function onMouseDown(e) {
+      if (!dropdownOpen) return;
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target) &&
+          searchInputRef.current && !searchInputRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [dropdownOpen]);
+
+  // Reset nav index when the search query changes
+  useEffect(() => {
+    if (searchQuery !== lastNavQuery.current) {
+      setNavIndex(-1);
+      lastNavQuery.current = searchQuery;
+    }
+  }, [searchQuery]);
+
   function onModeChange(e) {
     setSearchMode(e.target.value);
     setSearchQuery('');
@@ -41,22 +74,75 @@ export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }
     setSortOpen(false);
   }
 
+  function navigateToMatch(index) {
+    if (!matchDetails || matchDetails.length === 0) return;
+    const wrapped = ((index % matchDetails.length) + matchDetails.length) % matchDetails.length;
+    setNavIndex(wrapped);
+    lastNavQuery.current = searchQuery;
+    const target = matchDetails[wrapped];
+    setSearchFocusedId(target.id);
+    document.getElementById(`entry-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setDropdownOpen(false);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Enter' && searchQuery.trim() && matchDetails?.length > 0) {
+      e.preventDefault();
+      navigateToMatch(navIndex + 1);
+    }
+  }
+
+  function onInputChange(e) {
+    setSearchQuery(e.target.value);
+    setDropdownOpen(!!e.target.value.trim());
+  }
+
+  function onResultClick(id) {
+    setSearchFocusedId(id);
+    document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setDropdownOpen(false);
+  }
+
+  const showDropdown = dropdownOpen && searchQuery.trim() && matchDetails?.length > 0;
+
   return (
     <div className="search-bar-wrapper">
       <div className="search-bar">
-        <input
-          className="search-input"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && firstMatchId) {
-              document.getElementById(`entry-${firstMatchId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-          }}
-          placeholder="Search entries..."
-        />
-        {searchQuery && (
-          <button className="search-clear" onClick={() => setSearchQuery('')} title="Clear">×</button>
+        {searchMode !== 'find-replace' && (
+          <div className="search-input-wrap" ref={dropdownRef}>
+            <input
+              ref={searchInputRef}
+              className="search-input"
+              value={searchQuery}
+              onChange={onInputChange}
+              onFocus={() => { if (searchQuery.trim() && matchDetails?.length > 0) setDropdownOpen(true); }}
+              onKeyDown={onKeyDown}
+              placeholder="Search entries..."
+            />
+            {searchQuery && (
+              <button className="search-clear" onClick={() => { setSearchQuery(''); setDropdownOpen(false); }} title="Clear">×</button>
+            )}
+            {showDropdown && (
+              <div className="search-dropdown">
+                {matchDetails.map((m) => (
+                  <button
+                    key={m.id}
+                    className="search-dropdown-item"
+                    onMouseDown={(e) => { e.preventDefault(); onResultClick(m.id); }}
+                  >
+                    <span className="search-dropdown-name">{m.name || '(unnamed)'}</span>
+                    <span className="search-dropdown-tags">
+                      {m.locations.map((loc) => (
+                        <span key={loc} className={`search-dropdown-tag search-dropdown-tag--${loc}`}>
+                          {LOCATION_LABELS[loc]}
+                        </span>
+                      ))}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />
         <select

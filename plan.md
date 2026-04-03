@@ -53,13 +53,13 @@ All original planned features are implemented. Summary of what was built:
 - [x] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
 
 **Window Size & Position Persistence:**
-- [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
-- [ ] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
+- [x] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
+- [x] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
 
 **Search Navigation & Results Dropdown:**
-- [ ] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
-- [ ] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
-- [ ] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
+- [x] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
+- [x] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
+- [x] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
 
 ### Stop Condition
 
