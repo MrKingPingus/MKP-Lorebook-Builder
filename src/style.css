@@ -426,7 +426,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--radius);
   color: var(--text);
   cursor: pointer;
-  min-width: 130px;
+  min-width: 105px;
 }
 
 .search-sort-select {
@@ -438,7 +438,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--radius);
   color: var(--text);
   cursor: pointer;
-  min-width: 130px;
+  min-width: 110px;
 }
 .search-sort-select--active {
   border-color: var(--accent);

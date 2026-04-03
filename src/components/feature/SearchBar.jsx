@@ -38,7 +38,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }
           onChange={onModeChange}
         >
           <option value="search">Search</option>
-          <option value="find-replace">Find &amp; Replace</option>
+          <option value="find-replace">Find/Replace</option>
         </select>
         <select
           className={`search-sort-select${sortMode !== 'default' ? ' search-sort-select--active' : ''}`}
@@ -46,10 +46,10 @@ export function SearchBar({ entries, matchCount, entryMatchCount, firstMatchId }
           onChange={(e) => setSortMode(e.target.value)}
           title="Sort entries"
         >
-          <option value="default">Sort: Default</option>
-          <option value="alpha-asc">Sort: A → Z</option>
-          <option value="alpha-desc">Sort: Z → A</option>
-          <option value="last-modified">Sort: Last Modified</option>
+          <option value="default">Default</option>
+          <option value="alpha-asc">A → Z</option>
+          <option value="alpha-desc">Z → A</option>
+          <option value="last-modified">Last Modified</option>
         </select>
       </div>
       {searchMode === 'find-replace' && <FindReplace entries={entries} />}
