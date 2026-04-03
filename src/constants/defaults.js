@@ -13,6 +13,8 @@ export const DEFAULT_SETTINGS = {
   hideSuggestionsByDefault: false,
   hideEntryStats:           false,
   newEntryHotkey:           'n',
+  undoHotkey:               'z',
+  redoHotkey:               'y',
   // 6 hotbar slots: 3 left of FAB, 3 right. null = empty slot.
   hotbarSlots:              ['undo', 'redo', 'clear_entries', 'append_import', null, null],
   // Entry type selector style in the mobile detail panel

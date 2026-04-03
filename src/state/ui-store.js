@@ -16,8 +16,9 @@ export const useUiStore = create((set) => ({
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
   showLander:       true,        // true on every page load; dismissed when user enters the builder
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
-  activeEntryId:    null,        // mobile entry detail panel — id of the entry being edited, or null
-  searchFocusedId:  null,        // entry id forced-expanded by search navigation; null = no override
+  activeEntryId:        null,  // mobile entry detail panel — id of the entry being edited, or null
+  searchFocusedId:      null,  // entry id forced-expanded by search navigation; null = no override
+  pendingFocusEntryId:  null,  // id of newly-created entry that should receive auto-focus; cleared once consumed
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -33,7 +34,8 @@ export const useUiStore = create((set) => ({
   setSavedAt:          (savedAt)          => set({ savedAt }),
   setShowLander:       (showLander)       => set({ showLander }),
   setShowAppendImport: (showAppendImport) => set({ showAppendImport }),
-  setActiveEntryId:    (activeEntryId)    => set({ activeEntryId }),
+  setActiveEntryId:        (activeEntryId)        => set({ activeEntryId }),
+  setPendingFocusEntryId:  (pendingFocusEntryId)  => set({ pendingFocusEntryId }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

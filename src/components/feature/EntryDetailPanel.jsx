@@ -1,5 +1,5 @@
 // Mobile full-screen entry editor — slides over the build panel when an entry is tapped
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useEntryDetail }  from '../../hooks/use-entry-detail.js';
 import { useEntries }      from '../../hooks/use-entries.js';
 import { useUi }           from '../../hooks/use-ui.js';
@@ -13,11 +13,21 @@ import { SuggestionsTray } from './SuggestionsTray.jsx';
 export function EntryDetailPanel() {
   const { activeEntryId, closeEntry } = useEntryDetail();
   const { entries, updateEntry, removeEntry } = useEntries();
-  const searchQuery    = useUi((s) => s.searchQuery);
+  const searchQuery            = useUi((s) => s.searchQuery);
+  const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
+  const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
   const { entryTypeView } = useSettings();
   const [delimiter, setDelimiter] = useState(',');
+  const nameInputRef = useRef(null);
 
   const entry = entries.find((e) => e.id === activeEntryId) ?? null;
+
+  // Auto-focus name input when a newly-created entry opens on mobile
+  useEffect(() => {
+    if (!activeEntryId || pendingFocusEntryId !== activeEntryId) return;
+    setPendingFocusEntryId(null);
+    nameInputRef.current?.focus();
+  }, [activeEntryId, pendingFocusEntryId]);
 
   const isOpen = !!activeEntryId;
 
@@ -57,6 +67,7 @@ export function EntryDetailPanel() {
           <div className="entry-detail-section">
             <div className="field-label">ENTRY NAME</div>
             <input
+              ref={nameInputRef}
               className="entry-name-field entry-name-field--detail"
               value={entry.name}
               onChange={(e) => update({ name: e.target.value })}

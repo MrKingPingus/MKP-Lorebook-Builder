@@ -13,7 +13,7 @@ export function StatsBadge({ triggerCount, charCount, counterTiers, tieredEnable
     ? (charCount >= charRed    ? 'var(--red)'
       : charCount >= charYellow ? 'var(--yellow)'
       : 'var(--green)')
-    : 'var(--muted2)';
+    : 'var(--green)';
 
   return (
     <span className="stats-badge">

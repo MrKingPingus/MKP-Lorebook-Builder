@@ -90,8 +90,10 @@ export default function App() {
   const { addEntry }   = useEntries();
   const { undo, redo } = useUndoRedo();
   const newEntryHotkey = useSettingsStore((s) => s.newEntryHotkey);
+  const undoHotkey     = useSettingsStore((s) => s.undoHotkey);
+  const redoHotkey     = useSettingsStore((s) => s.redoHotkey);
 
-  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, hotkey: newEntryHotkey });
+  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, hotkey: newEntryHotkey, undoHotkey, redoHotkey });
 
   return (
     <div className="app-root">

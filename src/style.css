@@ -568,16 +568,15 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* Find & Replace row */
-.find-replace-row {
-  display: flex;
-  gap: 6px;
-  padding: 6px 0 0;
-  align-items: center;
-}
 .find-input, .replace-input {
   flex: 1;
+  min-width: 0;
   padding: 5px 8px;
   font-size: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
 }
 .replace-all-btn {
   padding: 5px 12px;
@@ -1852,6 +1851,12 @@ kbd {
 
   /* ── Hotbar: allow wrapping on very narrow screens ── */
   .hotbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+
+  /* ── Menu button: anchor to far right of header on mobile ── */
+  .menu-btn-wrap { margin-left: auto; }
+
+  /* ── Search dropdown: full available width on mobile ── */
+  .search-dropdown { width: calc(100vw - 24px); right: auto; }
 }
 
 /* ============================================================
