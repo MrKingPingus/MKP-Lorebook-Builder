@@ -53,13 +53,13 @@ All original planned features are implemented. Summary of what was built:
 - [x] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
 
 **Window Size & Position Persistence:**
-- [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
-- [ ] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
+- [x] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
+- [x] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
 
 **Search Navigation & Results Dropdown:**
-- [ ] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
-- [ ] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
-- [ ] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
+- [x] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
+- [x] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
+- [x] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
 
 ### Stop Condition
 
@@ -81,17 +81,24 @@ User can switch sort to A–Z and confirm entries reorder alphabetically (case-i
 **UI Fixes:**
 - [ ] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
 - [ ] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
-- [ ] Find & Replace replaces search field — when Find & Replace mode is active, the regular search input is hidden; only the find and replace fields are shown
+- [ ] Find & Replace layout — when Find & Replace mode is active, the regular search input is hidden and the sort button remains; Find and Replace fields are shortened to fit on a single row alongside the sort button (desktop and mobile)
+- [ ] Mobile search results dropdown — the results dropdown is too narrow to be usable on mobile; widen it to fit available viewport width; tapping a result must scroll to and expand the correct entry (depends on Phase 6 search results dropdown)
+- [ ] Mobile menu button position — the Menu button drifts to the middle of the header on mobile; it should remain anchored to the far right
 
 **Settings Corrections:**
 - [ ] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
 - [ ] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
 
+**Quality of Life Adjustments:**
+- [ ] New entry auto-focus — when a new entry is created, focus is placed on the entry name field immediately so the user can start typing without an extra click
+- [ ] Search ↔ Find/Replace text transfer — when switching between Search and Find/Replace modes, the current text carries over to the corresponding field in the new mode (search query → find field, and vice versa)
+- [ ] Search results dropdown re-open on focus — after a user selects a result and the dropdown closes, clicking or tapping back into the search field re-opens the dropdown if a search term is still present (depends on Phase 6 search results dropdown)
+
 ### Stop Condition
 
-User can confirm the full type button grid toggle visibly changes the type selector layout; confirm the "All" filter chip shows the shift+click tooltip on hover; confirm the Export header appears; switch to Find & Replace mode and confirm the regular search field is hidden; disable tiered counter colors and confirm both the description and trigger counters show green; confirm undo and redo hotkeys are configurable in settings and the new bindings function correctly.
+User can confirm the full type button grid toggle visibly changes the type selector layout; confirm the "All" filter chip shows the shift+click tooltip on hover; confirm the Export header appears; switch to Find & Replace mode and confirm the regular search input is hidden and Find/Replace fields fit on a single row alongside the sort button; confirm the mobile search results dropdown is wide enough to read and tapping a result navigates to the correct entry; confirm the mobile Menu button stays on the far right; disable tiered counter colors and confirm both the description and trigger counters show green; confirm undo and redo hotkeys are configurable in settings; create a new entry and confirm focus lands on the name field immediately; type in search, switch to Find/Replace, and confirm the text transfers; select a search result then click back into the search field and confirm the dropdown re-appears.
 
-**Estimated Complexity:** Low
+**Estimated Complexity:** Low–Medium
 
 ---
 
