@@ -45,12 +45,12 @@ All original planned features are implemented. Summary of what was built:
 ### Features
 
 **Sort:**
-- [ ] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
-- [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
-- [ ] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
-- [ ] All sort modes are display-only — sort never mutates the underlying entry array; `default` always restores the user's drag-arranged order
-- [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
-- [ ] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
+- [x] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
+- [x] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
+- [x] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
+- [x] All sort modes are display-only — sort never mutates the underlying entry array; `default` always restores the user's drag-arranged order
+- [x] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
+- [x] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
 
 **Window Size & Position Persistence:**
 - [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
