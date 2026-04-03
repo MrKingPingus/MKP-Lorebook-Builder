@@ -40,10 +40,11 @@ All original planned features are implemented. Summary of what was built:
 
 ## Phase 6 — Search & Sort Enhancements
 
-**Goal:** The entry list can be sorted alphabetically or by last modified date, giving users meaningful navigation control over larger lorebooks.
+**Goal:** The entry list can be sorted alphabetically or by last modified date; search gains keyboard navigation and a results dropdown that shows where each match occurs.
 
 ### Features
 
+**Sort:**
 - [ ] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
 - [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
 - [ ] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
@@ -51,9 +52,44 @@ All original planned features are implemented. Summary of what was built:
 - [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
 - [ ] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
 
+**Window Size & Position Persistence:**
+- [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
+- [ ] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
+
+**Search Navigation & Results Dropdown:**
+- [ ] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
+- [ ] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
+- [ ] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
+
 ### Stop Condition
 
-User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved.
+User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved; resize and reposition the floating window, reload the page, and confirm both size and position are restored; type a search term, confirm the results dropdown appears with location tags, click a result and confirm the entry opens; press Enter and confirm keyboard navigation advances through matches in list order.
+
+**Estimated Complexity:** Low–Medium
+
+---
+
+## Polish Pass — Adjustments & Bug Fixes
+
+**Goal:** Clear the backlog of small UI fixes, setting corrections, and the known bug before Phase 7 adds new complexity.
+
+### Features
+
+**Bug Fixes:**
+- [ ] Full type button grid setting has no effect — investigate and restore the toggle's effect on the type selector layout in the entry editor
+
+**UI Fixes:**
+- [ ] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
+- [ ] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
+- [ ] Find & Replace replaces search field — when Find & Replace mode is active, the regular search input is hidden; only the find and replace fields are shown
+
+**Settings Corrections:**
+- [ ] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
+- [ ] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
+
+### Stop Condition
+
+User can confirm the full type button grid toggle visibly changes the type selector layout; confirm the "All" filter chip shows the shift+click tooltip on hover; confirm the Export header appears; switch to Find & Replace mode and confirm the regular search field is hidden; disable tiered counter colors and confirm both the description and trigger counters show green; confirm undo and redo hotkeys are configurable in settings and the new bindings function correctly.
 
 **Estimated Complexity:** Low
 
@@ -182,3 +218,21 @@ Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-se
 
 **Lorebook Crosstalk — Second Window Mode**
 The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power users comparing large lorebooks, a second floating window may be more practical. Depends on: Phase 9 Lorebook Crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
+
+---
+
+## Queued Adjustments
+
+Items are moved into phases as they are assigned. Add new items here when discovered.
+
+---
+
+## Known Bugs
+
+Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed bugs note the phase or commit where they were resolved.
+
+---
+
+**Full Type Button Grid Setting Has No Effect**
+The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
+Status: **Open** — assigned to Polish Pass
