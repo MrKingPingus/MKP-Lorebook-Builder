@@ -82,10 +82,17 @@ User can switch sort to A–Z and confirm entries reorder alphabetically (case-i
 - [ ] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
 - [ ] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
 - [ ] Find & Replace replaces search field — when Find & Replace mode is active, the regular search input is hidden; only the find and replace fields are shown
+- [ ] When switching from Search to Find/Replace on desktop, the search bar disappears and the find/replace takes up the entire row below it, leaving only the Find/Replace button and the sort key. Both Find and Replace fields can simply be made shorter to fit on the single row
+- [ ] On mobile, the search results drop down is extremely narrow, to the point of being useless. Also, pressing a result doesn't appear to bring the user to an entry
+- [ ] On mobile, the Menu button moves to the middle of the header. It should remain on the far right
 
 **Settings Corrections:**
 - [ ] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
 - [ ] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
+**Quality of Life Adjustments:**
+- [ ] When creating a new entry, snap to the Entry Title text box to allow a user to immediately enter in the title and begin working on the entry
+- [ ] If text is entered into the search field and a user switches to Find/Replace, that text should transfer to the Find field, and vice versa.
+- [ ] Concerning the search results drop down, if a user selects a result, they're taken to the result and the drop down is closed. This is fine. However, if a user wants to re-open the drop down, they should be able to simple click back into the search field and have it appear
 
 ### Stop Condition
 
