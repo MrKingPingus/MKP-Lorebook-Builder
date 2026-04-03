@@ -2,6 +2,20 @@
    MKP Lorebook Builder — Global Styles (Screenshot Layout)
    ============================================================ */
 
+/* ============================================================
+   Section Index — grep §SECTION-NAME to jump directly
+   CUSTOM-PROPERTIES  RESET  APP-ROOT
+   FLOATING-WINDOW  WINDOW-HEADER  WINDOW-BODY
+   HOTBAR  RESIZE-HANDLES  BUILD-PANEL  SEARCH-BAR
+   TYPE-FILTER-BAR  ENTRY-LIST  ENTRY-CARD
+   MOBILE-ENTRY-CARD  ENTRY-DETAIL-PANEL
+   SUGGESTIONS-TRAY  DESCRIPTION-AREA  PHRASE-BUILDER
+   LOREBOOK-SWITCHER  IMPORT-EXPORT-SETTINGS
+   MISC-ADDITIONS  LANDER  SCROLLBARS
+   MOBILE  MENU-PANEL  LOREBOOK-PANEL  HOTBAR-SLOT-CONFIG
+   ============================================================ */
+
+/* §CUSTOM-PROPERTIES */
 /* --- Custom properties --- */
 :root {
   --bg:       #0f172a;
@@ -27,6 +41,7 @@
   --transition: 0.12s ease;
 }
 
+/* §RESET */
 /* --- Reset & base --- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -69,6 +84,7 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface3);
 }
 
+/* §APP-ROOT */
 /* --- App root --- */
 .app-root {
   width: 100vw;
@@ -81,6 +97,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Floating Window
    ============================================================ */
+/* §FLOATING-WINDOW */
 .floating-window {
   position: fixed;
   display: flex;
@@ -115,6 +132,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Window Header
    ============================================================ */
+/* §WINDOW-HEADER */
 .window-header {
   display: flex;
   align-items: center;
@@ -247,6 +265,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Window Body
    ============================================================ */
+/* §WINDOW-BODY */
 .window-body {
   flex: 1;
   overflow: hidden;
@@ -266,6 +285,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Hotbar (unified footer on desktop + mobile)
    ============================================================ */
+/* §HOTBAR */
 .hotbar {
   display: flex;
   align-items: center;
@@ -334,6 +354,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Resize Handles
    ============================================================ */
+/* §RESIZE-HANDLES */
 .resize-handle {
   position: absolute;
   width: 14px;
@@ -348,6 +369,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Build Panel
    ============================================================ */
+/* §BUILD-PANEL */
 .build-panel {
   display: flex;
   flex-direction: column;
@@ -382,6 +404,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Search Bar
    ============================================================ */
+/* §SEARCH-BAR */
 .search-bar-wrapper {
   flex-shrink: 0;
   padding: 10px 12px 0;
@@ -504,6 +527,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Type Filter Bar
    ============================================================ */
+/* §TYPE-FILTER-BAR */
 .type-filter-bar {
   display: flex;
   align-items: center;
@@ -584,6 +608,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Entry List
    ============================================================ */
+/* §ENTRY-LIST */
 .entry-list {
   flex: 1;
   overflow-y: auto;
@@ -626,6 +651,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Entry Card
    ============================================================ */
+/* §ENTRY-CARD */
 .entry-card {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -877,6 +903,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Mobile Entry Card (slim tap-to-open row)
    ============================================================ */
+/* §MOBILE-ENTRY-CARD */
 .entry-card--mobile {
   cursor: pointer;
   padding: 7px 12px 5px;
@@ -936,6 +963,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Entry Detail Panel (mobile full-screen slide-in editor)
    ============================================================ */
+/* §ENTRY-DETAIL-PANEL */
 .entry-detail-panel {
   display: none;
   position: absolute;
@@ -1062,6 +1090,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Suggestions Tray
    ============================================================ */
+/* §SUGGESTIONS-TRAY */
 .suggestions-tray {
   display: flex;
   flex-direction: column;
@@ -1143,6 +1172,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Description Area
    ============================================================ */
+/* §DESCRIPTION-AREA */
 .description-area {
   display: flex;
   flex-direction: column;
@@ -1204,6 +1234,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Phrase Builder
    ============================================================ */
+/* §PHRASE-BUILDER */
 .phrase-builder {
   padding: 8px 10px;
   background: #0d2618;
@@ -1262,6 +1293,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Lorebook Switcher Dropdown
    ============================================================ */
+/* §LOREBOOK-SWITCHER */
 .lorebook-switcher { position: relative; flex-shrink: 0; }
 .switcher-btn {
   width: 28px; height: 28px;
@@ -1319,6 +1351,7 @@ input:focus, textarea:focus, select:focus {
 /* ============================================================
    Import / Export / Settings panels
    ============================================================ */
+/* §IMPORT-EXPORT-SETTINGS */
 .tab-split {
   display: flex; flex-direction: column; gap: 0;
   overflow-y: auto; height: 100%;
@@ -1480,6 +1513,7 @@ kbd {
 /* ============================================================
    Phase 3 additions
    ============================================================ */
+/* §MISC-ADDITIONS */
 
 /* Save prompt (lorebook switcher) */
 .switcher-prompt {
@@ -1559,6 +1593,7 @@ kbd {
 /* ============================================================
    Lander page
    ============================================================ */
+/* §LANDER */
 .lander {
   padding: 40px 32px 48px;
   max-width: 560px;
@@ -1639,6 +1674,7 @@ kbd {
 /* ============================================================
    Scrollbars (global)
    ============================================================ */
+/* §SCROLLBARS */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -1647,6 +1683,7 @@ kbd {
 /* ============================================================
    Mobile — max-width: 767px
    ============================================================ */
+/* §MOBILE */
 @media (max-width: 767px) {
   body { font-size: 14px; }
 
@@ -1753,6 +1790,7 @@ kbd {
 /* ============================================================
    Menu Panel (desktop side panel)
    ============================================================ */
+/* §MENU-PANEL */
 .menu-panel {
   width: 320px;
   flex-shrink: 0;
@@ -1801,6 +1839,7 @@ kbd {
 /* ============================================================
    Lorebook Panel (always-expanded lorebook list in menu panel)
    ============================================================ */
+/* §LOREBOOK-PANEL */
 .lorebook-panel {
   display: flex;
   flex-direction: column;
@@ -1826,6 +1865,7 @@ kbd {
 /* ============================================================
    Hotbar slot config (Settings panel)
    ============================================================ */
+/* §HOTBAR-SLOT-CONFIG */
 .hotbar-slot-config {
   display: flex;
   flex-direction: column;
