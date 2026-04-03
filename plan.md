@@ -69,6 +69,32 @@ User can switch sort to A–Z and confirm entries reorder alphabetically (case-i
 
 ---
 
+## Polish Pass — Adjustments & Bug Fixes
+
+**Goal:** Clear the backlog of small UI fixes, setting corrections, and the known bug before Phase 7 adds new complexity.
+
+### Features
+
+**Bug Fixes:**
+- [ ] Full type button grid setting has no effect — investigate and restore the toggle's effect on the type selector layout in the entry editor
+
+**UI Fixes:**
+- [ ] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
+- [ ] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
+- [ ] Find & Replace replaces search field — when Find & Replace mode is active, the regular search input is hidden; only the find and replace fields are shown
+
+**Settings Corrections:**
+- [ ] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
+- [ ] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
+
+### Stop Condition
+
+User can confirm the full type button grid toggle visibly changes the type selector layout; confirm the "All" filter chip shows the shift+click tooltip on hover; confirm the Export header appears; switch to Find & Replace mode and confirm the regular search field is hidden; disable tiered counter colors and confirm both the description and trigger counters show green; confirm undo and redo hotkeys are configurable in settings and the new bindings function correctly.
+
+**Estimated Complexity:** Low
+
+---
+
 ## Phase 7 — Trigger Enhancements
 
 **Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, and suggestions are smarter and category-aware.
@@ -197,24 +223,7 @@ The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power us
 
 ## Queued Adjustments
 
-Small improvements and fixes that have been identified but not yet assigned to a phase. Move each item into the appropriate phase once placement is decided.
-
----
-
-**Undo / Redo Hotkey Customization**
-The hotbar currently supports a customizable hotkey for adding a new entry but not for undo or redo. Both should be customizable to match.
-
-**Character Counter Color Scope & Default**
-The "Tiered character counter colors" setting currently turns counters grey when disabled — it should default to green. The setting should also affect the trigger count, not just the description character counter. The setting title should be updated to reflect that it covers both counters.
-
-**Export Section Header**
-The Import/Export tab has an "I M P O R T" header for the import section but no equivalent header for the export section. Add "E X P O R T" in the same format (spaced letters, underlined) for consistency.
-
-**Find & Replace Replaces Search Field**
-When Find & Replace mode is active, the regular search field should be hidden — replaced by the find and replace fields. No reason for all three to be visible simultaneously.
-
-**Shift+Click Tooltip on "All" Option**
-The "shift+click for multi select" tooltip currently appears on type filter chips but not on the "All" option. It should.
+Items are moved into phases as they are assigned. Add new items here when discovered.
 
 ---
 
@@ -226,4 +235,4 @@ Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed 
 
 **Full Type Button Grid Setting Has No Effect**
 The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
-Status: **Open**
+Status: **Open** — assigned to Polish Pass
