@@ -7,6 +7,7 @@ export function useEntries() {
   const lorebooks           = useLorebookStore((s) => s.lorebooks);
   const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
   const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
+  const storeUpdateEntry    = useLorebookStore((s) => s.updateEntry);
   const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
@@ -22,9 +23,7 @@ export function useEntries() {
   }
 
   function updateEntry(id, patch) {
-    updateActiveEntries(
-      entries.map((e) => (e.id === id ? { ...e, ...patch } : e))
-    );
+    storeUpdateEntry(id, patch);
   }
 
   function removeEntry(id) {

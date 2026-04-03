@@ -2,6 +2,7 @@
 import { useEntries }    from '../../hooks/use-entries.js';
 import { useSearch }     from '../../hooks/use-search.js';
 import { useTypeFilter } from '../../hooks/use-type-filter.js';
+import { useSort }       from '../../hooks/use-sort.js';
 import { useUi }         from '../../hooks/use-ui.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
@@ -15,14 +16,19 @@ export function BuildPanel() {
   const { filteredEntries: searchFiltered, matchCount,
           entryMatchCount, searchQuery }                 = useSearch(entries);
   const { filteredEntries }                              = useTypeFilter(searchFiltered);
+  const sortedEntries                                    = useSort(filteredEntries);
   const groupByType                                      = useUi((s) => s.groupByType);
+  const sortMode                                         = useUi((s) => s.sortMode);
   const isMobile                                         = useMobile();
   const { activeLorebook, renameLorebook }               = useLorebook();
 
+  // last-modified sort overrides group-by-type (flat list, no grouping)
+  const effectiveGroupByType = groupByType && sortMode !== 'last-modified';
+
   // When groupByType is active, reorder entries into type-grouped blocks
-  const displayEntries = groupByType
-    ? ENTRY_TYPES.flatMap((t) => filteredEntries.filter((e) => e.type === t.id))
-    : filteredEntries;
+  const displayEntries = effectiveGroupByType
+    ? ENTRY_TYPES.flatMap((t) => sortedEntries.filter((e) => e.type === t.id))
+    : sortedEntries;
 
   return (
     <div className="build-panel">
@@ -46,7 +52,7 @@ export function BuildPanel() {
         firstMatchId={filteredEntries[0]?.id}
       />
       <TypeFilterBar entries={entries} />
-      <EntryList entries={displayEntries} groupByType={groupByType} />
+      <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />
     </div>
   );
 }

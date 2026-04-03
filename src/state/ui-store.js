@@ -12,6 +12,7 @@ export const useUiStore = create((set) => ({
   collapseAll: false,
   expandAll:   false,
   groupByType: false,
+  sortMode:    'default',    // 'default' | 'alpha-asc' | 'alpha-desc' | 'last-modified'
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
   showLander:       true,        // true on every page load; dismissed when user enters the builder
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
@@ -26,6 +27,7 @@ export const useUiStore = create((set) => ({
   setCollapseAll: (collapseAll) => set({ collapseAll }),
   setExpandAll:   (expandAll)   => set({ expandAll }),
   setGroupByType: (groupByType) => set({ groupByType }),
+  setSortMode:    (sortMode)    => set({ sortMode }),
   setSavedAt:          (savedAt)          => set({ savedAt }),
   setShowLander:       (showLander)       => set({ showLander }),
   setShowAppendImport: (showAppendImport) => set({ showAppendImport }),
