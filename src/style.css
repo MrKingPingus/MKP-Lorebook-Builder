@@ -429,6 +429,22 @@ input:focus, textarea:focus, select:focus {
   min-width: 130px;
 }
 
+.search-sort-select {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  font-size: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  min-width: 130px;
+}
+.search-sort-select--active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* Match counter */
 .match-counter {
   font-size: 11px;

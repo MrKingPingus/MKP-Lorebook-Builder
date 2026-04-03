@@ -23,11 +23,12 @@ export const DEFAULT_SETTINGS = {
 };
 
 export const DEFAULT_ENTRY = {
-  id:          '',
-  name:        '',
-  type:        DEFAULT_TYPE,
-  triggers:    [],
-  description: '',
+  id:           '',
+  name:         '',
+  type:         DEFAULT_TYPE,
+  triggers:     [],
+  description:  '',
+  lastModified: null,
 };
 
 export const DEFAULT_LOREBOOK = {

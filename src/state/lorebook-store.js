@@ -36,6 +36,25 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  updateEntry: (id, patch) =>
+    set((state) => {
+      const activeId = state.activeLorebookId;
+      if (!activeId) return {};
+      const lorebook = state.lorebooks[activeId];
+      if (!lorebook) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [activeId]: {
+            ...lorebook,
+            entries: lorebook.entries.map((e) =>
+              e.id === id ? { ...e, ...patch, lastModified: Date.now() } : e
+            ),
+          },
+        },
+      };
+    }),
+
   updateActiveName: (name) =>
     set((state) => {
       const id = state.activeLorebookId;
