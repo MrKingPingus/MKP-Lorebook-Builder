@@ -113,3 +113,39 @@ GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions enviro
 - Don't name files `utils`, `misc`, `helpers`, or `common`
 - Don't nest folders deeper than `src/components/feature/`
 - Don't add a backend, database, or authentication layer
+
+## CSS Anchor Convention
+
+`src/style.css` uses named anchors for section navigation. A table of contents at the top of the file lists all section names. Each section opens with a `/* §SECTION-NAME */` comment.
+
+**To find a section:** `Grep` for `§SECTION-NAME` — returns the exact line number in one call. Never read the full file to orient.
+
+**When adding a new CSS section:**
+1. Add a `/* §YOUR-SECTION-NAME */` comment at the start of the new block
+2. Add the name to the TOC at the top of `style.css`
+3. After any implementation pass that modifies `style.css`, confirm the TOC reflects all added or removed sections
+
+## Common Task Recipes
+
+Step-by-step checklists for operations that touch multiple files. Update the relevant recipe if a pattern changes.
+
+### Add a persisted user setting
+
+1. `src/constants/defaults.js` — add field + default value to `DEFAULT_SETTINGS`
+2. `src/state/settings-store.js` — add setter: `setFoo: (foo) => set({ foo })`
+   (field is auto-included via the `...DEFAULT_SETTINGS` spread — no extra step)
+3. `src/hooks/use-settings.js` — three edits:
+   - destructure the new field from the store at the top
+   - add it to the `current` object inside `updateSetting`
+   - add `setFoo: (v) => updateSetting('foo', v)` to the return object
+4. `App.jsx` and `storage-service.js` — no changes needed
+
+### Add a session-only UI state value
+
+1. `src/state/ui-store.js` — add field + setter
+2. Consume via selector in the relevant hook: `useUiStore((s) => s.foo)`
+
+### Add a new CSS section
+
+1. In `style.css`, open the block with `/* §SECTION-NAME */`
+2. Add `SECTION-NAME` to the TOC at the top of the file
