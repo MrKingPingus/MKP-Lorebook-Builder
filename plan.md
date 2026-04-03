@@ -40,10 +40,11 @@ All original planned features are implemented. Summary of what was built:
 
 ## Phase 6 — Search & Sort Enhancements
 
-**Goal:** The entry list can be sorted alphabetically or by last modified date, giving users meaningful navigation control over larger lorebooks.
+**Goal:** The entry list can be sorted alphabetically or by last modified date; search gains keyboard navigation and a results dropdown that shows where each match occurs.
 
 ### Features
 
+**Sort:**
 - [ ] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
 - [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
 - [ ] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
@@ -55,11 +56,16 @@ All original planned features are implemented. Summary of what was built:
 - [ ] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
 - [ ] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
 
+**Search Navigation & Results Dropdown:**
+- [ ] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
+- [ ] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
+- [ ] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
+
 ### Stop Condition
 
-User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved; resize and reposition the floating window, reload the page, and confirm both size and position are restored.
+User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved; resize and reposition the floating window, reload the page, and confirm both size and position are restored; type a search term, confirm the results dropdown appears with location tags, click a result and confirm the entry opens; press Enter and confirm keyboard navigation advances through matches in list order.
 
-**Estimated Complexity:** Low
+**Estimated Complexity:** Low–Medium
 
 ---
 
@@ -187,9 +193,6 @@ Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-se
 **Lorebook Crosstalk — Second Window Mode**
 The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power users comparing large lorebooks, a second floating window may be more practical. Depends on: Phase 9 Lorebook Crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
 
-**Search Results Dropdown**
-When a term is typed in the search field, a dropdown lists every entry the term appears in, with an indicator of where the match occurs (title, trigger, description, or a combination). Complements the Enter-key navigation added in Phase 6. Scope and interaction design TBD — discuss before planning.
-
 ---
 
 ## Queued Adjustments
@@ -206,9 +209,6 @@ The "Tiered character counter colors" setting currently turns counters grey when
 
 **Export Section Header**
 The Import/Export tab has an "I M P O R T" header for the import section but no equivalent header for the export section. Add "E X P O R T" in the same format (spaced letters, underlined) for consistency.
-
-**Enter-Key Search Navigation**
-Pressing Enter while a search term is active should open (expand/scroll to) the first matching entry. Pressing Enter again should advance to the next match. Wraps at the end of the list.
 
 **Find & Replace Replaces Search Field**
 When Find & Replace mode is active, the regular search field should be hidden — replaced by the find and replace fields. No reason for all three to be visible simultaneously.
