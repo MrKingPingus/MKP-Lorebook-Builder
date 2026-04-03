@@ -48,12 +48,8 @@ All original planned features are implemented. Summary of what was built:
 - [ ] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
 - [ ] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
 - [ ] All sort modes are display-only — sort never mutates the underlying entry array; `default` always restores the user's drag-arranged order
-- [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; both interact with group-by-type per the open question below
+- [ ] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
 - [ ] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
-
-### Open Question
-
-**Alphabetical + group-by-type interaction:** Last Modified overrides group-by-type (flat chronological list). Alphabetical is ambiguous — sorting A–Z within each type group is plausible and potentially useful. Decision needed before implementation.
 
 ### Stop Condition
 
