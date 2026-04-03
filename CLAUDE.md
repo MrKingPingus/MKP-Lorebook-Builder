@@ -113,3 +113,6 @@ GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions enviro
 - Don't name files `utils`, `misc`, `helpers`, or `common`
 - Don't nest folders deeper than `src/components/feature/`
 - Don't add a backend, database, or authentication layer
+
+## File Editing
+- When the Edit tool fails due to unicode characters (em-dashes, non-breaking spaces, etc.), use targeted `sed` commands for surgical replacements — do **not** load and rewrite the entire file via Python or similar; that dumps the full file contents into context unnecessarily
