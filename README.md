@@ -1,196 +1,153 @@
 # MKP Lorebook Builder
 
-A browser-only utility for creating and managing lorebooks for AI chatbots. Built with React + Vite. No backend, no server, no authentication — everything runs and persists locally in the browser.
+A browser-based tool for building and managing lorebooks for AI chatbots. No install, no account — open it and start writing.
+
+**[Launch the app](https://mrkingpingus.github.io/MKP-Lorebook-Builder/)**
+
+<!-- screenshot placeholder -->
 
 ---
 
-## Project Structure
+<details>
+<summary><strong>What's a Lorebook?</strong></summary>
 
-```
-/
-├── index.html                 HTML shell with <div id="root"> mount point
-├── vite.config.js             Vite build config with React plugin and GitHub Pages base path
-├── package.json               Project manifest with React, Zustand, and Vite dependencies
-└── src/
-    ├── main.jsx               React entry point — mounts <App> into #root
-    ├── App.jsx                Root component — composes FloatingWindow and LanderSection
-    ├── style.css              Global CSS resets and design-token custom properties
-    ├── constants/             Read-only configuration values — imported by services and hooks
-    ├── state/                 Zustand stores — single source of truth for all runtime state
-    ├── services/              Pure functions and side-effect-isolated modules — no React imports
-    ├── hooks/                 Custom React hooks — bridge between stores and components
-    └── components/
-        ├── layout/            Structural shell components (window frame, tab bar, header, footer)
-        ├── feature/           Domain-aware components wired to hooks (entry cards, panels, search)
-        └── ui/                Stateless presentational primitives (chips, badges, FAB, drop zone)
-```
+<!-- paste explanation here -->
 
----
-
-## Folder Responsibilities
-
-### `src/constants/`
-Read-only values shared across the app. No logic, no side effects. Imported by services and hooks — never directly by components.
-
-| File | Responsibility |
-|------|----------------|
-| `storage-keys.js` | All localStorage key name strings |
-| `entry-types.js` | Entry type definitions: id, label, color |
-| `limits.js` | Numeric caps: max triggers (25), max lorebooks (10), char thresholds |
-| `defaults.js` | Default shapes for new entries, lorebooks, settings, window size |
-
-### `src/state/`
-Zustand stores — the single source of truth. Each concern gets its own store to prevent cross-concern re-renders. Components never import from this folder directly; they always go through a hook.
-
-| File | Responsibility |
-|------|----------------|
-| `lorebook-store.js` | Active lorebook id, all lorebooks map, dispatch actions |
-| `settings-store.js` | User preferences: compact triggers, counter tiers, default window size |
-| `ui-store.js` | Active tab, search query, type filter, window position/size, collapse-all |
-| `history-store.js` | Undo and redo stacks of full lorebook state snapshots |
-
-### `src/services/`
-Pure functions and isolated side-effect modules. No React imports. Services receive data and return data — they do not read from or write to stores directly.
-
-| File | Responsibility |
-|------|----------------|
-| `storage-service.js` | **Only** file that reads/writes localStorage |
-| `lorebook-index.js` | Multi-lorebook index: add, remove, promote, timestamp, key allocation |
-| `entry-factory.js` | `createEmptyEntry()` and `createEmptyLorebook()` factory functions |
-| `autosave.js` | Debounced autosave — subscribes to store, calls `storage-service` |
-| `suggestion-engine.js` | Type-aware trigger keyword suggestions from entry data |
-| `html-escape.js` | XSS-safe HTML escaping and regex special-character escaping |
-| `find-replace.js` | Bulk find-and-replace across all entry trigger and description fields |
-| `json-export.js` | Serialize lorebook to prettified JSON Blob |
-| `json-import.js` | Validate and normalize imported JSON before applying to store |
-| `txt-export.js` | Serialize lorebook to `=== header ===` block TXT Blob |
-| `txt-import.js` | Parse `=== block ===` TXT format into entry objects |
-| `docx-import.js` | Load Mammoth.js from CDN, extract text from `.docx`, delegate to `txt-import` |
-| `docx-export.js` | Build OOXML `.docx` Blob via `zip-builder` |
-| `zip-builder.js` | Construct valid ZIP binary with CRC32, local headers, central directory |
-
-### `src/hooks/`
-Custom React hooks — one per file, one concern each. The only layer that may import from both `state/` and `services/`. Components import hooks, never stores or services directly.
-
-| File | Responsibility |
-|------|----------------|
-| `use-autosave.js` | Mount/unmount the autosave service as a React effect |
-| `use-undo-redo.js` | `undo()`, `redo()`, `canUndo`, `canRedo` from `history-store` |
-| `use-lorebook.js` | Active lorebook data and load/switch/create/delete actions |
-| `use-entries.js` | Entry CRUD: add, update, remove, reorder, renumber |
-| `use-search.js` | Search query, filtered entries, highlight positions, match count |
-| `use-find-replace.js` | Find/replace fields, match count, dispatch to `find-replace` service |
-| `use-type-filter.js` | Type filter toggle state and filtered entry list derivation |
-| `use-drag-window.js` | Pointer-event drag logic for the floating window header |
-| `use-resize-window.js` | Corner handle resize logic with viewport boundary clamping |
-| `use-lorebook-switcher.js` | Lorebook list, relative timestamps, switch/create/delete |
-| `use-suggestions.js` | Fetch, rotate, and add suggestions for an entry |
-| `use-phrase-builder.js` | Phrase builder: word selection, ordering, commit, cancel |
-| `use-settings.js` | Read and persist user preferences through `settings-store` |
-| `use-keyboard-shortcuts.js` | Global handlers: Alt+N (new entry), Ctrl+Z (undo), Ctrl+Shift+Z (redo) |
-
-### `src/components/layout/`
-Structural shell components. Handle window framing, tab navigation, and global chrome. Receive data from hooks; do not contain business logic.
-
-| File | Responsibility |
-|------|----------------|
-| `FloatingWindow.jsx` | Draggable resizable window shell — applies position/size from ui-store |
-| `WindowHeader.jsx` | Title bar: lorebook name input, SaveBadge, undo/redo buttons |
-| `TabBar.jsx` | Build / Import-Export / Settings tab switcher |
-| `WindowFooter.jsx` | Footer: "Alt+N — new entry" hint and Add Entry FAB |
-| `ResizeHandles.jsx` | Four corner drag handle elements wired to `use-resize-window` |
-
-### `src/components/feature/`
-Domain-aware components. Each maps to a specific feature area and is wired to one or more hooks. No direct store or service imports.
-
-| File | Responsibility |
-|------|----------------|
-| `BuildPanel.jsx` | Build tab: SearchBar, TypeFilterBar, controls row, EntryList |
-| `EntryList.jsx` | Scrollable sortable list of EntryCard components |
-| `EntryCard.jsx` | Full entry card: name, type, triggers, description, suggestions |
-| `EntryName.jsx` | Auto-sizing name text input |
-| `TypeSelector.jsx` | Entry type dropdown with scroll-wheel cycling |
-| `TriggerChips.jsx` | Chip-per-trigger input: inline edit, delete, bulk paste |
-| `TriggerCompact.jsx` | Single text field triggers with delimiter switcher |
-| `DescriptionArea.jsx` | Auto-growing textarea with manual resize handle |
-| `DescriptionHighlight.jsx` | Yellow search-match highlight overlay for description |
-| `SuggestionsTray.jsx` | Collapsible suggestions tray with reroll and one-click add |
-| `PhraseBuilder.jsx` | Pill row for building compound trigger phrases |
-| `SearchBar.jsx` | Search input, clear button, mode toggle, MatchCounter |
-| `FindReplace.jsx` | Find and Replace row with Replace All button |
-| `TypeFilterBar.jsx` | Pill button row to filter entries by type |
-| `LorebookSwitcher.jsx` | Saved lorebooks dropdown with timestamps and delete |
-| `ImportPanel.jsx` | Import tab: drop zone, file browse, format tabs, preview |
-| `ImportPreview.jsx` | Read-only parsed entry preview before confirming import |
-| `ExportPanel.jsx` | Export tab: JSON/TXT/DOCX downloads and templates |
-| `SettingsPanel.jsx` | Settings tab: all user preference controls |
-
-### `src/components/ui/`
-Stateless presentational primitives. Receive only props, emit only callback props. No hook imports, no store imports.
-
-| File | Responsibility |
-|------|----------------|
-| `Chip.jsx` | Trigger chip with editable label and × delete button |
-| `FAB.jsx` | Floating action button for adding a new entry |
-| `SaveBadge.jsx` | "✓ Saved" status indicator |
-| `TypeColorDot.jsx` | Colored type stripe for entry card headers |
-| `EntryBadge.jsx` | Entry enum badge (e.g. "#1 – Name") |
-| `StatsBadge.jsx` | Trigger count and character count badge |
-| `CharCounter.jsx` | Tiered color-coded character count (green/yellow/red) |
-| `DropZone.jsx` | Drag-and-drop + click-to-browse file input zone |
-| `MatchCounter.jsx` | "X matches in Y entries" search result display |
-
----
-
-## Naming Conventions
-
-| Convention | Applied to |
-|------------|-----------|
-| `PascalCase.jsx` | All React component files |
-| `lowercase-hyphenated.js` | All non-component files (hooks, services, constants, state) |
-| `use-*.js` | Custom React hooks |
-| No `index.js` barrel files | Imports always reference the file directly |
-| No `utils`, `misc`, `helpers`, `common` | Files are named after what they actually do |
-
----
-
-## Architecture Rules
-
-1. **One file, one responsibility** — no mixed concerns.
-2. **Components render only** — all logic lives in hooks or services.
-3. **No component imports stores directly** — always go through a hook.
-4. **No component imports services directly** — always go through a hook.
-5. **`storage-service.js` is the only file that touches `localStorage`** — no exceptions.
-6. **`autosave.js` is a plain service, not a hook** — the debounce timer must survive React re-renders.
-7. **Constants are never hardcoded in logic files** — always imported from `src/constants/`.
-8. **Max folder depth: 3 levels** — `src/components/feature/` is the deepest allowed.
-9. **No backend, no database, no authentication** — browser-only, localStorage only.
-
----
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `react` + `react-dom` | UI rendering |
-| `zustand` | Lightweight state management (4 isolated stores) |
-| `@vitejs/plugin-react` | JSX transform and Fast Refresh in Vite |
-| `vite` | Build tool and dev server |
-| Mammoth.js (CDN) | DOCX text extraction — loaded dynamically at runtime, not bundled |
+</details>
 
 ---
 
 ## Getting Started
 
+Open the link above. That's it — there's nothing to install or sign in to. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything.
+
+The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the Settings tab has a button to snap it back to the default size.
+
+---
+
+## Building a Lorebook
+
+### Naming Your Lorebook
+
+Click the lorebook name field in the title bar and type. The name saves automatically.
+
+### Adding Entries
+
+Click the **+** button at the bottom of the window, or press **Alt+N** (configurable in Settings). New entries appear at the bottom of the list.
+
+### Entry Anatomy
+
+Each entry has four parts:
+
+- **Name** — a label for your own reference. Not used by the AI directly.
+- **Type** — one of five categories, color-coded on the entry's left border:
+  - Purple — Character
+  - Blue — Item
+  - Red — Plot Event
+  - Yellow — Location
+  - Teal — Other
+- **Triggers** — the keywords that cause the entry to activate. Each trigger is its own chip. You can add them one at a time, paste a comma-separated list to add several at once, or use the Phrase Builder to click words together from the entry's description. Up to 25 triggers per entry.
+- **Description** — the lore text injected when a trigger fires. Capped at 1500 characters. The character counter color-codes as you approach the limit (thresholds are adjustable in Settings).
+
+### Reordering Entries
+
+Drag any entry card up or down to reorder.
+
+### Suggestions
+
+Each entry has a collapsible **Suggestions** tray. Open it to see up to 12 auto-generated trigger keyword suggestions based on the entry's name, type, and description. Click any suggestion to add it as a trigger, or hit the reroll button to generate a fresh batch.
+
+### Phrase Builder
+
+Inside the Suggestions tray, the **Phrase Builder** lets you click words from the description to assemble a multi-word trigger phrase in order. Confirm to add it as a single trigger chip.
+
+### Undo / Redo
+
+Every change to your entries is tracked. Use **Ctrl+Z** to undo and **Ctrl+Y** to redo, up to 50 steps back. Both hotkeys are configurable in Settings.
+
+---
+
+## Managing Multiple Lorebooks
+
+The lorebook switcher lives in the menu panel (accessible from the header). You can save up to 10 lorebooks independently. Each has its own name, entries, and history. Switch between them at any time — your current lorebook autosaves before switching.
+
+To delete a lorebook, open the switcher and hit the delete button next to it. This cannot be undone.
+
+---
+
+## Search & Filter
+
+### Search
+
+The search bar filters the entry list in real time across entry names, triggers, and descriptions. Matches are highlighted in yellow inside description fields. The match counter shows how many total matches exist across how many entries.
+
+Below the search bar, a **Find & Replace** row lets you do a bulk text replacement across every trigger and description field in the lorebook at once.
+
+### Filter by Type
+
+The type filter bar lets you narrow the entry list to one or more types. Click a type pill to toggle it. Active filters stack — you can show Characters and Locations at the same time, for example.
+
+---
+
+## Import & Export
+
+### Import
+
+Open the **Import / Export** tab and drop a file onto the drop zone, or click to browse. Supported formats: **JSON**, **TXT**, and **DOCX**.
+
+After loading a file, a preview of the parsed entries appears before anything is committed. You can choose to:
+- **Replace** the current lorebook's entries with the imported ones
+- **Load into a new lorebook slot** so your current work stays intact
+
+If your current lorebook has unsaved-to-file changes, the importer will offer to export it first before proceeding.
+
+The **Append** import (available via the hotbar) lets you drop a file and add its entries to the current lorebook without replacing anything.
+
+### Export
+
+- **Download JSON** — the full lorebook as a `.json` file
+- **Download TXT** — a plain-text block format
+- **Download DOCX** — a Word-compatible document
+- **Copy JSON** — copies the full JSON directly to your clipboard
+
+**Templates** — download a blank TXT or DOCX file pre-formatted for import, useful if you want to write entries by hand outside the app.
+
+---
+
+## Settings
+
+Open the **Settings** tab to configure:
+
+| Setting | What it does |
+|---|---|
+| Suggestions collapsed by default | Starts every entry's suggestion tray closed |
+| Hide entry stats badges | Hides the trigger count and character count in entry headers |
+| Tiered counter colors | Color-codes character counters green → yellow → red by threshold |
+| Character count thresholds | Set where yellow and red kick in |
+| Default window size | The size the window resets to |
+| FAB button size | Size of the + button (small / medium / large / custom) |
+| Hotbar slots | Assign actions to the 6 slots flanking the + button (3 per side) |
+| Hotkey bindings | Change the key for new entry (Alt+?), undo (Ctrl+?), and redo (Ctrl+?) |
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|---|---|
+| Alt+N | New entry (key configurable) |
+| Ctrl+Z | Undo (key configurable) |
+| Ctrl+Y | Redo (key configurable) |
+
+---
+
+## Local Development
+
 ```bash
 npm install
-npm run dev
-```
-
-Build for production:
-
-```bash
-npm run build
+npm run dev      # dev server with hot reload
+npm run build    # production build → dist/
+npm run preview  # serve the production build locally
 ```
 
 The app deploys automatically to GitHub Pages via `.github/workflows/main.yml` on push to `main`.
