@@ -2,3 +2,4 @@
 export const LOREBOOK_INDEX_KEY = 'mkp_lorebook_index';
 export const LOREBOOK_KEY_PREFIX = 'mkp_lorebook_';
 export const SETTINGS_KEY = 'mkp_settings';
+export const WINDOW_STATE_KEY = 'mkp_window_state';

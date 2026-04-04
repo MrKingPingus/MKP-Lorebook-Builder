@@ -3,7 +3,12 @@ import { useRef, useState } from 'react';
 import { Chip } from '../ui/Chip.jsx';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW, DUPE_FLASH_MS } from '../../constants/limits.js';
 
-export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '' }) {
+// Escape special regex characters in a delimiter string
+function escapeDelim(d) {
+  return d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
+export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
@@ -15,7 +20,9 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
   }
 
   function addTrigger(raw) {
-    const parts = raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+    // Always split on comma and semicolon; also split on the active delimiter
+    const delimPattern = new RegExp(`[,;${escapeDelim(delimiter)}]`);
+    const parts = raw.split(delimPattern).map((s) => s.trim()).filter(Boolean);
     const next  = [...triggers];
     let dupFound = false;
     for (const p of parts) {
@@ -47,7 +54,7 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
 
   function onPaste(e) {
     const text = e.clipboardData.getData('text');
-    if (text.includes(',') || text.includes(';')) {
+    if (text.includes(',') || text.includes(';') || text.includes(delimiter)) {
       e.preventDefault();
       addTrigger(text);
       e.currentTarget.value = '';
@@ -65,15 +72,29 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
   return (
     <div className="trigger-chips-wrapper">
       <div className="trigger-chips" onClick={() => inputRef.current?.focus()}>
-        {triggers.map((t, i) => (
-          <Chip
-            key={i}
-            label={t}
-            onDelete={() => deleteTrigger(i)}
-            onRename={(v) => renameTrigger(i, v)}
-            highlight={searchQuery || undefined}
-          />
-        ))}
+        {triggers.map((t, i) => {
+          const conflictEntries = conflictMap?.get(t.toLowerCase()) ?? [];
+          const isConflict      = conflictEntries.length > 0;
+          const isAcknowledged  = allowedOverlaps.includes(t.toLowerCase());
+          const ringColor = isConflict
+            ? (isAcknowledged ? 'var(--blue)' : 'var(--yellow)')
+            : null;
+
+          return (
+            <Chip
+              key={i}
+              label={t}
+              onDelete={() => deleteTrigger(i)}
+              onRename={(v) => renameTrigger(i, v)}
+              highlight={searchQuery || undefined}
+              ringColor={ringColor}
+              conflictEntries={isConflict ? conflictEntries : null}
+              acknowledged={isAcknowledged}
+              onAllow={isConflict && !isAcknowledged ? () => onAllowOverlap?.(t.toLowerCase()) : null}
+              onRevoke={isConflict && isAcknowledged  ? () => onRevokeOverlap?.(t.toLowerCase()) : null}
+            />
+          );
+        })}
         <input
           ref={inputRef}
           className="trigger-input"

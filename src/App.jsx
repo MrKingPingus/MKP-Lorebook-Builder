@@ -16,8 +16,10 @@ import {
   LOREBOOK_INDEX_KEY,
   LOREBOOK_KEY_PREFIX,
   SETTINGS_KEY,
+  WINDOW_STATE_KEY,
 } from './constants/storage-keys.js';
 import { DEFAULT_WINDOW_FRACTION } from './constants/defaults.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from './constants/limits.js';
 
 /** Bootstrap: load persisted state from localStorage into stores on first mount. */
 function useBootstrap() {
@@ -36,10 +38,21 @@ function useBootstrap() {
       applySettings(settings);
     }
 
-    // Always start window at middle two-thirds, full height
-    const w = Math.floor(window.innerWidth * DEFAULT_WINDOW_FRACTION);
-    setWindowSize({ width: w, height: window.innerHeight });
-    setWindowPos({ x: Math.floor((window.innerWidth - w) / 2), y: 0 });
+    // Restore persisted window state, or fall back to default centre-two-thirds layout
+    const saved = readJson(WINDOW_STATE_KEY);
+    if (saved?.size && saved?.pos) {
+      // Clamp to current viewport in case screen size changed since last save
+      const sw = Math.max(MIN_WINDOW_WIDTH,  Math.min(saved.size.width,  window.innerWidth));
+      const sh = Math.max(MIN_WINDOW_HEIGHT, Math.min(saved.size.height, window.innerHeight));
+      const sx = Math.max(0, Math.min(saved.pos.x, window.innerWidth  - sw));
+      const sy = Math.max(0, Math.min(saved.pos.y, window.innerHeight - sh));
+      setWindowSize({ width: sw, height: sh });
+      setWindowPos({ x: sx, y: sy });
+    } else {
+      const w = Math.floor(window.innerWidth * DEFAULT_WINDOW_FRACTION);
+      setWindowSize({ width: w, height: window.innerHeight });
+      setWindowPos({ x: Math.floor((window.innerWidth - w) / 2), y: 0 });
+    }
 
     // Load lorebook index
     const index = readJson(LOREBOOK_INDEX_KEY, []);
@@ -77,8 +90,10 @@ export default function App() {
   const { addEntry }   = useEntries();
   const { undo, redo } = useUndoRedo();
   const newEntryHotkey = useSettingsStore((s) => s.newEntryHotkey);
+  const undoHotkey     = useSettingsStore((s) => s.undoHotkey);
+  const redoHotkey     = useSettingsStore((s) => s.redoHotkey);
 
-  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, hotkey: newEntryHotkey });
+  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, hotkey: newEntryHotkey, undoHotkey, redoHotkey });
 
   return (
     <div className="app-root">

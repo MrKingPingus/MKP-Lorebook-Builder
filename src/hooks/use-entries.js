@@ -1,6 +1,7 @@
 // Entry CRUD operations: add, update, remove, reorder, clearAll, and renumber enum badges
 import { useLorebookStore } from '../state/lorebook-store.js';
-import { useHistoryStore } from '../state/history-store.js';
+import { useHistoryStore }  from '../state/history-store.js';
+import { useUiStore }       from '../state/ui-store.js';
 import { createEmptyEntry } from '../services/entry-factory.js';
 
 export function useEntries() {
@@ -19,7 +20,9 @@ export function useEntries() {
 
   function addEntry() {
     snapshot();
-    updateActiveEntries([...entries, createEmptyEntry()]);
+    const newEntry = createEmptyEntry();
+    updateActiveEntries([...entries, newEntry]);
+    useUiStore.getState().setPendingFocusEntryId(newEntry.id);
   }
 
   function updateEntry(id, patch) {

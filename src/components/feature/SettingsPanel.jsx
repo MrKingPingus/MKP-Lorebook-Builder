@@ -12,6 +12,8 @@ export function SettingsPanel() {
     hideSuggestionsByDefault,
     hideEntryStats,
     newEntryHotkey,
+    undoHotkey,
+    redoHotkey,
     hotbarSlots,
     entryTypeView,
     fabSize,
@@ -24,6 +26,8 @@ export function SettingsPanel() {
     setHideSuggestionsByDefault,
     setHideEntryStats,
     setNewEntryHotkey,
+    setUndoHotkey,
+    setRedoHotkey,
     setHotbarSlots,
     setEntryTypeView,
     setFabSize,
@@ -72,7 +76,7 @@ export function SettingsPanel() {
       {/* ── Character counter ── */}
       <div className="settings-group">
         <label className="settings-label">
-          <span>Tiered character counter colors</span>
+          <span>Tiered counter colors (description &amp; triggers)</span>
           <input
             type="checkbox"
             checked={tieredCounterEnabled}
@@ -80,7 +84,7 @@ export function SettingsPanel() {
           />
         </label>
         <div className="settings-hint">
-          Color-code the character counter green / yellow / red by threshold.
+          Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
         </div>
       </div>
 
@@ -140,7 +144,7 @@ export function SettingsPanel() {
         </button>
       </div>
 
-      {/* ── Hotkey ── */}
+      {/* ── Hotkeys ── */}
       <div className="settings-group">
         <div className="settings-label">New entry hotkey</div>
         <div className="settings-row settings-row--hotkey">
@@ -156,10 +160,44 @@ export function SettingsPanel() {
             }}
           />
         </div>
+      </div>
+
+      <div className="settings-group">
+        <div className="settings-label">Undo hotkey</div>
+        <div className="settings-row settings-row--hotkey">
+          <span className="settings-hint">Ctrl +</span>
+          <input
+            type="text"
+            className="hotkey-input"
+            maxLength={1}
+            value={undoHotkey}
+            onChange={(e) => {
+              const v = e.target.value.toLowerCase();
+              if (v) setUndoHotkey(v);
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="settings-group">
+        <div className="settings-label">Redo hotkey</div>
+        <div className="settings-row settings-row--hotkey">
+          <span className="settings-hint">Ctrl +</span>
+          <input
+            type="text"
+            className="hotkey-input"
+            maxLength={1}
+            value={redoHotkey}
+            onChange={(e) => {
+              const v = e.target.value.toLowerCase();
+              if (v) setRedoHotkey(v);
+            }}
+          />
+        </div>
         <div className="settings-hint">
           <kbd>Alt+{newEntryHotkey.toUpperCase()}</kbd> New entry &nbsp;·&nbsp;
-          <kbd>Ctrl+Z</kbd> Undo &nbsp;·&nbsp;
-          <kbd>Ctrl+Y</kbd> Redo
+          <kbd>Ctrl+{undoHotkey.toUpperCase()}</kbd> Undo &nbsp;·&nbsp;
+          <kbd>Ctrl+{redoHotkey.toUpperCase()}</kbd> Redo
         </div>
       </div>
 
@@ -174,7 +212,7 @@ export function SettingsPanel() {
           />
         </label>
         <div className="settings-hint">
-          Shows large type buttons instead of a compact dropdown when editing an entry.
+          Shows large type buttons instead of a compact dropdown when editing an entry. (Currently broken — has no visible effect.)
         </div>
       </div>
 

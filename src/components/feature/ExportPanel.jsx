@@ -37,6 +37,7 @@ export function ExportPanel() {
 
   return (
     <div className="export-panel">
+      <p className="import-label">EXPORT</p>
       <div className="export-info">
         {entries.length} {entries.length === 1 ? 'entry' : 'entries'} in &quot;{activeLorebook.name || '(unnamed)'}&quot;
       </div>

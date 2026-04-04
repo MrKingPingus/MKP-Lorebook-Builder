@@ -5,7 +5,7 @@ export function CharCounter({ count, limit = CHAR_LIMIT, tiers, tieredEnabled = 
   const { yellow = 400, red = 600 } = tiers ?? {};
   const color = tieredEnabled
     ? (count >= red ? 'var(--red)' : count >= yellow ? 'var(--yellow)' : 'var(--green)')
-    : 'var(--muted2)';
+    : 'var(--green)';
   return (
     <span className="char-counter" style={{ color }}>
       {count} / {limit}

@@ -43,6 +43,7 @@ export function TypeFilterBar({ entries }) {
       <button
         className={`type-pill${typeFilter.length === 0 ? ' type-pill--active' : ''}`}
         onClick={clearFilter}
+        title="Shift+click for multi-select"
       >
         All
       </button>

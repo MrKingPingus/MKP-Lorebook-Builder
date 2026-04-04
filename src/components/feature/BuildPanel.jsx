@@ -14,7 +14,7 @@ import { EntryList }     from './EntryList.jsx';
 export function BuildPanel() {
   const { entries }                                      = useEntries();
   const { filteredEntries: searchFiltered, matchCount,
-          entryMatchCount, searchQuery }                 = useSearch(entries);
+          entryMatchCount, searchQuery, matchLocations } = useSearch(entries);
   const { filteredEntries }                              = useTypeFilter(searchFiltered);
   const sortedEntries                                    = useSort(filteredEntries);
   const groupByType                                      = useUi((s) => s.groupByType);
@@ -29,6 +29,11 @@ export function BuildPanel() {
   const displayEntries = effectiveGroupByType
     ? ENTRY_TYPES.flatMap((t) => sortedEntries.filter((e) => e.type === t.id))
     : sortedEntries;
+
+  // Build ordered match details for the current display list (after type filter + sort + group)
+  const displayMatchDetails = displayEntries
+    .filter((e) => matchLocations.has(e.id))
+    .map((e) => ({ id: e.id, name: e.name, locations: matchLocations.get(e.id) }));
 
   return (
     <div className="build-panel">
@@ -49,7 +54,7 @@ export function BuildPanel() {
         entries={entries}
         matchCount={matchCount}
         entryMatchCount={entryMatchCount}
-        firstMatchId={filteredEntries[0]?.id}
+        matchDetails={displayMatchDetails}
       />
       <TypeFilterBar entries={entries} />
       <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />
