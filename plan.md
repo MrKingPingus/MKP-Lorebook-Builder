@@ -121,12 +121,9 @@ User can confirm the full type button grid toggle visibly changes the type selec
 - [ ] Trigger crosstalk scan — uses `scan-service.js` to find triggers shared across two or more entries; reports findings via warning system
 - [ ] Crosstalk indicator — surfaces shared trigger warnings on affected entries so users can spot conflicts in large lorebooks
 
-**Suggestions:**
-- [ ] Category-weighted suggestion variants — `suggestion-engine.js` applies different suggestion weights based on entry type
-
 ### Stop Condition
 
-User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; observe that suggestions for a character entry differ meaningfully from suggestions for a location entry.
+User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; hover the conflicting chip and confirm the popover lists the other entry with its type color; click Allow and confirm the ring turns blue; click Revoke and confirm the yellow ring returns.
 
 **Estimated Complexity:** Medium
 
@@ -225,6 +222,9 @@ Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-se
 
 **Lorebook Crosstalk — Second Window Mode**
 The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power users comparing large lorebooks, a second floating window may be more practical. Depends on: Phase 9 Lorebook Crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
+
+**Category-Weighted Suggestion Variants**
+`suggestion-engine.js` applies different suggestion weights and candidate pools based on entry type, so suggestions for a character entry differ meaningfully from those for a location entry. Requires a per-type lookup table or seed word list to have real impact. Deferred from Phase 7 until a lookup table approach is designed. Depends on: suggestion engine architecture being stable.
 
 ---
 

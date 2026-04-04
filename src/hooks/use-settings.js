@@ -14,6 +14,7 @@ export function useSettings() {
   const newEntryHotkey           = useSettingsStore((s) => s.newEntryHotkey);
   const undoHotkey               = useSettingsStore((s) => s.undoHotkey);
   const redoHotkey               = useSettingsStore((s) => s.redoHotkey);
+  const triggerDelimiter         = useSettingsStore((s) => s.triggerDelimiter);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
   const entryTypeView            = useSettingsStore((s) => s.entryTypeView);
   const fabSize                  = useSettingsStore((s) => s.fabSize);
@@ -33,6 +34,7 @@ export function useSettings() {
       newEntryHotkey,
       undoHotkey,
       redoHotkey,
+      triggerDelimiter,
       hotbarSlots,
       entryTypeView,
       fabSize,
@@ -61,6 +63,7 @@ export function useSettings() {
     newEntryHotkey,
     undoHotkey,
     redoHotkey,
+    triggerDelimiter,
     hotbarSlots,
     entryTypeView,
     fabSize,
@@ -75,6 +78,7 @@ export function useSettings() {
     setNewEntryHotkey:           (v) => updateSetting('newEntryHotkey', v),
     setUndoHotkey:               (v) => updateSetting('undoHotkey', v),
     setRedoHotkey:               (v) => updateSetting('redoHotkey', v),
+    setTriggerDelimiter:         (v) => updateSetting('triggerDelimiter', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
     setEntryTypeView:            (v) => updateSetting('entryTypeView', v),
     setFabSize:                  (v) => updateSetting('fabSize', v),

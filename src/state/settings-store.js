@@ -14,6 +14,7 @@ export const useSettingsStore = create((set) => ({
   setNewEntryHotkey:           (newEntryHotkey)           => set({ newEntryHotkey }),
   setUndoHotkey:               (undoHotkey)               => set({ undoHotkey }),
   setRedoHotkey:               (redoHotkey)               => set({ redoHotkey }),
+  setTriggerDelimiter:         (triggerDelimiter)         => set({ triggerDelimiter }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),
   setEntryTypeView:            (entryTypeView)            => set({ entryTypeView }),
   setFabSize:                  (fabSize)                  => set({ fabSize }),
