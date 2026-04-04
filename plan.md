@@ -240,6 +240,12 @@ Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed 
 
 ---
 
+**Crosstalk Popover Entry Navigation Does Not Work**
+Clicking an entry name in the trigger crosstalk conflict popover does not scroll to or expand the target entry. Expected: clicking navigates to the entry the same way search result navigation does (scroll + expand on desktop, open detail panel on mobile).
+Status: **Open**
+
+---
+
 **Full Type Button Grid Setting Has No Effect**
 The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
 Status: **Open** — deferred; setting now displays a "currently broken" hint in the UI
