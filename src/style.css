@@ -1776,6 +1776,18 @@ kbd {
 }
 .lander-template-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+.lander-tips {
+  list-style: disc;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted2);
+}
+.lander-tips li { line-height: 1.6; padding: 2px 0; }
+.lander-tips strong { color: var(--text); }
+
 .lander-steps {
   font-size: 13px;
   color: var(--muted2);

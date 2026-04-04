@@ -35,6 +35,17 @@ export function Lander() {
       </div>
 
       <div className="lander-section">
+        <h2 className="lander-section-title">Tips</h2>
+        <ul className="lander-tips">
+          <li>Hover over buttons and controls for help hints.</li>
+          <li>Double-click an entry header to expand or collapse it.</li>
+          <li>Paste a comma-separated list into the trigger field to add multiple triggers at once.</li>
+          <li>Drag the <strong>⠿</strong> handle on any entry to reorder it in the list.</li>
+          <li>Shift+scroll on the type selector inside an expanded entry to cycle through entry types.</li>
+        </ul>
+      </div>
+
+      <div className="lander-section">
         <h2 className="lander-section-title">How It Works</h2>
         <ol className="lander-steps">
           <li>Click <strong>Start Building</strong> above to open the builder.</li>
