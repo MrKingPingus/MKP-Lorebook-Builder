@@ -49,6 +49,14 @@ Each entry has four parts:
 - **Triggers** — These are the keywords that the LLM is using to decide to pull from the Lorebook. These are not case sensitive, plural/singular sensitive, or possessive sensitive. You want these to be words that, when they appear in chat, they call upon this entry for context. The contents of user's last message and char's message before that are used for these triggers to determine char's next response. Try not to use the same keywords for more than a handful of entries. Each trigger is its own chip. You can add them one at a time, paste a comma-separated list to add several at once, or use the Phrase Builder to click words together from the entry's description. Up to 25 triggers per entry.
 - **Description** — This is the meat of the entry. Generally, you want to keep this concise. Character limit is 1500 for each entry, but it's recommended to keep it around 500, especially because so many entries can be pulled at one time. Some examples of entries can be: character sheets for NPCs, rules of the universe, setting, creatures/monsters, food/drink, etc. The character counter color will change as you approach the limit (thresholds are adjustable in Settings, though stock settings are recommended).
 
+### Trigger Crosstalk
+
+If two or more entries share the same trigger, the conflicting chips are flagged with a warning ring. Hovering the chip opens a popover listing which other entries share it. You can click **Allow** to mark the overlap as intentional — the ring turns blue to confirm it — or **Revoke** to restore the warning.
+
+### Reordering Entries
+
+Drag any entry card up or down to reorder.
+
 ### Suggestions
 
 Each entry has a collapsible **Suggestions** tray. Open it to see up to 12 auto-generated trigger keyword suggestions based on the entry's name, type, and description. Click any suggestion to add it as a trigger, or hit the reroll button to generate a fresh batch.
