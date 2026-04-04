@@ -129,6 +129,35 @@ User can switch compact trigger mode to a hyphen delimiter and confirm triggers 
 
 ---
 
+## Polish Pass 2 — Adjustments & Bug Fixes
+
+**Goal:** Clear a second backlog of UI improvements, lorebook management QoL, data portability, and known bugs before Phase 8 adds new complexity.
+
+### Adjustments
+
+- [ ] **X button on Build Page** — redirect to lander instead of doing nothing
+- [ ] **Lander reorganization** — "How to Use" first, Tips second; at the bottom of the Tips section add "For more tips and information, check out the [readme]!" linking to the GitHub repo README
+- [ ] **Editable lorebook title** — inline edit in the lorebook selector (click name → input → blur/Enter saves)
+- [ ] **Name prompt on new lorebook** — auto-focus the lorebook name field immediately on creation, consistent with new entry auto-focus behavior
+- [ ] **Lorebook JSON metadata portability (`_meta`):**
+  - Add `createdAt` and `lastModified` timestamps to lorebook objects; `createdAt` set once at creation, `lastModified` updated on every autosave
+  - Export: optional checkbox "Include metadata (settings & session info)" appends a `_meta` block to the lorebook JSON containing `createdAt`, `lastModified`, and a settings snapshot
+  - Import: if a `_meta` block is detected, prompt user "This file contains saved settings. Apply them to this device?" with Yes / Skip options
+  - Requires updates to `json-export.js`, `json-import.js`, lorebook creation in `entry-factory.js` (or equivalent), and `autosave.js` for `lastModified` stamping
+
+### Fixes
+
+- [ ] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
+- [ ] **Find & Replace covers entry titles** — extend `find-replace.js` to include `entry.name` in the search and replace pass
+
+### Stop Condition
+
+User can click the X button on the build page and confirm it redirects to the lander; confirm the lander shows "How to Use" before Tips, and the README link appears at the bottom of Tips; click a lorebook name in the selector and confirm it becomes an editable input that saves on blur or Enter; create a new lorebook and confirm the name field is auto-focused; export a lorebook with the metadata checkbox checked and confirm the JSON contains a `_meta` block; import that file and confirm the settings prompt appears; confirm skipping leaves current settings intact and applying replaces them; attempt to delete a lorebook on desktop and confirm a "type Yes to confirm" dialog appears; confirm the lorebook is gone after confirming; run a Find & Replace on a term that appears in an entry title and confirm the title is updated.
+
+**Estimated Complexity:** Low–Medium
+
+---
+
 ## Phase 8 — Entry Enhancements
 
 **Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, an optional splitting system for entries that have grown too long, and an opt-in rollback system for saving and restoring entry states.
@@ -208,6 +237,11 @@ User can load a second lorebook into crosstalk mode, confirm that entries presen
 ## Future Features
 
 Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
+
+---
+
+**In-App Help Menu / Documentation Panel**
+A dedicated help section accessible from the UI (button or settings tab) containing usage guidance, tips, and feature explanations. Content scope and navigation structure not yet defined. Depends on: nothing technically blocking it, but content needs to be written before implementation makes sense. Deferred until user feedback clarifies what information users actually need surfaced in-app.
 
 ---
 
