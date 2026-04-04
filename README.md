@@ -19,9 +19,9 @@ A browser-based tool for building and managing lorebooks for AI chatbots. No ins
 
 ## Getting Started
 
-Open the link above. That's it — there's nothing to install or sign in to. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything.
+Open the link above... That's it! There's nothing to install or sign in to, so you can just start getting to work by either starting a fresh book or importing an existing one. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything! (But clearing the cache on the host page WILL, so make sure you're work is hard saved before doing such a thing or *you **will** cry*.
 
-The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the Settings tab has a button to snap it back to the default size.
+The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the Settings tab has a button to snap it back to the default size. Whatever size you set it to will persist from session to session!
 
 ---
 
@@ -40,38 +40,34 @@ Click the **+** button at the bottom of the window, or press **Alt+N** (configur
 Each entry has four parts:
 
 - **Name** — a label for your own reference. Not used by the AI directly.
-- **Type** — one of five categories, color-coded on the entry's left border:
+- **Type** — one of five categories, color-coded on the entry's left border (Types are mostly just for personal organization. As of now, JSON files uploaded to CharSnap won't carry the Entry Type with them. Just something to be aware of!):
   - Purple — Character
   - Blue — Item
   - Red — Plot Event
   - Yellow — Location
   - Teal — Other
-- **Triggers** — the keywords that cause the entry to activate. Each trigger is its own chip. You can add them one at a time, paste a comma-separated list to add several at once, or use the Phrase Builder to click words together from the entry's description. Up to 25 triggers per entry.
-- **Description** — the lore text injected when a trigger fires. Capped at 1500 characters. The character counter color-codes as you approach the limit (thresholds are adjustable in Settings).
-
-### Reordering Entries
-
-Drag any entry card up or down to reorder.
+- **Triggers** — These are the keywords that the LLM is using to decide to pull from the Lorebook. These are not case sensitive, plural/singular sensitive, or possessive sensitive. You want these to be words that, when they appear in chat, they call upon this entry for context. The contents of user's last message and char's message before that are used for these triggers to determine char's next response. Try not to use the same keywords for more than a handful of entries. Each trigger is its own chip. You can add them one at a time, paste a comma-separated list to add several at once, or use the Phrase Builder to click words together from the entry's description. Up to 25 triggers per entry.
+- **Description** — This is the meat of the entry. Generally, you want to keep this concise. Character limit is 1500 for each entry, but it's recommended to keep it around 500, especially because so many entries can be pulled at one time. Some examples of entries can be: character sheets for NPCs, rules of the universe, setting, creatures/monsters, food/drink, etc. The character counter color will change as you approach the limit (thresholds are adjustable in Settings, though stock settings are recommended).
 
 ### Suggestions
 
 Each entry has a collapsible **Suggestions** tray. Open it to see up to 12 auto-generated trigger keyword suggestions based on the entry's name, type, and description. Click any suggestion to add it as a trigger, or hit the reroll button to generate a fresh batch.
 
-### Phrase Builder
+  - **Phrase Builder**
 
 Inside the Suggestions tray, the **Phrase Builder** lets you click words from the description to assemble a multi-word trigger phrase in order. Confirm to add it as a single trigger chip.
 
 ### Undo / Redo
 
-Every change to your entries is tracked. Use **Ctrl+Z** to undo and **Ctrl+Y** to redo, up to 50 steps back. Both hotkeys are configurable in Settings.
+Every change to your entries is tracked. Use **Ctrl+Z** to undo and **Ctrl+Y** to redo, up to 50 steps back. Both hotkeys are configurable in Settings. (Currently a tad overzealous)
 
 ---
 
 ## Managing Multiple Lorebooks
 
-The lorebook switcher lives in the menu panel (accessible from the header). You can save up to 10 lorebooks independently. Each has its own name, entries, and history. Switch between them at any time — your current lorebook autosaves before switching.
+The lorebook switcher lives in the menu panel (accessible from the header). You can save up to 10 lorebooks independently. Each has its own name, entries, and history. Switch between them at any time — your current lorebook autosaves before switching!
 
-To delete a lorebook, open the switcher and hit the delete button next to it. This cannot be undone.
+To delete a lorebook, open the switcher and hit the delete button next to it. **This cannot be undone**.
 
 ---
 
@@ -79,7 +75,7 @@ To delete a lorebook, open the switcher and hit the delete button next to it. Th
 
 ### Search
 
-The search bar filters the entry list in real time across entry names, triggers, and descriptions. Matches are highlighted in yellow inside description fields. The match counter shows how many total matches exist across how many entries.
+The search bar filters the entry list in real time across entry names, triggers, and descriptions. Matches are highlighted in yellow inside description fields. The match counter shows how many total matches exist across how many entries. At the very end of tbhe search bar is a button for selecting *how* you'd like to sort your search. You have Default, A-Z, Z-A, and Last Modified. *(Last Modified is great for keeping track of non-linear workflows!)*
 
 Below the search bar, a **Find & Replace** row lets you do a bulk text replacement across every trigger and description field in the lorebook at once.
 
