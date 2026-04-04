@@ -109,17 +109,17 @@ User can confirm the full type button grid toggle visibly changes the type selec
 ### Features
 
 **Warning / Notification System (prerequisite):**
-- [ ] Reusable warning UI primitive — consistent in-app alert component used across all warning features in this and later phases
-- [ ] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display
+- [x] Reusable warning UI primitive — chip-level conflict ring (yellow = unacknowledged, blue = allowed) with hover popover; entry-level badge deferred to Phase 8
+- [ ] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display; deferred to Phase 8
 
 **Delimiter Dropdown:**
-- [ ] Expanded delimiter options — extends existing compact trigger mode to support hyphen, tilde, forward slash, and backslash in addition to comma and semicolon
-- [ ] Delimiter selector dropdown — replaces existing two-option toggle with a dropdown; wired to `settings-store`
+- [x] Expanded delimiter options — extends existing compact trigger mode to support hyphen, tilde, forward slash, and backslash in addition to comma and semicolon
+- [x] Delimiter selector dropdown — replaces existing two-option toggle with a dropdown; wired to `settings-store`
 
 **Trigger Crosstalk:**
-- [ ] `scan-service.js` — generic lorebook scanner built here as the first consumer; accepts a predicate, returns findings; reused by later phases
-- [ ] Trigger crosstalk scan — uses `scan-service.js` to find triggers shared across two or more entries; reports findings via warning system
-- [ ] Crosstalk indicator — surfaces shared trigger warnings on affected entries so users can spot conflicts in large lorebooks
+- [x] `scan-service.js` — generic lorebook scanner built here as the first consumer; accepts a predicate, returns findings; reused by later phases
+- [x] Trigger crosstalk scan — uses `scan-service.js` to find triggers shared across two or more entries; reports findings via warning system
+- [x] Crosstalk indicator — surfaces shared trigger warnings on affected entries; yellow ring = conflict, blue ring = acknowledged overlap; hover popover lists conflicting entries with type color dots and Allow/Revoke action; `lorebook.allowedOverlaps` persists acknowledgments
 
 ### Stop Condition
 
