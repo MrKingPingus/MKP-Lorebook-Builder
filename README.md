@@ -4,7 +4,7 @@ A browser-based tool for building and managing lorebooks for AI chatbots. No ins
 
 **[Launch the app](https://mrkingpingus.github.io/MKP-Lorebook-Builder/)**
 
-<!-- screenshot placeholder -->
+![MKP Lorebook Builder](BuildPage.png)
 
 ---
 
