@@ -79,6 +79,18 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  updateAllowedOverlaps: (allowedOverlaps) =>
+    set((state) => {
+      const id = state.activeLorebookId;
+      if (!id) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: { ...state.lorebooks[id], allowedOverlaps },
+        },
+      };
+    }),
+
   getActiveLorebook: () => {
     const { activeLorebookId, lorebooks } = get();
     return activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
