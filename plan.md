@@ -62,16 +62,20 @@ All original planned features are implemented. Summary of what was built:
 
 - [ ] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
 - [ ] **Find & Replace covers entry titles** — extend `find-replace.js` to include `entry.name` in the search and replace pass
+- [ ] **Active field border color** — change focused field border from red (`--accent`) to a neutral blue-grey highlight (e.g. `#a0b5d6`); add this as a CSS variable in `style.css`
+- [ ] **Tiered field borders** — description and trigger fields show an always-on colored border (green / yellow / red) reflecting how close the field is to its limit; description uses `counterTiers` thresholds against char count; triggers use `TRIGGER_WARN_YELLOW` and `MAX_TRIGGERS` against trigger count; respects `tieredCounterEnabled` setting (when disabled, all borders use the neutral active color); border is always-on, not just on focus
 
 ### Stop Condition
 
-User can click the X button on the build page and confirm it redirects to the lander; confirm the lander shows "How to Use" before Tips, and the README link appears at the bottom of Tips; click a lorebook name in the selector and confirm it becomes an editable input that saves on blur or Enter; create a new lorebook and confirm the name field is auto-focused; export a lorebook with the metadata checkbox checked and confirm the JSON contains a `_meta` block; import that file and confirm the settings prompt appears; confirm skipping leaves current settings intact and applying replaces them; attempt to delete a lorebook on desktop and confirm a "type Yes to confirm" dialog appears; confirm the lorebook is gone after confirming; run a Find & Replace on a term that appears in an entry title and confirm the title is updated.
+User can click the X button on the build page and confirm it redirects to the lander; confirm the lander shows "How to Use" before Tips, and the README link appears at the bottom of Tips; click a lorebook name in the selector and confirm it becomes an editable input that saves on blur or Enter; create a new lorebook and confirm the name field is auto-focused; export a lorebook with the metadata checkbox checked and confirm the JSON contains a `_meta` block; import that file and confirm the settings prompt appears; confirm skipping leaves current settings intact and applying replaces them; attempt to delete a lorebook on desktop and confirm a "type Yes to confirm" dialog appears; confirm the lorebook is gone after confirming; run a Find & Replace on a term that appears in an entry title and confirm the title is updated; click any text field and confirm the focus border is blue-grey instead of red; add triggers up to the yellow and red thresholds and confirm the trigger field border changes color accordingly; fill the description to each tier threshold and confirm the border changes; disable tiered counter colors in settings and confirm all field borders revert to neutral.
 
 **Estimated Complexity:** Low–Medium
 
 ---
 
 ## Phase 8 — Entry Enhancements
+
+> **Note:** This phase is large and should be considered for splitting into Phase 8a and 8b before implementation begins. Natural split point: 8a = authoring tools + limit overrides + duplicate detection; 8b = entry splitting + rollback system.
 
 **Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, an optional splitting system for entries that have grown too long, and an opt-in rollback system for saving and restoring entry states.
 
@@ -87,6 +91,11 @@ User can click the X button on the build page and confirm it redirects to the la
 **Entry Authoring:**
 - [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
 - [ ] Empty triggers/description notification — warning system alert when an entry has no triggers or an empty description
+
+**Per-Entry Limit Overrides:**
+- [ ] Schema: add `ignoreLimitWarnings: { description: false, triggers: false }` to entry shape in `entry-factory.js` and `defaults.js`; backwards-compatible default of false
+- [ ] Description override toggle — appears next to the "1500 char limit" label on the description field when the char count crosses the yellow tier threshold; disappears if count drops back below threshold; toggling sets `ignoreLimitWarnings.description`; overridden field shows always-on blue (`#60a5fa`) border instead of yellow/red
+- [ ] Trigger override toggle — appears to the right of the "Trigger Keywords" label in the trigger section header when trigger count crosses `TRIGGER_WARN_YELLOW`; same show/hide and blue border behavior as description override; toggles `ignoreLimitWarnings.triggers`
 
 **Entry Duplicate Warning:**
 - [ ] Duplicate entry detection — uses `scan-service.js` to identify entries with identical or near-identical names or trigger sets
