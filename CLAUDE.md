@@ -116,3 +116,17 @@ GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions enviro
 
 ## File Editing
 - When the Edit tool fails due to unicode characters (em-dashes, non-breaking spaces, etc.), use targeted `sed` commands for surgical replacements — do **not** load and rewrite the entire file via Python or similar; that dumps the full file contents into context unnecessarily
+
+## Token Cost Warnings
+
+Some actions consume a disproportionate number of tokens. Claude should warn the user **before** performing any of the following:
+
+- **`/compact`** — Summarizes the entire conversation history. Cost scales with session length. On a long session with many file reads and code generations, this can consume 20–30% of your usage budget in one shot. **Alternative:** Start a new session earlier (before context gets large), or accept the larger per-message cost of a long session instead of compacting.
+
+- **Reading very large files** — Reading a file with thousands of lines dumps it all into context. **Alternative:** Use `offset` + `limit` parameters to read only the relevant section, or use `Grep` to find specific lines first.
+
+- **Full file rewrites via `Write`** — Rewriting an existing file sends the entire contents through the model. **Alternative:** Use `Edit` for targeted changes whenever possible.
+
+- **Long Agent/subagent tasks** — Spawning an agent on a vague or open-ended task can burn many tokens exploring dead ends. **Alternative:** Give the agent a specific, narrow question; or use `Grep`/`Glob` directly for simple searches.
+
+When any of these is about to happen on a large or expensive operation, Claude should say so and ask for confirmation or suggest the cheaper alternative.
