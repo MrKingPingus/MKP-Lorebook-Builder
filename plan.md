@@ -26,7 +26,7 @@ First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (c
 
 ---
 
-## Phases 1–5 — Completed ✅
+## Phases 1–7 + Polish Pass — Completed ✅
 
 All original planned features are implemented. Summary of what was built:
 
@@ -35,97 +35,39 @@ All original planned features are implemented. Summary of what was built:
 - **Phase 3 — Feature Complete:** find & replace with deduplication, search highlight, group-by-type, inline chip editing, compact trigger mode, suggestions engine with tray/reroll/add, full import/export suite (JSON/TXT/DOCX/ZIP), import preview, multi-lorebook navigation, settings panel, keyboard shortcuts, lander
 - **Phase 4 — Polish & Hardening:** description highlight overlay, Enter-key scroll-to-first-match, Shift+scroll type cycling
 - **Phase 5 — Phrase Builder:** phrase builder mode, pill row with drag reorder, confirm/cancel
+- **Phase 6 — Search & Sort Enhancements:** sort modes (alpha-asc/desc, last-modified), `lastModified` timestamp on entries, window size/position persistence, search results dropdown with location tags, Enter-key navigation through matches
+- **Polish Pass:** export section header, find & replace inline layout, mobile dropdown width and menu button fixes, counter color corrections (disabled = green), undo/redo hotkey customization, new entry auto-focus, search ↔ find-replace text transfer, dropdown re-open on focus, Shift+click tooltip on type filter "All" pill
+- **Phase 7 — Trigger Enhancements:** expanded delimiter options (6 choices) wired to settings-store, `scan-service.js` generic lorebook scanner, trigger crosstalk detection with yellow/blue chip rings and hover popover, Allow/Revoke acknowledgment system, `lorebook.allowedOverlaps` persistence
 
 ---
 
-## Phase 6 — Search & Sort Enhancements
 
-**Goal:** The entry list can be sorted alphabetically or by last modified date; search gains keyboard navigation and a results dropdown that shows where each match occurs.
+## Polish Pass 2 — Adjustments & Bug Fixes
 
-### Features
+**Goal:** Clear a second backlog of UI improvements, lorebook management QoL, data portability, and known bugs before Phase 8 adds new complexity.
 
-**Sort:**
-- [x] `lastModified` timestamp on entry schema — added in `entry-factory.js` and `defaults.js`; stamped in `lorebook-store.js` when entry fields change (name, type, description, triggers); drag-to-reorder and opening without editing do **not** stamp `lastModified`; entries without a timestamp (pre-Phase 6 saves) sort as oldest
-- [x] Sort state in `ui-store.js` — session-only (not persisted); options: `default` (current array order), `alpha-asc` (A–Z), `alpha-desc` (Z–A), `last-modified`
-- [x] Sort mode UI — menu button at the far right of the search field; opens a dropdown to select sort mode; button appearance reflects when a non-default sort is active
-- [x] All sort modes are display-only — sort never mutates the underlying entry array; `default` always restores the user's drag-arranged order
-- [x] Alphabetical sorts — `alpha-asc` sorts visible list A–Z by name (case-insensitive); `alpha-desc` sorts Z–A; when group-by-type is active, entries are sorted alphabetically within each type group
-- [x] Last modified sort — sorts visible list by `lastModified` descending; overrides group-by-type (flat list, no grouping); switching away from last-modified restores group-by-type if it was active
+### Adjustments
 
-**Window Size & Position Persistence:**
-- [x] Persist window size and position to localStorage via `storage-service.js` — saved on every resize/drag end, restored on bootstrap via `useBootstrap`; falls back to default window size from `settings-store` if no persisted value exists
-- [x] Note for implementer — this behaviour previously existed and was removed; check git history before restoring to understand why it was changed and account for any edge cases (e.g. viewport clamping, cross-device size mismatches)
+- [ ] **X button on Build Page** — redirect to lander instead of doing nothing
+- [ ] **Lander reorganization** — "How to Use" first, Tips second; at the bottom of the Tips section add "For more tips and information, check out the [readme]!" linking to the GitHub repo README
+- [ ] **Editable lorebook title** — inline edit in the lorebook selector (click name → input → blur/Enter saves)
+- [ ] **Name prompt on new lorebook** — auto-focus the lorebook name field immediately on creation, consistent with new entry auto-focus behavior
+- [ ] **Lorebook JSON metadata portability (`_meta`):**
+  - Add `createdAt` and `lastModified` timestamps to lorebook objects; `createdAt` set once at creation, `lastModified` updated on every autosave
+  - Export: optional checkbox "Include metadata (settings & session info)" appends a `_meta` block to the lorebook JSON containing `createdAt`, `lastModified`, and a settings snapshot
+  - Import: if a `_meta` block is detected, prompt user "This file contains saved settings. Apply them to this device?" with Yes / Skip options
+  - Requires updates to `json-export.js`, `json-import.js`, lorebook creation in `entry-factory.js` (or equivalent), and `autosave.js` for `lastModified` stamping
 
-**Search Navigation & Results Dropdown:**
-- [x] Match location tracking — search pipeline extended to record where each match occurs per entry (title, trigger, description, or multiple); used by both Enter-key navigation and the results dropdown
-- [x] Enter-key navigation — pressing Enter while a search term is active scrolls to and expands the first matching entry; subsequent Enter presses advance through matches in the current sort order; wraps at the end of the list
-- [x] Search results dropdown — appears below the search field as the user types; lists matching entries in the current sort order with location tags (title / trigger / description) indicating where the term was found; clicking a result scrolls to and expands that entry
+### Fixes
+
+- [ ] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
+- [ ] **Find & Replace covers entry titles** — extend `find-replace.js` to include `entry.name` in the search and replace pass
 
 ### Stop Condition
 
-User can switch sort to A–Z and confirm entries reorder alphabetically (case-insensitive); switch to Z–A and confirm reverse order; switch to last modified, confirm group-by-type is overridden and the most recently edited entry appears first; edit an entry and confirm it moves to the top of the last modified view; drag an entry to a new position, confirm `lastModified` is not updated; reload the page and confirm sort resets to default and drag order is preserved; resize and reposition the floating window, reload the page, and confirm both size and position are restored; type a search term, confirm the results dropdown appears with location tags, click a result and confirm the entry opens; press Enter and confirm keyboard navigation advances through matches in list order.
+User can click the X button on the build page and confirm it redirects to the lander; confirm the lander shows "How to Use" before Tips, and the README link appears at the bottom of Tips; click a lorebook name in the selector and confirm it becomes an editable input that saves on blur or Enter; create a new lorebook and confirm the name field is auto-focused; export a lorebook with the metadata checkbox checked and confirm the JSON contains a `_meta` block; import that file and confirm the settings prompt appears; confirm skipping leaves current settings intact and applying replaces them; attempt to delete a lorebook on desktop and confirm a "type Yes to confirm" dialog appears; confirm the lorebook is gone after confirming; run a Find & Replace on a term that appears in an entry title and confirm the title is updated.
 
 **Estimated Complexity:** Low–Medium
-
----
-
-## Polish Pass — Adjustments & Bug Fixes
-
-**Goal:** Clear the backlog of small UI fixes, setting corrections, and the known bug before Phase 7 adds new complexity.
-
-### Features
-
-**Bug Fixes:**
-- [x] Full type button grid setting has no effect — investigate and restore the toggle's effect on the type selector layout in the entry editor
-
-**UI Fixes:**
-- [x] Shift+click tooltip added to the "All" type filter option — matches the existing tooltip on individual type chips
-- [x] Export section header — add "E X P O R T" header (spaced letters, underlined) to the Import/Export tab to match the existing "I M P O R T" header
-- [x] Find & Replace layout — when Find & Replace mode is active, the regular search input is hidden and the sort button remains; Find and Replace fields are shortened to fit on a single row alongside the sort button (desktop and mobile)
-- [x] Mobile search results dropdown — the results dropdown is too narrow to be usable on mobile; widen it to fit available viewport width; tapping a result must scroll to and expand the correct entry (depends on Phase 6 search results dropdown)
-- [x] Mobile menu button position — the Menu button drifts to the middle of the header on mobile; it should remain anchored to the far right
-
-**Settings Corrections:**
-- [x] Character counter color scope, default, and title — when "Tiered character counter colors" is disabled, counters default to green (not grey); the setting applies to both the description character counter and the trigger counter; setting title updated to reflect both counters
-- [x] Undo/Redo hotkey customization — adds two customizable key bindings (undo, redo) to the settings panel following the same pattern as the existing new-entry hotkey
-
-**Quality of Life Adjustments:**
-- [x] New entry auto-focus — when a new entry is created, focus is placed on the entry name field immediately so the user can start typing without an extra click
-- [x] Search ↔ Find/Replace text transfer — when switching between Search and Find/Replace modes, the current text carries over to the corresponding field in the new mode (search query → find field, and vice versa)
-- [x] Search results dropdown re-open on focus — after a user selects a result and the dropdown closes, clicking or tapping back into the search field re-opens the dropdown if a search term is still present (depends on Phase 6 search results dropdown)
-
-### Stop Condition
-
-User can confirm the full type button grid toggle visibly changes the type selector layout; confirm the "All" filter chip shows the shift+click tooltip on hover; confirm the Export header appears; switch to Find & Replace mode and confirm the regular search input is hidden and Find/Replace fields fit on a single row alongside the sort button; confirm the mobile search results dropdown is wide enough to read and tapping a result navigates to the correct entry; confirm the mobile Menu button stays on the far right; disable tiered counter colors and confirm both the description and trigger counters show green; confirm undo and redo hotkeys are configurable in settings; create a new entry and confirm focus lands on the name field immediately; type in search, switch to Find/Replace, and confirm the text transfers; select a search result then click back into the search field and confirm the dropdown re-appears.
-
-**Estimated Complexity:** Low–Medium
-
----
-
-## Phase 7 — Trigger Enhancements
-
-**Goal:** Trigger input is more flexible with expanded delimiter options, the app surfaces crosstalk between entries sharing triggers, and suggestions are smarter and category-aware.
-
-### Features
-
-**Warning / Notification System (prerequisite):**
-- [ ] Reusable warning UI primitive — consistent in-app alert component used across all warning features in this and later phases
-- [ ] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display
-
-**Delimiter Dropdown:**
-- [ ] Expanded delimiter options — extends existing compact trigger mode to support hyphen, tilde, forward slash, and backslash in addition to comma and semicolon
-- [ ] Delimiter selector dropdown — replaces existing two-option toggle with a dropdown; wired to `settings-store`
-
-**Trigger Crosstalk:**
-- [ ] `scan-service.js` — generic lorebook scanner built here as the first consumer; accepts a predicate, returns findings; reused by later phases
-- [ ] Trigger crosstalk scan — uses `scan-service.js` to find triggers shared across two or more entries; reports findings via warning system
-- [ ] Crosstalk indicator — surfaces shared trigger warnings on affected entries so users can spot conflicts in large lorebooks
-
-### Stop Condition
-
-User can switch compact trigger mode to a hyphen delimiter and confirm triggers parse correctly; add the same trigger to two entries and confirm a crosstalk warning appears on both; hover the conflicting chip and confirm the popover lists the other entry with its type color; click Allow and confirm the ring turns blue; click Revoke and confirm the yellow ring returns.
-
-**Estimated Complexity:** Medium
 
 ---
 
@@ -138,6 +80,9 @@ User can switch compact trigger mode to a hyphen delimiter and confirm triggers 
 **Comparison Panel (prerequisite):**
 - [ ] `ComparisonPanel` component — panel-within-window that slides in as a secondary pane following the `MenuPanel` pattern; holds two entry cards side by side; context-triggered by duplicate warning and split preview workflows
 - [ ] Comparison panel hook — manages open/closed state and which two entries are loaded into the panel; wired to `ui-store`
+
+**Warning / Notification System (prerequisite):**
+- [ ] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display; used by empty field notifications, duplicate warning, and split detection
 
 **Entry Authoring:**
 - [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
@@ -211,6 +156,11 @@ Features noted here are not assigned to a phase. They are documented to preserve
 
 ---
 
+**In-App Help Menu / Documentation Panel**
+A dedicated help section accessible from the UI (button or settings tab) containing usage guidance, tips, and feature explanations. Content scope and navigation structure not yet defined. Depends on: nothing technically blocking it, but content needs to be written before implementation makes sense. Deferred until user feedback clarifies what information users actually need surfaced in-app.
+
+---
+
 **Lookup Table Trigger System**
 A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.
 
@@ -243,6 +193,12 @@ Bugs are listed with a status of **Open**, **In Progress**, or **Fixed**. Fixed 
 **Crosstalk Popover Entry Navigation Does Not Work**
 Clicking an entry name in the trigger crosstalk conflict popover does not scroll to or expand the target entry. Expected: clicking navigates to the entry the same way search result navigation does (scroll + expand on desktop, open detail panel on mobile).
 Status: **Open**
+
+---
+
+**Firefox: Cursor Resets to Position 0 on Click in Text Fields**
+Reported by a Firefox user on their second session (first session worked fine). Clicking within any text field positions the cursor at the start of the field rather than at the click location; keyboard navigation still works. Suspected causes: (1) stored window position from a previous session causing an invisible overlap on the content area — ask user to drag the floating window to center and retry; (2) `shouldFocusName` ref in EntryCard not being cleared when a new entry is created while the card is already expanded, causing `focus()` to fire on subsequent collapse/expand cycles. Both issues have been patched; if the bug persists, the window position stored in localStorage is the next thing to investigate.
+Status: **Open** — patches applied, awaiting confirmation from reporter
 
 ---
 

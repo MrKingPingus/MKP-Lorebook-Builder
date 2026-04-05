@@ -43,13 +43,18 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   useEffect(() => {
     if (isMobile || pendingFocusEntryId !== entry.id) return;
     setPendingFocusEntryId(null);
-    shouldFocusName.current = true;
-    setLocalCollapsed(false);
     setExpandAll(false);
     setCollapseAll(false);
+    if (!collapsed) {
+      // Card already expanded — focus immediately, no need to wait for collapse change
+      nameInputRef.current?.focus();
+    } else {
+      shouldFocusName.current = true;
+      setLocalCollapsed(false);
+    }
   }, [pendingFocusEntryId, entry.id, isMobile]);
 
-  // Focus name input once the card body is visible
+  // Focus name input once the card body becomes visible after expand
   useEffect(() => {
     if (!collapsed && shouldFocusName.current) {
       shouldFocusName.current = false;
