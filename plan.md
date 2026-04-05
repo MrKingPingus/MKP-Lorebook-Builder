@@ -196,6 +196,12 @@ Status: **Open**
 
 ---
 
+**Firefox: Cursor Resets to Position 0 on Click in Text Fields**
+Reported by a Firefox user on their second session (first session worked fine). Clicking within any text field positions the cursor at the start of the field rather than at the click location; keyboard navigation still works. Suspected causes: (1) stored window position from a previous session causing an invisible overlap on the content area — ask user to drag the floating window to center and retry; (2) `shouldFocusName` ref in EntryCard not being cleared when a new entry is created while the card is already expanded, causing `focus()` to fire on subsequent collapse/expand cycles. Both issues have been patched; if the bug persists, the window position stored in localStorage is the next thing to investigate.
+Status: **Open** — patches applied, awaiting confirmation from reporter
+
+---
+
 **Full Type Button Grid Setting Has No Effect**
 The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
 Status: **Open** — deferred; setting now displays a "currently broken" hint in the UI

@@ -12,7 +12,8 @@ export function useDragWindow() {
   const onPointerDown = useCallback(
     (e) => {
       if (e.button !== 0) return;
-      e.currentTarget.setPointerCapture(e.pointerId);
+      const captureTarget = e.currentTarget;
+      captureTarget.setPointerCapture(e.pointerId);
 
       const startX = e.clientX - windowPos.x;
       const startY = e.clientY - windowPos.y;
@@ -30,7 +31,7 @@ export function useDragWindow() {
       }
 
       function onUp(ev) {
-        ev.currentTarget?.releasePointerCapture?.(ev.pointerId);
+        captureTarget.releasePointerCapture(ev.pointerId);
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
         // Persist final position (size unchanged during drag)
