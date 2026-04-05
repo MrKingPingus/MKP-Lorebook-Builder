@@ -48,22 +48,18 @@ All original planned features are implemented. Summary of what was built:
 
 ### Adjustments
 
-- [ ] **X button on Build Page** — redirect to lander instead of doing nothing
-- [ ] **Lander reorganization** — "How to Use" first, Tips second; at the bottom of the Tips section add "For more tips and information, check out the [readme]!" linking to the GitHub repo README
-- [ ] **Editable lorebook title** — inline edit in the lorebook selector (click name → input → blur/Enter saves)
-- [ ] **Name prompt on new lorebook** — auto-focus the lorebook name field immediately on creation, consistent with new entry auto-focus behavior
-- [ ] **Lorebook JSON metadata portability (`_meta`):**
-  - Add `createdAt` and `lastModified` timestamps to lorebook objects; `createdAt` set once at creation, `lastModified` updated on every autosave
-  - Export: optional checkbox "Include metadata (settings & session info)" appends a `_meta` block to the lorebook JSON containing `createdAt`, `lastModified`, and a settings snapshot
-  - Import: if a `_meta` block is detected, prompt user "This file contains saved settings. Apply them to this device?" with Yes / Skip options
-  - Requires updates to `json-export.js`, `json-import.js`, lorebook creation in `entry-factory.js` (or equivalent), and `autosave.js` for `lastModified` stamping
+- [x] **X button on Build Page** — redirect to lander instead of doing nothing
+- [x] **Lander reorganization** — "How to Use" first, Tips second; at the bottom of the Tips section add "For more tips and information, check out the [readme]!" linking to the GitHub repo README
+- [x] **Editable lorebook title** — inline edit in the lorebook selector (click name → input → blur/Enter saves)
+- [x] **Name prompt on new lorebook** — auto-focus the lorebook name field immediately on creation, consistent with new entry auto-focus behavior
+- **Lorebook JSON metadata portability (`_meta`):** — moved to Future Features
 
 ### Fixes
 
-- [ ] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
-- [ ] **Find & Replace covers entry titles** — extend `find-replace.js` to include `entry.name` in the search and replace pass
-- [ ] **Active field border color** — change focused field border from red (`--accent`) to a neutral blue-grey highlight (e.g. `#a0b5d6`); add this as a CSS variable in `style.css`
-- [ ] **Tiered field borders** — description and trigger fields show an always-on colored border (green / yellow / red) reflecting how close the field is to its limit; description uses `counterTiers` thresholds against char count; triggers use `TRIGGER_WARN_YELLOW` and `MAX_TRIGGERS` against trigger count; respects `tieredCounterEnabled` setting (when disabled, all borders use the neutral active color); border is always-on, not just on focus
+- [x] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
+- [x] **Find & Replace scope selector** — button changed to "Replace (X)… ▾"; clicking opens a popover with All / Title / Triggers / Description toggles and a Proceed button; `find-replace.js` extended to include `entry.name`
+- [x] **Active field border color** — focused field border changed from red (`--accent`) to `--focus-border: #a0b5d6` in `style.css`
+- [x] **Tiered field borders (focus-only)** — description and trigger fields show colored border on focus reflecting proximity to limit (yellow / red); no green state; respects `tieredCounterEnabled`
 
 ### Stop Condition
 
@@ -162,6 +158,11 @@ User can load a second lorebook into crosstalk mode, confirm that entries presen
 ## Future Features
 
 Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
+
+---
+
+**Lorebook JSON Metadata Portability (`_meta`)**
+Add `createdAt` and `lastModified` timestamps to lorebook objects. Export: optional checkbox "Include metadata" appends a `_meta` block (timestamps + settings snapshot) to the JSON. Import: detect `_meta` block and prompt user to apply or skip the saved settings. Requires updates to `json-export.js`, `json-import.js`, lorebook creation, and `autosave.js`. Deferred from Polish Pass 2 — good idea but not yet worth the resource investment.
 
 ---
 

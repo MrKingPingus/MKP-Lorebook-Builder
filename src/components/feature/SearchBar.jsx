@@ -18,8 +18,14 @@ const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc'
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
 export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
-  const { findText, setFindText, replaceText, setReplaceText, matchCount: frMatchCount, replaceAll } =
-    useFindReplace(entries);
+  const {
+    findText, setFindText,
+    replaceText, setReplaceText,
+    matchCount: frMatchCount,
+    replaceAll,
+    scope, toggleScope, allSelected,
+    scopeOpen, setScopeOpen,
+  } = useFindReplace(entries);
   const sortMode           = useUi((s) => s.sortMode);
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
@@ -166,6 +172,11 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
             replaceAll={replaceAll}
+            scope={scope}
+            toggleScope={toggleScope}
+            allSelected={allSelected}
+            scopeOpen={scopeOpen}
+            setScopeOpen={setScopeOpen}
           />
         )}
         <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />

@@ -35,17 +35,6 @@ export function Lander() {
       </div>
 
       <div className="lander-section">
-        <h2 className="lander-section-title">Tips</h2>
-        <ul className="lander-tips">
-          <li>Hover over buttons and controls for help hints.</li>
-          <li>Double-click an entry header to expand or collapse it.</li>
-          <li>Paste a comma-separated list into the trigger field to add multiple triggers at once.</li>
-          <li>Drag the <strong>⠿</strong> handle on any entry to reorder it in the list.</li>
-          <li>Shift+scroll on the type selector inside an expanded entry to cycle through entry types.</li>
-        </ul>
-      </div>
-
-      <div className="lander-section">
         <h2 className="lander-section-title">How It Works</h2>
         <ol className="lander-steps">
           <li>Click <strong>Start Building</strong> above to open the builder.</li>
@@ -55,6 +44,28 @@ export function Lander() {
           <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, or <code>.docx</code> file.</li>
           <li>Use <kbd>Alt+N</kbd> to add a new entry quickly, <kbd>Ctrl+Z</kbd> to undo, and <kbd>Ctrl+Y</kbd> to redo.</li>
         </ol>
+      </div>
+
+      <div className="lander-section">
+        <h2 className="lander-section-title">Tips</h2>
+        <ul className="lander-tips">
+          <li>Hover over buttons and controls for help hints.</li>
+          <li>Double-click an entry header to expand or collapse it.</li>
+          <li>Paste a comma-separated list into the trigger field to add multiple triggers at once.</li>
+          <li>Drag the <strong>⠿</strong> handle on any entry to reorder it in the list.</li>
+          <li>Shift+scroll on the type selector inside an expanded entry to cycle through entry types.</li>
+        </ul>
+        <p className="lander-readme-link">
+          For more tips and information, check out the{' '}
+          <a
+            href="https://github.com/mrkingpingus/mkp-lorebook-builder"
+            target="_blank"
+            rel="noreferrer"
+            className="lander-link"
+          >
+            readme
+          </a>!
+        </p>
       </div>
     </div>
   );

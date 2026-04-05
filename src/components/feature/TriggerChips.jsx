@@ -1,6 +1,7 @@
 // Chip-per-trigger input with inline label editing, × delete, bulk paste, counter badge, and dupe flash
 import { useRef, useState } from 'react';
 import { Chip } from '../ui/Chip.jsx';
+import { useSettings } from '../../hooks/use-settings.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW, DUPE_FLASH_MS } from '../../constants/limits.js';
 
 // Escape special regex characters in a delimiter string
@@ -10,8 +11,17 @@ function escapeDelim(d) {
 
 export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap }) {
   const inputRef  = useRef(null);
-  const [flashDupe, setFlashDupe] = useState(false);
+  const [flashDupe, setFlashDupe]       = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const dupeTimer = useRef(null);
+  const { tieredCounterEnabled } = useSettings();
+
+  const tieredBorderStyle = (() => {
+    if (!isInputFocused || !tieredCounterEnabled) return {};
+    if (triggers.length >= MAX_TRIGGERS)      return { borderColor: 'var(--red)' };
+    if (triggers.length >= TRIGGER_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
+    return {};
+  })();
 
   function flashDupeError() {
     clearTimeout(dupeTimer.current);
@@ -71,7 +81,7 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
 
   return (
     <div className="trigger-chips-wrapper">
-      <div className="trigger-chips" onClick={() => inputRef.current?.focus()}>
+      <div className="trigger-chips" onClick={() => inputRef.current?.focus()} style={tieredBorderStyle}>
         {triggers.map((t, i) => {
           const conflictEntries = conflictMap?.get(t.toLowerCase()) ?? [];
           const isConflict      = conflictEntries.length > 0;
@@ -101,7 +111,9 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
           placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
+          onFocus={() => setIsInputFocused(true)}
           onBlur={(e) => {
+            setIsInputFocused(false);
             if (e.target.value.trim()) { addTrigger(e.target.value); e.target.value = ''; }
           }}
         />
