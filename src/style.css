@@ -648,9 +648,9 @@ input:focus, textarea:focus, select:focus {
   gap: 6px;
   margin-top: 6px;
 }
-.search-bar-row2 .replace-btn-wrap { flex-shrink: 0; }
-.search-bar-row2 .replace-all-btn  { white-space: nowrap; }
-.search-bar-row2 .search-mode-select { flex: 1; }
+.search-bar-row2 .replace-btn-wrap    { flex: 1; }
+.search-bar-row2 .replace-all-btn    { white-space: nowrap; width: 100%; }
+.search-bar-row2 .search-mode-select { flex-shrink: 0; }
 
 /* ============================================================
    Type Filter Bar

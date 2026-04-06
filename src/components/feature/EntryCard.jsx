@@ -204,6 +204,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           className="entry-card-body"
           onDoubleClick={(e) => {
             if (e.target.closest('button')) return;
+            if (isSearchFocused) setSearchFocusedId(null);
             setLocalCollapsed(true);
             setExpandAll(false);
             setCollapseAll(false);
