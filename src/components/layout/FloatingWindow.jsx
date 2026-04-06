@@ -6,10 +6,11 @@ import { WindowHeader }      from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
-import { BuildPanel }        from '../feature/BuildPanel.jsx';
-import { Lander }            from '../feature/Lander.jsx';
-import { AppendImportPanel } from '../feature/AppendImportPanel.jsx';
-import { EntryDetailPanel }  from '../feature/EntryDetailPanel.jsx';
+import { BuildPanel }          from '../feature/BuildPanel.jsx';
+import { Lander }              from '../feature/Lander.jsx';
+import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
+import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
+import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
 
 export function FloatingWindow() {
   const isMobile         = useMobile();
@@ -59,6 +60,9 @@ export function FloatingWindow() {
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}
+
+          {/* Lorebook name prompt — appears after new lorebook creation */}
+          <LorebookNameModal />
         </>
       )}
 

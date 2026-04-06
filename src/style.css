@@ -597,8 +597,8 @@ input:focus, textarea:focus, select:focus {
 .replace-scope-popover {
   position: absolute;
   top: calc(100% + 4px);
-  right: 0;
-  min-width: 160px;
+  left: 0;
+  min-width: 180px;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
@@ -607,33 +607,30 @@ input:focus, textarea:focus, select:focus {
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
-.replace-scope-options {
+.replace-scope-chips {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 5px;
 }
-.replace-scope-option {
-  display: flex;
-  align-items: center;
-  gap: 7px;
+.replace-scope-chip {
+  padding: 3px 10px;
+  border-radius: 12px;
   font-size: 12px;
-  color: var(--text);
-  cursor: pointer;
-  padding: 3px 4px;
-  border-radius: var(--radius);
-  transition: background var(--transition);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  background: var(--surface3);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.replace-scope-option:hover { background: var(--surface3); }
-.replace-scope-option input[type="checkbox"] {
-  width: 13px; height: 13px;
-  accent-color: var(--accent);
-  flex-shrink: 0;
-  padding: 0;
+.replace-scope-chip:hover { border-color: var(--border2); color: var(--text); }
+.replace-scope-chip--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
+.replace-scope-chip--active:hover { background: #dc2626; border-color: #dc2626; }
 .replace-scope-proceed {
-  margin-top: 2px;
   padding: 5px 10px;
   background: var(--accent);
   color: #fff;
@@ -1541,14 +1538,6 @@ input:focus, textarea:focus, select:focus {
 .switcher-confirm-label {
   font-size: 11px; color: var(--muted2);
 }
-.switcher-confirm-input {
-  padding: 4px 8px; font-size: 12px;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  color: var(--text);
-  width: 100%;
-}
 .switcher-confirm-actions {
   display: flex; gap: 6px;
 }
@@ -1557,12 +1546,11 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid var(--border2); color: var(--muted2);
   transition: background var(--transition), color var(--transition);
 }
-.switcher-confirm-btn:hover:not(:disabled) { background: var(--surface3); color: var(--text); }
+.switcher-confirm-btn:hover { background: var(--surface3); color: var(--text); }
 .switcher-confirm-btn--danger {
   background: var(--accent); border-color: var(--accent); color: #fff;
 }
-.switcher-confirm-btn--danger:hover:not(:disabled) { background: #dc2626; }
-.switcher-confirm-btn--danger:disabled { opacity: 0.4; cursor: default; }
+.switcher-confirm-btn--danger:hover { background: #dc2626; }
 
 /* Save badge */
 .save-badge {
@@ -1737,6 +1725,61 @@ kbd {
    Phase 3 additions
    ============================================================ */
 /* §MISC-ADDITIONS */
+
+/* Lorebook name modal — appears after creating a new lorebook */
+.lb-name-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+}
+.lb-name-modal {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lb-name-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lb-name-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.lb-name-modal-close {
+  color: var(--muted);
+  font-size: 18px;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius);
+  transition: color var(--transition), background var(--transition);
+}
+.lb-name-modal-close:hover { color: var(--text); background: var(--surface3); }
+.lb-name-modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+.lb-name-modal-hint {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
 
 /* Save prompt (lorebook switcher) */
 .switcher-prompt {

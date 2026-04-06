@@ -11,14 +11,14 @@ function escapeDelim(d) {
 
 export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap }) {
   const inputRef  = useRef(null);
-  const [flashDupe, setFlashDupe]       = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
   const { tieredCounterEnabled } = useSettings();
 
+  // Yellow/red borders are always-on when at threshold; neutral focus border handled by CSS
   const tieredBorderStyle = (() => {
-    if (!isInputFocused || !tieredCounterEnabled) return {};
-    if (triggers.length >= MAX_TRIGGERS)      return { borderColor: 'var(--red)' };
+    if (!tieredCounterEnabled) return {};
+    if (triggers.length >= MAX_TRIGGERS)        return { borderColor: 'var(--red)' };
     if (triggers.length >= TRIGGER_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
     return {};
   })();
@@ -111,9 +111,7 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
           placeholder={triggers.length === 0 ? 'Add trigger...' : ''}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
-          onFocus={() => setIsInputFocused(true)}
           onBlur={(e) => {
-            setIsInputFocused(false);
             if (e.target.value.trim()) { addTrigger(e.target.value); e.target.value = ''; }
           }}
         />

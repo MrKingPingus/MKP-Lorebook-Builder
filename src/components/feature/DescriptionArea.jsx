@@ -1,5 +1,5 @@
 // Description textarea with DESCRIPTION label, search highlight overlay, and char counter
-import { useRef, useLayoutEffect, useState } from 'react';
+import { useRef, useLayoutEffect } from 'react';
 import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
@@ -8,12 +8,12 @@ import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/lim
 
 export function DescriptionArea({ value, onChange }) {
   const textareaRef = useRef(null);
-  const [isFocused, setIsFocused] = useState(false);
   const { counterTiers, tieredCounterEnabled } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
 
+  // Yellow/red borders are always-on when at threshold; neutral focus border handled by CSS
   const tieredBorderStyle = (() => {
-    if (!isFocused || !tieredCounterEnabled) return {};
+    if (!tieredCounterEnabled) return {};
     if (value.length >= CHAR_WARN_RED)    return { borderColor: 'var(--red)' };
     if (value.length >= CHAR_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
     return {};
@@ -47,8 +47,6 @@ export function DescriptionArea({ value, onChange }) {
           spellCheck={false}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           style={tieredBorderStyle}
         />
       </div>

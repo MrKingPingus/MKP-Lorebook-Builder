@@ -1,6 +1,13 @@
 // Find and Replace fields — rendered inside SearchBar's single row; receives state as props
 import { useRef, useEffect } from 'react';
 
+const SCOPE_CHIPS = [
+  { key: 'all',         label: 'All' },
+  { key: 'title',       label: 'Title' },
+  { key: 'triggers',    label: 'Triggers' },
+  { key: 'description', label: 'Description' },
+];
+
 export function FindReplace({
   findText, setFindText,
   replaceText, setReplaceText,
@@ -21,6 +28,11 @@ export function FindReplace({
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [scopeOpen, setScopeOpen]);
+
+  function isActive(key) {
+    if (key === 'all') return allSelected;
+    return scope[key];
+  }
 
   return (
     <>
@@ -48,39 +60,16 @@ export function FindReplace({
 
         {scopeOpen && (
           <div className="replace-scope-popover">
-            <div className="replace-scope-options">
-              <label className="replace-scope-option">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={() => toggleScope('all')}
-                />
-                All
-              </label>
-              <label className="replace-scope-option">
-                <input
-                  type="checkbox"
-                  checked={scope.title}
-                  onChange={() => toggleScope('title')}
-                />
-                Title
-              </label>
-              <label className="replace-scope-option">
-                <input
-                  type="checkbox"
-                  checked={scope.triggers}
-                  onChange={() => toggleScope('triggers')}
-                />
-                Triggers
-              </label>
-              <label className="replace-scope-option">
-                <input
-                  type="checkbox"
-                  checked={scope.description}
-                  onChange={() => toggleScope('description')}
-                />
-                Description
-              </label>
+            <div className="replace-scope-chips">
+              {SCOPE_CHIPS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`replace-scope-chip${isActive(key) ? ' replace-scope-chip--active' : ''}`}
+                  onClick={() => toggleScope(key)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <button
               className="replace-scope-proceed"

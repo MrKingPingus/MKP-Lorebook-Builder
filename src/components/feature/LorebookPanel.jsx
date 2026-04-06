@@ -3,26 +3,16 @@ import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useExport }            from '../../hooks/use-export.js';
-import { useMobile }            from '../../hooks/use-mobile.js';
 
 export function LorebookPanel() {
   const { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebookSwitcher();
   const [pendingId, setPendingId]             = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [confirmText, setConfirmText]         = useState('');
   const [editingId, setEditingId]             = useState(null);
   const [editingName, setEditingName]         = useState('');
-  const confirmInputRef = useRef(null);
-  const editInputRef    = useRef(null);
+  const editInputRef = useRef(null);
   const { activeLorebookId, activeLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
-  const isMobile = useMobile();
-
-  useEffect(() => {
-    if (confirmDeleteId && confirmInputRef.current) {
-      confirmInputRef.current.focus();
-    }
-  }, [confirmDeleteId]);
 
   useEffect(() => {
     if (editingId && editInputRef.current) {
@@ -63,28 +53,7 @@ export function LorebookPanel() {
 
   function handleDeleteClick(e, id) {
     e.stopPropagation();
-    if (isMobile) {
-      const name = items.find((i) => i.id === id)?.name || '(unnamed)';
-      if (window.confirm(`Delete "${name}"? This cannot be undone.`)) {
-        deleteLorebook(id);
-      }
-    } else {
-      setConfirmDeleteId(id);
-      setConfirmText('');
-    }
-  }
-
-  function commitDelete() {
-    if (confirmText === 'Yes' && confirmDeleteId) {
-      deleteLorebook(confirmDeleteId);
-    }
-    setConfirmDeleteId(null);
-    setConfirmText('');
-  }
-
-  function cancelDelete() {
-    setConfirmDeleteId(null);
-    setConfirmText('');
+    setConfirmDeleteId(id);
   }
 
   function startEditing(e, item) {
@@ -152,8 +121,8 @@ export function LorebookPanel() {
               ) : (
                 <span
                   className="switcher-name"
-                  title="Click to rename"
-                  onClick={(e) => startEditing(e, item)}
+                  title="Double-click to rename"
+                  onDoubleClick={(e) => startEditing(e, item)}
                 >
                   {item.name || '(unnamed)'}
                 </span>
@@ -168,29 +137,25 @@ export function LorebookPanel() {
               </button>
             </div>
 
-            {/* Desktop delete confirmation inline */}
-            {!isMobile && confirmDeleteId === item.id && (
+            {/* Inline delete confirmation */}
+            {confirmDeleteId === item.id && (
               <div className="switcher-confirm-delete" onClick={(e) => e.stopPropagation()}>
                 <span className="switcher-confirm-label">
-                  Type &ldquo;Yes&rdquo; to delete &ldquo;{confirmDeleteName}&rdquo;
+                  Delete &ldquo;{confirmDeleteName}&rdquo;?
                 </span>
-                <input
-                  ref={confirmInputRef}
-                  className="switcher-confirm-input"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') commitDelete(); if (e.key === 'Escape') cancelDelete(); }}
-                  placeholder="Yes"
-                />
                 <div className="switcher-confirm-actions">
                   <button
                     className="switcher-confirm-btn switcher-confirm-btn--danger"
-                    onClick={commitDelete}
-                    disabled={confirmText !== 'Yes'}
+                    onClick={() => { deleteLorebook(confirmDeleteId); setConfirmDeleteId(null); }}
                   >
-                    Delete
+                    Yes
                   </button>
-                  <button className="switcher-confirm-btn" onClick={cancelDelete}>Cancel</button>
+                  <button
+                    className="switcher-confirm-btn"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    No
+                  </button>
                 </div>
               </div>
             )}

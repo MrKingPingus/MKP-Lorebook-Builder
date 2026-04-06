@@ -1,27 +1,15 @@
 // Window title bar — logo, lorebook name (desktop only), menu button, close button
-import { useRef, useEffect }  from 'react';
-import { useDragWindow }      from '../../hooks/use-drag-window.js';
-import { useLorebook }        from '../../hooks/use-lorebook.js';
-import { useMobile }          from '../../hooks/use-mobile.js';
-import { useUi }              from '../../hooks/use-ui.js';
-import { MenuButton }         from './MenuButton.jsx';
+import { useDragWindow } from '../../hooks/use-drag-window.js';
+import { useLorebook }   from '../../hooks/use-lorebook.js';
+import { useMobile }     from '../../hooks/use-mobile.js';
+import { useUi }         from '../../hooks/use-ui.js';
+import { MenuButton }    from './MenuButton.jsx';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
-  const setShowLander              = useUi((s) => s.setShowLander);
-  const pendingFocusLorebookName   = useUi((s) => s.pendingFocusLorebookName);
-  const setPendingFocusLorebookName = useUi((s) => s.setPendingFocusLorebookName);
-  const nameInputRef = useRef(null);
-
-  useEffect(() => {
-    if (pendingFocusLorebookName && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
-      setPendingFocusLorebookName(false);
-    }
-  }, [pendingFocusLorebookName, setPendingFocusLorebookName]);
+  const setShowLander                      = useUi((s) => s.setShowLander);
 
   return (
     <div
@@ -38,7 +26,6 @@ export function WindowHeader() {
       {!isMobile && (
         <div className="lorebook-name-sizer">
           <input
-            ref={nameInputRef}
             className="lorebook-name-input"
             value={activeLorebook?.name ?? ''}
             onChange={(e) => renameLorebook(e.target.value)}
