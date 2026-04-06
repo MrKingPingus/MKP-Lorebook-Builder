@@ -641,6 +641,17 @@ input:focus, textarea:focus, select:focus {
 .replace-scope-proceed:hover:not(:disabled) { background: #dc2626; }
 .replace-scope-proceed:disabled { opacity: 0.4; cursor: default; }
 
+/* Mobile find-replace second row */
+.search-bar-row2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.search-bar-row2 .replace-btn-wrap { flex-shrink: 0; }
+.search-bar-row2 .replace-all-btn  { white-space: nowrap; }
+.search-bar-row2 .search-mode-select { flex: 1; }
+
 /* ============================================================
    Type Filter Bar
    ============================================================ */

@@ -68,14 +68,15 @@ function useBootstrap() {
       setLorebooks(lorebooks);
       setActiveLorebookId(index[0].id);
     } else {
-      // First run — create a default lorebook
-      const lb     = createEmptyLorebook({ name: 'My Lorebook' });
+      // First run — create a default lorebook and prompt user to name it
+      const lb     = createEmptyLorebook();
       const newIdx = addToIndex([], lb);
       setLorebook(lb);
       setLorebookIndex(newIdx ?? []);
       setActiveLorebookId(lb.id);
       writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
       writeJson(LOREBOOK_INDEX_KEY, newIdx ?? []);
+      useUiStore.getState().setPendingFocusLorebookName(true);
     }
   // Run once on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps

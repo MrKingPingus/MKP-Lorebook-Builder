@@ -46,8 +46,11 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
 
   function navigateToEntry(id) {
     setSearchFocusedId(id);
-    document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     setPopoverOpen(false);
+    // Defer scroll until after React re-renders the card into its expanded state
+    requestAnimationFrame(() => {
+      document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
   }
 
   const borderStyle = ringColor
