@@ -26,7 +26,7 @@ First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (c
 
 ---
 
-## Phases 1–7 + Polish Pass — Completed ✅
+## Phases 1–7 + Polish Passes — Completed ✅
 
 All original planned features are implemented. Summary of what was built:
 
@@ -36,36 +36,9 @@ All original planned features are implemented. Summary of what was built:
 - **Phase 4 — Polish & Hardening:** description highlight overlay, Enter-key scroll-to-first-match, Shift+scroll type cycling
 - **Phase 5 — Phrase Builder:** phrase builder mode, pill row with drag reorder, confirm/cancel
 - **Phase 6 — Search & Sort Enhancements:** sort modes (alpha-asc/desc, last-modified), `lastModified` timestamp on entries, window size/position persistence, search results dropdown with location tags, Enter-key navigation through matches
-- **Polish Pass:** export section header, find & replace inline layout, mobile dropdown width and menu button fixes, counter color corrections (disabled = green), undo/redo hotkey customization, new entry auto-focus, search ↔ find-replace text transfer, dropdown re-open on focus, Shift+click tooltip on type filter "All" pill
+- **Polish Pass 1:** export section header, find & replace inline layout, mobile dropdown width and menu button fixes, counter color corrections (disabled = green), undo/redo hotkey customization, new entry auto-focus, search ↔ find-replace text transfer, dropdown re-open on focus, Shift+click tooltip on type filter "All" pill
 - **Phase 7 — Trigger Enhancements:** expanded delimiter options (6 choices) wired to settings-store, `scan-service.js` generic lorebook scanner, trigger crosstalk detection with yellow/blue chip rings and hover popover, Allow/Revoke acknowledgment system, `lorebook.allowedOverlaps` persistence
-
----
-
-
-## Polish Pass 2 — Adjustments & Bug Fixes
-
-**Goal:** Clear a second backlog of UI improvements, lorebook management QoL, data portability, and known bugs before Phase 8 adds new complexity.
-
-### Adjustments
-
-- [x] **X button on Build Page** — redirect to lander instead of doing nothing
-- [x] **Lander reorganization** — "How to Use" first, Tips second; at the bottom of the Tips section add "For more tips and information, check out the [readme]!" linking to the GitHub repo README
-- [x] **Editable lorebook title** — inline edit in the lorebook selector (click name → input → blur/Enter saves)
-- [x] **Name prompt on new lorebook** — auto-focus the lorebook name field immediately on creation, consistent with new entry auto-focus behavior
-- **Lorebook JSON metadata portability (`_meta`):** — moved to Future Features
-
-### Fixes
-
-- [x] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
-- [x] **Find & Replace scope selector** — button changed to "Replace (X)… ▾"; clicking opens a popover with All / Title / Triggers / Description toggles and a Proceed button; `find-replace.js` extended to include `entry.name`
-- [x] **Active field border color** — focused field border changed from red (`--accent`) to `--focus-border: #a0b5d6` in `style.css`
-- [x] **Tiered field borders (focus-only)** — description and trigger fields show colored border on focus reflecting proximity to limit (yellow / red); no green state; respects `tieredCounterEnabled`
-
-### Stop Condition
-
-User can click the X button on the build page and confirm it redirects to the lander; confirm the lander shows "How to Use" before Tips, and the README link appears at the bottom of Tips; click a lorebook name in the selector and confirm it becomes an editable input that saves on blur or Enter; create a new lorebook and confirm the name field is auto-focused; export a lorebook with the metadata checkbox checked and confirm the JSON contains a `_meta` block; import that file and confirm the settings prompt appears; confirm skipping leaves current settings intact and applying replaces them; attempt to delete a lorebook on desktop and confirm a "type Yes to confirm" dialog appears; confirm the lorebook is gone after confirming; run a Find & Replace on a term that appears in an entry title and confirm the title is updated; click any text field and confirm the focus border is blue-grey instead of red; add triggers up to the yellow and red thresholds and confirm the trigger field border changes color accordingly; fill the description to each tier threshold and confirm the border changes; disable tiered counter colors in settings and confirm all field borders revert to neutral.
-
-**Estimated Complexity:** Low–Medium
+- **Polish Pass 2:** X button redirects to lander, lander section reorder (How It Works → Tips) with README link, double-click inline lorebook rename, new lorebook name modal, inline Yes/No delete confirmation, Find & Replace scope selector (chip toggles, Title/Triggers/Description/All), active field focus border changed to blue-grey (`--focus-border`), persistent yellow/red tiered borders on description and trigger fields
 
 ---
 
