@@ -19,7 +19,7 @@ A browser-based tool for building and managing lorebooks for AI chatbots. No ins
 
 ## Getting Started
 
-Open the link above... That's it! There's nothing to install or sign in to, so you can just start getting to work by either starting a fresh book or importing an existing one. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything! (But clearing the cache on the host page WILL, so make sure you're work is hard saved before doing such a thing or *you **will** cry*.
+Open the link above... That's it! There's nothing to install or sign in to, so you can just start getting to work by either starting a fresh book or importing an existing one. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything! (But clearing the cache on the host page WILL, so make sure your work is hard saved before doing such a thing or *you **will** cry*.
 
 The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the Settings tab has a button to snap it back to the default size. Whatever size you set it to will persist from session to session!
 
