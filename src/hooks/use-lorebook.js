@@ -1,6 +1,7 @@
 // Active lorebook data and lorebook-level actions: load, switch, create, and delete
 import { useLorebookStore } from '../state/lorebook-store.js';
-import { useHistoryStore } from '../state/history-store.js';
+import { useHistoryStore }  from '../state/history-store.js';
+import { useUiStore }       from '../state/ui-store.js';
 import { readJson, writeJson, removeItem } from '../services/storage-service.js';
 import { createEmptyLorebook } from '../services/entry-factory.js';
 import { addToIndex, removeFromIndex, promoteInIndex } from '../services/lorebook-index.js';
@@ -15,8 +16,10 @@ export function useLorebook() {
   const setLorebookIndex    = useLorebookStore((s) => s.setLorebookIndex);
   const setLorebook         = useLorebookStore((s) => s.setLorebook);
   const removeLorebook      = useLorebookStore((s) => s.removeLorebook);
-  const updateActiveName    = useLorebookStore((s) => s.updateActiveName);
-  const clearHistory        = useHistoryStore((s) => s.clear);
+  const updateActiveName          = useLorebookStore((s) => s.updateActiveName);
+  const renameLorebookByIdStore   = useLorebookStore((s) => s.renameLorebookById);
+  const clearHistory              = useHistoryStore((s) => s.clear);
+  const setPendingFocusLorebookName = useUiStore((s) => s.setPendingFocusLorebookName);
 
   const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
@@ -30,6 +33,7 @@ export function useLorebook() {
     writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
     clearHistory();
+    setPendingFocusLorebookName(true);
   }
 
   function switchLorebook(id) {
@@ -68,6 +72,18 @@ export function useLorebook() {
     updateActiveName(name);
   }
 
+  function renameLorebookById(id, name) {
+    renameLorebookByIdStore(id, name);
+    // Persist the lorebook itself (read from memory or storage for non-active lorebooks)
+    const lb = lorebooks[id] ?? readJson(LOREBOOK_KEY_PREFIX + id);
+    if (lb) writeJson(LOREBOOK_KEY_PREFIX + id, { ...lb, name });
+    // Persist updated index
+    const newIndex = lorebookIndex.map((item) =>
+      item.id === id ? { ...item, name, updatedAt: Date.now() } : item
+    );
+    writeJson(LOREBOOK_INDEX_KEY, newIndex);
+  }
+
   return {
     activeLorebookId,
     activeLorebook,
@@ -76,5 +92,6 @@ export function useLorebook() {
     switchLorebook,
     deleteLorebook,
     renameLorebook,
+    renameLorebookById,
   };
 }

@@ -1,14 +1,25 @@
 // Lorebook list as a first-class panel — always-expanded version of the switcher dropdown for the menu panel
-import { useState }             from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useExport }            from '../../hooks/use-export.js';
 
 export function LorebookPanel() {
-  const { items, createLorebook, switchLorebook, deleteLorebook } = useLorebookSwitcher();
-  const [pendingId, setPendingId] = useState(null);
+  const { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebookSwitcher();
+  const [pendingId, setPendingId]             = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [editingId, setEditingId]             = useState(null);
+  const [editingName, setEditingName]         = useState('');
+  const editInputRef = useRef(null);
   const { activeLorebookId, activeLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
 
   function requestSwitch(id) {
     if (id === activeLorebookId) return;
@@ -40,13 +51,35 @@ export function LorebookPanel() {
     doSwitch();
   }
 
-  function handleDelete(e, id) {
+  function handleDeleteClick(e, id) {
     e.stopPropagation();
-    deleteLorebook(id);
+    setConfirmDeleteId(id);
+  }
+
+  function startEditing(e, item) {
+    e.stopPropagation();
+    setEditingId(item.id);
+    setEditingName(item.name || '');
+  }
+
+  function commitRename() {
+    if (editingId) {
+      renameLorebookById(editingId, editingName);
+    }
+    setEditingId(null);
+  }
+
+  function onEditKeyDown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
+    if (e.key === 'Escape') { setEditingId(null); }
   }
 
   const pendingName = pendingId
     ? (items.find((i) => i.id === pendingId)?.name || '(unnamed)')
+    : '';
+
+  const confirmDeleteName = confirmDeleteId
+    ? (items.find((i) => i.id === confirmDeleteId)?.name || '(unnamed)')
     : '';
 
   return (
@@ -70,20 +103,62 @@ export function LorebookPanel() {
           <div className="switcher-empty">No lorebooks yet</div>
         )}
         {items.map((item) => (
-          <div
-            key={item.id}
-            className={`switcher-item${item.isActive ? ' switcher-item--active' : ''}`}
-            onClick={() => requestSwitch(item.id)}
-          >
-            <span className="switcher-name">{item.name || '(unnamed)'}</span>
-            <span className="switcher-time">{item.relativeTime}</span>
-            <button
-              className="switcher-delete"
-              onClick={(e) => handleDelete(e, item.id)}
-              title="Delete lorebook"
+          <div key={item.id}>
+            <div
+              className={`switcher-item${item.isActive ? ' switcher-item--active' : ''}`}
+              onClick={() => { if (editingId !== item.id) requestSwitch(item.id); }}
             >
-              ×
-            </button>
+              {editingId === item.id ? (
+                <input
+                  ref={editInputRef}
+                  className="switcher-rename-input"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={onEditKeyDown}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span
+                  className="switcher-name"
+                  title="Double-click to rename"
+                  onDoubleClick={(e) => startEditing(e, item)}
+                >
+                  {item.name || '(unnamed)'}
+                </span>
+              )}
+              <span className="switcher-time">{item.relativeTime}</span>
+              <button
+                className="switcher-delete"
+                onClick={(e) => handleDeleteClick(e, item.id)}
+                title="Delete lorebook"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Inline delete confirmation */}
+            {confirmDeleteId === item.id && (
+              <div className="switcher-confirm-delete" onClick={(e) => e.stopPropagation()}>
+                <span className="switcher-confirm-label">
+                  Delete &ldquo;{confirmDeleteName}&rdquo;?
+                </span>
+                <div className="switcher-confirm-actions">
+                  <button
+                    className="switcher-confirm-btn switcher-confirm-btn--danger"
+                    onClick={() => { deleteLorebook(confirmDeleteId); setConfirmDeleteId(null); }}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    className="switcher-confirm-btn"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -18,7 +18,7 @@ function relativeTime(ts) {
 export function useLorebookSwitcher() {
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
   const lorebookIndex    = useLorebookStore((s) => s.lorebookIndex);
-  const { createLorebook, switchLorebook, deleteLorebook } = useLorebook();
+  const { createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebook();
 
   const items = lorebookIndex.map((item) => ({
     ...item,
@@ -26,5 +26,5 @@ export function useLorebookSwitcher() {
     isActive:     item.id === activeLorebookId,
   }));
 
-  return { items, createLorebook, switchLorebook, deleteLorebook };
+  return { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById };
 }

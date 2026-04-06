@@ -26,7 +26,7 @@ First needed in **Phase 9** (Lorebook Crosstalk). Used by: Lorebook Crosstalk (c
 
 ---
 
-## Phases 1–7 + Polish Pass — Completed ✅
+## Phases 1–7 + Polish Passes — Completed ✅
 
 All original planned features are implemented. Summary of what was built:
 
@@ -36,42 +36,15 @@ All original planned features are implemented. Summary of what was built:
 - **Phase 4 — Polish & Hardening:** description highlight overlay, Enter-key scroll-to-first-match, Shift+scroll type cycling
 - **Phase 5 — Phrase Builder:** phrase builder mode, pill row with drag reorder, confirm/cancel
 - **Phase 6 — Search & Sort Enhancements:** sort modes (alpha-asc/desc, last-modified), `lastModified` timestamp on entries, window size/position persistence, search results dropdown with location tags, Enter-key navigation through matches
-- **Polish Pass:** export section header, find & replace inline layout, mobile dropdown width and menu button fixes, counter color corrections (disabled = green), undo/redo hotkey customization, new entry auto-focus, search ↔ find-replace text transfer, dropdown re-open on focus, Shift+click tooltip on type filter "All" pill
+- **Polish Pass 1:** export section header, find & replace inline layout, mobile dropdown width and menu button fixes, counter color corrections (disabled = green), undo/redo hotkey customization, new entry auto-focus, search ↔ find-replace text transfer, dropdown re-open on focus, Shift+click tooltip on type filter "All" pill
 - **Phase 7 — Trigger Enhancements:** expanded delimiter options (6 choices) wired to settings-store, `scan-service.js` generic lorebook scanner, trigger crosstalk detection with yellow/blue chip rings and hover popover, Allow/Revoke acknowledgment system, `lorebook.allowedOverlaps` persistence
-
----
-
-
-## Polish Pass 2 — Adjustments & Bug Fixes
-
-**Goal:** Clear a second backlog of UI improvements, lorebook management QoL, data portability, and known bugs before Phase 8 adds new complexity.
-
-### Adjustments
-
-- [ ] **X button on Build Page** — redirect to lander instead of doing nothing
-- [ ] **Lander reorganization** — "How to Use" first, Tips second; at the bottom of the Tips section add "For more tips and information, check out the [readme]!" linking to the GitHub repo README
-- [ ] **Editable lorebook title** — inline edit in the lorebook selector (click name → input → blur/Enter saves)
-- [ ] **Name prompt on new lorebook** — auto-focus the lorebook name field immediately on creation, consistent with new entry auto-focus behavior
-- [ ] **Lorebook JSON metadata portability (`_meta`):**
-  - Add `createdAt` and `lastModified` timestamps to lorebook objects; `createdAt` set once at creation, `lastModified` updated on every autosave
-  - Export: optional checkbox "Include metadata (settings & session info)" appends a `_meta` block to the lorebook JSON containing `createdAt`, `lastModified`, and a settings snapshot
-  - Import: if a `_meta` block is detected, prompt user "This file contains saved settings. Apply them to this device?" with Yes / Skip options
-  - Requires updates to `json-export.js`, `json-import.js`, lorebook creation in `entry-factory.js` (or equivalent), and `autosave.js` for `lastModified` stamping
-
-### Fixes
-
-- [ ] **Lorebook delete confirmation** — require typing "Yes" to confirm on desktop; standard Yes/No dialog on mobile; no undo — the confirmation dialog is the safeguard
-- [ ] **Find & Replace covers entry titles** — extend `find-replace.js` to include `entry.name` in the search and replace pass
-
-### Stop Condition
-
-User can click the X button on the build page and confirm it redirects to the lander; confirm the lander shows "How to Use" before Tips, and the README link appears at the bottom of Tips; click a lorebook name in the selector and confirm it becomes an editable input that saves on blur or Enter; create a new lorebook and confirm the name field is auto-focused; export a lorebook with the metadata checkbox checked and confirm the JSON contains a `_meta` block; import that file and confirm the settings prompt appears; confirm skipping leaves current settings intact and applying replaces them; attempt to delete a lorebook on desktop and confirm a "type Yes to confirm" dialog appears; confirm the lorebook is gone after confirming; run a Find & Replace on a term that appears in an entry title and confirm the title is updated.
-
-**Estimated Complexity:** Low–Medium
+- **Polish Pass 2:** X button redirects to lander, lander section reorder (How It Works → Tips) with README link, double-click inline lorebook rename, new lorebook name modal, inline Yes/No delete confirmation, Find & Replace scope selector (chip toggles, Title/Triggers/Description/All), active field focus border changed to blue-grey (`--focus-border`), persistent yellow/red tiered borders on description and trigger fields
 
 ---
 
 ## Phase 8 — Entry Enhancements
+
+> **Note:** This phase is large and should be considered for splitting into Phase 8a and 8b before implementation begins. Natural split point: 8a = authoring tools + limit overrides + duplicate detection; 8b = entry splitting + rollback system.
 
 **Goal:** Entries have richer authoring tools — markdown helpers, duplicate detection, empty field warnings, an optional splitting system for entries that have grown too long, and an opt-in rollback system for saving and restoring entry states.
 
@@ -87,6 +60,11 @@ User can click the X button on the build page and confirm it redirects to the la
 **Entry Authoring:**
 - [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
 - [ ] Empty triggers/description notification — warning system alert when an entry has no triggers or an empty description
+
+**Per-Entry Limit Overrides:**
+- [ ] Schema: add `ignoreLimitWarnings: { description: false, triggers: false }` to entry shape in `entry-factory.js` and `defaults.js`; backwards-compatible default of false
+- [ ] Description override toggle — appears next to the "1500 char limit" label on the description field when the char count crosses the yellow tier threshold; disappears if count drops back below threshold; toggling sets `ignoreLimitWarnings.description`; overridden field shows always-on blue (`#60a5fa`) border instead of yellow/red
+- [ ] Trigger override toggle — appears to the right of the "Trigger Keywords" label in the trigger section header when trigger count crosses `TRIGGER_WARN_YELLOW`; same show/hide and blue border behavior as description override; toggles `ignoreLimitWarnings.triggers`
 
 **Entry Duplicate Warning:**
 - [ ] Duplicate entry detection — uses `scan-service.js` to identify entries with identical or near-identical names or trigger sets
@@ -153,6 +131,11 @@ User can load a second lorebook into crosstalk mode, confirm that entries presen
 ## Future Features
 
 Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
+
+---
+
+**Lorebook JSON Metadata Portability (`_meta`)**
+Add `createdAt` and `lastModified` timestamps to lorebook objects. Export: optional checkbox "Include metadata" appends a `_meta` block (timestamps + settings snapshot) to the JSON. Import: detect `_meta` block and prompt user to apply or skip the saved settings. Requires updates to `json-export.js`, `json-import.js`, lorebook creation, and `autosave.js`. Deferred from Polish Pass 2 — good idea but not yet worth the resource investment.
 
 ---
 

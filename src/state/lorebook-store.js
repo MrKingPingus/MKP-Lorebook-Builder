@@ -70,6 +70,16 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  renameLorebookById: (id, name) =>
+    set((state) => ({
+      lorebooks: state.lorebooks[id]
+        ? { ...state.lorebooks, [id]: { ...state.lorebooks[id], name } }
+        : state.lorebooks,
+      lorebookIndex: state.lorebookIndex.map((item) =>
+        item.id === id ? { ...item, name, updatedAt: Date.now() } : item
+      ),
+    })),
+
   removeLorebook: (id) =>
     set((state) => {
       const { [id]: _removed, ...rest } = state.lorebooks;

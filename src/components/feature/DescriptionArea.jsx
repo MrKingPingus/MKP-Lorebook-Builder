@@ -4,12 +4,20 @@ import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
 import { useUi }        from '../../hooks/use-ui.js';
-import { CHAR_LIMIT }   from '../../constants/limits.js';
+import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/limits.js';
 
 export function DescriptionArea({ value, onChange }) {
   const textareaRef = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
+
+  // Yellow/red borders are always-on when at threshold; neutral focus border handled by CSS
+  const tieredBorderStyle = (() => {
+    if (!tieredCounterEnabled) return {};
+    if (value.length >= CHAR_WARN_RED)    return { borderColor: 'var(--red)' };
+    if (value.length >= CHAR_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
+    return {};
+  })();
 
   // Autogrow: after every render where value has changed, resize to content
   useLayoutEffect(() => {
@@ -39,6 +47,7 @@ export function DescriptionArea({ value, onChange }) {
           spellCheck={false}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
+          style={tieredBorderStyle}
         />
       </div>
       <div className="description-footer">

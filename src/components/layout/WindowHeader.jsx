@@ -2,12 +2,14 @@
 import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
+import { useUi }         from '../../hooks/use-ui.js';
 import { MenuButton }    from './MenuButton.jsx';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
+  const setShowLander                      = useUi((s) => s.setShowLander);
 
   return (
     <div
@@ -38,12 +40,13 @@ export function WindowHeader() {
       {/* Menu button — opens slide tray on both desktop and mobile */}
       <MenuButton />
 
-      {/* Close — no-op in browser; hidden on mobile */}
+      {/* Close — returns to lander; hidden on mobile */}
       {!isMobile && (
         <button
           className="header-close"
-          title="Close (no-op in browser)"
+          title="Return to home"
           onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => setShowLander(true)}
         >
           ×
         </button>
