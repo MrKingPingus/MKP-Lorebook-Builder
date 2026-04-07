@@ -58,7 +58,6 @@ All original planned features are implemented. Summary of what was built:
 - [x] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display; used by empty field notifications, duplicate warning, and split detection
 
 **Entry Authoring:**
-- [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
 - [ ] Empty triggers/description notification — warning system alert when an entry has no triggers or an empty description
 
 **Per-Entry Limit Overrides:**
@@ -158,6 +157,11 @@ The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power us
 
 **Category-Weighted Suggestion Variants**
 `suggestion-engine.js` applies different suggestion weights and candidate pools based on entry type, so suggestions for a character entry differ meaningfully from those for a location entry. Requires a per-type lookup table or seed word list to have real impact. Deferred from Phase 7 until a lookup table approach is designed. Depends on: suggestion engine architecture being stable.
+
+---
+
+**Markdown Dropdown**
+Helper UI on the description textarea for inserting common markdown formatting shortcuts (bold, italic, heading, bullet, blockquote, etc.); no parser, just insertion at cursor. Deferred because the target platform does not currently support markdown in lorebook entry descriptions. Revisit if platform support is added.
 
 ---
 

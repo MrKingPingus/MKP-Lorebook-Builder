@@ -236,20 +236,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <div className="trigger-section">
             <div className="trigger-section-header">
               <div className="field-label">TRIGGER KEYWORDS</div>
-              {entry.triggers.length >= TRIGGER_WARN_YELLOW && (
-                <button
-                  className={`override-pill override-pill--${entry.ignoreLimitWarnings?.triggers ? 'active' : (entry.triggers.length >= MAX_TRIGGERS ? 'red' : 'yellow')}`}
-                  onClick={() => update({
-                    ignoreLimitWarnings: {
-                      ...entry.ignoreLimitWarnings,
-                      triggers: !entry.ignoreLimitWarnings?.triggers,
-                    },
-                  })}
-                  title={entry.ignoreLimitWarnings?.triggers ? 'Limit override on — click to re-enable warnings' : 'Ignore the trigger limit warning for this entry'}
-                >
-                  {entry.ignoreLimitWarnings?.triggers ? 'Limit Ignored' : 'Ignore Limit'}
-                </button>
-              )}
               <select
                 className="delimiter-select"
                 value={triggerDelimiter}
@@ -275,6 +261,12 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               onAllowOverlap={allowOverlap}
               onRevokeOverlap={revokeOverlap}
               ignoreLimitWarning={entry.ignoreLimitWarnings?.triggers ?? false}
+              onToggleLimitWarning={() => update({
+                ignoreLimitWarnings: {
+                  ...entry.ignoreLimitWarnings,
+                  triggers: !entry.ignoreLimitWarnings?.triggers,
+                },
+              })}
             />
           </div>
 

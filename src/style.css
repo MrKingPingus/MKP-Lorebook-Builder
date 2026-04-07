@@ -1062,10 +1062,12 @@ input:focus, textarea:focus, select:focus {
 .trigger-chips-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 8px;
   min-height: 16px;
 }
+.trigger-chips-footer-left { display: flex; align-items: center; gap: 8px; }
+
 .trigger-counter {
   font-size: 11px;
   font-weight: 600;

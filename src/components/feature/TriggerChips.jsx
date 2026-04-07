@@ -9,7 +9,7 @@ function escapeDelim(d) {
   return d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
 
-export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap, ignoreLimitWarning = false }) {
+export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap, ignoreLimitWarning = false, onToggleLimitWarning }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
@@ -120,14 +120,25 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
         />
       </div>
       <div className="trigger-chips-footer">
-        {flashDupe && <span className="trigger-dupe-error">Already exists</span>}
-        <span className="trigger-counter" style={{ color: triggerColor }}>
-          {triggers.length}/{MAX_TRIGGERS}
-        </span>
-        {triggers.length > MAX_TRIGGERS && (
-          <span className="trigger-overlimit-warn">
-            Entries with over 25 triggers might not function correctly
+        <div className="trigger-chips-footer-left">
+          {flashDupe && <span className="trigger-dupe-error">Already exists</span>}
+          <span className="trigger-counter" style={{ color: triggerColor }}>
+            {triggers.length}/{MAX_TRIGGERS}
           </span>
+          {triggers.length > MAX_TRIGGERS && (
+            <span className="trigger-overlimit-warn">
+              Entries with over 25 triggers might not function correctly
+            </span>
+          )}
+        </div>
+        {overYellow && onToggleLimitWarning && (
+          <button
+            className={`override-pill override-pill--${ignoreLimitWarning ? 'active' : (triggers.length >= MAX_TRIGGERS ? 'red' : 'yellow')}`}
+            onClick={onToggleLimitWarning}
+            title={ignoreLimitWarning ? 'Limit override on — click to re-enable warnings' : 'Ignore the trigger limit warning for this entry'}
+          >
+            {ignoreLimitWarning ? 'Limit Ignored' : 'Ignore Limit'}
+          </button>
         )}
       </div>
     </div>
