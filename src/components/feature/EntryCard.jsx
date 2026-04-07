@@ -238,7 +238,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               <div className="field-label">TRIGGER KEYWORDS</div>
               {entry.triggers.length >= TRIGGER_WARN_YELLOW && (
                 <button
-                  className={`override-pill${entry.ignoreLimitWarnings?.triggers ? ' override-pill--active' : ''}`}
+                  className={`override-pill override-pill--${entry.ignoreLimitWarnings?.triggers ? 'active' : (entry.triggers.length >= MAX_TRIGGERS ? 'red' : 'yellow')}`}
                   onClick={() => update({
                     ignoreLimitWarnings: {
                       ...entry.ignoreLimitWarnings,
@@ -247,7 +247,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                   })}
                   title={entry.ignoreLimitWarnings?.triggers ? 'Limit override on — click to re-enable warnings' : 'Ignore the trigger limit warning for this entry'}
                 >
-                  {entry.ignoreLimitWarnings?.triggers ? 'limit ignored' : 'ignore limit'}
+                  {entry.ignoreLimitWarnings?.triggers ? 'Limit Ignored' : 'Ignore Limit'}
                 </button>
               )}
               <select

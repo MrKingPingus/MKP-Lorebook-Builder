@@ -1430,6 +1430,16 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--blue);
   color: var(--blue);
 }
+.override-pill--yellow {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(245, 158, 11, 0.15);
+}
+.override-pill--red {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.15);
+}
 .override-pill--active {
   border-color: var(--blue);
   color: var(--blue);

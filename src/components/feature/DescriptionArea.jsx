@@ -12,6 +12,8 @@ export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, o
   const searchQuery = useUi((s) => s.searchQuery);
 
   const overYellow = value.length >= CHAR_WARN_YELLOW;
+  const overRed    = value.length >= CHAR_WARN_RED;
+  const pillTier   = overRed ? 'red' : 'yellow';
 
   // Blue border when override is active; otherwise tiered yellow/red
   const tieredBorderStyle = (() => {
@@ -62,11 +64,11 @@ export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, o
         />
         {overYellow && onToggleLimitWarning && (
           <button
-            className={`override-pill${ignoreLimitWarning ? ' override-pill--active' : ''}`}
+            className={`override-pill override-pill--${ignoreLimitWarning ? 'active' : pillTier}`}
             onClick={onToggleLimitWarning}
             title={ignoreLimitWarning ? 'Limit override on — click to re-enable warnings' : 'Ignore the character limit warning for this entry'}
           >
-            {ignoreLimitWarning ? 'limit ignored' : 'ignore limit'}
+            {ignoreLimitWarning ? 'Limit Ignored' : 'Ignore Limit'}
           </button>
         )}
       </div>
