@@ -641,6 +641,17 @@ input:focus, textarea:focus, select:focus {
 .replace-scope-proceed:hover:not(:disabled) { background: #dc2626; }
 .replace-scope-proceed:disabled { opacity: 0.4; cursor: default; }
 
+/* Mobile find-replace second row */
+.search-bar-row2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.search-bar-row2 .replace-btn-wrap    { flex-shrink: 0; }
+.search-bar-row2 .replace-all-btn    { white-space: nowrap; }
+.search-bar-row2 .search-mode-select { flex-shrink: 0; }
+
 /* ============================================================
    Type Filter Bar
    ============================================================ */
@@ -1051,10 +1062,12 @@ input:focus, textarea:focus, select:focus {
 .trigger-chips-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 8px;
   min-height: 16px;
 }
+.trigger-chips-footer-left { display: flex; align-items: center; gap: 8px; }
+
 .trigger-counter {
   font-size: 11px;
   font-weight: 600;
@@ -1399,7 +1412,40 @@ input:focus, textarea:focus, select:focus {
 
 .description-footer {
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Limit override pill — shown on description footer and trigger section header */
+.override-pill {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.override-pill:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.override-pill--yellow {
+  border-color: var(--yellow);
+  color: var(--yellow);
+  background: rgba(245, 158, 11, 0.15);
+}
+.override-pill--red {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.15);
+}
+.override-pill--active {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: rgba(96, 165, 250, 0.12);
 }
 
 .char-counter {

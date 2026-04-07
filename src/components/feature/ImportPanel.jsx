@@ -6,6 +6,7 @@ import { useEntries }       from '../../hooks/use-entries.js';
 import { useLorebook }      from '../../hooks/use-lorebook.js';
 import { useImport }        from '../../hooks/use-import.js';
 import { useExport }        from '../../hooks/use-export.js';
+import { useUi }            from '../../hooks/use-ui.js';
 
 export function ImportPanel() {
   const [preview, setPreview]           = useState(null);
@@ -19,6 +20,7 @@ export function ImportPanel() {
   const { activeLorebook, renameLorebook, createLorebook } = useLorebook();
   const { parseFile }                  = useImport();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
+  const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
 
   function resetAll() {
     setPreview(null);
@@ -77,15 +79,17 @@ export function ImportPanel() {
     replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
+    setActiveMenuPanel(null);
   }
 
   // Confirm: create a new lorebook slot and load the import into it
   function confirmAsNew() {
     if (!preview) return;
-    createLorebook();
+    createLorebook({ silent: importedName != null });
     replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
+    setActiveMenuPanel(null);
   }
 
   const lorebookName = activeLorebook?.name || '(unnamed)';

@@ -23,7 +23,7 @@ export function useLorebook() {
 
   const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
-  function createLorebook() {
+  function createLorebook({ silent = false } = {}) {
     const lb = createEmptyLorebook();
     const newIndex = addToIndex(lorebookIndex, lb);
     if (!newIndex) return; // full
@@ -33,7 +33,7 @@ export function useLorebook() {
     writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
     clearHistory();
-    setPendingFocusLorebookName(true);
+    if (!silent) setPendingFocusLorebookName(true);
   }
 
   function switchLorebook(id) {

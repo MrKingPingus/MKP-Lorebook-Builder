@@ -6,13 +6,18 @@ import { useSettings }  from '../../hooks/use-settings.js';
 import { useUi }        from '../../hooks/use-ui.js';
 import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/limits.js';
 
-export function DescriptionArea({ value, onChange }) {
+export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, onToggleLimitWarning }) {
   const textareaRef = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
 
-  // Yellow/red borders are always-on when at threshold; neutral focus border handled by CSS
+  const overYellow = value.length >= CHAR_WARN_YELLOW;
+  const overRed    = value.length >= CHAR_WARN_RED;
+  const pillTier   = overRed ? 'red' : 'yellow';
+
+  // Blue border when override is active; otherwise tiered yellow/red
   const tieredBorderStyle = (() => {
+    if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
     if (!tieredCounterEnabled) return {};
     if (value.length >= CHAR_WARN_RED)    return { borderColor: 'var(--red)' };
     if (value.length >= CHAR_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
@@ -57,6 +62,15 @@ export function DescriptionArea({ value, onChange }) {
           tiers={counterTiers}
           tieredEnabled={tieredCounterEnabled}
         />
+        {overYellow && onToggleLimitWarning && (
+          <button
+            className={`override-pill override-pill--${ignoreLimitWarning ? 'active' : pillTier}`}
+            onClick={onToggleLimitWarning}
+            title={ignoreLimitWarning ? 'Limit override on — click to re-enable warnings' : 'Ignore the character limit warning for this entry'}
+          >
+            {ignoreLimitWarning ? 'Limit Ignored' : 'Ignore Limit'}
+          </button>
+        )}
       </div>
     </div>
   );
