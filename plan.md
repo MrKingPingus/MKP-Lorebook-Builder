@@ -58,7 +58,6 @@ All original planned features are implemented. Summary of what was built:
 - [x] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display; used by empty field notifications, duplicate warning, and split detection
 
 **Entry Authoring:**
-- [ ] Empty triggers/description notification — warning system alert when an entry has no triggers or an empty description
 
 **Per-Entry Limit Overrides:**
 - [x] Schema: add `ignoreLimitWarnings: { description: false, triggers: false }` to entry shape in `entry-factory.js` and `defaults.js`; backwards-compatible default of false
