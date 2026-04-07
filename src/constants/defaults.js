@@ -26,12 +26,13 @@ export const DEFAULT_SETTINGS = {
 };
 
 export const DEFAULT_ENTRY = {
-  id:           '',
-  name:         '',
-  type:         DEFAULT_TYPE,
-  triggers:     [],
-  description:  '',
-  lastModified: null,
+  id:                  '',
+  name:                '',
+  type:                DEFAULT_TYPE,
+  triggers:            [],
+  description:         '',
+  lastModified:        null,
+  ignoreLimitWarnings: { description: false, triggers: false },
 };
 
 export const DEFAULT_LOREBOOK = {

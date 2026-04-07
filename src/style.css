@@ -1410,7 +1410,30 @@ input:focus, textarea:focus, select:focus {
 
 .description-footer {
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Limit override pill — shown on description footer and trigger section header */
+.override-pill {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.override-pill:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.override-pill--active {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: rgba(96, 165, 250, 0.12);
 }
 
 .char-counter {

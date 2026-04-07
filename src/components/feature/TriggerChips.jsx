@@ -9,14 +9,17 @@ function escapeDelim(d) {
   return d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
 
-export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap }) {
+export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap, ignoreLimitWarning = false }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
   const { tieredCounterEnabled } = useSettings();
 
-  // Yellow/red borders are always-on when at threshold; neutral focus border handled by CSS
+  const overYellow = triggers.length >= TRIGGER_WARN_YELLOW;
+
+  // Blue border when override active; otherwise tiered yellow/red
   const tieredBorderStyle = (() => {
+    if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
     if (!tieredCounterEnabled) return {};
     if (triggers.length >= MAX_TRIGGERS)        return { borderColor: 'var(--red)' };
     if (triggers.length >= TRIGGER_WARN_YELLOW) return { borderColor: 'var(--yellow)' };

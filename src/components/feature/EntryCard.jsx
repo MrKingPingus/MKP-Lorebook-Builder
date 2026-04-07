@@ -236,6 +236,20 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <div className="trigger-section">
             <div className="trigger-section-header">
               <div className="field-label">TRIGGER KEYWORDS</div>
+              {entry.triggers.length >= TRIGGER_WARN_YELLOW && (
+                <button
+                  className={`override-pill${entry.ignoreLimitWarnings?.triggers ? ' override-pill--active' : ''}`}
+                  onClick={() => update({
+                    ignoreLimitWarnings: {
+                      ...entry.ignoreLimitWarnings,
+                      triggers: !entry.ignoreLimitWarnings?.triggers,
+                    },
+                  })}
+                  title={entry.ignoreLimitWarnings?.triggers ? 'Limit override on — click to re-enable warnings' : 'Ignore the trigger limit warning for this entry'}
+                >
+                  {entry.ignoreLimitWarnings?.triggers ? 'limit ignored' : 'ignore limit'}
+                </button>
+              )}
               <select
                 className="delimiter-select"
                 value={triggerDelimiter}
@@ -260,6 +274,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               allowedOverlaps={allowedOverlaps}
               onAllowOverlap={allowOverlap}
               onRevokeOverlap={revokeOverlap}
+              ignoreLimitWarning={entry.ignoreLimitWarnings?.triggers ?? false}
             />
           </div>
 
@@ -270,6 +285,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <DescriptionArea
             value={entry.description}
             onChange={(description) => update({ description })}
+            ignoreLimitWarning={entry.ignoreLimitWarnings?.description ?? false}
+            onToggleLimitWarning={() => update({
+              ignoreLimitWarnings: {
+                ...entry.ignoreLimitWarnings,
+                description: !entry.ignoreLimitWarnings?.description,
+              },
+            })}
           />
         </div>
       )}
