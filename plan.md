@@ -55,16 +55,16 @@ All original planned features are implemented. Summary of what was built:
 - [ ] Comparison panel hook — manages open/closed state and which two entries are loaded into the panel; wired to `ui-store`
 
 **Warning / Notification System (prerequisite):**
-- [ ] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display; used by empty field notifications, duplicate warning, and split detection
+- [x] Entry health evaluator — service that scans an entry or lorebook and returns structured findings for consumers to display; used by empty field notifications, duplicate warning, and split detection
 
 **Entry Authoring:**
 - [ ] Markdown dropdown — helper UI on the description textarea for inserting common markdown formatting; no parser, just insertion shortcuts
 - [ ] Empty triggers/description notification — warning system alert when an entry has no triggers or an empty description
 
 **Per-Entry Limit Overrides:**
-- [ ] Schema: add `ignoreLimitWarnings: { description: false, triggers: false }` to entry shape in `entry-factory.js` and `defaults.js`; backwards-compatible default of false
-- [ ] Description override toggle — appears next to the "1500 char limit" label on the description field when the char count crosses the yellow tier threshold; disappears if count drops back below threshold; toggling sets `ignoreLimitWarnings.description`; overridden field shows always-on blue (`#60a5fa`) border instead of yellow/red
-- [ ] Trigger override toggle — appears to the right of the "Trigger Keywords" label in the trigger section header when trigger count crosses `TRIGGER_WARN_YELLOW`; same show/hide and blue border behavior as description override; toggles `ignoreLimitWarnings.triggers`
+- [x] Schema: add `ignoreLimitWarnings: { description: false, triggers: false }` to entry shape in `entry-factory.js` and `defaults.js`; backwards-compatible default of false
+- [x] Description override toggle — appears next to the "1500 char limit" label on the description field when the char count crosses the yellow tier threshold; disappears if count drops back below threshold; toggling sets `ignoreLimitWarnings.description`; overridden field shows always-on blue (`#60a5fa`) border instead of yellow/red
+- [x] Trigger override toggle — appears to the right of the "Trigger Keywords" label in the trigger section header when trigger count crosses `TRIGGER_WARN_YELLOW`; same show/hide and blue border behavior as description override; toggles `ignoreLimitWarnings.triggers`
 
 **Entry Duplicate Warning:**
 - [ ] Duplicate entry detection — uses `scan-service.js` to identify entries with identical or near-identical names or trigger sets
