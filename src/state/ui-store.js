@@ -18,7 +18,8 @@ export const useUiStore = create((set) => ({
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
   activeEntryId:        null,  // mobile entry detail panel — id of the entry being edited, or null
   searchFocusedId:      null,  // entry id forced-expanded by search navigation; null = no override
-  pendingFocusEntryId:  null,  // id of newly-created entry that should receive auto-focus; cleared once consumed
+  pendingFocusEntryId:       null,   // id of newly-created entry that should receive auto-focus; cleared once consumed
+  pendingFocusLorebookName:  false,  // true after new lorebook created; WindowHeader focuses name input then resets
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -35,7 +36,8 @@ export const useUiStore = create((set) => ({
   setShowLander:       (showLander)       => set({ showLander }),
   setShowAppendImport: (showAppendImport) => set({ showAppendImport }),
   setActiveEntryId:        (activeEntryId)        => set({ activeEntryId }),
-  setPendingFocusEntryId:  (pendingFocusEntryId)  => set({ pendingFocusEntryId }),
+  setPendingFocusEntryId:       (pendingFocusEntryId)       => set({ pendingFocusEntryId }),
+  setPendingFocusLorebookName:  (pendingFocusLorebookName)  => set({ pendingFocusLorebookName }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

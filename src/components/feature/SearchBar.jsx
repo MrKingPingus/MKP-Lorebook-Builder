@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearch }      from '../../hooks/use-search.js';
 import { useUi }          from '../../hooks/use-ui.js';
 import { useFindReplace } from '../../hooks/use-find-replace.js';
+import { useMobile }      from '../../hooks/use-mobile.js';
 import { MatchCounter }   from '../ui/MatchCounter.jsx';
 import { FindReplace }    from './FindReplace.jsx';
 
@@ -18,8 +19,15 @@ const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc'
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
 export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
-  const { findText, setFindText, replaceText, setReplaceText, matchCount: frMatchCount, replaceAll } =
-    useFindReplace(entries);
+  const {
+    findText, setFindText,
+    replaceText, setReplaceText,
+    matchCount: frMatchCount,
+    replaceAll,
+    scope, toggleScope, allSelected,
+    scopeOpen, setScopeOpen,
+  } = useFindReplace(entries);
+  const isMobile           = useMobile();
   const sortMode           = useUi((s) => s.sortMode);
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
@@ -117,6 +125,32 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
   }
 
   const showDropdown = dropdownOpen && searchQuery.trim() && matchDetails?.length > 0;
+  const mobileFindReplace = isMobile && searchMode === 'find-replace';
+
+  const sortBtn = (
+    <div className="sort-btn-wrap" ref={sortWrapRef} onPointerDown={(e) => e.stopPropagation()}>
+      <button
+        className={`sort-btn${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
+        onClick={() => setSortOpen((v) => !v)}
+        title="Sort entries"
+      >
+        ↕
+      </button>
+      {sortOpen && (
+        <div className="sort-dropdown">
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`sort-dropdown-item${sortMode === opt.value ? ' sort-dropdown-item--active' : ''}`}
+              onClick={() => handleSortSelect(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="search-bar-wrapper">
@@ -166,40 +200,55 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
             replaceAll={replaceAll}
+            scope={scope}
+            toggleScope={toggleScope}
+            allSelected={allSelected}
+            scopeOpen={scopeOpen}
+            setScopeOpen={setScopeOpen}
+            row={mobileFindReplace ? 'inputs' : 'all'}
           />
         )}
-        <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />
-        <select
-          className="search-mode-select"
-          value={searchMode}
-          onChange={onModeChange}
-        >
-          <option value="search">Search</option>
-          <option value="find-replace">Find/Replace</option>
-        </select>
-        <div className="sort-btn-wrap" ref={sortWrapRef} onPointerDown={(e) => e.stopPropagation()}>
-          <button
-            className={`sort-btn${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
-            onClick={() => setSortOpen((v) => !v)}
-            title="Sort entries"
+        {!mobileFindReplace && <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />}
+        {!mobileFindReplace && (
+          <select
+            className="search-mode-select"
+            value={searchMode}
+            onChange={onModeChange}
           >
-            ↕
-          </button>
-          {sortOpen && (
-            <div className="sort-dropdown">
-              {SORT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`sort-dropdown-item${sortMode === opt.value ? ' sort-dropdown-item--active' : ''}`}
-                  onClick={() => handleSortSelect(opt.value)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            <option value="search">Search</option>
+            <option value="find-replace">Find/Replace</option>
+          </select>
+        )}
+        {sortBtn}
       </div>
+
+      {/* Mobile find-replace: second row with Replace button and mode select */}
+      {mobileFindReplace && (
+        <div className="search-bar-row2">
+          <FindReplace
+            findText={findText}
+            setFindText={setFindText}
+            replaceText={replaceText}
+            setReplaceText={setReplaceText}
+            matchCount={frMatchCount}
+            replaceAll={replaceAll}
+            scope={scope}
+            toggleScope={toggleScope}
+            allSelected={allSelected}
+            scopeOpen={scopeOpen}
+            setScopeOpen={setScopeOpen}
+            row="actions"
+          />
+          <select
+            className="search-mode-select"
+            value={searchMode}
+            onChange={onModeChange}
+          >
+            <option value="search">Search</option>
+            <option value="find-replace">Find/Replace</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 }

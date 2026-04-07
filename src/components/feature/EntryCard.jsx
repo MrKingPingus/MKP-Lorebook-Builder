@@ -204,6 +204,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           className="entry-card-body"
           onDoubleClick={(e) => {
             if (e.target.closest('button')) return;
+            if (isSearchFocused) setSearchFocusedId(null);
             setLocalCollapsed(true);
             setExpandAll(false);
             setCollapseAll(false);
@@ -259,6 +260,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               allowedOverlaps={allowedOverlaps}
               onAllowOverlap={allowOverlap}
               onRevokeOverlap={revokeOverlap}
+              ignoreLimitWarning={entry.ignoreLimitWarnings?.triggers ?? false}
+              onToggleLimitWarning={() => update({
+                ignoreLimitWarnings: {
+                  ...entry.ignoreLimitWarnings,
+                  triggers: !entry.ignoreLimitWarnings?.triggers,
+                },
+              })}
             />
           </div>
 
@@ -269,6 +277,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <DescriptionArea
             value={entry.description}
             onChange={(description) => update({ description })}
+            ignoreLimitWarning={entry.ignoreLimitWarnings?.description ?? false}
+            onToggleLimitWarning={() => update({
+              ignoreLimitWarnings: {
+                ...entry.ignoreLimitWarnings,
+                description: !entry.ignoreLimitWarnings?.description,
+              },
+            })}
           />
         </div>
       )}

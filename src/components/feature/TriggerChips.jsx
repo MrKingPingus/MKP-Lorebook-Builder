@@ -1,6 +1,7 @@
 // Chip-per-trigger input with inline label editing, × delete, bulk paste, counter badge, and dupe flash
 import { useRef, useState } from 'react';
 import { Chip } from '../ui/Chip.jsx';
+import { useSettings } from '../../hooks/use-settings.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW, DUPE_FLASH_MS } from '../../constants/limits.js';
 
 // Escape special regex characters in a delimiter string
@@ -8,10 +9,22 @@ function escapeDelim(d) {
   return d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
 
-export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap }) {
+export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap, ignoreLimitWarning = false, onToggleLimitWarning }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
+  const { tieredCounterEnabled } = useSettings();
+
+  const overYellow = triggers.length >= TRIGGER_WARN_YELLOW;
+
+  // Blue border when override active; otherwise tiered yellow/red
+  const tieredBorderStyle = (() => {
+    if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
+    if (!tieredCounterEnabled) return {};
+    if (triggers.length >= MAX_TRIGGERS)        return { borderColor: 'var(--red)' };
+    if (triggers.length >= TRIGGER_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
+    return {};
+  })();
 
   function flashDupeError() {
     clearTimeout(dupeTimer.current);
@@ -71,7 +84,7 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
 
   return (
     <div className="trigger-chips-wrapper">
-      <div className="trigger-chips" onClick={() => inputRef.current?.focus()}>
+      <div className="trigger-chips" onClick={() => inputRef.current?.focus()} style={tieredBorderStyle}>
         {triggers.map((t, i) => {
           const conflictEntries = conflictMap?.get(t.toLowerCase()) ?? [];
           const isConflict      = conflictEntries.length > 0;
@@ -107,14 +120,25 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
         />
       </div>
       <div className="trigger-chips-footer">
-        {flashDupe && <span className="trigger-dupe-error">Already exists</span>}
-        <span className="trigger-counter" style={{ color: triggerColor }}>
-          {triggers.length}/{MAX_TRIGGERS}
-        </span>
-        {triggers.length > MAX_TRIGGERS && (
-          <span className="trigger-overlimit-warn">
-            Entries with over 25 triggers might not function correctly
+        <div className="trigger-chips-footer-left">
+          {flashDupe && <span className="trigger-dupe-error">Already exists</span>}
+          <span className="trigger-counter" style={{ color: triggerColor }}>
+            {triggers.length}/{MAX_TRIGGERS}
           </span>
+          {triggers.length > MAX_TRIGGERS && (
+            <span className="trigger-overlimit-warn">
+              Entries with over 25 triggers might not function correctly
+            </span>
+          )}
+        </div>
+        {overYellow && onToggleLimitWarning && (
+          <button
+            className={`override-pill override-pill--${ignoreLimitWarning ? 'active' : (triggers.length >= MAX_TRIGGERS ? 'red' : 'yellow')}`}
+            onClick={onToggleLimitWarning}
+            title={ignoreLimitWarning ? 'Limit override on — click to re-enable warnings' : 'Ignore the trigger limit warning for this entry'}
+          >
+            {ignoreLimitWarning ? 'Limit Ignored' : 'Ignore Limit'}
+          </button>
         )}
       </div>
     </div>

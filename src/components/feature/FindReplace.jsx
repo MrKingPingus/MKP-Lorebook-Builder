@@ -1,6 +1,42 @@
 // Find and Replace fields — rendered inside SearchBar's single row; receives state as props
-export function FindReplace({ findText, setFindText, replaceText, setReplaceText, matchCount, replaceAll }) {
-  return (
+import { useRef, useEffect } from 'react';
+
+const SCOPE_CHIPS = [
+  { key: 'all',         label: 'All' },
+  { key: 'title',       label: 'Title' },
+  { key: 'triggers',    label: 'Triggers' },
+  { key: 'description', label: 'Description' },
+];
+
+// row: 'all' (default) | 'inputs' (find+replace fields only) | 'actions' (replace button only)
+export function FindReplace({
+  findText, setFindText,
+  replaceText, setReplaceText,
+  matchCount, replaceAll,
+  scope, toggleScope, allSelected,
+  scopeOpen, setScopeOpen,
+  row = 'all',
+}) {
+  const popoverRef = useRef(null);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!scopeOpen) return;
+    function onMouseDown(e) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setScopeOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [scopeOpen, setScopeOpen]);
+
+  function isActive(key) {
+    if (key === 'all') return allSelected;
+    return scope[key];
+  }
+
+  const inputs = (
     <>
       <input
         className="find-input"
@@ -14,13 +50,45 @@ export function FindReplace({ findText, setFindText, replaceText, setReplaceText
         onChange={(e) => setReplaceText(e.target.value)}
         placeholder="Replace with…"
       />
-      <button
-        className="replace-all-btn"
-        onClick={replaceAll}
-        disabled={!findText || matchCount === 0}
-      >
-        Replace all ({matchCount})
-      </button>
     </>
   );
+
+  const actions = (
+    <div className="replace-btn-wrap" ref={popoverRef}>
+      <button
+        className="replace-all-btn"
+        onClick={() => setScopeOpen((v) => !v)}
+        disabled={!findText}
+      >
+        Replace ({matchCount})… ▾
+      </button>
+
+      {scopeOpen && (
+        <div className="replace-scope-popover">
+          <div className="replace-scope-chips">
+            {SCOPE_CHIPS.map(({ key, label }) => (
+              <button
+                key={key}
+                className={`replace-scope-chip${isActive(key) ? ' replace-scope-chip--active' : ''}`}
+                onClick={() => toggleScope(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            className="replace-scope-proceed"
+            onClick={replaceAll}
+            disabled={matchCount === 0 || (!scope.title && !scope.triggers && !scope.description)}
+          >
+            Proceed
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  if (row === 'inputs')  return inputs;
+  if (row === 'actions') return actions;
+  return <>{inputs}{actions}</>;
 }
