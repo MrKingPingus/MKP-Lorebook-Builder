@@ -1,5 +1,6 @@
 // Root component — composes <FloatingWindow>, mounts autosave effect and keyboard shortcuts
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
@@ -98,6 +99,7 @@ export default function App() {
   return (
     <div className="app-root">
       <FloatingWindow />
+      <Analytics />
     </div>
   );
 }
