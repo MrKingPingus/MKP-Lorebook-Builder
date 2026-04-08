@@ -22,6 +22,7 @@ export function buildSnapshot(entry) {
     triggers:    [...entry.triggers],
     timestamp:   Date.now(),
     label:       '',  // user-editable; empty means display the formatted timestamp
+    pinned:      false,
   };
 }
 
@@ -32,10 +33,49 @@ export function buildSnapshot(entry) {
 /**
  * Return a new snapshots array with `snapshot` prepended and trimmed to `maxCount`.
  * Newest snapshot is always at index 0.
+ * Pinned snapshots are never evicted — the array may exceed maxCount if all
+ * remaining entries are pinned.
  */
 export function addSnapshot(snapshots, snapshot, maxCount) {
-  const capped = Math.min(Math.max(1, maxCount), ROLLBACK_MAX_CUSTOM);
-  return [snapshot, ...snapshots].slice(0, capped);
+  const capped  = Math.min(Math.max(1, maxCount), ROLLBACK_MAX_CUSTOM);
+  const combined = [snapshot, ...snapshots];
+  if (combined.length <= capped) return combined;
+
+  // Trim from the tail, skipping pinned entries
+  const result = [...combined];
+  while (result.length > capped) {
+    // Find the rightmost (oldest) unpinned snapshot
+    let evicted = false;
+    for (let i = result.length - 1; i >= 0; i--) {
+      if (!result[i].pinned) {
+        result.splice(i, 1);
+        evicted = true;
+        break;
+      }
+    }
+    if (!evicted) break; // all remaining are pinned — stop trimming
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Content equality check
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if the entry's content fields exactly match the most recent
+ * snapshot. Used to avoid saving duplicate snapshots.
+ */
+export function contentMatchesLatestSnapshot(entry, snapshots) {
+  if (!snapshots || snapshots.length === 0) return false;
+  const latest = snapshots[0];
+  return (
+    entry.name        === latest.name        &&
+    entry.type        === latest.type        &&
+    entry.description === latest.description &&
+    entry.triggers.length === latest.triggers.length &&
+    entry.triggers.every((t, i) => t === latest.triggers[i])
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -35,6 +35,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setCollapseAll         = useUi((s) => s.setCollapseAll);
   const setSearchFocusedId     = useUi((s) => s.setSearchFocusedId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
+  const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { openEntry }     = useEntryDetail();
   const rollback        = useRollback({ entry, onUpdate });
   const nameInputRef    = useRef(null);
@@ -306,9 +307,14 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <div className="rollback-footer">
             <button
               className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
-              onClick={() => rollback.enabled && setRollbackOpen((o) => !o)}
-              title={rollback.enabled ? 'View and restore snapshots' : 'Enable rollback in Settings to use this feature'}
-              disabled={!rollback.enabled}
+              onClick={() => {
+                if (rollback.enabled) {
+                  setRollbackOpen((o) => !o);
+                } else {
+                  setActiveMenuPanel('settings');
+                }
+              }}
+              title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
             >
               ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
             </button>
@@ -319,6 +325,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               snapshots={rollback.snapshots}
               onRestore={rollback.restoreSnapshot}
               onUpdateLabel={rollback.updateSnapshotLabel}
+              onTogglePin={rollback.toggleSnapshotPin}
               onDeleteSnapshot={rollback.deleteSnapshot}
               onSaveManual={rollback.saveSnapshot}
             />

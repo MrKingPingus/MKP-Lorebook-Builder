@@ -19,6 +19,7 @@ export function EntryDetailPanel() {
   const searchQuery            = useUi((s) => s.searchQuery);
   const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
+  const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { entryTypeView, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap } = useCrosstalk();
   const nameInputRef = useRef(null);
@@ -162,9 +163,14 @@ export function EntryDetailPanel() {
           <div className="entry-detail-section">
             <button
               className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
-              onClick={() => rollback.enabled && setRollbackOpen((o) => !o)}
-              title={rollback.enabled ? 'View and restore snapshots' : 'Enable rollback in Settings to use this feature'}
-              disabled={!rollback.enabled}
+              onClick={() => {
+                if (rollback.enabled) {
+                  setRollbackOpen((o) => !o);
+                } else {
+                  setActiveMenuPanel('settings');
+                }
+              }}
+              title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
             >
               ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
             </button>
@@ -174,6 +180,7 @@ export function EntryDetailPanel() {
                 snapshots={rollback.snapshots}
                 onRestore={rollback.restoreSnapshot}
                 onUpdateLabel={rollback.updateSnapshotLabel}
+                onTogglePin={rollback.toggleSnapshotPin}
                 onDeleteSnapshot={rollback.deleteSnapshot}
                 onSaveManual={rollback.saveSnapshot}
               />

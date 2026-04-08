@@ -2365,6 +2365,13 @@ kbd {
 .rollback-action-btn:hover { background: var(--border); color: var(--text); }
 .rollback-action-btn--delete:hover { color: var(--red); background: rgba(245,101,101,0.12); }
 
+.rollback-pin-btn { opacity: 0.3; font-size: 11px; padding: 1px 5px; }
+.rollback-pin-btn:hover { opacity: 0.7; background: var(--border); }
+.rollback-pin-btn--active { opacity: 1; }
+.rollback-pin-btn--active:hover { opacity: 1; background: var(--border); }
+
+.rollback-pin-indicator { font-size: 11px; }
+
 /* Back navigation */
 .rollback-back-btn {
   background: none;

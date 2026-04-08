@@ -6,8 +6,10 @@ import { DEFAULT_LOREBOOK }  from '../constants/defaults.js';
 import {
   buildSnapshot,
   addSnapshot,
+  contentMatchesLatestSnapshot,
   hasBeenTouchedThisSession,
   markTouchedThisSession,
+  clearSessionTouch,
   isPromptSuppressed,
   suppressPrompt,
 } from '../services/rollback-service.js';
@@ -52,14 +54,25 @@ export function useRollback({ entry, onUpdate }) {
   // ── Snapshot helpers ──────────────────────────────────────────────────────
 
   function saveSnapshot() {
+    // Skip if content is identical to the most recent snapshot
+    if (contentMatchesLatestSnapshot(entry, snapshots)) return;
     const next = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
     onUpdate(entry.id, { snapshots: next });
+    clearSessionTouch(entry.id); // reset so the next open/close won't re-fire unless edited again
   }
 
   function replaceLatestSnapshot() {
     if (snapshots.length === 0) { saveSnapshot(); return; }
-    const next = [buildSnapshot(entry), ...snapshots.slice(1)];
+    if (contentMatchesLatestSnapshot(entry, snapshots)) {
+      clearSessionTouch(entry.id);
+      return;
+    }
+    // Replace the most recent *unpinned* snapshot; if all are pinned, save as new
+    const firstUnpinnedIdx = snapshots.findIndex((s) => !s.pinned);
+    if (firstUnpinnedIdx === -1) { saveSnapshot(); return; }
+    const next = snapshots.map((s, i) => (i === firstUnpinnedIdx ? buildSnapshot(entry) : s));
     onUpdate(entry.id, { snapshots: next });
+    clearSessionTouch(entry.id);
   }
 
   // ── Auto-snapshot on first edit ───────────────────────────────────────────
@@ -68,6 +81,11 @@ export function useRollback({ entry, onUpdate }) {
   function onBeforeEdit() {
     if (!enabled) return;
     if (hasBeenTouchedThisSession(entry.id)) return;
+    // Skip if current content already matches the latest snapshot (e.g. trivial update)
+    if (contentMatchesLatestSnapshot(entry, snapshots)) {
+      markTouchedThisSession(entry.id); // still mark touched so the prompt appears on close
+      return;
+    }
     markTouchedThisSession(entry.id);
     const next = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
     onUpdate(entry.id, { snapshots: next });
@@ -86,7 +104,7 @@ export function useRollback({ entry, onUpdate }) {
       return;
     }
     if (isPromptSuppressed()) {
-      saveSnapshot();
+      saveSnapshot(); // no-op if content unchanged (clearSessionTouch called inside)
       collapseCallback();
       return;
     }
@@ -104,14 +122,14 @@ export function useRollback({ entry, onUpdate }) {
   /** Prompt: "Save New" — append a new snapshot, then collapse */
   function promptSaveNew(suppressThisSession = false) {
     if (suppressThisSession) suppressPrompt();
-    saveSnapshot();
+    saveSnapshot(); // clearSessionTouch is called inside saveSnapshot
     _finishCollapse();
   }
 
-  /** Prompt: "Replace" — overwrite the latest snapshot, then collapse */
+  /** Prompt: "Replace" — overwrite the latest unpinned snapshot, then collapse */
   function promptReplace(suppressThisSession = false) {
     if (suppressThisSession) suppressPrompt();
-    replaceLatestSnapshot();
+    replaceLatestSnapshot(); // clearSessionTouch is called inside
     _finishCollapse();
   }
 
@@ -125,13 +143,15 @@ export function useRollback({ entry, onUpdate }) {
 
   /**
    * Apply a snapshot's content to the entry. Undoable via undo/redo.
-   * Automatically saves the current state as a new snapshot first, so the
-   * user can recover whatever they had before restoring.
+   * Automatically saves the current state as a new snapshot first (if it
+   * differs from the latest snapshot), so the user can recover pre-restore edits.
    */
   function restoreSnapshot(snapshot) {
-    // Auto-save the current state before overwriting it
-    const preRestoreSnapshots = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
-    onUpdate(entry.id, { snapshots: preRestoreSnapshots });
+    // Auto-save current state before overwriting (skip if content unchanged)
+    if (!contentMatchesLatestSnapshot(entry, snapshots)) {
+      const preRestoreSnapshots = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
+      onUpdate(entry.id, { snapshots: preRestoreSnapshots });
+    }
 
     // Apply the restored content (discrete = true → pushed to undo/redo history)
     onUpdate(entry.id, {
@@ -140,12 +160,19 @@ export function useRollback({ entry, onUpdate }) {
       description: snapshot.description,
       triggers:    [...snapshot.triggers],
     }, true);
+
+    clearSessionTouch(entry.id); // restored state is now the baseline; next edit re-arms
   }
 
   // ── Snapshot list management ──────────────────────────────────────────────
 
   function updateSnapshotLabel(index, label) {
     const next = snapshots.map((s, i) => (i === index ? { ...s, label } : s));
+    onUpdate(entry.id, { snapshots: next });
+  }
+
+  function toggleSnapshotPin(index) {
+    const next = snapshots.map((s, i) => (i === index ? { ...s, pinned: !s.pinned } : s));
     onUpdate(entry.id, { snapshots: next });
   }
 
@@ -177,6 +204,7 @@ export function useRollback({ entry, onUpdate }) {
     dismissPrompt,
     restoreSnapshot,
     updateSnapshotLabel,
+    toggleSnapshotPin,
     deleteSnapshot,
     setRollbackEnabled,
     setSnapshotCount,

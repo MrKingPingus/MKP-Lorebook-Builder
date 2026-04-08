@@ -6,11 +6,11 @@ function formatTimestamp(ts) {
   return new Date(ts).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onDeleteSnapshot, onSaveManual }) {
-  const [view, setView]                     = useState('list'); // 'list' | 'preview'
-  const [previewIndex, setPreviewIndex]     = useState(null);
+export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual }) {
+  const [view, setView]                       = useState('list'); // 'list' | 'preview'
+  const [previewIndex, setPreviewIndex]       = useState(null);
   const [editingLabelIdx, setEditingLabelIdx] = useState(null);
-  const [labelDraft, setLabelDraft]         = useState('');
+  const [labelDraft, setLabelDraft]           = useState('');
 
   function openPreview(i) {
     setPreviewIndex(i);
@@ -46,6 +46,15 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onDeleteSna
           <div className="rollback-list">
             {snapshots.map((snap, i) => (
               <div key={snap.timestamp} className="rollback-item">
+                {/* Pin button — left of label */}
+                <button
+                  className={`rollback-action-btn rollback-pin-btn${snap.pinned ? ' rollback-pin-btn--active' : ''}`}
+                  title={snap.pinned ? 'Unpin (snapshot may be overwritten when count is full)' : 'Pin (protect from being overwritten)'}
+                  onClick={() => onTogglePin(i)}
+                >
+                  📌
+                </button>
+
                 {editingLabelIdx === i ? (
                   <input
                     className="rollback-label-input"
@@ -67,6 +76,7 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onDeleteSna
                     {snap.label || formatTimestamp(snap.timestamp)}
                   </button>
                 )}
+
                 <div className="rollback-item-actions">
                   <button
                     className="rollback-action-btn"
@@ -110,6 +120,7 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onDeleteSna
           ← Snapshots
         </button>
         <span className="rollback-panel-title">
+          {snap.pinned && <span className="rollback-pin-indicator" title="Pinned">📌 </span>}
           {snap.label || formatTimestamp(snap.timestamp)}
         </span>
       </div>
