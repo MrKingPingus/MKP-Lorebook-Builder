@@ -75,7 +75,13 @@ export function SettingsPanel() {
                 className="hotbar-slot-select"
                 value={[1, 3, 5].includes(snapshotCount) ? String(snapshotCount) : 'custom'}
                 onChange={(e) => {
-                  if (e.target.value !== 'custom') setSnapshotCount(Number(e.target.value));
+                  if (e.target.value === 'custom') {
+                    // Only jump to default custom value if coming from a preset;
+                    // if already custom, leave the existing value alone
+                    if ([1, 3, 5].includes(snapshotCount)) setSnapshotCount(7);
+                  } else {
+                    setSnapshotCount(Number(e.target.value));
+                  }
                 }}
               >
                 <option value="1">1</option>

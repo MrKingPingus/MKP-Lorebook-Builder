@@ -123,8 +123,17 @@ export function useRollback({ entry, onUpdate }) {
 
   // ── Restore ───────────────────────────────────────────────────────────────
 
-  /** Apply a snapshot's content to the entry. Undoable via undo/redo. */
+  /**
+   * Apply a snapshot's content to the entry. Undoable via undo/redo.
+   * Automatically saves the current state as a new snapshot first, so the
+   * user can recover whatever they had before restoring.
+   */
   function restoreSnapshot(snapshot) {
+    // Auto-save the current state before overwriting it
+    const preRestoreSnapshots = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
+    onUpdate(entry.id, { snapshots: preRestoreSnapshots });
+
+    // Apply the restored content (discrete = true → pushed to undo/redo history)
     onUpdate(entry.id, {
       name:        snapshot.name,
       type:        snapshot.type,
