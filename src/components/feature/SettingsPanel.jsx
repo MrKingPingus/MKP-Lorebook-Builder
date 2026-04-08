@@ -81,7 +81,7 @@ export function SettingsPanel() {
                 <option value="1">1</option>
                 <option value="3">3</option>
                 <option value="5">5</option>
-                <option value="custom">Custom</option>
+                <option value="custom">Go with God</option>
               </select>
               {![1, 3, 5].includes(snapshotCount) && (
                 <input
