@@ -101,6 +101,23 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  setLorebookRollback: (patch) =>
+    set((state) => {
+      const id = state.activeLorebookId;
+      if (!id) return {};
+      const lorebook = state.lorebooks[id];
+      if (!lorebook) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: {
+            ...lorebook,
+            rollback: { ...lorebook.rollback, ...patch },
+          },
+        },
+      };
+    }),
+
   getActiveLorebook: () => {
     const { activeLorebookId, lorebooks } = get();
     return activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;

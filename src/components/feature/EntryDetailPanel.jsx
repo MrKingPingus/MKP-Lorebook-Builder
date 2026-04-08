@@ -5,11 +5,13 @@ import { useEntries }      from '../../hooks/use-entries.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useCrosstalk }    from '../../hooks/use-crosstalk.js';
+import { useRollback }     from '../../hooks/use-rollback.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
+import { RollbackPanel }   from './RollbackPanel.jsx';
 
 export function EntryDetailPanel() {
   const { activeEntryId, closeEntry } = useEntryDetail();
@@ -20,8 +22,13 @@ export function EntryDetailPanel() {
   const { entryTypeView, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap } = useCrosstalk();
   const nameInputRef = useRef(null);
+  const [rollbackOpen, setRollbackOpen]       = useState(false);
+  const [suppressChecked, setSuppressChecked] = useState(false);
 
   const entry = entries.find((e) => e.id === activeEntryId) ?? null;
+
+  // useRollback requires a stable entry reference; null-safe via the empty fallback object
+  const rollback = useRollback({ entry: entry ?? { id: '', snapshots: [] }, onUpdate: updateEntry });
 
   // Auto-focus name input when a newly-created entry opens on mobile
   useEffect(() => {
@@ -34,6 +41,7 @@ export function EntryDetailPanel() {
 
   function update(patch, discrete = false) {
     if (!entry) return;
+    rollback.onBeforeEdit();
     updateEntry(entry.id, patch, discrete);
   }
 
@@ -48,11 +56,19 @@ export function EntryDetailPanel() {
     closeEntry();
   }
 
+  function handleBack() {
+    rollback.handleCollapseIntent(() => {
+      setRollbackOpen(false);
+      setSuppressChecked(false);
+      closeEntry();
+    });
+  }
+
   return (
     <div className={`entry-detail-panel${isOpen ? ' entry-detail-panel--open' : ''}`}>
       {/* Header */}
       <div className="entry-detail-header">
-        <button className="entry-detail-back" onClick={closeEntry}>
+        <button className="entry-detail-back" onClick={handleBack}>
           ← Back
         </button>
         <span className="entry-detail-title">{entry?.name || '(unnamed)'}</span>
@@ -141,6 +157,53 @@ export function EntryDetailPanel() {
             value={entry.description}
             onChange={(description) => update({ description })}
           />
+
+          {/* Rollback */}
+          <div className="entry-detail-section">
+            <button
+              className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
+              onClick={() => rollback.enabled && setRollbackOpen((o) => !o)}
+              title={rollback.enabled ? 'View and restore snapshots' : 'Enable rollback in Settings to use this feature'}
+              disabled={!rollback.enabled}
+            >
+              ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
+            </button>
+
+            {rollbackOpen && rollback.enabled && (
+              <RollbackPanel
+                snapshots={rollback.snapshots}
+                onRestore={rollback.restoreSnapshot}
+                onUpdateLabel={rollback.updateSnapshotLabel}
+                onDeleteSnapshot={rollback.deleteSnapshot}
+                onSaveManual={rollback.saveSnapshot}
+              />
+            )}
+
+            {rollback.promptVisible && (
+              <div className="rollback-prompt">
+                <div className="rollback-prompt-message">Save a snapshot before closing?</div>
+                <div className="rollback-prompt-actions">
+                  <button className="rollback-prompt-btn" onClick={() => { rollback.promptSaveNew(suppressChecked); setSuppressChecked(false); }}>
+                    Save New
+                  </button>
+                  <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
+                    Replace Latest
+                  </button>
+                  <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.dismissPrompt}>
+                    Skip
+                  </button>
+                </div>
+                <label className="rollback-prompt-suppress">
+                  <input
+                    type="checkbox"
+                    checked={suppressChecked}
+                    onChange={(e) => setSuppressChecked(e.target.checked)}
+                  />
+                  Don't ask again this session
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

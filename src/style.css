@@ -2230,4 +2230,273 @@ kbd {
   padding: 4px 8px;
   transition: border-color var(--transition);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Rollback system
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Toggle button at the bottom of the entry card body */
+.rollback-footer {
+  display: flex;
+  align-items: center;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.rollback-toggle-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text);
+  transition: background var(--transition), border-color var(--transition);
+}
+.rollback-toggle-btn:hover:not(:disabled) {
+  background: var(--border);
+  border-color: var(--border2);
+}
+.rollback-toggle-btn--disabled,
+.rollback-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Panel container */
+.rollback-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.rollback-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rollback-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.rollback-save-btn {
+  padding: 2px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text);
+  transition: background var(--transition);
+}
+.rollback-save-btn:hover { background: var(--border); }
+
+/* Snapshot list */
+.rollback-empty {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.rollback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rollback-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rollback-item-label {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background var(--transition);
+}
+.rollback-item-label:hover { background: var(--border); }
+
+.rollback-label-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.rollback-item-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.rollback-action-btn {
+  padding: 1px 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.rollback-action-btn:hover { background: var(--border); color: var(--text); }
+.rollback-action-btn--delete:hover { color: var(--red); background: rgba(245,101,101,0.12); }
+
+/* Back navigation */
+.rollback-back-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition);
+}
+.rollback-back-btn:hover { color: var(--text); }
+
+/* Snapshot preview */
+.rollback-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rollback-preview-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.rollback-preview-row--desc {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rollback-preview-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.rollback-preview-value {
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.rollback-preview-description {
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.rollback-restore-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.rollback-restore-btn {
+  padding: 4px 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 600;
+  transition: background var(--transition), border-color var(--transition);
+}
+.rollback-restore-btn:hover {
+  background: var(--border);
+  border-color: var(--accent, #60a5fa);
+  color: var(--accent, #60a5fa);
+}
+
+.rollback-restore-hint {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* Navigate-away prompt */
+.rollback-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.rollback-prompt-message {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rollback-prompt-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rollback-prompt-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text);
+  transition: background var(--transition), border-color var(--transition);
+}
+.rollback-prompt-btn:hover { background: var(--border); border-color: var(--border2); }
+.rollback-prompt-btn--skip { color: var(--muted); }
+
+.rollback-prompt-suppress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
 .hotbar-slot-select:focus { outline: none; border-color: var(--border2); }

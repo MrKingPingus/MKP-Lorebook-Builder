@@ -6,18 +6,22 @@ import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
+import { RollbackPanel }   from './RollbackPanel.jsx';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useMobile }      from '../../hooks/use-mobile.js';
 import { useUi }          from '../../hooks/use-ui.js';
 import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
+import { useRollback }    from '../../hooks/use-rollback.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
 import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
-  const [localCollapsed, setLocalCollapsed] = useState(true);
+  const [localCollapsed, setLocalCollapsed]   = useState(true);
+  const [rollbackOpen, setRollbackOpen]       = useState(false);
+  const [suppressChecked, setSuppressChecked] = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap } = useCrosstalk();
   const { escapeHtml, escapeRegex } = useHtmlEscape();
@@ -32,7 +36,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setSearchFocusedId     = useUi((s) => s.setSearchFocusedId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
   const { openEntry }     = useEntryDetail();
-  const nameInputRef = useRef(null);
+  const rollback        = useRollback({ entry, onUpdate });
+  const nameInputRef    = useRef(null);
   const shouldFocusName = useRef(false);
 
   // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
@@ -79,6 +84,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const typeColor = typeDef?.color ?? '#9ba1ad';
 
   function update(patch, discrete = false) {
+    rollback.onBeforeEdit();
     onUpdate(entry.id, patch, discrete);
   }
 
@@ -101,11 +107,24 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   const nameHtml = highlightedName();
 
-  function toggleCollapse() {
+  function doCollapse() {
     if (isSearchFocused) setSearchFocusedId(null);
-    setLocalCollapsed(!collapsed);
+    setLocalCollapsed(true);
     setExpandAll(false);
     setCollapseAll(false);
+    setRollbackOpen(false);
+    setSuppressChecked(false);
+  }
+
+  function toggleCollapse() {
+    if (collapsed) {
+      if (isSearchFocused) setSearchFocusedId(null);
+      setLocalCollapsed(false);
+      setExpandAll(false);
+      setCollapseAll(false);
+    } else {
+      rollback.handleCollapseIntent(doCollapse);
+    }
   }
 
   // Desktop: double-click header (skip if clicking a button or badge)
@@ -203,11 +222,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         <div
           className="entry-card-body"
           onDoubleClick={(e) => {
-            if (e.target.closest('button')) return;
-            if (isSearchFocused) setSearchFocusedId(null);
-            setLocalCollapsed(true);
-            setExpandAll(false);
-            setCollapseAll(false);
+            if (e.target.closest('button, input, textarea, select, .rollback-panel')) return;
+            rollback.handleCollapseIntent(doCollapse);
           }}
         >
           {/* Row 1: Entry Name + Entry Type */}
@@ -285,6 +301,54 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               },
             })}
           />
+
+          {/* Row 5: Rollback */}
+          <div className="rollback-footer">
+            <button
+              className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
+              onClick={() => rollback.enabled && setRollbackOpen((o) => !o)}
+              title={rollback.enabled ? 'View and restore snapshots' : 'Enable rollback in Settings to use this feature'}
+              disabled={!rollback.enabled}
+            >
+              ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
+            </button>
+          </div>
+
+          {rollbackOpen && rollback.enabled && (
+            <RollbackPanel
+              snapshots={rollback.snapshots}
+              onRestore={rollback.restoreSnapshot}
+              onUpdateLabel={rollback.updateSnapshotLabel}
+              onDeleteSnapshot={rollback.deleteSnapshot}
+              onSaveManual={rollback.saveSnapshot}
+            />
+          )}
+
+          {/* Navigate-away prompt */}
+          {rollback.promptVisible && (
+            <div className="rollback-prompt">
+              <div className="rollback-prompt-message">Save a snapshot before closing?</div>
+              <div className="rollback-prompt-actions">
+                <button className="rollback-prompt-btn" onClick={() => { rollback.promptSaveNew(suppressChecked); setSuppressChecked(false); }}>
+                  Save New
+                </button>
+                <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
+                  Replace Latest
+                </button>
+                <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.dismissPrompt}>
+                  Skip
+                </button>
+              </div>
+              <label className="rollback-prompt-suppress">
+                <input
+                  type="checkbox"
+                  checked={suppressChecked}
+                  onChange={(e) => setSuppressChecked(e.target.checked)}
+                />
+                Don't ask again this session
+              </label>
+            </div>
+          )}
         </div>
       )}
     </div>

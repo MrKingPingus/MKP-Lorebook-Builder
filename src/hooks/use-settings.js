@@ -19,6 +19,7 @@ export function useSettings() {
   const entryTypeView            = useSettingsStore((s) => s.entryTypeView);
   const fabSize                  = useSettingsStore((s) => s.fabSize);
   const fabCustomSize            = useSettingsStore((s) => s.fabCustomSize);
+  const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -39,6 +40,7 @@ export function useSettings() {
       entryTypeView,
       fabSize,
       fabCustomSize,
+      rollbackDefaultEnabled,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -68,6 +70,7 @@ export function useSettings() {
     entryTypeView,
     fabSize,
     fabCustomSize,
+    rollbackDefaultEnabled,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -83,5 +86,6 @@ export function useSettings() {
     setEntryTypeView:            (v) => updateSetting('entryTypeView', v),
     setFabSize:                  (v) => updateSetting('fabSize', v),
     setFabCustomSize:            (v) => updateSetting('fabCustomSize', v),
+    setRollbackDefaultEnabled:   (v) => updateSetting('rollbackDefaultEnabled', v),
   };
 }

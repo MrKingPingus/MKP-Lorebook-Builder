@@ -77,17 +77,17 @@ All original planned features are implemented. Summary of what was built:
 - [ ] Character limit override — allows entries in split mode to temporarily exceed `CHAR_LIMIT` until the split is confirmed
 
 **Entry Rollback System (opt-in):**
-- [ ] `entry.snapshots` array on entry schema — capped array of snapshot objects `{ content, triggers, timestamp, label }`; added to `entry-factory.js` and `defaults.js`; backwards-compatible default of empty array
-- [ ] Rollback settings in `settings-store.js` — rollback enabled toggle (default **Off**, per-lorebook); snapshot count selector: Off / 1 / 3 / 5 / Go with God (custom integer 1–10); count pre-selects 3 when first enabled; global "always enable rollback for new lorebooks" toggle
-- [ ] Storage warning — surfaced in settings UI when count exceeds 5; explains localStorage pressure
-- [ ] Greyed rollback button on entry card — visible but disabled when rollback is Off; hover tooltip explains how to enable it in settings; active when rollback is On
-- [ ] Auto-snapshot on first edit — when rollback is enabled and a user edits an entry for the first time in a session, a snapshot is silently taken before the edit; every entry gets one free backup automatically
-- [ ] Navigate-away prompt — when rollback is enabled and the entry has been edited since the last snapshot, collapsing the entry (desktop) or closing the panel (mobile) triggers a prompt: "Replace or Save New" with a "Don't ask again this session" option
-- [ ] Manual rollback save — when prompts are suppressed, the rollback button saves a snapshot on demand; includes option to re-enable the prompt
-- [ ] Rollback dropdown UI — lists saved snapshots; each labeled with timestamp by default, user-editable to a custom title
-- [ ] Rollback Comparison Panel integration — selecting a snapshot opens the Comparison Panel showing snapshot vs. current entry state; includes a "Highlight Differences" button that is inert in Phase 8 (placeholder for Phase 9)
-- [ ] Rollback restore — confirm action within the Comparison Panel replaces current entry content with the snapshot; action is undoable via existing undo/redo stack
-- [ ] Independent from undo/redo — rollback system has no connection to `history-store.js`; they operate entirely separately
+- [x] `entry.snapshots` array on entry schema — capped array of snapshot objects `{ name, type, description, triggers, timestamp, label }`; added to `entry-factory.js` and `defaults.js`; backwards-compatible default of empty array. Snapshot covers all four content fields (name, type, description, triggers).
+- [x] Rollback settings — enabled toggle (default **Off**, stored per-lorebook on the lorebook object); snapshot count selector: 1 / 3 / 5 / Custom (integer 1–10, capped by `ROLLBACK_MAX_CUSTOM`); global "always enable rollback for new lorebooks" toggle in `settings-store` / `DEFAULT_SETTINGS`
+- [x] Storage warning — surfaced in settings UI when count exceeds `ROLLBACK_SNAPSHOT_WARN` (5); explains localStorage pressure
+- [x] Greyed rollback button on entry card — visible but disabled when rollback is Off; hover tooltip explains how to enable it in settings; active when rollback is On; shows snapshot count when snapshots exist
+- [x] Auto-snapshot on first edit — when rollback is enabled and a user edits an entry for the first time in a session, a snapshot is silently taken before the edit; session tracking via module-level Set in `rollback-service.js`
+- [x] Navigate-away prompt — when rollback is enabled and the entry has been edited since the last snapshot, collapsing the entry (desktop) or closing the panel (mobile) triggers a prompt: "Save New / Replace Latest / Skip" with a "Don't ask again this session" option
+- [x] Manual rollback save — "Save now" button in the rollback panel saves a snapshot on demand; prompt suppression is re-enabling via the session flag in `rollback-service.js`
+- [x] Rollback dropdown UI — `RollbackPanel` component lists saved snapshots; each labeled with timestamp by default, user-editable inline; delete button per snapshot
+- [x] Rollback snapshot preview — selecting a snapshot opens a preview pane (stacked within the entry card) showing snapshot content (name, type, triggers, description) read-only; ComparisonPanel prerequisite was dropped in favour of this simpler in-card approach after design review
+- [x] Rollback restore — "Restore this snapshot" button replaces current entry content with the snapshot; action is undoable via existing undo/redo stack (`discrete = true`)
+- [x] Independent from undo/redo — rollback system has no connection to `history-store.js`; they operate entirely separately
 
 ### Stop Condition
 

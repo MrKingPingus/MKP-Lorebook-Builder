@@ -12,3 +12,5 @@ export const SUGGESTION_LIMIT         = 12;
 export const SUGGESTION_DESC_WORD_LIMIT = 60;
 export const DUPE_FLASH_MS            = 1500;
 export const MENU_PANEL_WIDTH         = 320;
+export const ROLLBACK_SNAPSHOT_WARN   = 5;   // storage warning threshold in settings UI
+export const ROLLBACK_MAX_CUSTOM      = 10;  // upper bound for custom snapshot count input

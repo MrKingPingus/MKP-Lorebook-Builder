@@ -1,7 +1,13 @@
 // Serialize the active lorebook state to a prettified JSON Blob ready for download
 
 export function exportToJsonBlob(lorebook) {
-  const json = JSON.stringify(lorebook, null, 2);
+  const exported = {
+    ...lorebook,
+    // Strip app-internal metadata that is meaningless outside the app
+    rollback: undefined,
+    entries: lorebook.entries.map(({ snapshots: _s, ...rest }) => rest),
+  };
+  const json = JSON.stringify(exported, null, 2);
   return new Blob([json], { type: 'application/json' });
 }
 
