@@ -25,7 +25,8 @@ export function useEntries() {
     useUiStore.getState().setPendingFocusEntryId(newEntry.id);
   }
 
-  function updateEntry(id, patch) {
+  function updateEntry(id, patch, discrete = false) {
+    if (discrete) snapshot();
     storeUpdateEntry(id, patch);
   }
 
