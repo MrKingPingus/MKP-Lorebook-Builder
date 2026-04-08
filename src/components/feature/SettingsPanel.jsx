@@ -40,8 +40,10 @@ export function SettingsPanel() {
   const {
     rollbackEnabled,
     snapshotCount,
+    autoSnapshot,
     setRollbackEnabled,
     setSnapshotCount,
+    setAutoSnapshot,
   } = useRollbackConfig();
 
   function updateSlot(index, value) {
@@ -105,6 +107,17 @@ export function SettingsPanel() {
                 Storing more than {ROLLBACK_SNAPSHOT_WARN} snapshots per entry may noticeably increase localStorage usage on large lorebooks.
               </div>
             )}
+            <label className="settings-label" style={{ marginTop: 4 }}>
+              <span>Auto-snapshot on first edit</span>
+              <input
+                type="checkbox"
+                checked={autoSnapshot}
+                onChange={(e) => setAutoSnapshot(e.target.checked)}
+              />
+            </label>
+            <div className="settings-hint">
+              When off, snapshots are only created manually via the entry's Rollback panel. The save prompt on close still appears.
+            </div>
           </>
         )}
       </div>

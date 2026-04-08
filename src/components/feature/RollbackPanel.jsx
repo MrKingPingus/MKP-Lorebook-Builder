@@ -6,7 +6,7 @@ function formatTimestamp(ts) {
   return new Date(ts).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual }) {
+export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual, promptSuppressed, onReEnablePrompt }) {
   const [view, setView]                       = useState('list'); // 'list' | 'preview'
   const [previewIndex, setPreviewIndex]       = useState(null);
   const [editingLabelIdx, setEditingLabelIdx] = useState(null);
@@ -101,6 +101,15 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {promptSuppressed && (
+          <div className="rollback-suppress-notice">
+            Save prompt is silenced this session.{' '}
+            <button className="rollback-reenable-btn" onClick={onReEnablePrompt}>
+              Re-enable
+            </button>
           </div>
         )}
       </div>

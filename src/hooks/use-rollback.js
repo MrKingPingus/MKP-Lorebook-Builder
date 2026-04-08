@@ -12,10 +12,11 @@ import {
   clearSessionTouch,
   isPromptSuppressed,
   suppressPrompt,
+  unsuppressPrompt,
 } from '../services/rollback-service.js';
 
 /**
- * Reads and writes the active lorebook's rollback config (enabled, snapshotCount).
+ * Reads and writes the active lorebook's rollback config (enabled, snapshotCount, autoSnapshot).
  * For use in SettingsPanel — no entry context required.
  * The global rollbackDefaultEnabled setting is handled separately via useSettings().
  */
@@ -29,8 +30,10 @@ export function useRollbackConfig() {
   return {
     rollbackEnabled: rollbackConfig.enabled,
     snapshotCount:   rollbackConfig.snapshotCount,
+    autoSnapshot:    rollbackConfig.autoSnapshot ?? true,
     setRollbackEnabled: (v) => setLorebookRollback({ enabled: v }),
     setSnapshotCount:   (v) => setLorebookRollback({ snapshotCount: v }),
+    setAutoSnapshot:    (v) => setLorebookRollback({ autoSnapshot: v }),
   };
 }
 
@@ -45,20 +48,21 @@ export function useRollback({ entry, onUpdate }) {
     return id ? (s.lorebooks[id]?.rollback ?? DEFAULT_LOREBOOK.rollback) : DEFAULT_LOREBOOK.rollback;
   });
 
-  const { enabled, snapshotCount } = rollbackConfig;
+  const { enabled, snapshotCount, autoSnapshot = true } = rollbackConfig;
   const snapshots = entry.snapshots ?? [];
 
-  const [promptVisible, setPromptVisible] = useState(false);
-  const pendingCollapseRef = useRef(null); // stores the deferred collapse callback
+  const [promptVisible, setPromptVisible]       = useState(false);
+  // Mirror the module-level suppress flag in React state so the UI re-renders when it changes
+  const [promptSuppressed, setPromptSuppressed] = useState(() => isPromptSuppressed());
+  const pendingCollapseRef = useRef(null);
 
   // ── Snapshot helpers ──────────────────────────────────────────────────────
 
   function saveSnapshot() {
-    // Skip if content is identical to the most recent snapshot
     if (contentMatchesLatestSnapshot(entry, snapshots)) return;
     const next = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
     onUpdate(entry.id, { snapshots: next });
-    clearSessionTouch(entry.id); // reset so the next open/close won't re-fire unless edited again
+    clearSessionTouch(entry.id);
   }
 
   function replaceLatestSnapshot() {
@@ -67,7 +71,6 @@ export function useRollback({ entry, onUpdate }) {
       clearSessionTouch(entry.id);
       return;
     }
-    // Replace the most recent *unpinned* snapshot; if all are pinned, save as new
     const firstUnpinnedIdx = snapshots.findIndex((s) => !s.pinned);
     if (firstUnpinnedIdx === -1) { saveSnapshot(); return; }
     const next = snapshots.map((s, i) => (i === firstUnpinnedIdx ? buildSnapshot(entry) : s));
@@ -77,34 +80,31 @@ export function useRollback({ entry, onUpdate }) {
 
   // ── Auto-snapshot on first edit ───────────────────────────────────────────
 
-  /** Call this before applying any edit update. Silently snapshots the pre-edit state. */
+  /**
+   * Call this before applying any edit update.
+   * In auto mode: silently snapshots the pre-edit state on the first edit.
+   * In manual mode: only marks the entry as touched so the navigate-away
+   * prompt still fires on close (no snapshot is saved automatically).
+   */
   function onBeforeEdit() {
     if (!enabled) return;
     if (hasBeenTouchedThisSession(entry.id)) return;
-    // Skip if current content already matches the latest snapshot (e.g. trivial update)
-    if (contentMatchesLatestSnapshot(entry, snapshots)) {
-      markTouchedThisSession(entry.id); // still mark touched so the prompt appears on close
-      return;
-    }
     markTouchedThisSession(entry.id);
+    if (!autoSnapshot) return; // manual mode — touch-mark only, no auto-save
+    if (contentMatchesLatestSnapshot(entry, snapshots)) return;
     const next = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
     onUpdate(entry.id, { snapshots: next });
   }
 
   // ── Navigate-away prompt ──────────────────────────────────────────────────
 
-  /**
-   * Intercepts a collapse / close action.
-   * If rollback is on and the entry was edited this session, shows the
-   * "Replace or Save New" prompt (unless prompts are suppressed).
-   */
   function handleCollapseIntent(collapseCallback) {
     if (!enabled || !hasBeenTouchedThisSession(entry.id)) {
       collapseCallback();
       return;
     }
-    if (isPromptSuppressed()) {
-      saveSnapshot(); // no-op if content unchanged (clearSessionTouch called inside)
+    if (promptSuppressed) {
+      saveSnapshot();
       collapseCallback();
       return;
     }
@@ -119,49 +119,48 @@ export function useRollback({ entry, onUpdate }) {
     cb?.();
   }
 
-  /** Prompt: "Save New" — append a new snapshot, then collapse */
   function promptSaveNew(suppressThisSession = false) {
-    if (suppressThisSession) suppressPrompt();
-    saveSnapshot(); // clearSessionTouch is called inside saveSnapshot
+    if (suppressThisSession) {
+      suppressPrompt();
+      setPromptSuppressed(true);
+    }
+    saveSnapshot();
     _finishCollapse();
   }
 
-  /** Prompt: "Replace" — overwrite the latest unpinned snapshot, then collapse */
   function promptReplace(suppressThisSession = false) {
-    if (suppressThisSession) suppressPrompt();
-    replaceLatestSnapshot(); // clearSessionTouch is called inside
+    if (suppressThisSession) {
+      suppressPrompt();
+      setPromptSuppressed(true);
+    }
+    replaceLatestSnapshot();
     _finishCollapse();
   }
 
-  /** Prompt: Cancel — dismiss the prompt, keep the entry open */
   function dismissPrompt() {
     pendingCollapseRef.current = null;
     setPromptVisible(false);
   }
 
+  function reEnablePrompt() {
+    unsuppressPrompt();
+    setPromptSuppressed(false);
+  }
+
   // ── Restore ───────────────────────────────────────────────────────────────
 
-  /**
-   * Apply a snapshot's content to the entry. Undoable via undo/redo.
-   * Automatically saves the current state as a new snapshot first (if it
-   * differs from the latest snapshot), so the user can recover pre-restore edits.
-   */
   function restoreSnapshot(snapshot) {
-    // Auto-save current state before overwriting (skip if content unchanged)
     if (!contentMatchesLatestSnapshot(entry, snapshots)) {
       const preRestoreSnapshots = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
       onUpdate(entry.id, { snapshots: preRestoreSnapshots });
     }
-
-    // Apply the restored content (discrete = true → pushed to undo/redo history)
     onUpdate(entry.id, {
       name:        snapshot.name,
       type:        snapshot.type,
       description: snapshot.description,
       triggers:    [...snapshot.triggers],
     }, true);
-
-    clearSessionTouch(entry.id); // restored state is now the baseline; next edit re-arms
+    clearSessionTouch(entry.id);
   }
 
   // ── Snapshot list management ──────────────────────────────────────────────
@@ -196,12 +195,14 @@ export function useRollback({ entry, onUpdate }) {
     snapshotCount,
     snapshots,
     promptVisible,
+    promptSuppressed,
     onBeforeEdit,
     saveSnapshot,
     handleCollapseIntent,
     promptSaveNew,
     promptReplace,
     dismissPrompt,
+    reEnablePrompt,
     restoreSnapshot,
     updateSnapshotLabel,
     toggleSnapshotPin,

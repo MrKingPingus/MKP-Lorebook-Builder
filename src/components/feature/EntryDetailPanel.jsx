@@ -81,6 +81,32 @@ export function EntryDetailPanel() {
       {/* Body — only rendered while there is an active entry */}
       {entry && (
         <div className="entry-detail-body">
+          {/* Navigate-away prompt — top of panel so it's immediately visible */}
+          {rollback.promptVisible && (
+            <div className="rollback-prompt">
+              <div className="rollback-prompt-message">Save a snapshot before closing?</div>
+              <div className="rollback-prompt-actions">
+                <button className="rollback-prompt-btn" onClick={() => { rollback.promptSaveNew(suppressChecked); setSuppressChecked(false); }}>
+                  Save New
+                </button>
+                <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
+                  Replace Latest
+                </button>
+                <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.dismissPrompt}>
+                  Skip
+                </button>
+              </div>
+              <label className="rollback-prompt-suppress">
+                <input
+                  type="checkbox"
+                  checked={suppressChecked}
+                  onChange={(e) => setSuppressChecked(e.target.checked)}
+                />
+                Don't ask again this session
+              </label>
+            </div>
+          )}
+
           {/* Entry Name */}
           <div className="entry-detail-section">
             <div className="field-label">ENTRY NAME</div>
@@ -183,32 +209,9 @@ export function EntryDetailPanel() {
                 onTogglePin={rollback.toggleSnapshotPin}
                 onDeleteSnapshot={rollback.deleteSnapshot}
                 onSaveManual={rollback.saveSnapshot}
+                promptSuppressed={rollback.promptSuppressed}
+                onReEnablePrompt={rollback.reEnablePrompt}
               />
-            )}
-
-            {rollback.promptVisible && (
-              <div className="rollback-prompt">
-                <div className="rollback-prompt-message">Save a snapshot before closing?</div>
-                <div className="rollback-prompt-actions">
-                  <button className="rollback-prompt-btn" onClick={() => { rollback.promptSaveNew(suppressChecked); setSuppressChecked(false); }}>
-                    Save New
-                  </button>
-                  <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
-                    Replace Latest
-                  </button>
-                  <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.dismissPrompt}>
-                    Skip
-                  </button>
-                </div>
-                <label className="rollback-prompt-suppress">
-                  <input
-                    type="checkbox"
-                    checked={suppressChecked}
-                    onChange={(e) => setSuppressChecked(e.target.checked)}
-                  />
-                  Don't ask again this session
-                </label>
-              </div>
             )}
           </div>
         </div>

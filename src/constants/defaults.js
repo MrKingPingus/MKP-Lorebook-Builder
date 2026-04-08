@@ -42,7 +42,7 @@ export const DEFAULT_LOREBOOK = {
   name:            'New Lorebook',
   entries:         [],
   allowedOverlaps: [], // lowercase trigger strings acknowledged as intentional overlaps
-  rollback:        { enabled: false, snapshotCount: 3 },
+  rollback:        { enabled: false, snapshotCount: 3, autoSnapshot: true },
 };
 
 export const TEMPLATE_LOREBOOK = {
