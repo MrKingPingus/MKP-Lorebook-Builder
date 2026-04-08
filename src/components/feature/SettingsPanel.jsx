@@ -1,7 +1,8 @@
 // Settings tab content — all user preference controls
-import { useSettings }    from '../../hooks/use-settings.js';
-import { HOTBAR_ACTIONS } from '../../constants/hotbar-actions.js';
-import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../../constants/limits.js';
+import { useSettings }       from '../../hooks/use-settings.js';
+import { useRollbackConfig } from '../../hooks/use-rollback.js';
+import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, ROLLBACK_SNAPSHOT_WARN, ROLLBACK_MAX_CUSTOM } from '../../constants/limits.js';
 
 export function SettingsPanel() {
   const {
@@ -32,7 +33,18 @@ export function SettingsPanel() {
     setEntryTypeView,
     setFabSize,
     setFabCustomSize,
+    rollbackDefaultEnabled,
+    setRollbackDefaultEnabled,
   } = useSettings();
+
+  const {
+    rollbackEnabled,
+    snapshotCount,
+    autoSnapshot,
+    setRollbackEnabled,
+    setSnapshotCount,
+    setAutoSnapshot,
+  } = useRollbackConfig();
 
   function updateSlot(index, value) {
     const next = [...hotbarSlots];
@@ -42,6 +54,87 @@ export function SettingsPanel() {
 
   return (
     <div className="settings-panel">
+
+      {/* ── Rollback ── */}
+      <div className="settings-group">
+        <label className="settings-label">
+          <span>Entry rollback (this lorebook)</span>
+          <input
+            type="checkbox"
+            checked={rollbackEnabled}
+            onChange={(e) => setRollbackEnabled(e.target.checked)}
+          />
+        </label>
+        <div className="settings-hint">
+          When on, a snapshot of each entry is saved before its first edit each session. Snapshots can be restored from the entry card.
+        </div>
+
+        {rollbackEnabled && (
+          <>
+            <div className="settings-label" style={{ marginTop: 4 }}>Snapshots to keep per entry</div>
+            <div className="settings-row">
+              <select
+                className="hotbar-slot-select"
+                value={[1, 3, 5].includes(snapshotCount) ? String(snapshotCount) : 'custom'}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    // Only jump to default custom value if coming from a preset;
+                    // if already custom, leave the existing value alone
+                    if ([1, 3, 5].includes(snapshotCount)) setSnapshotCount(7);
+                  } else {
+                    setSnapshotCount(Number(e.target.value));
+                  }
+                }}
+              >
+                <option value="1">1</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="custom">Go with God</option>
+              </select>
+              {![1, 3, 5].includes(snapshotCount) && (
+                <input
+                  type="number"
+                  min={1}
+                  max={ROLLBACK_MAX_CUSTOM}
+                  value={snapshotCount}
+                  onChange={(e) => setSnapshotCount(Math.min(ROLLBACK_MAX_CUSTOM, Math.max(1, Number(e.target.value))))}
+                  style={{ width: 60 }}
+                />
+              )}
+            </div>
+            {snapshotCount > ROLLBACK_SNAPSHOT_WARN && (
+              <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
+                Storing more than {ROLLBACK_SNAPSHOT_WARN} snapshots per entry may noticeably increase localStorage usage on large lorebooks.
+              </div>
+            )}
+            <label className="settings-label" style={{ marginTop: 4 }}>
+              <span>Auto-snapshot on first edit</span>
+              <input
+                type="checkbox"
+                checked={autoSnapshot}
+                onChange={(e) => setAutoSnapshot(e.target.checked)}
+              />
+            </label>
+            <div className="settings-hint">
+              When off, snapshots are only created manually via the entry's Rollback panel. The save prompt on close still appears.
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="settings-group">
+        <label className="settings-label">
+          <span>Enable rollback for new lorebooks by default</span>
+          <input
+            type="checkbox"
+            checked={rollbackDefaultEnabled}
+            onChange={(e) => setRollbackDefaultEnabled(e.target.checked)}
+          />
+        </label>
+        <div className="settings-hint">
+          New lorebooks will start with rollback turned on automatically.
+        </div>
+      </div>
 
       {/* ── Suggestions tray ── */}
       <div className="settings-group">

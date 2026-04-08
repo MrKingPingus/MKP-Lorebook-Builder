@@ -6,18 +6,22 @@ import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
+import { RollbackPanel }   from './RollbackPanel.jsx';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useMobile }      from '../../hooks/use-mobile.js';
 import { useUi }          from '../../hooks/use-ui.js';
 import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
+import { useRollback }    from '../../hooks/use-rollback.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
 import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
 
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
-  const [localCollapsed, setLocalCollapsed] = useState(true);
+  const [localCollapsed, setLocalCollapsed]   = useState(true);
+  const [rollbackOpen, setRollbackOpen]       = useState(false);
+  const [suppressChecked, setSuppressChecked] = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap } = useCrosstalk();
   const { escapeHtml, escapeRegex } = useHtmlEscape();
@@ -31,8 +35,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setCollapseAll         = useUi((s) => s.setCollapseAll);
   const setSearchFocusedId     = useUi((s) => s.setSearchFocusedId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
+  const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { openEntry }     = useEntryDetail();
-  const nameInputRef = useRef(null);
+  const rollback        = useRollback({ entry, onUpdate });
+  const nameInputRef    = useRef(null);
   const shouldFocusName = useRef(false);
 
   // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
@@ -79,6 +85,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const typeColor = typeDef?.color ?? '#9ba1ad';
 
   function update(patch, discrete = false) {
+    rollback.onBeforeEdit();
     onUpdate(entry.id, patch, discrete);
   }
 
@@ -101,11 +108,24 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   const nameHtml = highlightedName();
 
-  function toggleCollapse() {
+  function doCollapse() {
     if (isSearchFocused) setSearchFocusedId(null);
-    setLocalCollapsed(!collapsed);
+    setLocalCollapsed(true);
     setExpandAll(false);
     setCollapseAll(false);
+    setRollbackOpen(false);
+    setSuppressChecked(false);
+  }
+
+  function toggleCollapse() {
+    if (collapsed) {
+      if (isSearchFocused) setSearchFocusedId(null);
+      setLocalCollapsed(false);
+      setExpandAll(false);
+      setCollapseAll(false);
+    } else {
+      rollback.handleCollapseIntent(doCollapse);
+    }
   }
 
   // Desktop: double-click header (skip if clicking a button or badge)
@@ -203,13 +223,36 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         <div
           className="entry-card-body"
           onDoubleClick={(e) => {
-            if (e.target.closest('button')) return;
-            if (isSearchFocused) setSearchFocusedId(null);
-            setLocalCollapsed(true);
-            setExpandAll(false);
-            setCollapseAll(false);
+            if (e.target.closest('button, input, textarea, select, .rollback-panel')) return;
+            rollback.handleCollapseIntent(doCollapse);
           }}
         >
+          {/* Navigate-away prompt — rendered first so it's visible at the top */}
+          {rollback.promptVisible && (
+            <div className="rollback-prompt">
+              <div className="rollback-prompt-message">Save a snapshot before closing?</div>
+              <div className="rollback-prompt-actions">
+                <button className="rollback-prompt-btn" onClick={() => { rollback.promptSaveNew(suppressChecked); setSuppressChecked(false); }}>
+                  Save New
+                </button>
+                <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
+                  Replace Latest
+                </button>
+                <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.dismissPrompt}>
+                  Skip
+                </button>
+              </div>
+              <label className="rollback-prompt-suppress">
+                <input
+                  type="checkbox"
+                  checked={suppressChecked}
+                  onChange={(e) => setSuppressChecked(e.target.checked)}
+                />
+                Don't ask again this session
+              </label>
+            </div>
+          )}
+
           {/* Row 1: Entry Name + Entry Type */}
           <div className="entry-fields-row">
             <div className="entry-field entry-field--name">
@@ -285,6 +328,36 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               },
             })}
           />
+
+          {/* Row 5: Rollback */}
+          <div className="rollback-footer">
+            <button
+              className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
+              onClick={() => {
+                if (rollback.enabled) {
+                  setRollbackOpen((o) => !o);
+                } else {
+                  setActiveMenuPanel('settings');
+                }
+              }}
+              title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
+            >
+              ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
+            </button>
+          </div>
+
+          {rollbackOpen && rollback.enabled && (
+            <RollbackPanel
+              snapshots={rollback.snapshots}
+              onRestore={rollback.restoreSnapshot}
+              onUpdateLabel={rollback.updateSnapshotLabel}
+              onTogglePin={rollback.toggleSnapshotPin}
+              onDeleteSnapshot={rollback.deleteSnapshot}
+              onSaveManual={rollback.saveSnapshot}
+              promptSuppressed={rollback.promptSuppressed}
+              onReEnablePrompt={rollback.reEnablePrompt}
+            />
+          )}
         </div>
       )}
     </div>

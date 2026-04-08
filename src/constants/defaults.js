@@ -7,6 +7,7 @@ export const DEFAULT_WINDOW_FRACTION = 2 / 3;
 
 export const DEFAULT_SETTINGS = {
   counterTiers:             { yellow: CHAR_WARN_YELLOW, red: CHAR_WARN_RED },
+  rollbackDefaultEnabled:   false, // when true, new lorebooks start with rollback On
   defaultWindowWidth:       DEFAULT_WINDOW.width,
   defaultWindowHeight:      DEFAULT_WINDOW.height,
   tieredCounterEnabled:     true,
@@ -33,6 +34,7 @@ export const DEFAULT_ENTRY = {
   description:         '',
   lastModified:        null,
   ignoreLimitWarnings: { description: false, triggers: false },
+  snapshots:           [], // [{ name, type, description, triggers, timestamp, label }]
 };
 
 export const DEFAULT_LOREBOOK = {
@@ -40,6 +42,7 @@ export const DEFAULT_LOREBOOK = {
   name:            'New Lorebook',
   entries:         [],
   allowedOverlaps: [], // lowercase trigger strings acknowledged as intentional overlaps
+  rollback:        { enabled: false, snapshotCount: 3, autoSnapshot: true },
 };
 
 export const TEMPLATE_LOREBOOK = {

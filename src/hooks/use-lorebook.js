@@ -3,7 +3,8 @@ import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { readJson, writeJson, removeItem } from '../services/storage-service.js';
-import { createEmptyLorebook } from '../services/entry-factory.js';
+import { createEmptyLorebook }             from '../services/entry-factory.js';
+import { useSettingsStore }                from '../state/settings-store.js';
 import { addToIndex, removeFromIndex, promoteInIndex } from '../services/lorebook-index.js';
 import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY } from '../constants/storage-keys.js';
 
@@ -24,7 +25,10 @@ export function useLorebook() {
   const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
   function createLorebook({ silent = false } = {}) {
-    const lb = createEmptyLorebook();
+    const rollbackDefaultEnabled = useSettingsStore.getState().rollbackDefaultEnabled;
+    const lb = createEmptyLorebook(
+      rollbackDefaultEnabled ? { rollback: { enabled: true, snapshotCount: 3 } } : {}
+    );
     const newIndex = addToIndex(lorebookIndex, lb);
     if (!newIndex) return; // full
     setLorebook(lb);

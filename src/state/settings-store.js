@@ -19,6 +19,7 @@ export const useSettingsStore = create((set) => ({
   setEntryTypeView:            (entryTypeView)            => set({ entryTypeView }),
   setFabSize:                  (fabSize)                  => set({ fabSize }),
   setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
+  setRollbackDefaultEnabled:   (rollbackDefaultEnabled)   => set({ rollbackDefaultEnabled }),
 
   applySettings: (settings) => set(settings),
 }));
