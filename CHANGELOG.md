@@ -2,6 +2,15 @@
 
 ---
 
+## Undo/Redo Fix — 2026-04-08
+
+### Fixes
+
+- **Discrete entry actions now snapshot correctly** — changing an entry's type or adding, removing, or renaming a trigger chip now pushes a snapshot before the change, making each action individually undoable. Previously, `updateEntry` never pushed snapshots, so none of these changes were recorded in undo history.
+- **Ctrl+Z no longer clobbers text field editing** — the global Ctrl+Z / Ctrl+Y handler now skips when a text input or textarea is focused, restoring native browser undo behaviour inside name and description fields. Previously, pressing Ctrl+Z while typing would jump back to the last structural snapshot (e.g. before the entry was created), discarding all text edits.
+
+---
+
 ## Polish Pass 2 — 2026-04-06
 
 ### Adjustments

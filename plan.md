@@ -142,11 +142,11 @@ A dedicated help section accessible from the UI (button or settings tab) contain
 
 ---
 
+**Shift+Scroll on All Dropdowns**
+`TypeSelector` already supports Shift+scroll to cycle through entry types without opening the dropdown. Extend this pattern to every other `<select>` in the app: the sort mode selector, the trigger delimiter selector (both in `EntryCard` and `EntryDetailPanel`), and any future dropdowns. The implementation is a self-contained `onWheel` handler on the `<select>` element — the existing `TypeSelector` code is the reference.
+
 **Lookup Table Trigger System**
 A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.
-
-**Undo/Redo Overhaul**
-The current undo/redo system is overzealous — it captures too many intermediate states. Needs a rethink of what constitutes a meaningful snapshot. Entirely independent of the rollback system. No dependencies, but low urgency until user feedback identifies specific pain points.
 
 **Entry Planner Smart Assistance**
 Extends the basic Entry Planner (Phase 9) with proper noun scanning via `scan-service.js` — detects names mentioned in planner notes that don't have existing entries and prompts the user to create them. Depends on: Entry Planner (Phase 9) and `scan-service.js` (Phase 7) both being complete.

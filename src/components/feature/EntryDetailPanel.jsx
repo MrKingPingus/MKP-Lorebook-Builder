@@ -32,14 +32,14 @@ export function EntryDetailPanel() {
 
   const isOpen = !!activeEntryId;
 
-  function update(patch) {
+  function update(patch, discrete = false) {
     if (!entry) return;
-    updateEntry(entry.id, patch);
+    updateEntry(entry.id, patch, discrete);
   }
 
   function addTrigger(word) {
     if (!entry || entry.triggers.includes(word)) return;
-    update({ triggers: [...entry.triggers, word] });
+    update({ triggers: [...entry.triggers, word] }, true);
   }
 
   function handleRemove() {
@@ -89,7 +89,7 @@ export function EntryDetailPanel() {
                       key={t.id}
                       className={`entry-type-btn${active ? ' entry-type-btn--active' : ''}`}
                       style={active ? { background: t.color, borderColor: t.color, color: '#fff' } : {}}
-                      onClick={() => update({ type: t.id })}
+                      onClick={() => update({ type: t.id }, true)}
                     >
                       {t.label}
                     </button>
@@ -98,7 +98,7 @@ export function EntryDetailPanel() {
               </div>
             ) : (
               <div className="entry-type-dropdown-wrap">
-                <TypeSelector value={entry.type} onChange={(type) => update({ type })} />
+                <TypeSelector value={entry.type} onChange={(type) => update({ type }, true)} />
               </div>
             )}
           </div>
@@ -125,7 +125,7 @@ export function EntryDetailPanel() {
               triggers={entry.triggers}
               delimiter={triggerDelimiter}
               searchQuery={searchQuery}
-              onUpdate={(triggers) => update({ triggers })}
+              onUpdate={(triggers) => update({ triggers }, true)}
               conflictMap={conflictMap}
               allowedOverlaps={allowedOverlaps}
               onAllowOverlap={allowOverlap}

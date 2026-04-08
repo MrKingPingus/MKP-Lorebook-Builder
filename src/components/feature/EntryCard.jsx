@@ -78,13 +78,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';
 
-  function update(patch) {
-    onUpdate(entry.id, patch);
+  function update(patch, discrete = false) {
+    onUpdate(entry.id, patch, discrete);
   }
 
   function addTrigger(word) {
     if (!entry.triggers.includes(word)) {
-      update({ triggers: [...entry.triggers, word] });
+      update({ triggers: [...entry.triggers, word] }, true);
     }
   }
 
@@ -227,7 +227,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               <div className="field-label">ENTRY TYPE</div>
               <TypeSelector
                 value={entry.type}
-                onChange={(type) => update({ type })}
+                onChange={(type) => update({ type }, true)}
               />
             </div>
           </div>
@@ -255,7 +255,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               triggers={entry.triggers}
               delimiter={triggerDelimiter}
               searchQuery={searchQuery}
-              onUpdate={(triggers) => update({ triggers })}
+              onUpdate={(triggers) => update({ triggers }, true)}
               conflictMap={conflictMap}
               allowedOverlaps={allowedOverlaps}
               onAllowOverlap={allowOverlap}
