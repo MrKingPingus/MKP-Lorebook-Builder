@@ -25,12 +25,18 @@ export function useImport() {
       return { entries, name: null };
     }
 
-    // json
+    // json — strict format: reject with actionable hints if fields don't match
     const raw = await readJsonFile(file);
     const result = importFromJson(raw);
     if (!result.ok) throw new Error(result.error);
+    if (result.hints?.length) {
+      throw new Error(
+        'JSON format mismatch:\n' + result.hints.join('\n')
+        + '\nDownload the JSON template for the correct format.',
+      );
+    }
     if (result.lorebook.entries.length === 0) {
-      throw new Error('No entries found. The file may use an unsupported format.');
+      throw new Error('No entries found. The file may use an unsupported format. Download the JSON template for reference.');
     }
     return { entries: result.lorebook.entries, name: result.lorebook.name ?? null };
   }

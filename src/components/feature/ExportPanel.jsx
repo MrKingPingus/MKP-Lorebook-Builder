@@ -7,7 +7,7 @@ export function ExportPanel() {
   const { entries, clearAllEntries }   = useEntries();
   const { activeLorebook, renameLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt, exportDocx: doExportDocx,
-          copyJsonToClipboard, downloadTxtTemplate, downloadDocxTemplate } = useExport();
+          copyJsonToClipboard, downloadJsonTemplate, downloadTxtTemplate, downloadDocxTemplate } = useExport();
 
   if (!activeLorebook) return <div className="export-panel export-panel--empty">No lorebook loaded.</div>;
 
@@ -55,6 +55,7 @@ export function ExportPanel() {
       <div className="export-section">
         <div className="export-section-label">Templates</div>
         <div className="export-actions">
+          <button className="export-btn export-btn--outline" onClick={downloadJsonTemplate}>⬇ JSON template</button>
           <button className="export-btn export-btn--outline" onClick={downloadTxtTemplate}>⬇ TXT template</button>
           <button className="export-btn export-btn--outline" onClick={downloadDocxTemplate}>⬇ DOCX template</button>
         </div>

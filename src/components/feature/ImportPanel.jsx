@@ -128,6 +128,10 @@ export function ImportPanel() {
             {loading ? '⏳ Parsing…' : 'Drop a file here or click to browse (TXT, DOCX, ODT, JSON)'}
           </div>
         </DropZone>
+        <div className="import-hint">
+          JSON files must match the app&rsquo;s structure exactly &mdash; grab the JSON template below.
+          TXT and DOCX formats are more flexible.
+        </div>
         </>
       )}
 
