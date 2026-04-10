@@ -29,6 +29,9 @@ export function useImport() {
     const raw = await readJsonFile(file);
     const result = importFromJson(raw);
     if (!result.ok) throw new Error(result.error);
+    if (result.lorebook.entries.length === 0) {
+      throw new Error('No entries found. The file may use an unsupported format.');
+    }
     return { entries: result.lorebook.entries, name: result.lorebook.name ?? null };
   }
 

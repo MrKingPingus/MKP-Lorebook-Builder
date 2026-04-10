@@ -16,12 +16,20 @@ function normalizeType(raw) {
 
 /**
  * Validate and normalize a parsed JSON object into a lorebook shape.
- * Accepts entries as an array OR as a keyed object ({ "1": {...}, "2": {...} }).
+ * Accepts:
+ *   - { entries: [...] }           — standard lorebook wrapper
+ *   - { entries: { "1": {}, … } }  — keyed object of entries
+ *   - [ {...}, {...} ]             — bare array of entries (e.g. AI-generated)
  * Returns { ok: true, lorebook } or { ok: false, error: string }.
  */
 export function importFromJson(raw) {
   if (!raw || typeof raw !== 'object') {
     return { ok: false, error: 'Not a valid JSON object.' };
+  }
+
+  // Bare array — treat the whole thing as the entries list
+  if (Array.isArray(raw)) {
+    return importFromJson({ entries: raw });
   }
 
   let rawEntries;

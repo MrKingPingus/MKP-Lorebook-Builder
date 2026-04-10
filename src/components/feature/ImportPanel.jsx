@@ -97,7 +97,7 @@ export function ImportPanel() {
   return (
     <div className="import-panel">
       {/* Save-warning prompt — shown immediately after a file is parsed */}
-      {savePending && preview && (
+      {savePending && preview?.length > 0 && (
         <div className="import-save-prompt">
           <div className="import-save-warning">
             ⚠ You&rsquo;re about to replace &ldquo;{lorebookName}&rdquo;
@@ -119,8 +119,8 @@ export function ImportPanel() {
         </div>
       )}
 
-      {/* Drop zone — hidden once a file has been parsed */}
-      {!savePending && !preview && (
+      {/* Drop zone — hidden once a file has been parsed with results */}
+      {!savePending && !preview?.length && (
         <>
         <p className="import-label">IMPORT</p>
         <DropZone onFile={handleFile} accept=".txt,.docx,.odt,.json">
@@ -134,7 +134,7 @@ export function ImportPanel() {
       {error && <div className="import-error">{error}</div>}
 
       {/* Entry preview — shown after save prompt is dismissed */}
-      {!savePending && preview && (
+      {!savePending && preview?.length > 0 && (
         <ImportPreview
           entries={preview}
           replaceMode={!asNewLorebook}
