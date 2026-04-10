@@ -55,9 +55,9 @@ export function ExportPanel() {
       <div className="export-section">
         <div className="export-section-label">Templates</div>
         <div className="export-actions">
-          <button className="export-btn export-btn--outline" onClick={downloadJsonTemplate}>⬇ JSON template</button>
-          <button className="export-btn export-btn--outline" onClick={downloadTxtTemplate}>⬇ TXT template</button>
-          <button className="export-btn export-btn--outline" onClick={downloadDocxTemplate}>⬇ DOCX template</button>
+          <button className="export-btn export-btn--outline" onClick={downloadJsonTemplate}>⬇ JSON</button>
+          <button className="export-btn export-btn--outline" onClick={downloadTxtTemplate}>⬇ TXT</button>
+          <button className="export-btn export-btn--outline" onClick={downloadDocxTemplate}>⬇ DOCX</button>
         </div>
       </div>
 
