@@ -6,6 +6,8 @@ import { useLorebook } from '../../hooks/use-lorebook.js';
 export function LorebookNameModal() {
   const pendingFocusLorebookName    = useUi((s) => s.pendingFocusLorebookName);
   const setPendingFocusLorebookName = useUi((s) => s.setPendingFocusLorebookName);
+  const setActiveMenuPanel          = useUi((s) => s.setActiveMenuPanel);
+  const activeMenuPanel             = useUi((s) => s.activeMenuPanel);
   const { renameLorebook }          = useLorebook();
   const [localName, setLocalName]   = useState('');
   const inputRef = useRef(null);
@@ -28,6 +30,12 @@ export function LorebookNameModal() {
 
   function dismiss() {
     setPendingFocusLorebookName(false);
+  }
+
+  function openImport() {
+    setPendingFocusLorebookName(false);
+    // setActiveMenuPanel toggles, so only open if not already on import-export
+    if (activeMenuPanel !== 'import-export') setActiveMenuPanel('import-export');
   }
 
   function onKeyDown(e) {
@@ -64,6 +72,13 @@ export function LorebookNameModal() {
           spellCheck={false}
         />
         <p className="lb-name-modal-hint">Press Enter or click outside to confirm</p>
+        <div className="lb-name-modal-divider">or</div>
+        <button
+          className="lb-name-modal-import-btn"
+          onClick={openImport}
+        >
+          ⬇ Import a lorebook instead
+        </button>
       </div>
     </div>
   );

@@ -1629,10 +1629,8 @@ input:focus, textarea:focus, select:focus {
 
 .import-label {
   text-align: center;
-  text-decoration: underline;
   color: var(--text);
   font-weight: 600;
-  margin-bottom: 8px;
 }
 
 .drop-zone {
@@ -1754,8 +1752,8 @@ input:focus, textarea:focus, select:focus {
 .export-btn:hover { background: #dc2626; }
 .export-btn--outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
 .export-btn--outline:hover { background: rgba(239,68,68,.1); }
-.export-section { display: flex; flex-direction: column; gap: 6px; }
-.export-section-label { font-size: 12px; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; text-decoration: underline; }
+.export-section { display: flex; flex-direction: column; gap: 10px; }
+.export-section-label { font-size: 12px; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
 
 /* Settings */
 .settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; height: 100%; }
@@ -1830,6 +1828,24 @@ kbd {
   color: var(--muted);
   text-align: center;
 }
+.lb-name-modal-divider {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.lb-name-modal-import-btn {
+  padding: 8px 12px;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lb-name-modal-import-btn:hover { background: rgba(239,68,68,.1); }
 
 /* Save prompt (lorebook switcher) */
 .switcher-prompt {
