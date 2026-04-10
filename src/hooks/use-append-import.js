@@ -16,6 +16,7 @@ export function useAppendImport() {
   const updateActiveEntries  = useLorebookStore((s) => s.updateActiveEntries);
   const pushSnapshot         = useHistoryStore((s) => s.pushSnapshot);
   const setShowAppendImport  = useUiStore((s) => s.setShowAppendImport);
+  const setActiveMenuPanel   = useUiStore((s) => s.setActiveMenuPanel);
 
   function handleText(text) {
     setError('');
@@ -57,5 +58,16 @@ export function useAppendImport() {
     setShowAppendImport(false);
   }
 
-  return { preview, loading, error, handleText, handleFile, confirmAppend, cancel };
+  // Close the append overlay and jump to the full Import/Export menu panel
+  function openFullImport() {
+    setPreview(null);
+    setError('');
+    setShowAppendImport(false);
+    // setActiveMenuPanel toggles, so only open if not already active
+    if (useUiStore.getState().activeMenuPanel !== 'import-export') {
+      setActiveMenuPanel('import-export');
+    }
+  }
+
+  return { preview, loading, error, handleText, handleFile, confirmAppend, cancel, openFullImport };
 }

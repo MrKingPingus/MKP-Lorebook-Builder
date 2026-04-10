@@ -1735,6 +1735,21 @@ input:focus, textarea:focus, select:focus {
 }
 .append-parse-btn:hover:not(:disabled) { background: #dc2626; }
 .append-parse-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.append-redirect {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.append-redirect-text { font-size: 12px; color: var(--muted2); }
+.append-redirect-btn {
+  padding: 5px 10px; font-size: 12px;
+  background: transparent; border: 1px solid var(--accent);
+  border-radius: var(--radius); color: var(--accent);
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--transition);
+}
+.append-redirect-btn:hover { background: rgba(239,68,68,.1); }
 .append-drop-overlay {
   position: absolute; inset: 0;
   border-radius: var(--radius-lg);
@@ -1747,7 +1762,7 @@ input:focus, textarea:focus, select:focus {
 
 .export-panel--empty { color: var(--muted); font-size: 13px; }
 .export-info { font-size: 12px; color: var(--muted2); text-align: center; }
-.export-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.export-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 .export-btn { padding: 6px 10px; background: var(--accent); color: #fff; border-radius: var(--radius); font-size: 12px; transition: background var(--transition); }
 .export-btn:hover { background: #dc2626; }
 .export-btn--outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
