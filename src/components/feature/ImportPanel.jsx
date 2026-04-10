@@ -129,8 +129,8 @@ export function ImportPanel() {
           </div>
         </DropZone>
         <div className="import-hint">
-          JSON files must match the app&rsquo;s structure exactly &mdash; grab the JSON template below.
-          TXT and DOCX formats are more flexible.
+          <em>Attention</em>: JSON files must match our template format exactly
+          (TXT and DOCX formats are more flexible) &ndash; Grab the JSON template below!
         </div>
         </>
       )}
