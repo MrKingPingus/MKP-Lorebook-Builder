@@ -1629,10 +1629,8 @@ input:focus, textarea:focus, select:focus {
 
 .import-label {
   text-align: center;
-  text-decoration: underline;
   color: var(--text);
   font-weight: 600;
-  margin-bottom: 8px;
 }
 
 .drop-zone {
@@ -1649,10 +1647,14 @@ input:focus, textarea:focus, select:focus {
 }
 .drop-zone-content { pointer-events: none; }
 
+.import-hint {
+  font-size: 11px; color: var(--muted2); padding: 6px 0 0; line-height: 1.4;
+}
 .import-error {
   font-size: 12px; color: var(--red); padding: 6px 8px;
   background: rgba(239,68,68,.1); border-radius: var(--radius);
   border: 1px solid rgba(239,68,68,.25);
+  white-space: pre-line;
 }
 
 .import-preview { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
@@ -1733,6 +1735,21 @@ input:focus, textarea:focus, select:focus {
 }
 .append-parse-btn:hover:not(:disabled) { background: #dc2626; }
 .append-parse-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.append-redirect {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 8px 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.append-redirect-text { font-size: 12px; color: var(--muted2); }
+.append-redirect-btn {
+  padding: 5px 10px; font-size: 12px;
+  background: transparent; border: 1px solid var(--accent);
+  border-radius: var(--radius); color: var(--accent);
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--transition);
+}
+.append-redirect-btn:hover { background: rgba(239,68,68,.1); }
 .append-drop-overlay {
   position: absolute; inset: 0;
   border-radius: var(--radius-lg);
@@ -1744,14 +1761,14 @@ input:focus, textarea:focus, select:focus {
 }
 
 .export-panel--empty { color: var(--muted); font-size: 13px; }
-.export-info { font-size: 12px; color: var(--muted2); }
-.export-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.export-btn { padding: 6px 14px; background: var(--accent); color: #fff; border-radius: var(--radius); font-size: 12px; transition: background var(--transition); }
+.export-info { font-size: 12px; color: var(--muted2); text-align: center; }
+.export-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.export-btn { padding: 6px 10px; background: var(--accent); color: #fff; border-radius: var(--radius); font-size: 12px; transition: background var(--transition); }
 .export-btn:hover { background: #dc2626; }
 .export-btn--outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
 .export-btn--outline:hover { background: rgba(239,68,68,.1); }
-.export-section { display: flex; flex-direction: column; gap: 6px; }
-.export-section-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.export-section { display: flex; flex-direction: column; gap: 10px; }
+.export-section-label { font-size: 12px; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
 
 /* Settings */
 .settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; height: 100%; }
@@ -1826,6 +1843,24 @@ kbd {
   color: var(--muted);
   text-align: center;
 }
+.lb-name-modal-divider {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.lb-name-modal-import-btn {
+  padding: 8px 12px;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lb-name-modal-import-btn:hover { background: rgba(239,68,68,.1); }
 
 /* Save prompt (lorebook switcher) */
 .switcher-prompt {

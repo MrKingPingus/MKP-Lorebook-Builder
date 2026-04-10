@@ -4,7 +4,7 @@ import { useAppendImport }   from '../../hooks/use-append-import.js';
 import { ImportPreview }     from './ImportPreview.jsx';
 
 export function AppendImportPanel() {
-  const { preview, loading, error, handleText, handleFile, confirmAppend, cancel } = useAppendImport();
+  const { preview, loading, error, handleText, handleFile, confirmAppend, cancel, openFullImport } = useAppendImport();
   const [text, setText]       = useState('');
   const [dragging, setDragging] = useState(false);
 
@@ -34,6 +34,15 @@ export function AppendImportPanel() {
 
         {!preview && (
           <>
+            <div className="append-redirect">
+              <span className="append-redirect-text">Need to import an entire lorebook? Go here!</span>
+              <button
+                className="append-redirect-btn"
+                onClick={openFullImport}
+              >
+                Open Import / Export
+              </button>
+            </div>
             <textarea
               className="append-text-area"
               placeholder={'Paste entries here, or drag a file onto this panel…\n\nSupported formats: TXT, DOCX, ODT, JSON'}

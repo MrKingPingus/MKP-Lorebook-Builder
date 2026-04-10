@@ -29,6 +29,11 @@ export function useExport() {
     await navigator.clipboard.writeText(json);
   }
 
+  function downloadJsonTemplate() {
+    const blob = exportToJsonBlob(TEMPLATE_LOREBOOK);
+    downloadBlob(blob, 'lorebook-template.json');
+  }
+
   function downloadTxtTemplate() {
     const blob = exportToTxtBlob(TEMPLATE_LOREBOOK);
     downloadBlob(blob, 'lorebook-template.txt');
@@ -45,6 +50,7 @@ export function useExport() {
     exportDocx,
     exportJsonBlob,
     copyJsonToClipboard,
+    downloadJsonTemplate,
     downloadTxtTemplate,
     downloadDocxTemplate,
   };
