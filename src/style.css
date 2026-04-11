@@ -713,13 +713,13 @@ input:focus, textarea:focus, select:focus {
   flex: 1 0 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
   padding-top: 8px;
   margin-top: 2px;
   border-top: 1px solid var(--border);
 }
 .bulk-type-chip {
-  padding: 4px 12px;
+  padding: 3px 8px;
   border-radius: 12px;
   font-size: 12px;
   border: 1px solid var(--border2);
