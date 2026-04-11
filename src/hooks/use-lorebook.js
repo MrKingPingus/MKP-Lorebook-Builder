@@ -21,6 +21,7 @@ export function useLorebook() {
   const renameLorebookByIdStore   = useLorebookStore((s) => s.renameLorebookById);
   const clearHistory              = useHistoryStore((s) => s.clear);
   const setPendingFocusLorebookName = useUiStore((s) => s.setPendingFocusLorebookName);
+  const clearSelection              = useUiStore((s) => s.clearSelection);
 
   const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
@@ -37,6 +38,7 @@ export function useLorebook() {
     writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
     clearHistory();
+    clearSelection();
     if (!silent) setPendingFocusLorebookName(true);
   }
 
@@ -52,6 +54,7 @@ export function useLorebook() {
     setActiveLorebookId(id);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
     clearHistory();
+    clearSelection();
   }
 
   function deleteLorebook(id) {
@@ -68,6 +71,7 @@ export function useLorebook() {
       } else {
         setActiveLorebookId(null);
         clearHistory();
+        clearSelection();
       }
     }
   }

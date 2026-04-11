@@ -5,7 +5,8 @@ import { DEFAULT_WINDOW } from '../constants/defaults.js';
 export const useUiStore = create((set) => ({
   activeMenuPanel:  null,     // null | 'lorebooks' | 'import-export' | 'settings' — slide tray panel
   searchQuery: '',
-  searchMode:  'search',    // 'search' | 'find-replace'
+  searchMode:  'search',    // 'search' | 'find-replace' | 'select'
+  selectedIds: new Set(),   // Set<entryId> — entries selected while searchMode === 'select'
   typeFilter:  [],          // empty = show all
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
@@ -23,7 +24,27 @@ export const useUiStore = create((set) => ({
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
-  setSearchMode:  (searchMode)  => set({ searchMode }),
+  setSearchMode:  (searchMode)  =>
+    set((state) => {
+      // Leaving select mode clears any lingering selection
+      if (state.searchMode === 'select' && searchMode !== 'select' && state.selectedIds.size > 0) {
+        return { searchMode, selectedIds: new Set() };
+      }
+      return { searchMode };
+    }),
+  toggleSelected: (id) =>
+    set((state) => {
+      const next = new Set(state.selectedIds);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return { selectedIds: next };
+    }),
+  clearSelection:   ()    => set({ selectedIds: new Set() }),
+  selectAllVisible: (ids) =>
+    set((state) => {
+      const next = new Set(state.selectedIds);
+      for (const id of ids) next.add(id);
+      return { selectedIds: next };
+    }),
   setTypeFilter:  (typeFilter)  => set({ typeFilter }),
   setWindowPos:   (windowPos)   => set({ windowPos }),
   setWindowSize:  (windowSize)  => set({ windowSize }),

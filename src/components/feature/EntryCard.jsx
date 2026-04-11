@@ -13,6 +13,7 @@ import { useUi }          from '../../hooks/use-ui.js';
 import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
 import { useRollback }    from '../../hooks/use-rollback.js';
+import { useIsSelectMode, useIsSelected, useToggleSelected } from '../../hooks/use-selection.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
@@ -41,9 +42,17 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const nameInputRef    = useRef(null);
   const shouldFocusName = useRef(false);
 
+  // Selection mode — overrides normal card behaviour (always collapsed, click toggles selection)
+  const isSelectMode   = useIsSelectMode();
+  const isSelected     = useIsSelected(entry.id);
+  const toggleSelected = useToggleSelected();
+
   // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
+  // In select mode, cards are always collapsed and not expandable.
   const isSearchFocused = searchFocusedId === entry.id;
-  const collapsed = isSearchFocused ? false : (expandAll ? false : (collapseAll ? true : localCollapsed));
+  const collapsed = isSelectMode
+    ? true
+    : (isSearchFocused ? false : (expandAll ? false : (collapseAll ? true : localCollapsed)));
 
   // Desktop: auto-expand and focus name input when a new entry is created
   useEffect(() => {
@@ -139,9 +148,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     return (
       <div
         id={`entry-${entry.id}`}
-        className="entry-card entry-card--mobile"
+        className={`entry-card entry-card--mobile${isSelected ? ' entry-card--selected' : ''}`}
         style={{ '--type-color': typeColor }}
-        onClick={() => openEntry(entry.id)}
+        onClick={() => isSelectMode ? toggleSelected(entry.id) : openEntry(entry.id)}
       >
         <div className="entry-card-mobile-index">#{index}</div>
         <div className="entry-card-mobile-row">
@@ -167,19 +176,22 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     );
   }
 
-  // ── Desktop card — expand/collapse in place (unchanged) ─────────────────────
+  // ── Desktop card — expand/collapse in place (click-to-select in select mode) ─
   return (
     <div
       id={`entry-${entry.id}`}
-      className="entry-card"
+      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}`}
       style={{ '--type-color': typeColor }}
+      onClick={isSelectMode ? () => toggleSelected(entry.id) : undefined}
     >
       {/* ── Card header ── */}
       <div
         className="entry-card-header"
-        onDoubleClick={onHeaderDoubleClick}
+        onDoubleClick={isSelectMode ? undefined : onHeaderDoubleClick}
       >
-        <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
+        {!isSelectMode && (
+          <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
+        )}
 
         <TypeColorDot type={entry.type} />
         {nameHtml ? (
@@ -202,19 +214,23 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               tieredEnabled={tieredCounterEnabled}
             />
           )}
-          <button
-            className="card-action-btn"
-            title="double-click the entry to expand or collapse it!"
-            onClick={toggleCollapse}
-          >
-            {collapsed ? '▼ Expand' : '▲ Collapse'}
-          </button>
-          <button
-            className="card-action-btn card-action-btn--remove"
-            onClick={() => onRemove(entry.id)}
-          >
-            Remove
-          </button>
+          {!isSelectMode && (
+            <button
+              className="card-action-btn"
+              title="double-click the entry to expand or collapse it!"
+              onClick={toggleCollapse}
+            >
+              {collapsed ? '▼ Expand' : '▲ Collapse'}
+            </button>
+          )}
+          {!isSelectMode && (
+            <button
+              className="card-action-btn card-action-btn--remove"
+              onClick={() => onRemove(entry.id)}
+            >
+              Remove
+            </button>
+          )}
         </div>
       </div>
 

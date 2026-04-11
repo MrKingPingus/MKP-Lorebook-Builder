@@ -652,6 +652,73 @@ input:focus, textarea:focus, select:focus {
 .search-bar-row2 .replace-all-btn    { white-space: nowrap; }
 .search-bar-row2 .search-mode-select { flex-shrink: 0; }
 
+/* Select-mode counter (e.g. "3 selected") reuses .match-counter typography */
+.match-counter--select { color: var(--accent); }
+
+/* ============================================================
+   Bulk Action Bar (select mode)
+   ============================================================ */
+/* §BULK-ACTION-BAR */
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.bulk-action-btn {
+  padding: 4px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition);
+}
+.bulk-action-btn:hover:not(:disabled) { background: var(--border); border-color: var(--border2); }
+.bulk-action-btn:disabled { opacity: 0.4; cursor: default; }
+.bulk-action-btn--exit { color: var(--muted2); }
+.bulk-action-btn--exit:hover:not(:disabled) {
+  background: rgba(245, 101, 101, 0.15);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.bulk-action-count {
+  font-size: 11px;
+  color: var(--accent);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.bulk-action-btn-wrap { position: relative; flex-shrink: 0; }
+.bulk-action-apply {
+  padding: 5px 12px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: background var(--transition);
+}
+.bulk-action-apply:hover:not(:disabled) { background: #dc2626; }
+.bulk-action-apply:disabled { opacity: 0.4; cursor: default; }
+
+.bulk-action-popover { right: 0; left: auto; }
+.bulk-type-chip {
+  border-left: 3px solid var(--type-color, var(--border2));
+}
+.bulk-type-chip:hover {
+  background: var(--type-color, var(--surface3));
+  border-color: var(--type-color, var(--border2));
+  color: #fff;
+}
+
 /* ============================================================
    Type Filter Bar
    ============================================================ */
@@ -786,6 +853,27 @@ input:focus, textarea:focus, select:focus {
   border-left: 4px solid var(--type-color, #9ba1ad);
   border-radius: var(--radius);
   overflow: hidden;
+  transition: filter var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+/* Select mode — make the whole card a click target */
+.entry-card--selectable {
+  cursor: pointer;
+  user-select: none;
+}
+.entry-card--selectable:hover {
+  filter: brightness(1.08);
+}
+
+/* Selected state — brighten and raise, sticky until deselected */
+.entry-card--selected {
+  filter: brightness(1.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--type-color, #9ba1ad) inset;
+}
+.entry-card--selected:hover {
+  filter: brightness(1.22);
+  transform: translateY(-3px);
 }
 
 /* Card header — always visible */
