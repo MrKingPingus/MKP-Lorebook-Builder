@@ -17,28 +17,27 @@ export function useImport() {
 
     if (fmt === 'txt') {
       const text = await readTxtFile(file);
-      return { entries: parseTxtToEntries(text), name: null };
+      return { entries: parseTxtToEntries(text), name: null, warnings: [] };
     }
 
     if (fmt === 'docx') {
       const entries = await importFromDocx(file);
-      return { entries, name: null };
+      return { entries, name: null, warnings: [] };
     }
 
-    // json — strict format: reject with actionable hints if fields don't match
+    // json — lenient format: accept field aliases, surface per-entry warnings
+    // for blanked fields, only hard-fail when the file is unparseable or empty
     const raw = await readJsonFile(file);
     const result = importFromJson(raw);
     if (!result.ok) throw new Error(result.error);
-    if (result.hints?.length) {
-      throw new Error(
-        'JSON format mismatch:\n' + result.hints.join('\n')
-        + '\nDownload the JSON template for the correct format.',
-      );
-    }
     if (result.lorebook.entries.length === 0) {
       throw new Error('No entries found. The file may use an unsupported format. Download the JSON template for reference.');
     }
-    return { entries: result.lorebook.entries, name: result.lorebook.name ?? null };
+    return {
+      entries: result.lorebook.entries,
+      name: result.lorebook.name ?? null,
+      warnings: result.warnings ?? [],
+    };
   }
 
   function parseTxt(text) {
