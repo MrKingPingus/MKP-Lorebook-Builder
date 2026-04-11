@@ -696,7 +696,6 @@ input:focus, textarea:focus, select:focus {
   margin-left: auto;
 }
 
-.bulk-action-btn-wrap { position: relative; flex-shrink: 0; }
 .bulk-action-apply {
   padding: 5px 12px;
   background: var(--accent);
@@ -709,9 +708,26 @@ input:focus, textarea:focus, select:focus {
 .bulk-action-apply:hover:not(:disabled) { background: #dc2626; }
 .bulk-action-apply:disabled { opacity: 0.4; cursor: default; }
 
-.bulk-action-popover { right: 0; left: auto; }
+/* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
+.bulk-action-chips {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+}
 .bulk-type-chip {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  border: 1px solid var(--border2);
   border-left: 3px solid var(--type-color, var(--border2));
+  color: var(--muted2);
+  background: var(--surface3);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 .bulk-type-chip:hover {
   background: var(--type-color, var(--surface3));

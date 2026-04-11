@@ -1,4 +1,4 @@
-// Row of bulk actions shown while searchMode === 'select' — exit, select-all-visible, change-type popover
+// Row of bulk actions shown while searchMode === 'select' — exit, select-all-visible, change-type chips row
 import { useRef, useEffect, useState } from 'react';
 import { useSelection }   from '../../hooks/use-selection.js';
 import { useBulkActions } from '../../hooks/use-bulk-actions.js';
@@ -14,23 +14,23 @@ export function BulkActionBar({ visibleIds }) {
   } = useSelection();
   const { applyTypeChange } = useBulkActions();
 
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const popoverRef = useRef(null);
+  const [chipsOpen, setChipsOpen] = useState(false);
+  const barRef = useRef(null);
 
-  // Close popover on outside click
+  // Close chips row on outside click (clicks inside the bar — including on buttons — keep it open)
   useEffect(() => {
-    if (!popoverOpen) return;
+    if (!chipsOpen) return;
     function onMouseDown(e) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-        setPopoverOpen(false);
+      if (barRef.current && !barRef.current.contains(e.target)) {
+        setChipsOpen(false);
       }
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [popoverOpen]);
+  }, [chipsOpen]);
 
   function onExit() {
-    setPopoverOpen(false);
+    setChipsOpen(false);
     exitSelectMode();
   }
 
@@ -40,11 +40,11 @@ export function BulkActionBar({ visibleIds }) {
 
   function onApply(typeId) {
     applyTypeChange(typeId);
-    setPopoverOpen(false);
+    setChipsOpen(false);
   }
 
   return (
-    <div className="bulk-action-bar">
+    <div className="bulk-action-bar" ref={barRef}>
       <button className="bulk-action-btn bulk-action-btn--exit" onClick={onExit} title="Exit select mode">
         × Exit
       </button>
@@ -66,32 +66,28 @@ export function BulkActionBar({ visibleIds }) {
 
       <span className="bulk-action-count">{selectedCount} selected</span>
 
-      <div className="bulk-action-btn-wrap" ref={popoverRef}>
-        <button
-          className="bulk-action-apply"
-          onClick={() => setPopoverOpen((v) => !v)}
-          disabled={!hasSelection}
-        >
-          Change Type… ▾
-        </button>
+      <button
+        className="bulk-action-apply"
+        onClick={() => setChipsOpen((v) => !v)}
+        disabled={!hasSelection}
+      >
+        Change Type… {chipsOpen ? '▴' : '▾'}
+      </button>
 
-        {popoverOpen && (
-          <div className="replace-scope-popover bulk-action-popover">
-            <div className="replace-scope-chips">
-              {ENTRY_TYPES.map((t) => (
-                <button
-                  key={t.id}
-                  className="replace-scope-chip bulk-type-chip"
-                  style={{ '--type-color': t.color }}
-                  onClick={() => onApply(t.id)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      {chipsOpen && (
+        <div className="bulk-action-chips">
+          {ENTRY_TYPES.map((t) => (
+            <button
+              key={t.id}
+              className="bulk-type-chip"
+              style={{ '--type-color': t.color }}
+              onClick={() => onApply(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
