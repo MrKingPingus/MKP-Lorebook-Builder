@@ -1,53 +1,38 @@
 // Validate and normalize a raw JSON lorebook object before applying it to the store
 import { ENTRY_TYPES, DEFAULT_TYPE } from '../constants/entry-types.js';
+import { MAX_TRIGGERS } from '../constants/limits.js';
 import { createEmptyEntry } from './entry-factory.js';
 
 const VALID_TYPES = new Set(ENTRY_TYPES.map((t) => t.id));
 
-// Known alternative field names that AI models commonly produce
-const FIELD_ALIASES = {
-  description: ['content', 'text', 'body', 'desc', 'lore', 'entry'],
-  triggers:    ['keywords', 'keys', 'tags', 'key', 'activation_keys'],
-  name:        ['title', 'label', 'display_name', 'displayName'],
-};
+/**
+ * Coerce any value into an array of strings.
+ * Accepts arrays (elements stringified), single strings (wrapped), or anything else (empty).
+ */
+function toStringArray(val) {
+  if (val == null) return [];
+  if (Array.isArray(val)) {
+    return val.filter((x) => x != null && x !== '').map(String);
+  }
+  if (typeof val === 'string') {
+    return val === '' ? [] : [val];
+  }
+  return [];
+}
 
 /**
- * Scan raw entries for common alternative field names that don't match our schema.
- * Returns an array of human-readable hint strings (empty if everything looks fine).
+ * Deduplicate an array of strings, preserving first-seen order and casing.
  */
-function detectFieldHints(rawEntries) {
-  const hints = [];
-  if (!rawEntries.length) return hints;
-
-  for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
-    let missingCount = 0;
-    const aliasHits = {};
-
-    for (const e of rawEntries) {
-      const has = field === 'triggers'
-        ? Array.isArray(e.triggers) && e.triggers.length > 0
-        : typeof e[field] === 'string' && e[field].length > 0;
-
-      if (!has) {
-        missingCount++;
-        for (const alias of aliases) {
-          const val = e[alias];
-          if (val != null && val !== '' && !(Array.isArray(val) && val.length === 0)) {
-            aliasHits[alias] = (aliasHits[alias] || 0) + 1;
-          }
-        }
-      }
-    }
-
-    if (missingCount > rawEntries.length / 2) {
-      const top = Object.entries(aliasHits).sort((a, b) => b[1] - a[1])[0];
-      if (top) {
-        hints.push(`Your entries use \u201c${top[0]}\u201d — rename it to \u201c${field}\u201d.`);
-      }
+function unique(arr) {
+  const seen = new Set();
+  const out = [];
+  for (const s of arr) {
+    if (s !== '' && !seen.has(s)) {
+      seen.add(s);
+      out.push(s);
     }
   }
-
-  return hints;
+  return out;
 }
 
 /**
@@ -61,12 +46,67 @@ function normalizeType(raw) {
 }
 
 /**
+ * Normalize a single raw entry into our schema, mirroring the target platform's
+ * lenient field-alias behavior. Returns the normalized entry plus a warning
+ * describing any fields that ended up blank after all fallbacks were exhausted.
+ */
+function normalizeEntry(raw, index) {
+  const src = (raw && typeof raw === 'object') ? raw : {};
+
+  // Triggers — merge every alias the target platform accepts, dedupe, cap at MAX_TRIGGERS
+  const triggers = unique([
+    ...toStringArray(src.triggers),
+    ...toStringArray(src.trigger),
+    ...toStringArray(src.Trigger),
+    ...toStringArray(src.Triggers),
+    ...toStringArray(src.keys),
+    ...toStringArray(src.key),
+    ...toStringArray(src.keysecondary),
+    ...toStringArray(src.secondary_keys),
+  ]).slice(0, MAX_TRIGGERS);
+
+  // Name — name → title → first trigger → ""
+  let name = '';
+  if (typeof src.name === 'string' && src.name) name = src.name;
+  else if (typeof src.title === 'string' && src.title) name = src.title;
+  else if (triggers.length > 0) name = triggers[0];
+
+  // Description — description → content → text → entry.text → ""
+  let description = '';
+  if (typeof src.description === 'string' && src.description) description = src.description;
+  else if (typeof src.content === 'string' && src.content) description = src.content;
+  else if (typeof src.text === 'string' && src.text) description = src.text;
+  else if (src.entry && typeof src.entry.text === 'string' && src.entry.text) description = src.entry.text;
+
+  const blanked = [];
+  if (!name) blanked.push('name');
+  if (!description) blanked.push('description');
+
+  return {
+    entry: {
+      ...createEmptyEntry(),
+      name,
+      type: normalizeType(src.type),
+      triggers,
+      description,
+    },
+    warning: blanked.length > 0 ? { index, fields: blanked } : null,
+  };
+}
+
+/**
  * Validate and normalize a parsed JSON object into a lorebook shape.
  * Accepts:
  *   - { entries: [...] }           — standard lorebook wrapper
  *   - { entries: { "1": {}, … } }  — keyed object of entries
  *   - [ {...}, {...} ]             — bare array of entries (e.g. AI-generated)
- * Returns { ok: true, lorebook } or { ok: false, error: string }.
+ * Returns { ok: true, lorebook, warnings } or { ok: false, error: string }.
+ *
+ * This importer is intentionally lenient: it accepts a wide range of field
+ * aliases (matching the target platform) rather than rejecting on mismatch.
+ * Any entries whose name or description could not be resolved from any alias
+ * are imported with those fields blanked and reported in `warnings` so the
+ * caller can surface a non-blocking notice to the user.
  */
 export function importFromJson(raw) {
   if (!raw || typeof raw !== 'object') {
@@ -87,15 +127,9 @@ export function importFromJson(raw) {
     rawEntries = [];
   }
 
-  const normalizedEntries = rawEntries.map((e) => ({
-    ...createEmptyEntry(),
-    name:        typeof e.name === 'string'        ? e.name        : '',
-    type:        normalizeType(e.type),
-    triggers:    Array.isArray(e.triggers)         ? e.triggers.map(String) : [],
-    description: typeof e.description === 'string' ? e.description : '',
-  }));
-
-  const hints = detectFieldHints(rawEntries);
+  const normalized = rawEntries.map((e, i) => normalizeEntry(e, i));
+  const normalizedEntries = normalized.map((n) => n.entry);
+  const warnings = normalized.map((n) => n.warning).filter(Boolean);
 
   const lorebook = {
     id:      typeof raw.id === 'string'   ? raw.id   : '',
@@ -103,7 +137,7 @@ export function importFromJson(raw) {
     entries: normalizedEntries,
   };
 
-  return { ok: true, lorebook, hints };
+  return { ok: true, lorebook, warnings };
 }
 
 /**

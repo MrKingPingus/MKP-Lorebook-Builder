@@ -11,6 +11,7 @@ import { useUi }            from '../../hooks/use-ui.js';
 export function ImportPanel() {
   const [preview, setPreview]           = useState(null);
   const [importedName, setImportedName] = useState(null);
+  const [warnings, setWarnings]         = useState([]);
   const [error, setError]               = useState('');
   const [loading, setLoading]           = useState(false);
   const [savePending, setSavePending]   = useState(false);
@@ -25,6 +26,7 @@ export function ImportPanel() {
   function resetAll() {
     setPreview(null);
     setImportedName(null);
+    setWarnings([]);
     setError('');
     setSavePending(false);
     setAsNewLorebook(false);
@@ -34,6 +36,7 @@ export function ImportPanel() {
     setError('');
     setPreview(null);
     setImportedName(null);
+    setWarnings([]);
     setSavePending(false);
     setAsNewLorebook(false);
     setLoading(true);
@@ -41,6 +44,7 @@ export function ImportPanel() {
       const result = await parseFile(file);
       setPreview(result.entries);
       if (result.name != null) setImportedName(result.name);
+      setWarnings(result.warnings ?? []);
       setSavePending(true);
     } catch (e) {
       setError(e.message ?? 'Failed to parse file.');
@@ -136,6 +140,23 @@ export function ImportPanel() {
       )}
 
       {error && <div className="import-error">{error}</div>}
+
+      {/* Non-blocking warnings for entries whose name/description fell through
+          every field alias and had to be imported blank */}
+      {!savePending && preview?.length > 0 && warnings.length > 0 && (
+        <div className="import-warning-banner">
+          <div className="import-warning-title">
+            ⚠ {warnings.length} {warnings.length === 1 ? 'entry' : 'entries'} imported with missing fields
+          </div>
+          <ul className="import-warning-list">
+            {warnings.map((w) => (
+              <li key={w.index}>
+                Entry #{w.index + 1}: blank {w.fields.join(' and ')}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Entry preview — shown after save prompt is dismissed */}
       {!savePending && preview?.length > 0 && (
