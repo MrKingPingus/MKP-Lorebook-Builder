@@ -55,6 +55,7 @@ export function BuildPanel() {
         matchCount={matchCount}
         entryMatchCount={entryMatchCount}
         matchDetails={displayMatchDetails}
+        visibleIds={displayEntries.map((e) => e.id)}
       />
       <TypeFilterBar entries={entries} />
       <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />

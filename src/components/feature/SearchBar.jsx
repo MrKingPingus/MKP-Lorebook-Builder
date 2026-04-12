@@ -3,9 +3,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearch }      from '../../hooks/use-search.js';
 import { useUi }          from '../../hooks/use-ui.js';
 import { useFindReplace } from '../../hooks/use-find-replace.js';
+import { useSelection }   from '../../hooks/use-selection.js';
 import { useMobile }      from '../../hooks/use-mobile.js';
 import { MatchCounter }   from '../ui/MatchCounter.jsx';
 import { FindReplace }    from './FindReplace.jsx';
+import { BulkActionBar }  from './BulkActionBar.jsx';
 
 const SORT_OPTIONS = [
   { value: 'default',       label: 'Default' },
@@ -17,7 +19,8 @@ const SORT_OPTIONS = [
 const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
 
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
-export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }) {
+// visibleIds: ordered list of entry ids currently visible after search + type filter + sort/group
+export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, visibleIds = [] }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
   const {
     findText, setFindText,
@@ -27,6 +30,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
     scope, toggleScope, allSelected,
     scopeOpen, setScopeOpen,
   } = useFindReplace(entries);
+  const { selectedCount } = useSelection();
   const isMobile           = useMobile();
   const sortMode           = useUi((s) => s.sortMode);
   const setSortMode        = useUi((s) => s.setSortMode);
@@ -80,7 +84,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
     if (newMode === 'find-replace') {
       setFindText(searchQuery);
       setSearchQuery('');
-    } else {
+    } else if (searchMode === 'find-replace') {
       setSearchQuery(findText);
     }
     setSearchMode(newMode);
@@ -208,7 +212,12 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
             row={mobileFindReplace ? 'inputs' : 'all'}
           />
         )}
-        {!mobileFindReplace && <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />}
+        {!mobileFindReplace && searchMode === 'select' && (
+          <span className="match-counter match-counter--select">{selectedCount} selected</span>
+        )}
+        {!mobileFindReplace && searchMode !== 'select' && (
+          <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />
+        )}
         {!mobileFindReplace && (
           <select
             className="search-mode-select"
@@ -217,10 +226,14 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
           >
             <option value="search">Search</option>
             <option value="find-replace">Find/Replace</option>
+            <option value="select">Select</option>
           </select>
         )}
         {sortBtn}
       </div>
+
+      {/* Select mode: bulk action row */}
+      {searchMode === 'select' && <BulkActionBar visibleIds={visibleIds} />}
 
       {/* Mobile find-replace: second row with Replace button and mode select */}
       {mobileFindReplace && (
@@ -246,6 +259,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails }
           >
             <option value="search">Search</option>
             <option value="find-replace">Find/Replace</option>
+            <option value="select">Select</option>
           </select>
         </div>
       )}

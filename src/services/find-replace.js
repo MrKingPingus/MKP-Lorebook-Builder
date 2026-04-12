@@ -34,3 +34,18 @@ export function countMatches(entries, find, scope = DEFAULT_SCOPE) {
   }
   return count;
 }
+
+/**
+ * Bulk change entry type for a given set of ids; entries not in the set are returned unchanged.
+ * No-op when the target type already matches — preserves reference equality per-entry.
+ */
+export function changeTypeForIds(entries, ids, toType) {
+  if (!toType || !ids) return entries;
+  const idSet = ids instanceof Set ? ids : new Set(ids);
+  if (idSet.size === 0) return entries;
+  return entries.map((entry) =>
+    idSet.has(entry.id) && entry.type !== toType
+      ? { ...entry, type: toType, lastModified: Date.now() }
+      : entry
+  );
+}
