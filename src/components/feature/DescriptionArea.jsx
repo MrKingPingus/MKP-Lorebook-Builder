@@ -1,5 +1,5 @@
 // Description textarea with DESCRIPTION label, search highlight overlay, and char counter
-import { useRef, useLayoutEffect } from 'react';
+import { useRef, useLayoutEffect, useEffect, useCallback } from 'react';
 import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
@@ -24,13 +24,52 @@ export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, o
     return {};
   })();
 
-  // Autogrow: after every render where value has changed, resize to content
-  useLayoutEffect(() => {
+  // Autogrow: resize the textarea to fit its content.
+  //
+  // Three things we have to get right to avoid content spilling outside the
+  // border on large pastes/imports (typing works fine even without them
+  // because small deltas hide the errors):
+  //   1. border-box math — the textarea uses box-sizing: border-box, so
+  //      style.height is the BORDER box height, but scrollHeight excludes
+  //      borders. `height = scrollHeight` leaves the content area short by
+  //      borderTop + borderBottom; the last line clips.
+  //   2. stale layout on large value changes — after a big value change
+  //      some browsers hand back a scrollHeight that hasn't fully reflected
+  //      the new wrapping until layout is flushed. Reading offsetHeight
+  //      between the reset and the measure forces the flush.
+  //   3. width changes after the first measure — during import, the parent
+  //      panel can still be settling into its final width when the effect
+  //      runs. If we only measure once per value change, the stored height
+  //      is wrong for the final width. ResizeObserver re-measures whenever
+  //      the textarea's width actually changes.
+  const resize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
-  }, [value]);
+    // eslint-disable-next-line no-unused-expressions
+    el.offsetHeight; // force reflow so scrollHeight reflects the new wrap
+    const cs = window.getComputedStyle(el);
+    const border = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    el.style.height = `${el.scrollHeight + border}px`;
+  }, []);
+
+  useLayoutEffect(() => {
+    resize();
+  }, [value, resize]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    let lastWidth = el.clientWidth;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      if (w === lastWidth) return;
+      lastWidth = w;
+      resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [resize]);
 
   return (
     <div className="description-area">
