@@ -22,13 +22,19 @@ export function useMenuPanel() {
       setWindowSize({ width: totalW, height: windowSize.height });
       setWindowPos({ x: newX, y: windowPos.y });
     } else if (activeMenuPanel === null && savedWRef.current !== null) {
-      // Closing: restore build width, re-center
-      const restoredW = savedWRef.current;
+      // Closing: restore build width, re-center.
+      // Clamp to the current viewport in case it shrank while the panel was
+      // open (e.g. user changed browser zoom). Without the clamp, we'd
+      // restore the pre-open width verbatim and the window would end up
+      // wider than window.innerWidth — content stretches off the right edge.
+      const restoredW = Math.min(savedWRef.current, window.innerWidth);
       savedWRef.current = null;
       const { windowPos: currentPos, windowSize: currentSize } = useUiStore.getState();
-      const newX = Math.max(0, (window.innerWidth - restoredW) / 2);
-      setWindowSize({ width: restoredW, height: currentSize.height });
-      setWindowPos({ x: newX, y: currentPos.y });
+      const restoredH = Math.min(currentSize.height, window.innerHeight);
+      const newX = Math.max(0, (window.innerWidth  - restoredW) / 2);
+      const newY = Math.max(0, Math.min(currentPos.y, window.innerHeight - restoredH));
+      setWindowSize({ width: restoredW, height: restoredH });
+      setWindowPos({ x: newX, y: newY });
     }
     // Switching between open panels (null→id handled above, id→same-id is a toggle→null,
     // id→different-id: savedWRef is set so neither branch fires — no resize needed)
