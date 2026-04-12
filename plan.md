@@ -132,6 +132,25 @@ Features noted here are not assigned to a phase. They are documented to preserve
 
 ---
 
+**Mass Entry Type Change — Phase 2 (Advanced Selection)**
+Extends the Select mode shipped in the bulk action bar (search-mode dropdown → Select, `BulkActionBar`, `use-selection.js`, `use-bulk-actions.js`). Phase 1 provides plain click-to-toggle selection, Select All Visible, Deselect All, and Change Type with inline chip picker. Phase 2 adds:
+- **Select by Type dropdown** — a small dropdown in the bulk action bar that adds all entries of a given type to the current selection (union, not replace); useful for the primary use case of reclassifying entries after import when every entry is `character`
+- **Invert Selection button** — toggles selection state for all visible entries (selected → unselected, unselected → selected)
+- **Shift+click range select (desktop only)** — holding Shift and clicking a second entry selects all entries between the last-clicked entry and the Shift-clicked entry inclusive; standard multi-select UX pattern
+
+Depends on: Phase 1 (complete). All state infrastructure (`selectedIds` in `ui-store`, `useSelection` hook, `useIsSelected` per-card selector) is already in place — Phase 2 is purely additive UI and selection logic.
+
+---
+
+**Mass Entry Type Change — Phase 3 (Bulk Delete & Export)**
+Extends Select mode with destructive and export operations beyond type changes:
+- **Bulk Delete** — deletes all selected entries after a confirmation modal; uses a `deleteByIds(entries, ids)` pure function in `find-replace.js` (same pattern as `changeTypeForIds`); wired through `use-bulk-actions.js` with `pushSnapshot` for undo support
+- **Export Selected (optional)** — exports only the selected entries as a standalone lorebook JSON/TXT/DOCX; reuses existing export services with a filtered entry list
+
+Depends on: Phase 1 (complete). Phase 2 is not a hard prerequisite — Phase 3 operations work with any selection method — but the advanced selection tools from Phase 2 make bulk delete significantly more useful in practice.
+
+---
+
 **Lorebook JSON Metadata Portability (`_meta`)**
 Add `createdAt` and `lastModified` timestamps to lorebook objects. Export: optional checkbox "Include metadata" appends a `_meta` block (timestamps + settings snapshot) to the JSON. Import: detect `_meta` block and prompt user to apply or skip the saved settings. Requires updates to `json-export.js`, `json-import.js`, lorebook creation, and `autosave.js`. Deferred from Polish Pass 2 — good idea but not yet worth the resource investment.
 
