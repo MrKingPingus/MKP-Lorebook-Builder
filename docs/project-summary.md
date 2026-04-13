@@ -1,6 +1,6 @@
 # MKP Lorebook Builder — Project Summary
 
-> This file is for pasting into a regular Claude chat to provide project context when planning features. Last updated: 2026-04-12.
+> This file is for pasting into a regular Claude chat to provide project context when planning features. Last updated: 2026-04-13.
 
 ## What It Is
 
@@ -10,24 +10,24 @@ No accounts, no server, no installation. Everything saves automatically to the b
 
 ## What The User Sees
 
-The app has one main interface: a **floating window** (dark themed, with golden corner decorations) that contains everything. Inside it:
+The app has one main interface: a **floating window** (dark themed, with golden corner bracket decorations) that contains everything. Inside it:
 
-- **Header bar** — shows the lorebook name, a hamburger menu button, and minimize/close buttons
-- **Lorebook tabs** — switch between up to 10 lorebooks
-- **Search bar** — filter entries by name, triggers, or description text
-- **Type filter pills** — filter by entry type (Character, Location, Item, Plot Event, Other)
-- **Entry cards** — the main content; each card shows an entry's name, type badge, and trigger chips when collapsed; expands to show the full description textarea, trigger editing, suggestions, and settings
-- **Hotbar** — bottom toolbar with quick-action buttons (add entry, undo, redo, bulk select, find & replace, etc.)
-- **Menu panel** — slides out from the hamburger button; contains Import, Export, and Settings sections
-- **Landing page** — shown when no lorebook is open; explains the app and links to the README
+- **Header bar** — left to right: logo (book emoji + "LOREBOOK BUILDER"), editable lorebook name (desktop), hamburger menu button, close button (desktop). No minimize button — the close button returns to the landing page.
+- **Lorebook switcher** — accessed via the menu dropdown under "Lorebooks"; opens a dropdown listing saved lorebooks with timestamps, inline rename (double-click), delete with confirmation, and a "+ New lorebook" button
+- **Search bar** — has a mode dropdown (Search / Find-Replace / Select), a sort button (Default, A-Z, Z-A, Last Modified), a match counter, and a results dropdown with location tags. Find-Replace and Select modes swap the bar for different UIs.
+- **Type filter pills** — "All" pill, one pill per entry type, a "Group by type" toggle pill, and an "Expand All / Collapse All" button (desktop only)
+- **Entry cards** — the main content; desktop collapsed shows a drag handle, colored type dot, entry label (#N: name), stats badge, expand/collapse button, and remove button; expanded adds name/type fields, trigger chips, suggestions tray, and description textarea; mobile has a different compact layout
+- **Hotbar** — bottom toolbar with 3 configurable action slots on the left, a central "+" button for adding a new entry, and 3 configurable action slots on the right
+- **Menu panel** — opened via the hamburger button dropdown; contains three sections: Lorebooks, Import/Export, and Settings (one visible at a time)
+- **Landing page** — shown when no lorebook is open; has a logo, title, tagline, "Start Building" button, template download buttons (TXT/DOCX), a "How It Works" guide, and a "Tips" section with a GitHub readme link
 
 ### Entry Types (with color coding)
 
-- Character (teal) — people, NPCs, personas
-- Location (blue) — places, regions, buildings
-- Item (amber/gold) — objects, weapons, artifacts
-- Plot Event (purple) — story events, quests, arcs
-- Other (gray) — anything that doesn't fit the above
+- Character (purple) — people, NPCs, personas
+- Location (yellow) — places, regions, buildings
+- Item (blue) — objects, weapons, artifacts
+- Plot Event (red) — story events, quests, arcs
+- Other (teal) — anything that doesn't fit the above
 
 ## Tech Stack
 
