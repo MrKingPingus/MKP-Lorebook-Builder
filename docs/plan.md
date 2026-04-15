@@ -43,6 +43,27 @@ User can enable rollback in settings, edit an entry, navigate away and confirm t
 
 ---
 
+## Polish Pass 3
+
+**Goal:** Address outstanding bug reports and small quality-of-life features surfaced during Phase 8 and earlier usage. Completed before Phase 9 begins.
+
+### Bugs
+
+- [ ] **Regenerate (Reroll) Suggestions not working** — pressing the reroll button in the suggestions tray has no effect. Expected: new suggestions are generated and displayed. Suspected area: `SuggestionsTray.jsx` handler and/or `suggestion-engine.js` invocation.
+- [ ] **Capitalized trigger suggestions** — suggestions currently default to lowercase regardless of the capitalization of the source word. Expected: if the reference word is capitalized (proper nouns, etc.), the suggested trigger preserves that capitalization. Fix location: `suggestion-engine.js`.
+- [ ] **Backslash artifacts on import with asterisks** — importing entries that contain asterisks produces spurious backslash characters in the imported text. Likely extends to other markdown-adjacent characters. Investigate import pipelines (`txt-import.js`, `docx-import.js`, `json-import.js`) for over-aggressive escaping.
+
+### Features
+
+- [ ] **Copy-to-clipboard templates** — in the Import Templates section on the lander (and anywhere else templates are offered), add a "Copy" button alongside the existing "Download" button so users can paste the template into an existing doc instead of downloading a new file.
+- [ ] **Select mode on search results** — allow the Select mode (currently triggered via the search bar mode dropdown) to operate on the current search result set. Expected: entering Select mode while a search query is active scopes bulk actions to the filtered subset rather than all entries.
+
+### Stop Condition
+
+Reroll produces new suggestions when pressed; suggestions for capitalized source words retain their capitalization; importing an entry with asterisks (and similar characters) produces clean text with no backslash artifacts; users can copy a template directly to clipboard from the lander; entering Select mode while a search is active allows bulk actions on only the visible filtered entries.
+
+---
+
 ## Phase 9 — Global Features
 
 **Goal:** The app can compare two lorebooks side by side for congruency, and users have a dedicated planner for drafting future entries.
