@@ -5,6 +5,7 @@
 //   3. Template:  === Name [type] === headers with --- dividers
 //   4. Freeform:  blank-line paragraph splitting, first line as name
 import { createEmptyEntry } from './entry-factory.js';
+import { unescapeImportedEntry } from './unescape-import.js';
 import { ENTRY_TYPES, DEFAULT_TYPE } from '../constants/entry-types.js';
 
 const VALID_TYPES = new Set(ENTRY_TYPES.map((t) => t.id));
@@ -269,27 +270,27 @@ function parseMarkdownBoldFormat(lines) {
 export function parseTxtToEntries(text) {
   const lines = text.split('\n');
 
+  let entries;
   if (lines.some((l) => /^\*\*Entry Name:\*\*/i.test(l.trim()))) {
-    return parseMarkdownBoldFormat(lines);
+    entries = parseMarkdownBoldFormat(lines);
+  } else if (lines.some((l) => /^Entry:\s*/i.test(l.trim()))) {
+    entries = parseEntryLabeledFormat(lines);
+  } else if (lines.some((l) => /^Type:\s*\S/i.test(l.trim()))) {
+    entries = parseLabeledFormat(lines);
+  } else {
+    // Template / freeform paths
+    let sections = text.split(/^---$/m).map((s) => s.trim()).filter(Boolean);
+
+    if (sections.length === 1 && !sections[0].match(/^===\s+.+?\s+===$/m)) {
+      const paragraphs = text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+      if (paragraphs.length > 1) sections = paragraphs;
+    }
+
+    entries = sections.map(parseBlock).filter(Boolean);
   }
 
-  if (lines.some((l) => /^Entry:\s*/i.test(l.trim()))) {
-    return parseEntryLabeledFormat(lines);
-  }
-
-  if (lines.some((l) => /^Type:\s*\S/i.test(l.trim()))) {
-    return parseLabeledFormat(lines);
-  }
-
-  // Template / freeform paths
-  let sections = text.split(/^---$/m).map((s) => s.trim()).filter(Boolean);
-
-  if (sections.length === 1 && !sections[0].match(/^===\s+.+?\s+===$/m)) {
-    const paragraphs = text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
-    if (paragraphs.length > 1) sections = paragraphs;
-  }
-
-  return sections.map(parseBlock).filter(Boolean);
+  // Post-process: strip spurious escape backslashes (`World\'s` → `World's`, etc.)
+  return entries.map(unescapeImportedEntry);
 }
 
 export async function readTxtFile(file) {

@@ -1,10 +1,30 @@
 // Launch view — shown inside the floating window on page load; dismissed via "Start Building"
+import { useState, useRef, useEffect } from 'react';
 import { useUi }               from '../../hooks/use-ui.js';
 import { useExport }           from '../../hooks/use-export.js';
+import { DUPE_FLASH_MS }       from '../../constants/limits.js';
 
 export function Lander() {
   const setShowLander = useUi((s) => s.setShowLander);
-  const { downloadTxtTemplate, downloadDocxTemplate } = useExport();
+  const {
+    downloadTxtTemplate, downloadDocxTemplate,
+    copyTxtTemplate,
+  } = useExport();
+  const [copiedFlash, setCopiedFlash] = useState(false);
+  const flashTimer = useRef(null);
+
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+
+  async function onCopyTxt() {
+    try {
+      await copyTxtTemplate();
+      setCopiedFlash(true);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setCopiedFlash(false), DUPE_FLASH_MS);
+    } catch {
+      // Clipboard API unavailable or denied — fail silently; download remains available.
+    }
+  }
 
   function enterBuilder() {
     setShowLander(false);
@@ -30,6 +50,9 @@ export function Lander() {
         </p>
         <div className="lander-template-row">
           <button className="lander-template-btn" onClick={downloadTxtTemplate}>⬇ TXT template</button>
+          <button className="lander-template-btn" onClick={onCopyTxt} title="Copy TXT template to clipboard">
+            {copiedFlash ? '✓ Copied' : '⎘ Copy TXT'}
+          </button>
           <button className="lander-template-btn" onClick={downloadDocxTemplate}>⬇ DOCX template</button>
         </div>
       </div>

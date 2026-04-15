@@ -2,6 +2,7 @@
 import { ENTRY_TYPES, DEFAULT_TYPE } from '../constants/entry-types.js';
 import { MAX_TRIGGERS } from '../constants/limits.js';
 import { createEmptyEntry } from './entry-factory.js';
+import { unescapeImportedEntry } from './unescape-import.js';
 
 const VALID_TYPES = new Set(ENTRY_TYPES.map((t) => t.id));
 
@@ -128,7 +129,7 @@ export function importFromJson(raw) {
   }
 
   const normalized = rawEntries.map((e, i) => normalizeEntry(e, i));
-  const normalizedEntries = normalized.map((n) => n.entry);
+  const normalizedEntries = normalized.map((n) => unescapeImportedEntry(n.entry));
   const warnings = normalized.map((n) => n.warning).filter(Boolean);
 
   const lorebook = {
