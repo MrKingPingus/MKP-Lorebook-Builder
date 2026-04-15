@@ -44,6 +44,15 @@ export function useExport() {
     downloadBlob(blob, 'lorebook-template.docx');
   }
 
+  async function copyJsonTemplate() {
+    await navigator.clipboard.writeText(JSON.stringify(TEMPLATE_LOREBOOK, null, 2));
+  }
+
+  async function copyTxtTemplate() {
+    const text = await exportToTxtBlob(TEMPLATE_LOREBOOK).text();
+    await navigator.clipboard.writeText(text);
+  }
+
   return {
     exportJson,
     exportTxt,
@@ -53,5 +62,7 @@ export function useExport() {
     downloadJsonTemplate,
     downloadTxtTemplate,
     downloadDocxTemplate,
+    copyJsonTemplate,
+    copyTxtTemplate,
   };
 }

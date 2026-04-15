@@ -1,13 +1,32 @@
 // Export tab content — JSON/TXT/DOCX download buttons, clipboard copy, template downloads, and clear all
+import { useState, useRef, useEffect } from 'react';
 import { useEntries }   from '../../hooks/use-entries.js';
 import { useLorebook }  from '../../hooks/use-lorebook.js';
 import { useExport }    from '../../hooks/use-export.js';
+import { DUPE_FLASH_MS } from '../../constants/limits.js';
 
 export function ExportPanel() {
   const { entries, clearAllEntries }   = useEntries();
   const { activeLorebook, renameLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt, exportDocx: doExportDocx,
-          copyJsonToClipboard, downloadJsonTemplate, downloadTxtTemplate, downloadDocxTemplate } = useExport();
+          copyJsonToClipboard, downloadJsonTemplate, downloadTxtTemplate, downloadDocxTemplate,
+          copyJsonTemplate, copyTxtTemplate } = useExport();
+  // Which template-copy button is currently flashing "Copied" — null, 'json', or 'txt'.
+  const [copiedFlash, setCopiedFlash] = useState(null);
+  const flashTimer = useRef(null);
+
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+
+  async function runCopy(which, fn) {
+    try {
+      await fn();
+      setCopiedFlash(which);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setCopiedFlash(null), DUPE_FLASH_MS);
+    } catch {
+      // Clipboard unavailable or denied — download button remains available as fallback.
+    }
+  }
 
   if (!activeLorebook) return <div className="export-panel export-panel--empty">No lorebook loaded.</div>;
 
@@ -56,7 +75,21 @@ export function ExportPanel() {
         <div className="export-section-label">Templates</div>
         <div className="export-actions">
           <button className="export-btn export-btn--outline" onClick={downloadJsonTemplate}>⬇ JSON</button>
+          <button
+            className="export-btn export-btn--outline"
+            onClick={() => runCopy('json', copyJsonTemplate)}
+            title="Copy JSON template to clipboard"
+          >
+            {copiedFlash === 'json' ? '✓ Copied' : '⎘ Copy JSON'}
+          </button>
           <button className="export-btn export-btn--outline" onClick={downloadTxtTemplate}>⬇ TXT</button>
+          <button
+            className="export-btn export-btn--outline"
+            onClick={() => runCopy('txt', copyTxtTemplate)}
+            title="Copy TXT template to clipboard"
+          >
+            {copiedFlash === 'txt' ? '✓ Copied' : '⎘ Copy TXT'}
+          </button>
           <button className="export-btn export-btn--outline" onClick={downloadDocxTemplate}>⬇ DOCX</button>
         </div>
       </div>
