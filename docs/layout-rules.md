@@ -1,0 +1,13 @@
+# Layout Priorities
+
+When adding, modifying, or reviewing any UI that lives inside an existing bar, row, panel, or floating container, apply these rules in order. They exist because "it looks fine on desktop" is the single most common way new controls ship broken — the user has repeatedly had to request that things fit on one line or be centered, and this section exists to stop that from happening again.
+
+1. **Single-line fit before wrap.** If a new control causes elements to wrap onto a second line at typical mobile widths (~375px) or at the desktop default window size, do not accept that wrap as the final layout. First try tightening the offenders: shave 2–4px off horizontal padding, reduce the flex `gap` by 1–2px, or drop font-size by 1px. Only after those adjustments fail to make everything fit should you reach for `flex-wrap`. Wrap is a valid layout primitive, but it must be a deliberate choice — never a silent fallback for oversized controls.
+
+2. **Center by default.** Any element or group of elements that is narrower than its container should be horizontally centered unless there is a specific structural reason to align it to a corner (e.g., matching a sibling column, or deliberately anchoring to one side of a toolbar). When in doubt, center it. Ragged left-alignment inside a wide container is almost always wrong.
+
+3. **Verify at mobile viewport.** Any change to the search bar, hotbar, menu panels, bulk action bar, floating window header, or any other horizontally-packed row must be mentally (or actually, via the dev server) checked at ~375px width before being declared done. Overflow, clipping, or wrapped controls on mobile are never an acceptable trade-off for a cleaner desktop look. If a change can only work on desktop, it is not finished.
+
+4. **Cost-bounded iteration.** Shaving 1–4px of padding, 1–2px of gap, or 1px of font-size to make a layout fit is almost always fine and does not require confirmation. But if a single-line fit would require something destructive — removing a button, dropping a label, cutting a feature, or introducing a new breakpoint that hides content on mobile — **stop and ask the user first**. The goal is to fit gracefully, not to amputate until it fits.
+
+5. **When wrap is correct.** Wrap is the right answer when elements are genuinely unbounded in count (e.g., a list of user-defined tags, a grid of entries, a trigger keyword chip list). It is the wrong answer when the element count is fixed and small (e.g., five type chips, three action buttons, two mode options) — those should always fit on one line at the target widths.
