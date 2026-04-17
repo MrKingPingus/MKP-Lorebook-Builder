@@ -22,6 +22,9 @@ export function useLorebook() {
   const clearHistory              = useHistoryStore((s) => s.clear);
   const setPendingFocusLorebookName = useUiStore((s) => s.setPendingFocusLorebookName);
   const clearSelection              = useUiStore((s) => s.clearSelection);
+  const setSearchQuery              = useUiStore((s) => s.setSearchQuery);
+  const setSearchMode               = useUiStore((s) => s.setSearchMode);
+  const setTypeFilter               = useUiStore((s) => s.setTypeFilter);
 
   const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
@@ -55,6 +58,9 @@ export function useLorebook() {
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
     clearHistory();
     clearSelection();
+    setSearchQuery('');
+    setSearchMode('search');
+    setTypeFilter([]);
   }
 
   function deleteLorebook(id) {

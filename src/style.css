@@ -189,6 +189,12 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--focus-border);
   color: var(--text);
 }
+.lorebook-entry-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  margin-left: 6px;
+}
 
 /* Lorebook count badge */
 .lorebook-count-badge {
