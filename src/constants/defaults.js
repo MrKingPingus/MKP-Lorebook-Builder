@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = {
   // FAB (+ button) size
   fabSize:                  'large',     // 'small' | 'medium' | 'large' | 'custom'
   fabCustomSize:            60,          // px, used only when fabSize === 'custom'
+  // Desktop: keep the menu panel open after importing a lorebook (mobile always closes)
+  keepMenuOpenAfterImport:  false,
 };
 
 export const DEFAULT_ENTRY = {

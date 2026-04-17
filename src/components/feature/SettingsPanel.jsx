@@ -35,6 +35,8 @@ export function SettingsPanel() {
     setFabCustomSize,
     rollbackDefaultEnabled,
     setRollbackDefaultEnabled,
+    keepMenuOpenAfterImport,
+    setKeepMenuOpenAfterImport,
   } = useSettings();
 
   const {
@@ -133,6 +135,21 @@ export function SettingsPanel() {
         </label>
         <div className="settings-hint">
           New lorebooks will start with rollback turned on automatically.
+        </div>
+      </div>
+
+      {/* ── Menu behavior ── */}
+      <div className="settings-group">
+        <label className="settings-label">
+          <span>Keep menu tab open after importing (desktop)</span>
+          <input
+            type="checkbox"
+            checked={keepMenuOpenAfterImport}
+            onChange={(e) => setKeepMenuOpenAfterImport(e.target.checked)}
+          />
+        </label>
+        <div className="settings-hint">
+          When on, the menu panel stays open after a successful import. On mobile the menu always closes (full-screen overlay).
         </div>
       </div>
 
