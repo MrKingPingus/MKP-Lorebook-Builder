@@ -1,5 +1,5 @@
 // Find and replace field state, scope selector, match count display, and dispatch to find-replace service
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore } from '../state/history-store.js';
 import { findReplace, countMatches } from '../services/find-replace.js';
@@ -12,8 +12,18 @@ export function useFindReplace(entries) {
   const [scope, setScope]             = useState(DEFAULT_SCOPE);
   const [scopeOpen, setScopeOpen]     = useState(false);
 
+  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
   const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
   const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
+
+  // Reset find/replace fields when switching lorebooks so stale terms don't
+  // appear to wipe results in the new book.
+  useEffect(() => {
+    setFindText('');
+    setReplaceText('');
+    setScope(DEFAULT_SCOPE);
+    setScopeOpen(false);
+  }, [activeLorebookId]);
 
   const matchCount = countMatches(entries, findText, scope);
 

@@ -20,6 +20,7 @@ export function useSettings() {
   const fabSize                  = useSettingsStore((s) => s.fabSize);
   const fabCustomSize            = useSettingsStore((s) => s.fabCustomSize);
   const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
+  const keepMenuOpenAfterImport  = useSettingsStore((s) => s.keepMenuOpenAfterImport);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -41,6 +42,7 @@ export function useSettings() {
       fabSize,
       fabCustomSize,
       rollbackDefaultEnabled,
+      keepMenuOpenAfterImport,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -71,6 +73,7 @@ export function useSettings() {
     fabSize,
     fabCustomSize,
     rollbackDefaultEnabled,
+    keepMenuOpenAfterImport,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -87,5 +90,6 @@ export function useSettings() {
     setFabSize:                  (v) => updateSetting('fabSize', v),
     setFabCustomSize:            (v) => updateSetting('fabCustomSize', v),
     setRollbackDefaultEnabled:   (v) => updateSetting('rollbackDefaultEnabled', v),
+    setKeepMenuOpenAfterImport:  (v) => updateSetting('keepMenuOpenAfterImport', v),
   };
 }

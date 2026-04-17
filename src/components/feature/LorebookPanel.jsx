@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useExport }            from '../../hooks/use-export.js';
+import { useMobile }            from '../../hooks/use-mobile.js';
+import { useUi }                from '../../hooks/use-ui.js';
 
 export function LorebookPanel() {
   const { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebookSwitcher();
@@ -13,6 +15,14 @@ export function LorebookPanel() {
   const editInputRef = useRef(null);
   const { activeLorebookId, activeLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
+  const isMobile           = useMobile();
+  const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
+
+  // On mobile the menu is a full-screen overlay, so selecting a lorebook should
+  // drop the user back to the entries they just switched to.
+  function closeMenuIfMobile() {
+    if (isMobile) setActiveMenuPanel(null);
+  }
 
   useEffect(() => {
     if (editingId && editInputRef.current) {
@@ -27,12 +37,14 @@ export function LorebookPanel() {
       setPendingId(id);
     } else {
       switchLorebook(id);
+      closeMenuIfMobile();
     }
   }
 
   function doSwitch() {
     if (pendingId) switchLorebook(pendingId);
     setPendingId(null);
+    closeMenuIfMobile();
   }
 
   function downloadJson() {

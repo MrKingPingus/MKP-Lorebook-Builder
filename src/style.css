@@ -169,6 +169,7 @@ input:focus, textarea:focus, select:focus {
 .lorebook-name-sizer {
   flex: 1;
   display: flex;
+  align-items: center;
   justify-content: center;
   min-width: 0;
 }
@@ -188,6 +189,12 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface2);
   border-color: var(--focus-border);
   color: var(--text);
+}
+.lorebook-entry-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  margin-left: 6px;
 }
 
 /* Lorebook count badge */

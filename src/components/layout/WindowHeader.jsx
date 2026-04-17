@@ -34,6 +34,11 @@ export function WindowHeader() {
             onPointerDown={(e) => e.stopPropagation()}
             spellCheck={false}
           />
+          {activeLorebook && (
+            <span className="lorebook-entry-count" title="Total entries in this lorebook">
+              · {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
+            </span>
+          )}
         </div>
       )}
 

@@ -20,6 +20,7 @@ export const useSettingsStore = create((set) => ({
   setFabSize:                  (fabSize)                  => set({ fabSize }),
   setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
   setRollbackDefaultEnabled:   (rollbackDefaultEnabled)   => set({ rollbackDefaultEnabled }),
+  setKeepMenuOpenAfterImport:  (keepMenuOpenAfterImport)  => set({ keepMenuOpenAfterImport }),
 
   applySettings: (settings) => set(settings),
 }));

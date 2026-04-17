@@ -7,6 +7,8 @@ import { useLorebook }      from '../../hooks/use-lorebook.js';
 import { useImport }        from '../../hooks/use-import.js';
 import { useExport }        from '../../hooks/use-export.js';
 import { useUi }            from '../../hooks/use-ui.js';
+import { useMobile }        from '../../hooks/use-mobile.js';
+import { useSettings }      from '../../hooks/use-settings.js';
 
 export function ImportPanel() {
   const [preview, setPreview]           = useState(null);
@@ -22,6 +24,8 @@ export function ImportPanel() {
   const { parseFile }                  = useImport();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
+  const isMobile                       = useMobile();
+  const { keepMenuOpenAfterImport }    = useSettings();
 
   function resetAll() {
     setPreview(null);
@@ -77,13 +81,18 @@ export function ImportPanel() {
     setSavePending(false);
   }
 
+  // Mobile always closes the full-screen menu; desktop honors the user preference.
+  function closeMenuIfNeeded() {
+    if (isMobile || !keepMenuOpenAfterImport) setActiveMenuPanel(null);
+  }
+
   // Confirm: replace active lorebook entries (and optionally name)
   function confirm() {
     if (!preview) return;
     replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
-    setActiveMenuPanel(null);
+    closeMenuIfNeeded();
   }
 
   // Confirm: create a new lorebook slot and load the import into it
@@ -93,7 +102,7 @@ export function ImportPanel() {
     replaceEntries(preview);
     if (importedName != null) renameLorebook(importedName);
     resetAll();
-    setActiveMenuPanel(null);
+    closeMenuIfNeeded();
   }
 
   const lorebookName = activeLorebook?.name || '(unnamed)';
