@@ -1,8 +1,25 @@
-// Zustand store: active lorebook id, all lorebooks map, and dispatch actions
+// Zustand store: dual-slot lorebook state, lorebook map, and dispatch actions.
+//
+// Dual-slot model:
+//   leftId, rightId  — ids of the lorebooks loaded into each slot (either may be null)
+//   focusSide        — which slot is currently focused ('left' | 'right')
+//   activeLorebookId — mirrors the focused slot's id; kept in sync by every action
+//                      that changes slot ids or focus, so existing call sites that
+//                      read activeLorebookId continue to work without changes.
+//
+// In single-slot mode (the default — nothing has entered crosstalk), rightId is
+// null and focusSide stays 'left'. All existing behavior is preserved.
 import { create } from 'zustand';
 
+function pickActiveId(focusSide, leftId, rightId) {
+  return focusSide === 'left' ? leftId : rightId;
+}
+
 export const useLorebookStore = create((set, get) => ({
-  // id of the currently active lorebook
+  leftId:    null,
+  rightId:   null,
+  focusSide: 'left',
+
   activeLorebookId: null,
 
   // map of id -> lorebook object { id, name, entries: [] }
@@ -11,9 +28,37 @@ export const useLorebookStore = create((set, get) => ({
   // lorebook index array: [{ id, name, key, updatedAt }]
   lorebookIndex: [],
 
-  // --- actions ---
+  // --- slot & focus actions ---
 
-  setActiveLorebookId: (id) => set({ activeLorebookId: id }),
+  setFocusSide: (focusSide) =>
+    set((state) => ({
+      focusSide,
+      activeLorebookId: pickActiveId(focusSide, state.leftId, state.rightId),
+    })),
+
+  setSlot: (side, id) =>
+    set((state) => {
+      const nextLeftId  = side === 'left'  ? id : state.leftId;
+      const nextRightId = side === 'right' ? id : state.rightId;
+      return {
+        leftId:  nextLeftId,
+        rightId: nextRightId,
+        activeLorebookId: pickActiveId(state.focusSide, nextLeftId, nextRightId),
+      };
+    }),
+
+  // Back-compat: callers that "set the active lorebook" actually mean "set the
+  // focused slot". In single-slot mode this is always the left slot.
+  setActiveLorebookId: (id) =>
+    set((state) => {
+      const nextLeftId  = state.focusSide === 'left'  ? id : state.leftId;
+      const nextRightId = state.focusSide === 'right' ? id : state.rightId;
+      return {
+        leftId:           nextLeftId,
+        rightId:          nextRightId,
+        activeLorebookId: id,
+      };
+    }),
 
   setLorebooks: (lorebooks) => set({ lorebooks }),
 
