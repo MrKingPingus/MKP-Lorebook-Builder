@@ -1419,7 +1419,6 @@ input:focus, textarea:focus, select:focus {
   color: var(--muted);
   padding: 2px 4px;
   border-radius: var(--radius);
-  flex: 1;
   text-align: left;
   transition: color var(--transition), background var(--transition);
 }
@@ -1436,6 +1435,7 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
   transition: background var(--transition), color var(--transition);
 }
+.suggestions-phrase-btn { margin-left: auto; }
 .suggestions-reroll:hover, .suggestions-phrase-btn:hover {
   background: var(--border);
   color: var(--text);
@@ -1468,9 +1468,9 @@ input:focus, textarea:focus, select:focus {
   transition: border-color var(--transition), color var(--transition), background var(--transition);
 }
 .suggestion-chip:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(239,68,68,.1);
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(52,211,153,.1);
 }
 
 .suggestions-empty {
@@ -1579,8 +1579,8 @@ input:focus, textarea:focus, select:focus {
 /* §PHRASE-BUILDER */
 .phrase-builder {
   padding: 8px 10px;
-  background: #0d2618;
-  border: 1px solid #1a4a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;

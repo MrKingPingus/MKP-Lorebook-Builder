@@ -11,10 +11,10 @@ export function SuggestionsTray({ entry, onAddTrigger }) {
     <div className="suggestions-tray">
       {/* Header row */}
       <div className="suggestions-header">
+        <button className="suggestions-reroll" onClick={reroll} title="Regenerate suggestions">↺</button>
         <button className="suggestions-toggle" onClick={toggle}>
           {open ? '▼' : '▶'} TRIGGER WORD SUGGESTIONS
         </button>
-        <button className="suggestions-reroll" onClick={reroll} title="Regenerate suggestions">↺</button>
         <button
           className={`suggestions-phrase-btn${phrase.phraseMode ? ' suggestions-phrase-btn--active' : ''}`}
           onClick={phrase.phraseMode ? phrase.close : phrase.open}
