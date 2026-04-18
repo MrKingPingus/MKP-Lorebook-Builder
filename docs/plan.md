@@ -65,6 +65,33 @@ Reroll produces new suggestions when pressed; suggestions for capitalized source
 
 ---
 
+## Polish Pass 4
+
+**Goal:** Final batch of bug fixes and small UX improvements surfaced during Phase 8 usage, plus two small feature additions (Allow All Overlap, Hide from Export). Completed before Phase 9 begins.
+
+### Bugs
+
+- [x] **Cross-sentence proper-noun pairs** — suggestion engine was producing bogus multi-word trigger candidates by pairing capitalized words across sentence/clause boundaries (e.g. the last word of one sentence + the first word of the next). Fix: `suggestion-engine.js` now splits description text on clause punctuation before building adjacency pairs.
+- [x] **Suggestions tray toggle hitbox** — the toggle's clickable area stretched across the whole row because of `flex: 1`, swallowing clicks that should have landed on neighboring controls. Tightened to just the toggle's own width.
+- [x] **Phrase-builder background color** — the phrase-builder tray used an out-of-theme green background. Switched to the standard text-field surface color for consistency.
+- [x] **Hidden-entries popover actions** — Unhide and entry-name navigation buttons did nothing when clicked. Root cause: React synthetic pointerdown events bubbled through the virtual tree (including portals) to `WindowHeader`'s drag handler, which called `setPointerCapture` and swallowed the subsequent click. Fixed by stopping pointerdown/mousedown/click propagation at the popover root.
+
+### Features
+
+- [x] **Suggestion chip hover color** — changed hover state from red (which read as a destructive action) to green (additive). Matches the mental model that clicking a suggestion adds a trigger.
+- [x] **Reroll button reposition** — moved the suggestions-tray reroll button to the right of the toggle so related controls sit together.
+- [x] **Allow All Overlap** — one-click batch action that acknowledges every conflicting trigger on an entry in a single `updateAllowedOverlaps` call (avoids stale-state bugs from per-trigger loops). Button appears in the trigger section header when an entry has two or more unacknowledged overlaps. Desktop and mobile.
+- [x] **Hide from Export** — per-entry opt-out from JSON/TXT/DOCX exports and clipboard copy. Toggle button on the rollback footer ("Exclude entry from JSON export"); closed-eye icon on the entry label when hidden ("Entry excluded from JSON export"); hidden-count indicator (`· N hidden`) beside the lorebook entry count in the window header; popover panel listing hidden entries with per-row Navigate and Unhide actions. Export services filter `hiddenFromExport` entries and also strip the flag from any remaining output. New `hiddenFromExport: false` field on `DEFAULT_ENTRY`, backwards-compatible.
+- [x] **Export filename override** — Export panel now exposes a filename input (without extension) so users can download alternate-named versions of a lorebook without renaming from the downloads folder. Sanitizes to letters, numbers, underscore, and hyphen; resets to the active lorebook's sanitized name on switch.
+
+### Stop Condition
+
+Proper-noun suggestions no longer cross sentence boundaries; suggestions toggle and phrase-builder match the rest of the UI; user can batch-acknowledge all trigger overlaps on an entry; user can hide an entry from export via the rollback footer, see the closed-eye marker on the entry label, see the hidden count in the window header, open the popover to navigate to or unhide hidden entries, and confirm exports (JSON/TXT/DOCX/clipboard) omit hidden entries; user can override the download filename on the Export panel.
+
+**Status:** All items shipped and verified. Polish Pass 4 is complete.
+
+---
+
 ## Phase 9 — Global Features
 
 **Goal:** The app can compare two lorebooks side by side for congruency, and users have a dedicated planner for drafting future entries.
@@ -145,6 +172,21 @@ Deferred because current long-entry authoring via per-entry limit overrides is s
 
 **Markdown Dropdown**
 Helper UI on the description textarea for inserting common markdown formatting shortcuts (bold, italic, heading, bullet, blockquote, etc.); no parser, just insertion at cursor. Deferred because the target platform does not currently support markdown in lorebook entry descriptions. Revisit if platform support is added.
+
+---
+
+**Hover Peek on Collapsed Entries**
+Hovering a collapsed entry card reveals a temporary preview of its contents (name/type/triggers/description summary) without actually expanding it. Lets users skim a long lorebook without committing to expand/collapse cycles. Deferred from Polish Pass 4 — useful but non-trivial to implement without interfering with drag-to-reorder and existing hover states.
+
+---
+
+**Mass Move / Bulk Reorder**
+Multi-select entries and move them together up or down in the list. Options considered: checkbox column with bulk move buttons, shift-click range selection, or drag-group. No design decision yet. Deferred from Polish Pass 4 because single-entry drag is sufficient for current lorebook sizes; revisit when users report reorder friction on larger books.
+
+---
+
+**All-Conflicts Panel**
+Aggregate view of every trigger overlap across the active lorebook in one place — current crosstalk UI only surfaces conflicts per-entry. Would list each conflicting trigger with the entries that share it and provide batch Allow/Revoke actions at the lorebook level. Deferred from Polish Pass 4; Phase 9 Lorebook Crosstalk may subsume parts of this need.
 
 ---
 
