@@ -24,7 +24,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
-  const { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap } = useCrosstalk();
+  const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const expandAll              = useUi((s) => s.expandAll);
@@ -158,6 +158,14 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             {entry.name || '(unnamed)'}
           </span>
           <div className="entry-card-mobile-right">
+            {entry.hiddenFromExport && (
+              <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </span>
+            )}
             {!hideEntryStats && (
               <div className="entry-card-mobile-stats">
                 <span style={{ color: entry.triggers.length >= MAX_TRIGGERS ? 'var(--red)' : entry.triggers.length >= TRIGGER_WARN_YELLOW ? 'var(--yellow)' : 'var(--green)' }}>
@@ -203,6 +211,14 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         ) : (
           <span className="entry-label" style={{ color: typeColor }}>
             #{index}: {entry.name || '(unnamed)'}
+          </span>
+        )}
+        {entry.hiddenFromExport && (
+          <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
           </span>
         )}
         <div className="entry-card-header-right">
@@ -295,6 +311,20 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <div className="trigger-section">
             <div className="trigger-section-header">
               <div className="field-label">TRIGGER KEYWORDS</div>
+              {(() => {
+                const entryConflicts    = entry.triggers.map((t) => t.toLowerCase()).filter((t) => conflictMap.has(t));
+                const unacknowledged    = entryConflicts.filter((t) => !allowedOverlaps.includes(t));
+                if (entryConflicts.length < 2 || unacknowledged.length === 0) return null;
+                return (
+                  <button
+                    className="allow-all-overlap-btn"
+                    onClick={() => allowOverlaps(unacknowledged)}
+                    title="Mark all conflicting triggers in this entry as intentional overlaps"
+                  >
+                    Allow all overlap
+                  </button>
+                );
+              })()}
               <select
                 className="delimiter-select"
                 value={triggerDelimiter}
@@ -359,6 +389,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
             >
               ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
+            </button>
+            <button
+              className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
+              onClick={() => update({ hiddenFromExport: !entry.hiddenFromExport }, true)}
+              title="Exclude entry from JSON export"
+            >
+              {entry.hiddenFromExport ? 'Hidden from Export' : 'Hide from Export'}
             </button>
           </div>
 

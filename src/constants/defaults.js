@@ -36,6 +36,7 @@ export const DEFAULT_ENTRY = {
   description:         '',
   lastModified:        null,
   ignoreLimitWarnings: { description: false, triggers: false },
+  hiddenFromExport:    false,  // when true, entry remains in builder but is excluded from all export formats
   snapshots:           [], // [{ name, type, description, triggers, timestamp, label }]
 };
 

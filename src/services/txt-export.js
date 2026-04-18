@@ -13,7 +13,7 @@
  *   ...
  */
 export function exportToTxtBlob(lorebook) {
-  const blocks = lorebook.entries.map((entry) => {
+  const blocks = lorebook.entries.filter((e) => !e.hiddenFromExport).map((entry) => {
     const triggers = entry.triggers.length
       ? `Triggers: ${entry.triggers.join(', ')}`
       : 'Triggers:';
