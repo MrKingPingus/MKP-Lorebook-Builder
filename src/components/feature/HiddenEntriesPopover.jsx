@@ -59,6 +59,7 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
       ref={popoverRef}
       className="hidden-entries-popover"
       style={style}
+      onPointerDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
