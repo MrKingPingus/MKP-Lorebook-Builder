@@ -13,6 +13,7 @@ function buildDocumentXml(lorebook) {
   const paragraphs = [];
 
   for (const entry of lorebook.entries) {
+    if (entry.hiddenFromExport) continue;
     // Entry heading
     paragraphs.push(
       `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr>` +

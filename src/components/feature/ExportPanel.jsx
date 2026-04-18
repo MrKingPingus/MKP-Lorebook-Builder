@@ -15,6 +15,12 @@ export function ExportPanel() {
   const [copiedFlash, setCopiedFlash] = useState(null);
   const flashTimer = useRef(null);
 
+  // User-editable override for the download filename (without extension). Resets to the
+  // lorebook's sanitized name when switching books.
+  const defaultName = (activeLorebook?.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+  const [filenameOverride, setFilenameOverride] = useState(defaultName);
+  useEffect(() => { setFilenameOverride(defaultName); }, [activeLorebook?.id]);
+
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
 
   async function runCopy(which, fn) {
@@ -30,18 +36,22 @@ export function ExportPanel() {
 
   if (!activeLorebook) return <div className="export-panel export-panel--empty">No lorebook loaded.</div>;
 
-  const safeName = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+  // Sanitize the user's input at export time — fall back to the lorebook's safe name if blank.
+  function resolveFilename() {
+    const cleaned = filenameOverride.replace(/[^a-z0-9_-]/gi, '_').replace(/^_+|_+$/g, '');
+    return cleaned || defaultName || 'lorebook';
+  }
 
   function exportJson() {
-    doExportJson(activeLorebook, `${safeName}.json`);
+    doExportJson(activeLorebook, `${resolveFilename()}.json`);
   }
 
   function exportTxt() {
-    doExportTxt(activeLorebook, `${safeName}.txt`);
+    doExportTxt(activeLorebook, `${resolveFilename()}.txt`);
   }
 
   function exportDocx() {
-    doExportDocx(activeLorebook, `${safeName}.docx`);
+    doExportDocx(activeLorebook, `${resolveFilename()}.docx`);
   }
 
   async function copyToClipboard() {
@@ -63,6 +73,18 @@ export function ExportPanel() {
 
       <div className="export-section">
         <div className="export-section-label">Download</div>
+        <div className="export-filename-row">
+          <label className="export-filename-label" htmlFor="export-filename">Filename</label>
+          <input
+            id="export-filename"
+            className="export-filename-input"
+            value={filenameOverride}
+            onChange={(e) => setFilenameOverride(e.target.value)}
+            placeholder={defaultName}
+            spellCheck={false}
+            title="Download filename (without extension) — letters, numbers, underscore, and hyphen only"
+          />
+        </div>
         <div className="export-actions">
           <button className="export-btn" onClick={exportJson}>⬇ JSON</button>
           <button className="export-btn" onClick={exportTxt}>⬇ TXT</button>

@@ -79,16 +79,20 @@ export function generateSuggestionPool(entry, existingTriggers = []) {
   const descWords = descText.split(/\s+/).slice(0, SUGGESTION_DESC_WORD_LIMIT).join(' ');
   candidates.push(...extractTokens(descWords));
 
-  // Multi-word phrases: adjacent proper-noun pairs from description — preserve casing
-  const rawWords = descText.match(/[A-Za-z][a-z''-]*/g) || [];
-  for (let i = 0; i < rawWords.length - 1; i++) {
-    const a = rawWords[i];
-    const b = rawWords[i + 1];
-    if (
-      isCapitalized(a) && isCapitalized(b) &&
-      !STOP_WORDS.has(a.toLowerCase()) && !STOP_WORDS.has(b.toLowerCase())
-    ) {
-      candidates.push(`${a} ${b}`);
+  // Multi-word phrases: adjacent proper-noun pairs within the same clause — preserve casing.
+  // Splitting on sentence/clause punctuation prevents cross-boundary pairs like "Reika. Reika".
+  const clauses = descText.split(/[.!?,;:\n]+/);
+  for (const clause of clauses) {
+    const rawWords = clause.match(/[A-Za-z][a-z''-]*/g) || [];
+    for (let i = 0; i < rawWords.length - 1; i++) {
+      const a = rawWords[i];
+      const b = rawWords[i + 1];
+      if (
+        isCapitalized(a) && isCapitalized(b) &&
+        !STOP_WORDS.has(a.toLowerCase()) && !STOP_WORDS.has(b.toLowerCase())
+      ) {
+        candidates.push(`${a} ${b}`);
+      }
     }
   }
 

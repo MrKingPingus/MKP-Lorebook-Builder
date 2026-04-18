@@ -22,9 +22,17 @@ export function useCrosstalk() {
     }
   }
 
+  // Bulk variant — adds all new triggers in a single store update so batched "allow all" actions
+  // don't fight stale-state in per-trigger loops.
+  function allowOverlaps(triggerLowers) {
+    const toAdd = triggerLowers.filter((t) => !allowedOverlaps.includes(t));
+    if (toAdd.length === 0) return;
+    updateAllowedOverlaps([...allowedOverlaps, ...toAdd]);
+  }
+
   function revokeOverlap(triggerLower) {
     updateAllowedOverlaps(allowedOverlaps.filter((t) => t !== triggerLower));
   }
 
-  return { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap };
+  return { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap };
 }

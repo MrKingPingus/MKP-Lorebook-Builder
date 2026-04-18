@@ -21,7 +21,7 @@ export function EntryDetailPanel() {
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
   const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { entryTypeView, triggerDelimiter, setTriggerDelimiter } = useSettings();
-  const { conflictMap, allowedOverlaps, allowOverlap, revokeOverlap } = useCrosstalk();
+  const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const nameInputRef = useRef(null);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
@@ -150,6 +150,20 @@ export function EntryDetailPanel() {
           <div className="entry-detail-section">
             <div className="trigger-section-header">
               <div className="field-label">TRIGGER KEYWORDS</div>
+              {(() => {
+                const entryConflicts = entry.triggers.map((t) => t.toLowerCase()).filter((t) => conflictMap.has(t));
+                const unacknowledged = entryConflicts.filter((t) => !allowedOverlaps.includes(t));
+                if (entryConflicts.length < 2 || unacknowledged.length === 0) return null;
+                return (
+                  <button
+                    className="allow-all-overlap-btn"
+                    onClick={() => allowOverlaps(unacknowledged)}
+                    title="Mark all conflicting triggers in this entry as intentional overlaps"
+                  >
+                    Allow all overlap
+                  </button>
+                );
+              })()}
               <select
                 className="delimiter-select"
                 value={triggerDelimiter}
@@ -187,19 +201,28 @@ export function EntryDetailPanel() {
 
           {/* Rollback */}
           <div className="entry-detail-section">
-            <button
-              className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
-              onClick={() => {
-                if (rollback.enabled) {
-                  setRollbackOpen((o) => !o);
-                } else {
-                  setActiveMenuPanel('settings');
-                }
-              }}
-              title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
-            >
-              ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
-            </button>
+            <div className="rollback-footer">
+              <button
+                className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
+                onClick={() => {
+                  if (rollback.enabled) {
+                    setRollbackOpen((o) => !o);
+                  } else {
+                    setActiveMenuPanel('settings');
+                  }
+                }}
+                title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
+              >
+                ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
+              </button>
+              <button
+                className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
+                onClick={() => update({ hiddenFromExport: !entry.hiddenFromExport }, true)}
+                title="Exclude entry from JSON export"
+              >
+                {entry.hiddenFromExport ? 'Hidden from Export' : 'Hide from Export'}
+              </button>
+            </div>
 
             {rollbackOpen && rollback.enabled && (
               <RollbackPanel

@@ -25,8 +25,10 @@ export function useExport() {
   }
 
   async function copyJsonToClipboard(lorebook) {
-    const json = JSON.stringify(lorebook, null, 2);
-    await navigator.clipboard.writeText(json);
+    // Route through exportToJsonBlob so the hiddenFromExport filter + app-internal metadata
+    // stripping apply identically to download and clipboard paths.
+    const text = await exportToJsonBlob(lorebook).text();
+    await navigator.clipboard.writeText(text);
   }
 
   function downloadJsonTemplate() {

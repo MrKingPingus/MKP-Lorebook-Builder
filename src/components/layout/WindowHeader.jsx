@@ -1,15 +1,31 @@
 // Window title bar — logo, lorebook name (desktop only), menu button, close button
+import { useRef, useState } from 'react';
 import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useUi }         from '../../hooks/use-ui.js';
 import { MenuButton }    from './MenuButton.jsx';
+import { HiddenEntriesPopover } from '../feature/HiddenEntriesPopover.jsx';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
   const setShowLander                      = useUi((s) => s.setShowLander);
+  const hiddenBtnRef                       = useRef(null);
+  const [hiddenOpen, setHiddenOpen]        = useState(false);
+  const [hiddenAnchor, setHiddenAnchor]    = useState(null);
+
+  const hiddenEntries = activeLorebook?.entries.filter((e) => e.hiddenFromExport) ?? [];
+
+  function toggleHidden() {
+    if (hiddenOpen) {
+      setHiddenOpen(false);
+      return;
+    }
+    setHiddenAnchor(hiddenBtnRef.current?.getBoundingClientRect() ?? null);
+    setHiddenOpen(true);
+  }
 
   return (
     <div
@@ -38,6 +54,24 @@ export function WindowHeader() {
             <span className="lorebook-entry-count" title="Total entries in this lorebook">
               · {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
             </span>
+          )}
+          {activeLorebook && hiddenEntries.length > 0 && (
+            <button
+              ref={hiddenBtnRef}
+              className="lorebook-hidden-count"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={toggleHidden}
+              title="Entries excluded from JSON export — click to view and manage"
+            >
+              · {hiddenEntries.length} hidden
+            </button>
+          )}
+          {hiddenOpen && (
+            <HiddenEntriesPopover
+              anchorRect={hiddenAnchor}
+              hiddenEntries={hiddenEntries}
+              onClose={() => setHiddenOpen(false)}
+            />
           )}
         </div>
       )}

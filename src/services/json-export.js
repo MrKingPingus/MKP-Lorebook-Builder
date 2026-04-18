@@ -3,9 +3,12 @@
 export function exportToJsonBlob(lorebook) {
   const exported = {
     ...lorebook,
-    // Strip app-internal metadata that is meaningless outside the app
+    // Strip app-internal metadata that is meaningless outside the app.
+    // hiddenFromExport entries are omitted entirely; the flag itself is also stripped.
     rollback: undefined,
-    entries: lorebook.entries.map(({ snapshots: _s, ...rest }) => rest),
+    entries: lorebook.entries
+      .filter((e) => !e.hiddenFromExport)
+      .map(({ snapshots: _s, hiddenFromExport: _h, ...rest }) => rest),
   };
   const json = JSON.stringify(exported, null, 2);
   return new Blob([json], { type: 'application/json' });
