@@ -404,12 +404,20 @@ input:focus, textarea:focus, select:focus {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  transition: opacity 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+  transition: opacity 120ms ease, filter 120ms ease;
   position: relative;
-  box-shadow: inset 0 0 0 1px transparent;
 }
-.crosstalk-side--focused {
-  box-shadow: inset 0 0 0 2px var(--green);
+/* 3-sided overlay frame — sits above entries (z-index) but leaves the
+   right edge open so the scrollbar gutter stays clean. */
+.crosstalk-side--focused::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  border-top:    1px solid var(--muted2);
+  border-left:   1px solid var(--muted2);
+  border-bottom: 1px solid var(--muted2);
 }
 .crosstalk-side--dimmed {
   opacity: 0.55;
