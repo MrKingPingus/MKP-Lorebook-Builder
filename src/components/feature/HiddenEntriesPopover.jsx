@@ -14,7 +14,7 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
   const { openEntry }          = useEntryDetail();
   const isMobile               = useMobile();
 
-  // Close on outside click
+  // Close on outside click — listen on 'click' so React's button onClick fires first
   useEffect(() => {
     function onDocClick(e) {
       if (popoverRef.current && !popoverRef.current.contains(e.target)) {
@@ -22,10 +22,10 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
       }
     }
     // Defer attach so the click that opened the popover doesn't immediately close it
-    const id = setTimeout(() => document.addEventListener('mousedown', onDocClick), 0);
+    const id = setTimeout(() => document.addEventListener('click', onDocClick), 0);
     return () => {
       clearTimeout(id);
-      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('click', onDocClick);
     };
   }, [onClose]);
 
@@ -55,7 +55,13 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
     : {};
 
   return createPortal(
-    <div ref={popoverRef} className="hidden-entries-popover" style={style}>
+    <div
+      ref={popoverRef}
+      className="hidden-entries-popover"
+      style={style}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="hidden-entries-popover-title">Hidden from export</div>
       {hiddenEntries.length === 0 ? (
         <div className="hidden-entries-empty">No hidden entries.</div>
@@ -64,6 +70,7 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
           {hiddenEntries.map((e) => (
             <div key={e.id} className="hidden-entries-item">
               <button
+                type="button"
                 className="hidden-entries-entry"
                 onClick={() => navigate(e.id)}
                 title="Go to entry"
@@ -72,6 +79,7 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
                 <span className="hidden-entries-entry-name">{e.name || '(unnamed)'}</span>
               </button>
               <button
+                type="button"
                 className="hidden-entries-unhide"
                 onClick={() => unhide(e)}
                 title="Mark entry as visible in export"
@@ -86,3 +94,4 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
     document.body
   );
 }
+
