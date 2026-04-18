@@ -2,9 +2,10 @@
 // Both panels currently render the same active lorebook — this surfaces the
 // duplicate-mount and shared-state issues we need to design around before
 // introducing a real dual-lorebook store.
-import { useState }   from 'react';
+import { useState }    from 'react';
 import { useLorebook } from '../../hooks/use-lorebook.js';
-import { BuildPanel } from './BuildPanel.jsx';
+import { SideContext } from '../../hooks/use-side.js';
+import { BuildPanel }  from './BuildPanel.jsx';
 
 function SideLabel({ name, active }) {
   return (
@@ -27,8 +28,10 @@ export function CrosstalkPrototype() {
         className={`crosstalk-side${focusedSide === 'left' ? ' crosstalk-side--focused' : ' crosstalk-side--dimmed'}`}
         onMouseDownCapture={() => setFocusedSide('left')}
       >
-        <SideLabel name={name} active={focusedSide === 'left'} />
-        <BuildPanel />
+        <SideContext.Provider value="left">
+          <SideLabel name={name} active={focusedSide === 'left'} />
+          <BuildPanel />
+        </SideContext.Provider>
       </div>
 
       <div className="crosstalk-divider" />
@@ -37,10 +40,13 @@ export function CrosstalkPrototype() {
         className={`crosstalk-side${focusedSide === 'right' ? ' crosstalk-side--focused' : ' crosstalk-side--dimmed'}`}
         onMouseDownCapture={() => setFocusedSide('right')}
       >
-        <SideLabel name={name} active={focusedSide === 'right'} />
-        <BuildPanel />
+        <SideContext.Provider value="right">
+          <SideLabel name={name} active={focusedSide === 'right'} />
+          <BuildPanel />
+        </SideContext.Provider>
       </div>
     </div>
   );
 }
+
 
