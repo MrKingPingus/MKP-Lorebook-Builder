@@ -76,15 +76,32 @@ export function useLorebook() {
     setLorebookIndex(newIndex);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
 
+    // Snapshot slot state before we start mutating it, so the stale-side
+    // cleanup below doesn't race with switchLorebook's setActiveLorebookId.
+    const storeNow     = useLorebookStore.getState();
+    const leftWasStale  = storeNow.leftId  === id;
+    const rightWasStale = storeNow.rightId === id;
+    const focusWas      = storeNow.focusSide;
+
     if (id === activeLorebookId) {
       const next = newIndex[0];
       if (next) {
         switchLorebook(next.id);
+        // switchLorebook only fills the focused slot; clear a stale non-focused slot.
+        if (focusWas === 'left'  && rightWasStale) useLorebookStore.getState().setSlot('right', null);
+        if (focusWas === 'right' && leftWasStale)  useLorebookStore.getState().setSlot('left',  null);
       } else {
         setActiveLorebookId(null);
         clearAllHistory();
         clearSelection();
+        if (leftWasStale)  useLorebookStore.getState().setSlot('left',  null);
+        if (rightWasStale) useLorebookStore.getState().setSlot('right', null);
       }
+    } else {
+      // Deleted lorebook was in the non-focused slot — just null it out so the
+      // side renders empty and the picker shows "(none)".
+      if (leftWasStale)  useLorebookStore.getState().setSlot('left',  null);
+      if (rightWasStale) useLorebookStore.getState().setSlot('right', null);
     }
   }
 
