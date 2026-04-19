@@ -1,13 +1,12 @@
 // Phase 9 throwaway prototype: two BuildPanels side by side, click to focus.
 // Seeds each slot from the lorebook index on mount and exposes a picker on
 // both sides so either slot can be swapped mid-session.
-import { useEffect }        from 'react';
-import { SideContext }      from '../../hooks/use-side.js';
-import { useLorebookStore } from '../../state/lorebook-store.js';
-import { BuildPanel }       from './BuildPanel.jsx';
+import { useEffect, useRef }   from 'react';
+import { SideContext }         from '../../hooks/use-side.js';
+import { useCrosstalkSlots }   from '../../hooks/use-crosstalk-slots.js';
+import { BuildPanel }          from './BuildPanel.jsx';
 
-function SlotPicker({ slotId, onChange }) {
-  const lorebookIndex = useLorebookStore((s) => s.lorebookIndex);
+function SlotPicker({ slotId, onChange, lorebookIndex }) {
   return (
     <select
       className="crosstalk-right-picker"
@@ -23,58 +22,54 @@ function SlotPicker({ slotId, onChange }) {
   );
 }
 
-function SideLabel({ name, active, slotId, onSlotChange }) {
+function SideLabel({ name, active, slotId, onSlotChange, lorebookIndex }) {
   return (
     <div className="crosstalk-side-label">
       <span className={`crosstalk-side-title${active ? ' crosstalk-side-title--active' : ''}`}>
         {name || '(untitled)'}
       </span>
-      <SlotPicker slotId={slotId} onChange={onSlotChange} />
+      <SlotPicker slotId={slotId} onChange={onSlotChange} lorebookIndex={lorebookIndex} />
     </div>
   );
 }
 
 export function CrosstalkPrototype() {
-  const leftId        = useLorebookStore((s) => s.leftId);
-  const rightId       = useLorebookStore((s) => s.rightId);
-  const focusSide     = useLorebookStore((s) => s.focusSide);
-  const lorebooks     = useLorebookStore((s) => s.lorebooks);
-  const lorebookIndex = useLorebookStore((s) => s.lorebookIndex);
-  const setSlot       = useLorebookStore((s) => s.setSlot);
-  const setFocusSide  = useLorebookStore((s) => s.setFocusSide);
+  const {
+    leftId, rightId, focusSide,
+    leftName, rightName,
+    lorebookIndex,
+    setSlot, pickSlot, setFocusSide,
+  } = useCrosstalkSlots();
 
-  const leftName  = leftId  ? lorebooks[leftId]?.name  ?? '' : '';
-  const rightName = rightId ? lorebooks[rightId]?.name ?? '' : '';
-
-  // Auto-seed slots once on mount from the two most-recent lorebooks.
+  // Seed the right slot once on first mount (after bootstrap loads the index).
+  // One-shot: if the user later clears the slot via "(none)", we don't
+  // auto-re-seed (that would override intentional empty-slot selection).
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (rightId) return;
+    if (seededRef.current) return;
+    if (rightId) { seededRef.current = true; return; }
     if (lorebookIndex.length >= 2) {
       setSlot('right', lorebookIndex[1].id);
+      seededRef.current = true;
     } else if (lorebookIndex.length === 1) {
       setSlot('right', lorebookIndex[0].id);
+      seededRef.current = true;
     }
   }, [rightId, lorebookIndex, setSlot]);
-
-  function focusSide_(side) {
-    // Keep the store's focusSide in sync so activeLorebookId (and therefore
-    // undo/redo, which is called from outside any SideContext) targets the
-    // correct lorebook.
-    setFocusSide(side);
-  }
 
   return (
     <div className="crosstalk-prototype">
       <div
         className={`crosstalk-side${focusSide === 'left' ? ' crosstalk-side--focused' : ' crosstalk-side--dimmed'}`}
-        onMouseDownCapture={() => focusSide_('left')}
+        onMouseDownCapture={() => setFocusSide('left')}
       >
         <SideContext.Provider value="left">
           <SideLabel
             name={leftName}
             active={focusSide === 'left'}
             slotId={leftId}
-            onSlotChange={(id) => setSlot('left', id)}
+            onSlotChange={(id) => pickSlot('left', id)}
+            lorebookIndex={lorebookIndex}
           />
           <BuildPanel />
         </SideContext.Provider>
@@ -84,14 +79,15 @@ export function CrosstalkPrototype() {
 
       <div
         className={`crosstalk-side${focusSide === 'right' ? ' crosstalk-side--focused' : ' crosstalk-side--dimmed'}`}
-        onMouseDownCapture={() => focusSide_('right')}
+        onMouseDownCapture={() => setFocusSide('right')}
       >
         <SideContext.Provider value="right">
           <SideLabel
             name={rightName}
             active={focusSide === 'right'}
             slotId={rightId}
-            onSlotChange={(id) => setSlot('right', id)}
+            onSlotChange={(id) => pickSlot('right', id)}
+            lorebookIndex={lorebookIndex}
           />
           <BuildPanel />
         </SideContext.Provider>
