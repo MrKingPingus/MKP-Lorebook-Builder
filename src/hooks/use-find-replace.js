@@ -1,7 +1,8 @@
 // Find and replace field state, scope selector, match count display, and dispatch to find-replace service
 import { useState, useEffect } from 'react';
-import { useLorebookStore } from '../state/lorebook-store.js';
-import { useHistoryStore } from '../state/history-store.js';
+import { useLorebookStore }  from '../state/lorebook-store.js';
+import { useHistoryStore }   from '../state/history-store.js';
+import { useSideLorebookId } from './use-side.js';
 import { findReplace, countMatches } from '../services/find-replace.js';
 
 const DEFAULT_SCOPE = { title: true, triggers: true, description: true };
@@ -12,18 +13,17 @@ export function useFindReplace(entries) {
   const [scope, setScope]             = useState(DEFAULT_SCOPE);
   const [scopeOpen, setScopeOpen]     = useState(false);
 
-  const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
-  const updateEntries    = useLorebookStore((s) => s.updateEntries);
-  const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
+  const targetId      = useSideLorebookId();
+  const updateEntries = useLorebookStore((s) => s.updateEntries);
+  const pushSnapshot  = useHistoryStore((s) => s.pushSnapshot);
 
-  // Reset find/replace fields when switching lorebooks so stale terms don't
-  // appear to wipe results in the new book.
+  // Reset find/replace fields when the target lorebook changes.
   useEffect(() => {
     setFindText('');
     setReplaceText('');
     setScope(DEFAULT_SCOPE);
     setScopeOpen(false);
-  }, [activeLorebookId]);
+  }, [targetId]);
 
   const matchCount = countMatches(entries, findText, scope);
 
@@ -42,9 +42,9 @@ export function useFindReplace(entries) {
 
   function replaceAll() {
     if (!findText) return;
-    pushSnapshot(activeLorebookId, { entries: [...entries] });
+    pushSnapshot(targetId, { entries: [...entries] });
     const updated = findReplace(entries, findText, replaceText, scope);
-    updateEntries(activeLorebookId, updated);
+    updateEntries(targetId, updated);
     setScopeOpen(false);
   }
 

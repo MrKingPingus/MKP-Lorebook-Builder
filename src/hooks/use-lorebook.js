@@ -1,7 +1,8 @@
 // Active lorebook data and lorebook-level actions: load, switch, create, and delete
-import { useLorebookStore } from '../state/lorebook-store.js';
-import { useHistoryStore }  from '../state/history-store.js';
-import { useUiStore }       from '../state/ui-store.js';
+import { useLorebookStore }  from '../state/lorebook-store.js';
+import { useHistoryStore }   from '../state/history-store.js';
+import { useUiStore }        from '../state/ui-store.js';
+import { useSideLorebookId } from './use-side.js';
 import { readJson, writeJson, removeItem } from '../services/storage-service.js';
 import { createEmptyLorebook }             from '../services/entry-factory.js';
 import { useSettingsStore }                from '../state/settings-store.js';
@@ -9,6 +10,7 @@ import { addToIndex, removeFromIndex, promoteInIndex } from '../services/loreboo
 import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY } from '../constants/storage-keys.js';
 
 export function useLorebook() {
+  const sideId           = useSideLorebookId();
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
   const lorebooks        = useLorebookStore((s) => s.lorebooks);
   const lorebookIndex    = useLorebookStore((s) => s.lorebookIndex);
@@ -26,7 +28,9 @@ export function useLorebook() {
   const setSearchMode               = useUiStore((s) => s.setSearchMode);
   const setTypeFilter               = useUiStore((s) => s.setTypeFilter);
 
-  const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
+  // activeLorebook resolves to the side's lorebook when inside a SideContext.Provider,
+  // or the focused-slot lorebook when called from outside (WindowHeader, menu panels, etc.)
+  const activeLorebook  = sideId ? lorebooks[sideId] ?? null : null;
 
   function createLorebook({ silent = false } = {}) {
     const rollbackDefaultEnabled = useSettingsStore.getState().rollbackDefaultEnabled;
@@ -83,7 +87,7 @@ export function useLorebook() {
   }
 
   function renameLorebook(name) {
-    updateActiveName(activeLorebookId, name);
+    updateActiveName(sideId, name);
   }
 
   function renameLorebookById(id, name) {

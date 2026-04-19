@@ -2,6 +2,7 @@
 // Also exports useRollbackConfig() for the settings panel (no entry context required).
 import { useState, useRef }  from 'react';
 import { useLorebookStore }  from '../state/lorebook-store.js';
+import { useSideLorebookId } from './use-side.js';
 import { DEFAULT_LOREBOOK }  from '../constants/defaults.js';
 import {
   buildSnapshot,
@@ -43,10 +44,10 @@ export function useRollbackConfig() {
  * @param {Function} onUpdate - updateEntry(id, patch, discrete?) from use-entries
  */
 export function useRollback({ entry, onUpdate }) {
+  const targetId            = useSideLorebookId();
   const setLorebookRollback = useLorebookStore((s) => s.setLorebookRollback);
-  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
   const rollbackConfig      = useLorebookStore((s) => {
-    const id = s.activeLorebookId;
+    const id = targetId;
     return id ? (s.lorebooks[id]?.rollback ?? DEFAULT_LOREBOOK.rollback) : DEFAULT_LOREBOOK.rollback;
   });
 
@@ -185,11 +186,11 @@ export function useRollback({ entry, onUpdate }) {
   // ── Per-lorebook config setters ───────────────────────────────────────────
 
   function setRollbackEnabled(value) {
-    setLorebookRollback(activeLorebookId, { enabled: value });
+    setLorebookRollback(targetId, { enabled: value });
   }
 
   function setSnapshotCount(count) {
-    setLorebookRollback(activeLorebookId, { snapshotCount: count });
+    setLorebookRollback(targetId, { snapshotCount: count });
   }
 
   return {
