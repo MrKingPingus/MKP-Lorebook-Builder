@@ -26,14 +26,15 @@ export function useRollbackConfig() {
     const id = s.activeLorebookId;
     return id ? (s.lorebooks[id]?.rollback ?? DEFAULT_LOREBOOK.rollback) : DEFAULT_LOREBOOK.rollback;
   });
+  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
 
   return {
     rollbackEnabled: rollbackConfig.enabled,
     snapshotCount:   rollbackConfig.snapshotCount,
     autoSnapshot:    rollbackConfig.autoSnapshot ?? true,
-    setRollbackEnabled: (v) => setLorebookRollback({ enabled: v }),
-    setSnapshotCount:   (v) => setLorebookRollback({ snapshotCount: v }),
-    setAutoSnapshot:    (v) => setLorebookRollback({ autoSnapshot: v }),
+    setRollbackEnabled: (v) => setLorebookRollback(activeLorebookId, { enabled: v }),
+    setSnapshotCount:   (v) => setLorebookRollback(activeLorebookId, { snapshotCount: v }),
+    setAutoSnapshot:    (v) => setLorebookRollback(activeLorebookId, { autoSnapshot: v }),
   };
 }
 
@@ -43,6 +44,7 @@ export function useRollbackConfig() {
  */
 export function useRollback({ entry, onUpdate }) {
   const setLorebookRollback = useLorebookStore((s) => s.setLorebookRollback);
+  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
   const rollbackConfig      = useLorebookStore((s) => {
     const id = s.activeLorebookId;
     return id ? (s.lorebooks[id]?.rollback ?? DEFAULT_LOREBOOK.rollback) : DEFAULT_LOREBOOK.rollback;
@@ -183,11 +185,11 @@ export function useRollback({ entry, onUpdate }) {
   // ── Per-lorebook config setters ───────────────────────────────────────────
 
   function setRollbackEnabled(value) {
-    setLorebookRollback({ enabled: value });
+    setLorebookRollback(activeLorebookId, { enabled: value });
   }
 
   function setSnapshotCount(count) {
-    setLorebookRollback({ snapshotCount: count });
+    setLorebookRollback(activeLorebookId, { snapshotCount: count });
   }
 
   return {

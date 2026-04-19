@@ -17,7 +17,7 @@ export function useLorebook() {
   const setLorebookIndex    = useLorebookStore((s) => s.setLorebookIndex);
   const setLorebook         = useLorebookStore((s) => s.setLorebook);
   const removeLorebook      = useLorebookStore((s) => s.removeLorebook);
-  const updateActiveName          = useLorebookStore((s) => s.updateActiveName);
+  const updateActiveName          = useLorebookStore((s) => s.updateName);
   const renameLorebookByIdStore   = useLorebookStore((s) => s.renameLorebookById);
   const clearHistory              = useHistoryStore((s) => s.clear);
   const setPendingFocusLorebookName = useUiStore((s) => s.setPendingFocusLorebookName);
@@ -83,7 +83,7 @@ export function useLorebook() {
   }
 
   function renameLorebook(name) {
-    updateActiveName(name);
+    updateActiveName(activeLorebookId, name);
   }
 
   function renameLorebookById(id, name) {

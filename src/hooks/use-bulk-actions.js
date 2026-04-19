@@ -5,21 +5,21 @@ import { useUiStore }       from '../state/ui-store.js';
 import { changeTypeForIds } from '../services/find-replace.js';
 
 export function useBulkActions() {
-  const lorebooks           = useLorebookStore((s) => s.lorebooks);
-  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
-  const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
-  const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
-  const selectedIds         = useUiStore((s) => s.selectedIds);
-  const clearSelection      = useUiStore((s) => s.clearSelection);
-  const setSearchMode       = useUiStore((s) => s.setSearchMode);
+  const lorebooks        = useLorebookStore((s) => s.lorebooks);
+  const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
+  const updateEntries    = useLorebookStore((s) => s.updateEntries);
+  const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
+  const selectedIds      = useUiStore((s) => s.selectedIds);
+  const clearSelection   = useUiStore((s) => s.clearSelection);
+  const setSearchMode    = useUiStore((s) => s.setSearchMode);
 
   const entries = activeLorebookId ? lorebooks[activeLorebookId]?.entries ?? [] : [];
 
   function applyTypeChange(toType) {
     if (selectedIds.size === 0 || !toType) return;
-    pushSnapshot({ entries: [...entries] });
+    pushSnapshot(activeLorebookId, { entries: [...entries] });
     const updated = changeTypeForIds(entries, selectedIds, toType);
-    updateActiveEntries(updated);
+    updateEntries(activeLorebookId, updated);
     clearSelection();
     setSearchMode('search');
   }

@@ -11,10 +11,11 @@ export function useAppendImport() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
 
-  const { entries }          = useEntries();
+  const { entries }             = useEntries();
   const { parseFile, parseTxt } = useImport();
-  const updateActiveEntries  = useLorebookStore((s) => s.updateActiveEntries);
-  const pushSnapshot         = useHistoryStore((s) => s.pushSnapshot);
+  const activeLorebookId        = useLorebookStore((s) => s.activeLorebookId);
+  const updateEntries           = useLorebookStore((s) => s.updateEntries);
+  const pushSnapshot            = useHistoryStore((s) => s.pushSnapshot);
   const setShowAppendImport  = useUiStore((s) => s.setShowAppendImport);
   const setActiveMenuPanel   = useUiStore((s) => s.setActiveMenuPanel);
 
@@ -46,8 +47,8 @@ export function useAppendImport() {
 
   function confirmAppend() {
     if (!preview) return;
-    pushSnapshot({ entries: [...entries] });
-    updateActiveEntries([...entries, ...preview]);
+    pushSnapshot(activeLorebookId, { entries: [...entries] });
+    updateEntries(activeLorebookId, [...entries, ...preview]);
     setPreview(null);
     setShowAppendImport(false);
   }

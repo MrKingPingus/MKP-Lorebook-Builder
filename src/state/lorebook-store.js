@@ -7,8 +7,9 @@
 //                      that changes slot ids or focus, so existing call sites that
 //                      read activeLorebookId continue to work without changes.
 //
-// In single-slot mode (the default — nothing has entered crosstalk), rightId is
-// null and focusSide stays 'left'. All existing behavior is preserved.
+// Mutation actions take an explicit lorebookId as their first argument. Callers
+// that want to act on the focused slot pass activeLorebookId; side-aware hooks
+// resolve to leftId or rightId themselves.
 import { create } from 'zustand';
 
 function pickActiveId(focusSide, leftId, rightId) {
@@ -22,10 +23,7 @@ export const useLorebookStore = create((set, get) => ({
 
   activeLorebookId: null,
 
-  // map of id -> lorebook object { id, name, entries: [] }
-  lorebooks: {},
-
-  // lorebook index array: [{ id, name, key, updatedAt }]
+  lorebooks:     {},
   lorebookIndex: [],
 
   // --- slot & focus actions ---
@@ -47,8 +45,6 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
-  // Back-compat: callers that "set the active lorebook" actually mean "set the
-  // focused slot". In single-slot mode this is always the left slot.
   setActiveLorebookId: (id) =>
     set((state) => {
       const nextLeftId  = state.focusSide === 'left'  ? id : state.leftId;
@@ -69,46 +65,41 @@ export const useLorebookStore = create((set, get) => ({
       lorebooks: { ...state.lorebooks, [lorebook.id]: lorebook },
     })),
 
-  updateActiveEntries: (entries) =>
+  // --- explicit-id mutators ---
+
+  updateEntries: (id, entries) =>
     set((state) => {
-      const id = state.activeLorebookId;
       if (!id) return {};
-      return {
-        lorebooks: {
-          ...state.lorebooks,
-          [id]: { ...state.lorebooks[id], entries },
-        },
-      };
+      const lb = state.lorebooks[id];
+      if (!lb) return {};
+      return { lorebooks: { ...state.lorebooks, [id]: { ...lb, entries } } };
     }),
 
-  updateEntry: (id, patch) =>
+  updateEntry: (lorebookId, entryId, patch) =>
     set((state) => {
-      const activeId = state.activeLorebookId;
-      if (!activeId) return {};
-      const lorebook = state.lorebooks[activeId];
-      if (!lorebook) return {};
+      if (!lorebookId) return {};
+      const lb = state.lorebooks[lorebookId];
+      if (!lb) return {};
       return {
         lorebooks: {
           ...state.lorebooks,
-          [activeId]: {
-            ...lorebook,
-            entries: lorebook.entries.map((e) =>
-              e.id === id ? { ...e, ...patch, lastModified: Date.now() } : e
+          [lorebookId]: {
+            ...lb,
+            entries: lb.entries.map((e) =>
+              e.id === entryId ? { ...e, ...patch, lastModified: Date.now() } : e
             ),
           },
         },
       };
     }),
 
-  updateActiveName: (name) =>
+  updateName: (id, name) =>
     set((state) => {
-      const id = state.activeLorebookId;
       if (!id) return {};
+      const lb = state.lorebooks[id];
+      if (!lb) return {};
       return {
-        lorebooks: {
-          ...state.lorebooks,
-          [id]: { ...state.lorebooks[id], name },
-        },
+        lorebooks: { ...state.lorebooks, [id]: { ...lb, name } },
         lorebookIndex: state.lorebookIndex.map((item) =>
           item.id === id ? { ...item, name, updatedAt: Date.now() } : item
         ),
@@ -134,31 +125,23 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
-  updateAllowedOverlaps: (allowedOverlaps) =>
+  updateAllowedOverlaps: (id, allowedOverlaps) =>
     set((state) => {
-      const id = state.activeLorebookId;
       if (!id) return {};
-      return {
-        lorebooks: {
-          ...state.lorebooks,
-          [id]: { ...state.lorebooks[id], allowedOverlaps },
-        },
-      };
+      const lb = state.lorebooks[id];
+      if (!lb) return {};
+      return { lorebooks: { ...state.lorebooks, [id]: { ...lb, allowedOverlaps } } };
     }),
 
-  setLorebookRollback: (patch) =>
+  setLorebookRollback: (id, patch) =>
     set((state) => {
-      const id = state.activeLorebookId;
       if (!id) return {};
-      const lorebook = state.lorebooks[id];
-      if (!lorebook) return {};
+      const lb = state.lorebooks[id];
+      if (!lb) return {};
       return {
         lorebooks: {
           ...state.lorebooks,
-          [id]: {
-            ...lorebook,
-            rollback: { ...lorebook.rollback, ...patch },
-          },
+          [id]: { ...lb, rollback: { ...lb.rollback, ...patch } },
         },
       };
     }),

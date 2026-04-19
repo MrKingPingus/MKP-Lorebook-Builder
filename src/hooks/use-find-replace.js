@@ -12,9 +12,9 @@ export function useFindReplace(entries) {
   const [scope, setScope]             = useState(DEFAULT_SCOPE);
   const [scopeOpen, setScopeOpen]     = useState(false);
 
-  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
-  const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
-  const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
+  const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
+  const updateEntries    = useLorebookStore((s) => s.updateEntries);
+  const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
 
   // Reset find/replace fields when switching lorebooks so stale terms don't
   // appear to wipe results in the new book.
@@ -34,19 +34,17 @@ export function useFindReplace(entries) {
     }
     setScope((prev) => {
       const next = { ...prev, [field]: !prev[field] };
-      // If all three are now true, treat as "all"
       return next;
     });
   }
 
-  // Whether "All" is effectively selected (all three fields on)
   const allSelected = scope.title && scope.triggers && scope.description;
 
   function replaceAll() {
     if (!findText) return;
-    pushSnapshot({ entries: [...entries] });
+    pushSnapshot(activeLorebookId, { entries: [...entries] });
     const updated = findReplace(entries, findText, replaceText, scope);
-    updateActiveEntries(updated);
+    updateEntries(activeLorebookId, updated);
     setScopeOpen(false);
   }
 
