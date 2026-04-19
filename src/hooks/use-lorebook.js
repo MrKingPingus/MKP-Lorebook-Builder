@@ -19,9 +19,10 @@ export function useLorebook() {
   const setLorebookIndex    = useLorebookStore((s) => s.setLorebookIndex);
   const setLorebook         = useLorebookStore((s) => s.setLorebook);
   const removeLorebook      = useLorebookStore((s) => s.removeLorebook);
-  const updateActiveName          = useLorebookStore((s) => s.updateName);
-  const renameLorebookByIdStore   = useLorebookStore((s) => s.renameLorebookById);
-  const clearHistory              = useHistoryStore((s) => s.clear);
+  const updateActiveName    = useLorebookStore((s) => s.updateName);
+  const renameLorebookByIdStore = useLorebookStore((s) => s.renameLorebookById);
+  const clearHistoryFor         = useHistoryStore((s) => s.clearFor);
+  const clearAllHistory         = useHistoryStore((s) => s.clear);
   const setPendingFocusLorebookName = useUiStore((s) => s.setPendingFocusLorebookName);
   const clearSelection              = useUiStore((s) => s.clearSelection);
   const setSearchQuery              = useUiStore((s) => s.setSearchQuery);
@@ -30,7 +31,7 @@ export function useLorebook() {
 
   // activeLorebook resolves to the side's lorebook when inside a SideContext.Provider,
   // or the focused-slot lorebook when called from outside (WindowHeader, menu panels, etc.)
-  const activeLorebook  = sideId ? lorebooks[sideId] ?? null : null;
+  const activeLorebook = sideId ? lorebooks[sideId] ?? null : null;
 
   function createLorebook({ silent = false } = {}) {
     const rollbackDefaultEnabled = useSettingsStore.getState().rollbackDefaultEnabled;
@@ -44,14 +45,13 @@ export function useLorebook() {
     setActiveLorebookId(lb.id);
     writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
-    clearHistory();
+    // New lorebook starts with no history — no clear needed.
     clearSelection();
     if (!silent) setPendingFocusLorebookName(true);
   }
 
   function switchLorebook(id) {
     if (id === activeLorebookId) return;
-    // Load from storage if not in memory
     if (!lorebooks[id]) {
       const lb = readJson(LOREBOOK_KEY_PREFIX + id);
       if (lb) setLorebook(lb);
@@ -60,7 +60,8 @@ export function useLorebook() {
     setLorebookIndex(newIndex);
     setActiveLorebookId(id);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
-    clearHistory();
+    // Per-lorebook history means each lorebook retains its own undo stack across
+    // switches — no clear needed. The incoming lorebook's history is already isolated.
     clearSelection();
     setSearchQuery('');
     setSearchMode('search');
@@ -70,6 +71,7 @@ export function useLorebook() {
   function deleteLorebook(id) {
     removeItem(LOREBOOK_KEY_PREFIX + id);
     removeLorebook(id);
+    clearHistoryFor(id);
     const newIndex = removeFromIndex(lorebookIndex, id);
     setLorebookIndex(newIndex);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
@@ -80,7 +82,7 @@ export function useLorebook() {
         switchLorebook(next.id);
       } else {
         setActiveLorebookId(null);
-        clearHistory();
+        clearAllHistory();
         clearSelection();
       }
     }
@@ -92,10 +94,8 @@ export function useLorebook() {
 
   function renameLorebookById(id, name) {
     renameLorebookByIdStore(id, name);
-    // Persist the lorebook itself (read from memory or storage for non-active lorebooks)
     const lb = lorebooks[id] ?? readJson(LOREBOOK_KEY_PREFIX + id);
     if (lb) writeJson(LOREBOOK_KEY_PREFIX + id, { ...lb, name });
-    // Persist updated index
     const newIndex = lorebookIndex.map((item) =>
       item.id === id ? { ...item, name, updatedAt: Date.now() } : item
     );
