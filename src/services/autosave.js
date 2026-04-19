@@ -13,16 +13,26 @@ const DEBOUNCE_MS = 800;
 export function mountAutosave() {
   let timer = null;
 
+  // Saves every lorebook currently occupying a slot (leftId and rightId).
+  // Single-lorebook mode: rightId is null, so only the active slot is written.
+  // Crosstalk mode: both sides are written regardless of focus, so edits on
+  // the non-focused side survive — previously they were lost because the
+  // save only looked at activeLorebookId.
   const save = (state) => {
-    const { activeLorebookId, lorebooks, lorebookIndex } = state;
-    if (!activeLorebookId) return;
+    const { leftId, rightId, lorebooks, lorebookIndex } = state;
+    const ids = [leftId, rightId].filter((id, i, arr) => id && arr.indexOf(id) === i);
+    if (ids.length === 0) return;
 
-    const lorebook = lorebooks[activeLorebookId];
-    if (!lorebook) return;
-
-    writeJson(LOREBOOK_KEY_PREFIX + activeLorebookId, lorebook);
+    let wrote = false;
+    for (const id of ids) {
+      const lb = lorebooks[id];
+      if (lb) {
+        writeJson(LOREBOOK_KEY_PREFIX + id, lb);
+        wrote = true;
+      }
+    }
     writeJson(LOREBOOK_INDEX_KEY, lorebookIndex);
-    useUiStore.getState().setSavedAt(Date.now());
+    if (wrote) useUiStore.getState().setSavedAt(Date.now());
   };
 
   const unsubscribe = useLorebookStore.subscribe((state) => {
