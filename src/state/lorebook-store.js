@@ -1,60 +1,19 @@
-// Zustand store: dual-slot lorebook state, lorebook map, and dispatch actions.
-//
-// Dual-slot model:
-//   leftId, rightId  — ids of the lorebooks loaded into each slot (either may be null)
-//   focusSide        — which slot is currently focused ('left' | 'right')
-//   activeLorebookId — mirrors the focused slot's id; kept in sync by every action
-//                      that changes slot ids or focus, so existing call sites that
-//                      read activeLorebookId continue to work without changes.
-//
-// Mutation actions take an explicit lorebookId as their first argument. Callers
-// that want to act on the focused slot pass activeLorebookId; side-aware hooks
-// resolve to leftId or rightId themselves.
+// Zustand store: active lorebook id, all lorebooks map, and dispatch actions
 import { create } from 'zustand';
 
-function pickActiveId(focusSide, leftId, rightId) {
-  return focusSide === 'left' ? leftId : rightId;
-}
-
 export const useLorebookStore = create((set, get) => ({
-  leftId:    null,
-  rightId:   null,
-  focusSide: 'left',
-
+  // id of the currently active lorebook
   activeLorebookId: null,
 
-  lorebooks:     {},
+  // map of id -> lorebook object { id, name, entries: [] }
+  lorebooks: {},
+
+  // lorebook index array: [{ id, name, key, updatedAt }]
   lorebookIndex: [],
 
-  // --- slot & focus actions ---
+  // --- actions ---
 
-  setFocusSide: (focusSide) =>
-    set((state) => ({
-      focusSide,
-      activeLorebookId: pickActiveId(focusSide, state.leftId, state.rightId),
-    })),
-
-  setSlot: (side, id) =>
-    set((state) => {
-      const nextLeftId  = side === 'left'  ? id : state.leftId;
-      const nextRightId = side === 'right' ? id : state.rightId;
-      return {
-        leftId:  nextLeftId,
-        rightId: nextRightId,
-        activeLorebookId: pickActiveId(state.focusSide, nextLeftId, nextRightId),
-      };
-    }),
-
-  setActiveLorebookId: (id) =>
-    set((state) => {
-      const nextLeftId  = state.focusSide === 'left'  ? id : state.leftId;
-      const nextRightId = state.focusSide === 'right' ? id : state.rightId;
-      return {
-        leftId:           nextLeftId,
-        rightId:          nextRightId,
-        activeLorebookId: id,
-      };
-    }),
+  setActiveLorebookId: (id) => set({ activeLorebookId: id }),
 
   setLorebooks: (lorebooks) => set({ lorebooks }),
 
@@ -65,41 +24,46 @@ export const useLorebookStore = create((set, get) => ({
       lorebooks: { ...state.lorebooks, [lorebook.id]: lorebook },
     })),
 
-  // --- explicit-id mutators ---
-
-  updateEntries: (id, entries) =>
+  updateActiveEntries: (entries) =>
     set((state) => {
+      const id = state.activeLorebookId;
       if (!id) return {};
-      const lb = state.lorebooks[id];
-      if (!lb) return {};
-      return { lorebooks: { ...state.lorebooks, [id]: { ...lb, entries } } };
-    }),
-
-  updateEntry: (lorebookId, entryId, patch) =>
-    set((state) => {
-      if (!lorebookId) return {};
-      const lb = state.lorebooks[lorebookId];
-      if (!lb) return {};
       return {
         lorebooks: {
           ...state.lorebooks,
-          [lorebookId]: {
-            ...lb,
-            entries: lb.entries.map((e) =>
-              e.id === entryId ? { ...e, ...patch, lastModified: Date.now() } : e
+          [id]: { ...state.lorebooks[id], entries },
+        },
+      };
+    }),
+
+  updateEntry: (id, patch) =>
+    set((state) => {
+      const activeId = state.activeLorebookId;
+      if (!activeId) return {};
+      const lorebook = state.lorebooks[activeId];
+      if (!lorebook) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [activeId]: {
+            ...lorebook,
+            entries: lorebook.entries.map((e) =>
+              e.id === id ? { ...e, ...patch, lastModified: Date.now() } : e
             ),
           },
         },
       };
     }),
 
-  updateName: (id, name) =>
+  updateActiveName: (name) =>
     set((state) => {
+      const id = state.activeLorebookId;
       if (!id) return {};
-      const lb = state.lorebooks[id];
-      if (!lb) return {};
       return {
-        lorebooks: { ...state.lorebooks, [id]: { ...lb, name } },
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: { ...state.lorebooks[id], name },
+        },
         lorebookIndex: state.lorebookIndex.map((item) =>
           item.id === id ? { ...item, name, updatedAt: Date.now() } : item
         ),
@@ -125,23 +89,31 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
-  updateAllowedOverlaps: (id, allowedOverlaps) =>
+  updateAllowedOverlaps: (allowedOverlaps) =>
     set((state) => {
+      const id = state.activeLorebookId;
       if (!id) return {};
-      const lb = state.lorebooks[id];
-      if (!lb) return {};
-      return { lorebooks: { ...state.lorebooks, [id]: { ...lb, allowedOverlaps } } };
-    }),
-
-  setLorebookRollback: (id, patch) =>
-    set((state) => {
-      if (!id) return {};
-      const lb = state.lorebooks[id];
-      if (!lb) return {};
       return {
         lorebooks: {
           ...state.lorebooks,
-          [id]: { ...lb, rollback: { ...lb.rollback, ...patch } },
+          [id]: { ...state.lorebooks[id], allowedOverlaps },
+        },
+      };
+    }),
+
+  setLorebookRollback: (patch) =>
+    set((state) => {
+      const id = state.activeLorebookId;
+      if (!id) return {};
+      const lorebook = state.lorebooks[id];
+      if (!lorebook) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: {
+            ...lorebook,
+            rollback: { ...lorebook.rollback, ...patch },
+          },
         },
       };
     }),

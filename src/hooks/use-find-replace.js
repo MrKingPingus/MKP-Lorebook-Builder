@@ -1,8 +1,7 @@
 // Find and replace field state, scope selector, match count display, and dispatch to find-replace service
 import { useState, useEffect } from 'react';
-import { useLorebookStore }  from '../state/lorebook-store.js';
-import { useHistoryStore }   from '../state/history-store.js';
-import { useSideLorebookId } from './use-side.js';
+import { useLorebookStore } from '../state/lorebook-store.js';
+import { useHistoryStore } from '../state/history-store.js';
 import { findReplace, countMatches } from '../services/find-replace.js';
 
 const DEFAULT_SCOPE = { title: true, triggers: true, description: true };
@@ -13,17 +12,18 @@ export function useFindReplace(entries) {
   const [scope, setScope]             = useState(DEFAULT_SCOPE);
   const [scopeOpen, setScopeOpen]     = useState(false);
 
-  const targetId      = useSideLorebookId();
-  const updateEntries = useLorebookStore((s) => s.updateEntries);
-  const pushSnapshot  = useHistoryStore((s) => s.pushSnapshot);
+  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
+  const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
+  const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
 
-  // Reset find/replace fields when the target lorebook changes.
+  // Reset find/replace fields when switching lorebooks so stale terms don't
+  // appear to wipe results in the new book.
   useEffect(() => {
     setFindText('');
     setReplaceText('');
     setScope(DEFAULT_SCOPE);
     setScopeOpen(false);
-  }, [targetId]);
+  }, [activeLorebookId]);
 
   const matchCount = countMatches(entries, findText, scope);
 
@@ -34,17 +34,19 @@ export function useFindReplace(entries) {
     }
     setScope((prev) => {
       const next = { ...prev, [field]: !prev[field] };
+      // If all three are now true, treat as "all"
       return next;
     });
   }
 
+  // Whether "All" is effectively selected (all three fields on)
   const allSelected = scope.title && scope.triggers && scope.description;
 
   function replaceAll() {
     if (!findText) return;
-    pushSnapshot(targetId, { entries: [...entries] });
+    pushSnapshot({ entries: [...entries] });
     const updated = findReplace(entries, findText, replaceText, scope);
-    updateEntries(targetId, updated);
+    updateActiveEntries(updated);
     setScopeOpen(false);
   }
 

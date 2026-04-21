@@ -2,7 +2,6 @@
 // Also exports useRollbackConfig() for the settings panel (no entry context required).
 import { useState, useRef }  from 'react';
 import { useLorebookStore }  from '../state/lorebook-store.js';
-import { useSideLorebookId } from './use-side.js';
 import { DEFAULT_LOREBOOK }  from '../constants/defaults.js';
 import {
   buildSnapshot,
@@ -27,15 +26,14 @@ export function useRollbackConfig() {
     const id = s.activeLorebookId;
     return id ? (s.lorebooks[id]?.rollback ?? DEFAULT_LOREBOOK.rollback) : DEFAULT_LOREBOOK.rollback;
   });
-  const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
 
   return {
     rollbackEnabled: rollbackConfig.enabled,
     snapshotCount:   rollbackConfig.snapshotCount,
     autoSnapshot:    rollbackConfig.autoSnapshot ?? true,
-    setRollbackEnabled: (v) => setLorebookRollback(activeLorebookId, { enabled: v }),
-    setSnapshotCount:   (v) => setLorebookRollback(activeLorebookId, { snapshotCount: v }),
-    setAutoSnapshot:    (v) => setLorebookRollback(activeLorebookId, { autoSnapshot: v }),
+    setRollbackEnabled: (v) => setLorebookRollback({ enabled: v }),
+    setSnapshotCount:   (v) => setLorebookRollback({ snapshotCount: v }),
+    setAutoSnapshot:    (v) => setLorebookRollback({ autoSnapshot: v }),
   };
 }
 
@@ -44,10 +42,9 @@ export function useRollbackConfig() {
  * @param {Function} onUpdate - updateEntry(id, patch, discrete?) from use-entries
  */
 export function useRollback({ entry, onUpdate }) {
-  const targetId            = useSideLorebookId();
   const setLorebookRollback = useLorebookStore((s) => s.setLorebookRollback);
   const rollbackConfig      = useLorebookStore((s) => {
-    const id = targetId;
+    const id = s.activeLorebookId;
     return id ? (s.lorebooks[id]?.rollback ?? DEFAULT_LOREBOOK.rollback) : DEFAULT_LOREBOOK.rollback;
   });
 
@@ -186,11 +183,11 @@ export function useRollback({ entry, onUpdate }) {
   // ── Per-lorebook config setters ───────────────────────────────────────────
 
   function setRollbackEnabled(value) {
-    setLorebookRollback(targetId, { enabled: value });
+    setLorebookRollback({ enabled: value });
   }
 
   function setSnapshotCount(count) {
-    setLorebookRollback(targetId, { snapshotCount: count });
+    setLorebookRollback({ snapshotCount: count });
   }
 
   return {

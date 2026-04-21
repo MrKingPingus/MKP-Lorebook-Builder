@@ -1,33 +1,30 @@
-// Expose undo(), redo(), canUndo, and canRedo derived from the per-lorebook history store
-import { useHistoryStore }  from '../state/history-store.js';
+// Expose undo(), redo(), canUndo, and canRedo derived from history-store
+import { useHistoryStore } from '../state/history-store.js';
 import { useLorebookStore } from '../state/lorebook-store.js';
 
 export function useUndoRedo() {
-  const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
-  const lorebooks        = useLorebookStore((s) => s.lorebooks);
-  const updateEntries    = useLorebookStore((s) => s.updateEntries);
-  const histories        = useHistoryStore((s) => s.histories);
-  const historyUndo      = useHistoryStore((s) => s.undo);
-  const historyRedo      = useHistoryStore((s) => s.redo);
+  const undoStack = useHistoryStore((s) => s.undoStack);
+  const redoStack = useHistoryStore((s) => s.redoStack);
+  const historyUndo = useHistoryStore((s) => s.undo);
+  const historyRedo = useHistoryStore((s) => s.redo);
+  const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
+  const getActiveLorebook = useLorebookStore((s) => s.getActiveLorebook);
 
-  const h       = activeLorebookId ? histories[activeLorebookId] : null;
-  const canUndo = (h?.undoStack?.length ?? 0) > 0;
-  const canRedo = (h?.redoStack?.length ?? 0) > 0;
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
 
   function undo() {
-    if (!activeLorebookId) return;
-    const lb      = lorebooks[activeLorebookId];
-    const current = lb ? { entries: [...lb.entries] } : null;
-    const snapshot = historyUndo(activeLorebookId, current);
-    if (snapshot) updateEntries(activeLorebookId, snapshot.entries);
+    const lorebook = getActiveLorebook();
+    const current = lorebook ? { entries: [...lorebook.entries] } : null;
+    const snapshot = historyUndo(current);
+    if (snapshot) updateActiveEntries(snapshot.entries);
   }
 
   function redo() {
-    if (!activeLorebookId) return;
-    const lb      = lorebooks[activeLorebookId];
-    const current = lb ? { entries: [...lb.entries] } : null;
-    const snapshot = historyRedo(activeLorebookId, current);
-    if (snapshot) updateEntries(activeLorebookId, snapshot.entries);
+    const lorebook = getActiveLorebook();
+    const current = lorebook ? { entries: [...lorebook.entries] } : null;
+    const snapshot = historyRedo(current);
+    if (snapshot) updateActiveEntries(snapshot.entries);
   }
 
   return { undo, redo, canUndo, canRedo };

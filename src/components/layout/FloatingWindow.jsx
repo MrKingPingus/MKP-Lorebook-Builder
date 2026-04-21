@@ -7,15 +7,10 @@ import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
-import { CrosstalkPrototype }  from '../feature/CrosstalkPrototype.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
 import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
-
-const CROSSTALK_PROTOTYPE =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('crosstalk') === '1';
 
 export function FloatingWindow() {
   const isMobile         = useMobile();
@@ -53,7 +48,7 @@ export function FloatingWindow() {
 
           <div className="window-body">
             <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
-              {CROSSTALK_PROTOTYPE ? <CrosstalkPrototype /> : <BuildPanel />}
+              <BuildPanel />
             </div>
             <MenuPanel />
 
