@@ -8,7 +8,7 @@ A dual-active-editor prototype was built, debugged, and **retracted**. Design pi
 
 - **Current branch**: `phase-9-crosstalk` (long-lived feature branch — reuse across sessions, don't cut a new per-session branch)
 - **Pre-prototype baseline commit**: `0e14206` (merge of Polish Pass 4)
-- **Last build**: green (`npm run build`) after B2.
+- **Last build**: green (`npm run build`) after B4.
 
 ## Progress so far
 
@@ -16,7 +16,8 @@ A dual-active-editor prototype was built, debugged, and **retracted**. Design pi
 - **A2 (resolved as no-op)**: The d99cec8 defensive snapshot was dual-slot-specific. Single-slot `deleteLorebook` has no follow-on live-store reads, so there's nothing to snapshot. The equivalent work — handling `referenceLorebookId === deletedId` — folded into B1.
 - **B1 (done, commit `0b89e9a`)**: `lorebook-store` now has `referenceLorebookId` + `setReferenceLorebookId` + `swapReference`. Setter-level invariant enforcement: reference ≠ active, with a `canSwap` guard for the edge case where the displaced slot has been removed from `lorebooks` (e.g. during a delete flow). `removeLorebook` nulls reference if the removed id was the reference.
 - **B2 (done)**: `src/hooks/use-reference-lorebook.js` — thin component-facing wrapper over the B1 store API. Returns `referenceLorebook` (resolved object), `setReferenceLorebookId`, `swapReference`, `clearReference`. `swapReference` calls the store swap and then `clearSelection()` from `ui-store` — selection is active-only, so swapping would otherwise leave the new active side holding selected ids that belong to the old lorebook.
-- **B3 (done)**: `src/components/feature/ReferencePanel.jsx` + matching CSS. Read-only render: picker (filters out active id via `useLorebookSwitcher`), lorebook name, entry list with type-color accent, stats badge, rollback-snapshot indicator, and trigger chips. One `onMouseDown={swapReference}` handler on the name bar and on the inner `.reference-panel-entries` wrapper — picker lives outside the swap surfaces, and the scroll container is the outer `.reference-panel-body` (scrollbar clicks don't land on the swap-handling inner wrapper). Not wired into any parent yet; B4 mounts it. Build green.
+- **B3 (done)**: `src/components/feature/ReferencePanel.jsx` + matching CSS. Read-only render: picker (filters out active id via `useLorebookSwitcher`), lorebook name, entry list with type-color accent, stats badge, rollback-snapshot indicator, and trigger chips. One `onMouseDown={swapReference}` handler on the name bar and on the inner `.reference-panel-entries` wrapper — picker lives outside the swap surfaces, and the scroll container is the outer `.reference-panel-body` (scrollbar clicks don't land on the swap-handling inner wrapper).
+- **B4 (done)**: `FloatingWindow.jsx` gates a second `flex: 1` slot beside `BuildPanel` on a module-level `crosstalkEnabled` constant read once from `?crosstalk=1`. When active, `ReferencePanel` renders to the right of Build and inherits the existing row layout on `.window-body`; the thin divider is the `border-left` already on `.reference-panel` from B3. Normal mode is byte-identical to pre-B4 (the new branch only runs when the query flag is set). `MenuPanel` still opens to the far right of both panels when used together. Mobile stacks via the existing `flex-direction: column` on `.window-body`.
 - **`docs/glossary.md` created** — plain-language reference doc for non-engineer audience. Grows over time.
 
 ## Why the retreat
@@ -29,7 +30,7 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 
 ### Phase B — Reference-panel scaffold (gated)
 
-- **B4**: Re-introduce `?crosstalk=1` URL gate in `FloatingWindow.jsx`. When active, render `BuildPanel` + `ReferencePanel` 50/50 with a thin divider. Normal mode untouched.
+Complete. Panel renders behind `?crosstalk=1`; swap-on-click is wired.
 
 ### Phase C — Global search/filter/sort
 
@@ -61,4 +62,4 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 
 ## Start here
 
-Read `docs/plan.md` → Phase 9 and this file's Progress so far. Next up is **B4** — gate `BuildPanel` + `ReferencePanel` 50/50 behind `?crosstalk=1` in `FloatingWindow.jsx`. The store (B1), hook (B2, `useReferenceLorebook`), and panel (B3, `ReferencePanel.jsx`) are already in place. Default (non-crosstalk) render must stay identical to today — verify with a URL toggle before moving on to C1.
+Phase B is done. Load the app with `?crosstalk=1` in the URL and pick a reference lorebook from the right-hand panel picker; clicking any entry or the name bar on the right should flip the two sides. Then start **C1** — hoist `SearchBar`, `TypeFilterBar`, and the sort dropdown out of `BuildPanel` and above the pane split so both sides consume the same `ui-store` filter state. Keep the placement consistent in non-crosstalk mode as a first cut; if that reads badly, conditionally re-embed for the single-panel view. Revisit the open question on autosave (#1) after a real session of swapping — that's the simplest way to surface any staleness.

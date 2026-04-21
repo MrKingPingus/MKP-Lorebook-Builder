@@ -7,10 +7,16 @@ import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
+import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
 import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
+
+// Dev-only gate for the crosstalk split view. Read once at module load —
+// toggling without a reload is not a supported flow. Removed in Phase 9 E1.
+const crosstalkEnabled = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('crosstalk') === '1';
 
 export function FloatingWindow() {
   const isMobile         = useMobile();
@@ -50,6 +56,11 @@ export function FloatingWindow() {
             <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
               <BuildPanel />
             </div>
+            {crosstalkEnabled && (
+              <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+                <ReferencePanel />
+              </div>
+            )}
             <MenuPanel />
 
             {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
