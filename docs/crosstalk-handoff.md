@@ -33,7 +33,7 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
   - `src/services/autosave.js`
   - `src/state/history-store.js`, `src/state/lorebook-store.js`
   - `src/style.css`
-- **A2: Refactor deleteLorebook defensively** — keep the pattern of snapshotting store state before mutating (from d99cec8) but strip the `leftWasStale`/`rightWasStale` branches. Small cleanup only; behavior identical to pre-prototype.
+- **A2: (no-op after A1; resolved)** — The d99cec8 defensive snapshot was specific to dual-slot state reads (`leftId`/`rightId`/`focusSide`/`setSlot`). Single-slot `deleteLorebook` has no follow-on live-store reads, so there's nothing to snapshot. The equivalent work — handling the case where the deleted lorebook is the current reference — is folded into B1 alongside `referenceLorebookId` introduction, where the consumer and the defensive read can live in one atomic commit.
 
 ### Phase B — Reference-panel scaffold (gated)
 
