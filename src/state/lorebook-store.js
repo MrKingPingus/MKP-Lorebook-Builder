@@ -1,9 +1,13 @@
-// Zustand store: active lorebook id, all lorebooks map, and dispatch actions
+// Zustand store: active + reference lorebook ids, all lorebooks map, and dispatch actions
 import { create } from 'zustand';
 
 export const useLorebookStore = create((set, get) => ({
-  // id of the currently active lorebook
+  // id of the currently active (editable) lorebook
   activeLorebookId: null,
+
+  // id of the read-only reference lorebook shown beside active in crosstalk
+  // mode. Must never equal activeLorebookId. Ephemeral — not persisted.
+  referenceLorebookId: null,
 
   // map of id -> lorebook object { id, name, entries: [] }
   lorebooks: {},
@@ -13,7 +17,44 @@ export const useLorebookStore = create((set, get) => ({
 
   // --- actions ---
 
-  setActiveLorebookId: (id) => set({ activeLorebookId: id }),
+  setActiveLorebookId: (id) =>
+    set((state) => {
+      // Invariant: reference ≠ active. If caller sets active to the current
+      // reference id, push the old active into the reference slot — unless
+      // the old active has already been removed from storage, in which case
+      // null the reference to avoid a dangling pointer.
+      if (id !== null && id === state.referenceLorebookId) {
+        const oldActive = state.activeLorebookId;
+        const canSwap = oldActive !== null && state.lorebooks[oldActive];
+        return {
+          activeLorebookId: id,
+          referenceLorebookId: canSwap ? oldActive : null,
+        };
+      }
+      return { activeLorebookId: id };
+    }),
+
+  setReferenceLorebookId: (id) =>
+    set((state) => {
+      // Invariant: reference ≠ active. Symmetric to setActiveLorebookId.
+      if (id !== null && id === state.activeLorebookId) {
+        const oldRef = state.referenceLorebookId;
+        const canSwap = oldRef !== null && state.lorebooks[oldRef];
+        return {
+          activeLorebookId: canSwap ? oldRef : null,
+          referenceLorebookId: id,
+        };
+      }
+      return { referenceLorebookId: id };
+    }),
+
+  // Trade places — old active becomes reference, old reference becomes active.
+  // Used by the swap-on-edit-click handler on the reference panel.
+  swapReference: () =>
+    set((state) => ({
+      activeLorebookId: state.referenceLorebookId,
+      referenceLorebookId: state.activeLorebookId,
+    })),
 
   setLorebooks: (lorebooks) => set({ lorebooks }),
 
@@ -86,6 +127,9 @@ export const useLorebookStore = create((set, get) => ({
       return {
         lorebooks: rest,
         lorebookIndex: state.lorebookIndex.filter((item) => item.id !== id),
+        // If the removed id was the reference, null it out so the reference
+        // panel doesn't render a dangling pointer.
+        ...(state.referenceLorebookId === id ? { referenceLorebookId: null } : {}),
       };
     }),
 
