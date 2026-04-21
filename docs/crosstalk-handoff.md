@@ -6,15 +6,16 @@ Short brief for a fresh Claude session. Reads in under two minutes.
 
 A dual-active-editor prototype was built, debugged, and **retracted**. Design pivoted to **active + reference** — see `docs/plan.md` → Phase 9 for the feature spec.
 
-- **Current branch**: `claude/continue-previous-session-ZvJY6`
+- **Current branch**: `claude/lorebook-crosstalk-phase-9-GlndD`
 - **Pre-prototype baseline commit**: `0e14206` (merge of Polish Pass 4)
-- **Last build**: green (`npm run build`) after B1.
+- **Last build**: green (`npm run build`) after B2.
 
 ## Progress so far
 
 - **A1 (done, commit `72cece6`)**: 16 prototype-touched files reverted to baseline. 3 prototype-only files (`CrosstalkPrototype.jsx`, `use-crosstalk-slots.js`, `use-side.js`) deleted. src/ matches `0e14206` exactly.
 - **A2 (resolved as no-op)**: The d99cec8 defensive snapshot was dual-slot-specific. Single-slot `deleteLorebook` has no follow-on live-store reads, so there's nothing to snapshot. The equivalent work — handling `referenceLorebookId === deletedId` — folded into B1.
 - **B1 (done, commit `0b89e9a`)**: `lorebook-store` now has `referenceLorebookId` + `setReferenceLorebookId` + `swapReference`. Setter-level invariant enforcement: reference ≠ active, with a `canSwap` guard for the edge case where the displaced slot has been removed from `lorebooks` (e.g. during a delete flow). `removeLorebook` nulls reference if the removed id was the reference.
+- **B2 (done)**: `src/hooks/use-reference-lorebook.js` — thin component-facing wrapper over the B1 store API. Returns `referenceLorebook` (resolved object), `setReferenceLorebookId`, `swapReference`, `clearReference`. `swapReference` calls the store swap and then `clearSelection()` from `ui-store` — selection is active-only, so swapping would otherwise leave the new active side holding selected ids that belong to the old lorebook.
 - **`docs/glossary.md` created** — plain-language reference doc for non-engineer audience. Grows over time.
 
 ## Why the retreat
@@ -27,8 +28,7 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 
 ### Phase B — Reference-panel scaffold (gated)
 
-- **B2**: `src/hooks/use-reference-lorebook.js` — exposes `referenceLorebook`, `setReferenceLorebookId`, `swapReference`, `clearReference`. Clears UI selection on swap (selection is active-only). Component-facing surface for the reference field added in B1.
-- **B3**: `src/components/feature/ReferencePanel.jsx` — read-only render: name header, picker (excludes active id), entry list, trigger badges, rollback indicator. All edit-shaped surfaces wrapped in a single `onMouseDown` handler that calls `swapReference()` and bails. Search/filter/picker/scroll exempt.
+- **B3**: `src/components/feature/ReferencePanel.jsx` — read-only render: name header, picker (excludes active id), entry list, trigger badges, rollback indicator. All edit-shaped surfaces wrapped in a single `onMouseDown` handler that calls `swapReference()` and bails. Search/filter/picker/scroll exempt. Consumes `useReferenceLorebook()` from B2.
 - **B4**: Re-introduce `?crosstalk=1` URL gate in `FloatingWindow.jsx`. When active, render `BuildPanel` + `ReferencePanel` 50/50 with a thin divider. Normal mode untouched.
 
 ### Phase C — Global search/filter/sort
@@ -61,4 +61,4 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 
 ## Start here
 
-Read `docs/plan.md` → Phase 9 and this file's Progress so far. Then start on **B2** — the `use-reference-lorebook.js` hook. Store API is already in place (`src/state/lorebook-store.js`); the hook just exposes it to components and adds the selection-clear side-effect on swap. Keep it thin.
+Read `docs/plan.md` → Phase 9 and this file's Progress so far. Then start on **B3** — `src/components/feature/ReferencePanel.jsx`. The store API (B1) and hook (B2, `src/hooks/use-reference-lorebook.js`) are already in place; the panel should consume `useReferenceLorebook()` and render read-only. Every edit-shaped surface (entry card body, Expand, Remove, FAB, name input, trigger editor, description textarea) gets a single `onMouseDown` that calls `swapReference()` and bails — search, filter, picker, and scroll are exempt.
