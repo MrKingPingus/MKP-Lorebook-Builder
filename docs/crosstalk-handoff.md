@@ -6,7 +6,7 @@ Short brief for a fresh Claude session. Reads in under two minutes.
 
 A dual-active-editor prototype was built, debugged, and **retracted**. Design pivoted to **active + reference** — see `docs/plan.md` → Phase 9 for the feature spec.
 
-- **Current branch**: `claude/lorebook-crosstalk-phase-9-GlndD`
+- **Current branch**: `phase-9-crosstalk` (long-lived feature branch — reuse across sessions, don't cut a new per-session branch)
 - **Pre-prototype baseline commit**: `0e14206` (merge of Polish Pass 4)
 - **Last build**: green (`npm run build`) after B2.
 
