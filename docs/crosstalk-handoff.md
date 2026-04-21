@@ -1,76 +1,75 @@
-# Phase 9 Crosstalk — Handoff
+# Phase 9 Crosstalk — Handoff (active + reference pivot)
 
-Short, dense brief for a fresh Claude session continuing the crosstalk prototype debugging.
+Short brief for a fresh Claude session. Reads in under two minutes.
 
-## Current state
+## Status
 
-- **Branch**: `claude/draft-lorebook-crosstalk-0higP`
-- **Activation**: append `?crosstalk=1` to the URL (gated in `FloatingWindow.jsx`).
-- **Last build**: green (`npm run build`).
-- **User's latest report**: still broken after the filter-reset fix — details on exact symptom unknown, user wants to continue in a fresh session.
+A dual-active-editor prototype was built, debugged, and **retracted**. Design pivoted to **active + reference** — see `docs/plan.md` → Phase 9 for the feature spec.
 
-## What the feature does
+The prototype code is still on the branch. First job of the next session is to revert it.
 
-Two `BuildPanel` instances render side-by-side inside `CrosstalkPrototype`. Each side is wrapped in a `SideContext.Provider` (`'left'` / `'right'`) so side-aware hooks read the correct slot. Click a side to focus it — the focused side drives `activeLorebookId`, which anything outside the `SideContext` tree (WindowHeader, menus, undo/redo keyboard shortcuts) uses.
+- **Current branch**: `claude/continue-crosstalk-work-uFhuT`
+- **Pre-prototype baseline commit**: `0e14206` (merge of Polish Pass 4)
+- **Last build**: green (`npm run build`) on current branch; will re-verify after revert.
 
-## Steps completed
+## Why the retreat
 
-1. Layout prototype (gated by `?crosstalk=1`).
-2. Dual-slot store (`leftId`, `rightId`, `focusSide`, mirrored `activeLorebookId`).
-3. Side-aware hooks via `useSideLorebookId()`.
+Two active editors sharing a single `ui-store`, `history-store`, and single-slot autosave produced a cascade: autosave clobber, dangling slot references on delete, lorebook-creation displacing the focused slot, and a widening surface across every edit hook. Fixing each symptom exposed another. The active+reference model keeps the single-editor architecture intact and delivers ~90% of the perceived feel of simultaneous editing (see plan.md for details).
 
-Still pending: step 4 (autosave both sides — see below), step 5 (real menu entry + remove prototype flag).
+Two fixes from the prototype debug are worth preserving as single-slot equivalents:
+1. **Autosave**: in single-slot mode this is a no-op (original code already writes `lorebooks[activeLorebookId]`). Do not re-introduce the dual-slot iteration.
+2. **Delete path**: snapshotting store state before mutation is a good defensive pattern; the dual-slot cleanup branches become unreachable and should be stripped.
 
-## The current bug
+## Commit-boundary plan
 
-User quote (original report): _"I'll load in a lorebook, and then try to put a different lorebook on the other side. The other side lorebook comes up blank despite having content within it... something broke when we added the picker to both sides... it's a very uncanny bug's disallowing two lorebooks to be present at once, and it's causing one of them to appear empty."_
+Each commit below is a natural stopping point. Verify with `npm run build` between them.
 
-### What I already tried (still broken)
+### Phase A — Retreat to single-slot
 
-Commit `ae7295f` on the prototype:
-- `pickSlot` now clears `searchQuery` / `searchMode` / `typeFilter` / `selectedIds` on swap (mirrors `switchLorebook`).
-- Safety net: if the picked id isn't in `lorebooks` in-memory map, `readJson` from `localStorage` and `setLorebook`.
-- Seed effect is now one-shot via `useRef` — no longer auto-re-seeds when user picks `(none)`.
+- **A1: Revert prototype** — restore the 16 prototype-touched files to their `0e14206` state in one commit. Use `git checkout 0e14206 -- <files>`. Files touched by the prototype (get the list from `git diff --stat 0e14206 HEAD -- src/`):
+  - `src/components/feature/CrosstalkPrototype.jsx` (delete)
+  - `src/components/layout/FloatingWindow.jsx`
+  - `src/hooks/use-append-import.js`, `use-bulk-actions.js`, `use-crosstalk.js`, `use-crosstalk-slots.js` (delete), `use-entries.js`, `use-find-replace.js`, `use-lorebook.js`, `use-rollback.js`, `use-side.js` (delete), `use-undo-redo.js`
+  - `src/services/autosave.js`
+  - `src/state/history-store.js`, `src/state/lorebook-store.js`
+  - `src/style.css`
+- **A2: Refactor deleteLorebook defensively** — keep the pattern of snapshotting store state before mutating (from d99cec8) but strip the `leftWasStale`/`rightWasStale` branches. Small cleanup only; behavior identical to pre-prototype.
 
-Bug persists. Need to reproduce with user and pinpoint the actual trigger.
+### Phase B — Reference-panel scaffold (gated)
 
-### Theories not yet verified
+- **B1**: Add `referenceLorebookId`, `setReferenceLorebookId(id)`, `swapReference()` to `lorebook-store`. Setter enforces reference ≠ active (setting id === activeLorebookId triggers a swap instead of a same-id write).
+- **B2**: `src/hooks/use-reference-lorebook.js` — exposes `referenceLorebook`, `setReferenceLorebookId`, `swapReference`, `clearReference`. Clears UI selection on swap (selection is active-only).
+- **B3**: `src/components/feature/ReferencePanel.jsx` — read-only render: name header, picker (excludes active id), entry list, trigger badges, rollback indicator. All edit-shaped surfaces wrapped in a single `onMouseDown` handler that calls `swapReference()` and bails. Search/filter/picker/scroll exempt.
+- **B4**: Re-introduce `?crosstalk=1` URL gate in `FloatingWindow.jsx`. When active, render `BuildPanel` + `ReferencePanel` 50/50 with a thin divider. Normal mode untouched.
 
-1. **Autosave clobber**. `src/services/autosave.js` writes ONLY `lorebooks[activeLorebookId]` on any store change. If the user edits the non-focused side (e.g. clicks into the dimmed side's entry card), the edit still goes to that side's lorebook in memory, but the next autosave tick writes the FOCUSED side's lorebook to storage — not the edited one. Conversely, if the user picks a slot and then clicks anywhere, a debounced save might write the focused side's data to a stale key. Worth tracing.
-2. **Shared non-filter UI state we forgot**. `sortMode`, `groupByType`, `collapseAll`, `expandAll`, `activeEntryId`, `searchFocusedId`, `pendingFocusEntryId` all live in `ui-store` and are shared. None filter entries away, but they could cause odd UI artifacts.
-3. **Entry id collision across lorebooks**. `uid()` in `entry-factory.js` uses `Date.now().toString(36) + random`. Collisions extremely unlikely but not impossible — and both sides render EntryCards with `id={entry-${entry.id}}`. A collision would confuse `document.getElementById` in search-nav / scroll.
-4. **"Blank" might mean something specific**. User says "blank despite having content" — this might be the `entry-list-empty` message (`No entries yet...`) which only fires when `entries.length === 0` after filtering. Need to ask user to check: does the side show the empty-state message, or is it literally missing UI? Screenshot would help.
-5. **The onMouseDownCapture focus-switch on the picker**. Clicking the right-side picker first triggers `setFocusSide('right')` via the outer div's capture handler (runs before child's `stopPropagation` can matter — both are in capture phase, outer fires first). This changes `activeLorebookId` mid-interaction. If anything downstream relies on `activeLorebookId` being stable during the pick, it'd glitch.
+### Phase C — Global search/filter/sort
 
-## Suggested first moves in the fresh session
+- **C1**: Promote the search bar, filter chips, and sort dropdown above the pane split. Both panels consume the same `ui-store` fields. In single-panel mode the bar sits above the panel as well — minor shuffle; validate visually before continuing. If unacceptable, duplicate the placement logic (keep in-panel when not in crosstalk).
 
-1. **Get a precise repro from the user**. Ask: exact clicks, which side goes blank (left or right), whether the empty-state text "No entries yet..." appears, whether the lorebook name in the header still looks right, whether typing in the search bar on one side shows the query on the other.
-2. **Check for autosave clobber** by opening DevTools → Application → Local Storage while reproducing. Watch `lorebook-<id>` keys for unexpected writes.
-3. **Consider making ui-store filters per-side**. The cleanest long-term fix. Keyed by `lorebookId` or by `'left'/'right'`. This would also enable each side to scroll/search/filter independently, which the user will want eventually.
+### Phase D — Lateral find & replace
 
-## Key files (read order for onboarding)
+- **D1**: `use-find-replace.js` gains optional `lorebookIds` array. Default is `[activeLorebookId]`; in crosstalk, `[activeLorebookId, referenceLorebookId]` (nulls filtered). Preview groups results per-lorebook.
+- **D2**: Two Apply buttons — "Apply to Active" and "Apply to Reference". Apply-to-reference swaps, applies, swaps back (all state flips, no remount). Satisfies the Phase 9 per-lorebook-confirmation spec.
 
-- `src/components/feature/CrosstalkPrototype.jsx` — entry point for the feature.
-- `src/hooks/use-crosstalk-slots.js` — slot state + `pickSlot` wrapper (created 2026-04-19).
-- `src/hooks/use-side.js` — `SideContext` + `useSideLorebookId()`.
-- `src/state/lorebook-store.js` — dual-slot store, `pickActiveId` helper.
-- `src/state/history-store.js` — per-lorebook keyed-map undo/redo (refactored in step 3).
-- `src/services/autosave.js` — single-slot autosave (STEP 4 WILL CHANGE THIS).
-- `src/hooks/use-entries.js`, `use-lorebook.js`, `use-find-replace.js`, `use-bulk-actions.js`, `use-rollback.js`, `use-undo-redo.js`, `use-append-import.js` — all already side-aware via `useSideLorebookId()`.
+### Phase E — Housekeeping
 
-## Architecture reminders (from CLAUDE.md)
+- **E1**: Drop `?crosstalk=1` gate, add a menu toggle to show/hide the reference panel. Update `docs/plan.md` checkboxes. Delete this handoff file.
 
-- `constants → services → hooks → components`, imports only flow downward.
-- Components import only from `hooks/`. Don't regress `CrosstalkPrototype.jsx` back to direct store/service imports.
+## Key architectural rules (from CLAUDE.md)
+
+- Imports flow downward: `constants → services → hooks → components`.
+- Components import only from `hooks/` — never stores or services directly.
 - `storage-service.js` is the only file that touches `localStorage`.
-- No tests, no linter — verify by `npm run build` and manually exercising `?crosstalk=1`.
+- `autosave.js` is a plain service, not a hook.
+- No tests, no linter. Verify with `npm run build` and manual browser exercise.
 
-## Commit-per-step discipline
+## Open questions for the next session
 
-User wants granular commits. Each debugging fix should be its own commit with a clear "why". Push after each to keep the preview URL current.
+1. **A1 revert style**: one checkout-based commit (clean history, recommended) vs. 13 individual `git revert` calls (easier to bisect the prototype specifically, messier log). Default to the single commit unless the user prefers otherwise.
+2. **Autosave writes reference too?** (B1 variation) — only the active side actually mutates; reference JSON on disk is already current from when it was last active. Default: don't write reference. Reconsider if the sequence "edit A → swap → edit B → swap back → edit A again" ever produces staleness.
+3. **Swap animation** — assumed absent in B3, brief in D2. Revisit after B4 is usable; the user will have opinions once they feel it.
+4. **Search-bar placement in default (non-crosstalk) view** — C1 hoists the bar above the panel everywhere. If the user wants the default view preserved as-is, we add a conditional render and accept a small duplication.
 
-## Do not
+## Start here
 
-- Do not rewrite `docs/plan.md` yet — user deferred that until the feature stabilizes.
-- Do not add a diff service yet — that's a later sub-step.
-- Do not widen changes beyond the crosstalk feature. Other hooks/components should keep working for single-lorebook mode (no `?crosstalk=1`).
+Read `docs/plan.md` → Phase 9. Then start on Commit A1. `git diff --stat 0e14206 HEAD -- src/` gives the file list.
