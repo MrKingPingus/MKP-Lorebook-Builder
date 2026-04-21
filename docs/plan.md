@@ -116,7 +116,7 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 ### Features
 
 **Lorebook Crosstalk (Active + Reference):**
-- [ ] `referenceLorebookId` field + `setReferenceLorebookId` / `swapReference` actions in `lorebook-store`; invariant that reference ≠ active
+- [x] `referenceLorebookId` field + `setReferenceLorebookId` / `swapReference` actions in `lorebook-store`; invariant that reference ≠ active
 - [ ] `use-reference-lorebook.js` hook exposing the reference and the swap action
 - [ ] `ReferencePanel` component — read-only render of the reference lorebook with its own picker (excludes active id)
 - [ ] Swap-on-edit-click — single `onMouseDown` handler on edit-shaped reference surfaces that calls `swapReference()` before any edit UI can mount
