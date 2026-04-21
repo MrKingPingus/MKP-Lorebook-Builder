@@ -16,6 +16,7 @@ A dual-active-editor prototype was built, debugged, and **retracted**. Design pi
 - **A2 (resolved as no-op)**: The d99cec8 defensive snapshot was dual-slot-specific. Single-slot `deleteLorebook` has no follow-on live-store reads, so there's nothing to snapshot. The equivalent work — handling `referenceLorebookId === deletedId` — folded into B1.
 - **B1 (done, commit `0b89e9a`)**: `lorebook-store` now has `referenceLorebookId` + `setReferenceLorebookId` + `swapReference`. Setter-level invariant enforcement: reference ≠ active, with a `canSwap` guard for the edge case where the displaced slot has been removed from `lorebooks` (e.g. during a delete flow). `removeLorebook` nulls reference if the removed id was the reference.
 - **B2 (done)**: `src/hooks/use-reference-lorebook.js` — thin component-facing wrapper over the B1 store API. Returns `referenceLorebook` (resolved object), `setReferenceLorebookId`, `swapReference`, `clearReference`. `swapReference` calls the store swap and then `clearSelection()` from `ui-store` — selection is active-only, so swapping would otherwise leave the new active side holding selected ids that belong to the old lorebook.
+- **B3 (done)**: `src/components/feature/ReferencePanel.jsx` + matching CSS. Read-only render: picker (filters out active id via `useLorebookSwitcher`), lorebook name, entry list with type-color accent, stats badge, rollback-snapshot indicator, and trigger chips. One `onMouseDown={swapReference}` handler on the name bar and on the inner `.reference-panel-entries` wrapper — picker lives outside the swap surfaces, and the scroll container is the outer `.reference-panel-body` (scrollbar clicks don't land on the swap-handling inner wrapper). Not wired into any parent yet; B4 mounts it. Build green.
 - **`docs/glossary.md` created** — plain-language reference doc for non-engineer audience. Grows over time.
 
 ## Why the retreat
@@ -28,7 +29,6 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 
 ### Phase B — Reference-panel scaffold (gated)
 
-- **B3**: `src/components/feature/ReferencePanel.jsx` — read-only render: name header, picker (excludes active id), entry list, trigger badges, rollback indicator. All edit-shaped surfaces wrapped in a single `onMouseDown` handler that calls `swapReference()` and bails. Search/filter/picker/scroll exempt. Consumes `useReferenceLorebook()` from B2.
 - **B4**: Re-introduce `?crosstalk=1` URL gate in `FloatingWindow.jsx`. When active, render `BuildPanel` + `ReferencePanel` 50/50 with a thin divider. Normal mode untouched.
 
 ### Phase C — Global search/filter/sort
@@ -61,4 +61,4 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 
 ## Start here
 
-Read `docs/plan.md` → Phase 9 and this file's Progress so far. Then start on **B3** — `src/components/feature/ReferencePanel.jsx`. The store API (B1) and hook (B2, `src/hooks/use-reference-lorebook.js`) are already in place; the panel should consume `useReferenceLorebook()` and render read-only. Every edit-shaped surface (entry card body, Expand, Remove, FAB, name input, trigger editor, description textarea) gets a single `onMouseDown` that calls `swapReference()` and bails — search, filter, picker, and scroll are exempt.
+Read `docs/plan.md` → Phase 9 and this file's Progress so far. Next up is **B4** — gate `BuildPanel` + `ReferencePanel` 50/50 behind `?crosstalk=1` in `FloatingWindow.jsx`. The store (B1), hook (B2, `useReferenceLorebook`), and panel (B3, `ReferencePanel.jsx`) are already in place. Default (non-crosstalk) render must stay identical to today — verify with a URL toggle before moving on to C1.

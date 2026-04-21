@@ -117,9 +117,9 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 
 **Lorebook Crosstalk (Active + Reference):**
 - [x] `referenceLorebookId` field + `setReferenceLorebookId` / `swapReference` actions in `lorebook-store`; invariant that reference ≠ active
-- [ ] `use-reference-lorebook.js` hook exposing the reference and the swap action
-- [ ] `ReferencePanel` component — read-only render of the reference lorebook with its own picker (excludes active id)
-- [ ] Swap-on-edit-click — single `onMouseDown` handler on edit-shaped reference surfaces that calls `swapReference()` before any edit UI can mount
+- [x] `use-reference-lorebook.js` hook exposing the reference and the swap action
+- [x] `ReferencePanel` component — read-only render of the reference lorebook with its own picker (excludes active id)
+- [x] Swap-on-edit-click — single `onMouseDown` handler on edit-shaped reference surfaces that calls `swapReference()` before any edit UI can mount
 - [ ] Global search/filter/sort bar promoted above the pane split in crosstalk mode; both panes consume the same filter state from `ui-store`
 - [ ] Lateral find & replace — preview scans both active and reference entries; per-side Apply buttons (Apply to Active / Apply to Reference) satisfy the per-lorebook confirmation requirement
 - [ ] Cross-pane diff highlighting (optional, uses `diff-service.js`) — when the same-named entry exists on both sides, highlight differing fields

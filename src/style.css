@@ -2839,3 +2839,142 @@ kbd {
 }
 .rollback-reenable-btn:hover { color: var(--accent, #60a5fa); }
 .hotbar-slot-select:focus { outline: none; border-color: var(--border2); }
+
+/* ============================================================
+   Reference Panel (crosstalk — read-only side)
+   ============================================================ */
+/* §REFERENCE-PANEL */
+.reference-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  border-left: 1px solid var(--border);
+}
+
+.reference-panel-header {
+  flex-shrink: 0;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reference-panel-picker {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+.reference-panel-picker:focus {
+  outline: none;
+  border-color: var(--focus-border);
+}
+
+.reference-panel-name {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reference-panel-name:hover {
+  background: var(--surface3);
+}
+
+.reference-panel-body {
+  flex: 1;
+  overflow-y: auto;
+}
+.reference-panel-body::-webkit-scrollbar { width: 5px; }
+.reference-panel-body::-webkit-scrollbar-track { background: transparent; }
+.reference-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.reference-panel-empty {
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.reference-panel-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  cursor: pointer;
+}
+
+.reference-entry-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--type-color, #9ba1ad);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: filter var(--transition);
+}
+.reference-entry-card:hover {
+  filter: brightness(1.08);
+}
+
+.reference-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.reference-entry-label {
+  font-size: 13px;
+  font-weight: 700;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reference-entry-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.reference-entry-rollback {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.reference-entry-triggers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.reference-entry-trigger {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
