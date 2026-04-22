@@ -319,6 +319,15 @@ input:focus, textarea:focus, select:focus {
   min-height: 0;
   min-width: 0;
 }
+/* Divider between adjacent panes — sits on the slot boundary so it doesn't
+   care whether Build or Reference occupies a given slot. Desktop row uses a
+   left border; mobile column uses a top border. */
+.floating-window:not(.floating-window--mobile) .pane-split > .pane-split-slot + .pane-split-slot {
+  border-left: 1px solid var(--border);
+}
+.floating-window--mobile .pane-split > .pane-split-slot + .pane-split-slot {
+  border-top: 1px solid var(--border);
+}
 
 /* Hoisted search + filter + sort bar — sits above the pane split.
    Separator border is provided by .type-filter-bar's own border-bottom. */
@@ -2876,7 +2885,19 @@ kbd {
   height: 100%;
   overflow: hidden;
   position: relative;
-  border-left: 1px solid var(--border);
+}
+/* Dim the reference content (name bar + entries) so active vs reference is
+   visually unambiguous. Picker stays full-opacity so the user can target it
+   without the dim affordance reading as "disabled". Hover fades back to
+   full opacity — a soft "this is the side you'll edit if you click" cue. */
+.reference-panel-name,
+.reference-panel-body {
+  opacity: 0.62;
+  transition: opacity var(--transition);
+}
+.reference-panel:hover .reference-panel-name,
+.reference-panel:hover .reference-panel-body {
+  opacity: 1;
 }
 
 .reference-panel-header {

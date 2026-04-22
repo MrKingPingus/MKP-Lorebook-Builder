@@ -25,6 +25,7 @@ export function FloatingWindow() {
   const windowSize       = useUi((s) => s.windowSize);
   const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
+  const activeSide       = useUi((s) => s.activeSide);
 
   // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
   useMenuPanel();
@@ -57,12 +58,15 @@ export function FloatingWindow() {
             <GlobalFilterBar />
 
             <div className="pane-split">
+              {/* In crosstalk mode the slot contents flip with activeSide so
+                  the panel the user clicked (via swap) stays in the same
+                  physical position. Outside crosstalk, left is always Build. */}
               <div className="pane-split-slot">
-                <BuildPanel />
+                {crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
               </div>
               {crosstalkEnabled && (
                 <div className="pane-split-slot">
-                  <ReferencePanel />
+                  {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
                 </div>
               )}
               <MenuPanel />

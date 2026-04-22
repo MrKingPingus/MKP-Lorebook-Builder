@@ -21,6 +21,8 @@ export const useUiStore = create((set) => ({
   searchFocusedId:      null,  // entry id forced-expanded by search navigation; null = no override
   pendingFocusEntryId:       null,   // id of newly-created entry that should receive auto-focus; cleared once consumed
   pendingFocusLorebookName:  false,  // true after new lorebook created; WindowHeader focuses name input then resets
+  activeSide: 'left',          // 'left' | 'right' — which physical slot holds the active lorebook in crosstalk mode.
+                               //   swapReference flips roles AND this flag so the clicked panel stays put.
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -59,6 +61,7 @@ export const useUiStore = create((set) => ({
   setActiveEntryId:        (activeEntryId)        => set({ activeEntryId }),
   setPendingFocusEntryId:       (pendingFocusEntryId)       => set({ pendingFocusEntryId }),
   setPendingFocusLorebookName:  (pendingFocusLorebookName)  => set({ pendingFocusLorebookName }),
+  toggleActiveSide: () => set((s) => ({ activeSide: s.activeSide === 'left' ? 'right' : 'left' })),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

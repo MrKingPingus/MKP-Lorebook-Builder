@@ -11,13 +11,17 @@ export function useReferenceLorebook() {
   const setReferenceLorebookId = useLorebookStore((s) => s.setReferenceLorebookId);
   const swapReferenceStore     = useLorebookStore((s) => s.swapReference);
   const clearSelection         = useUiStore((s) => s.clearSelection);
+  const toggleActiveSide       = useUiStore((s) => s.toggleActiveSide);
 
   const referenceLorebook = referenceLorebookId
     ? lorebooks[referenceLorebookId] ?? null
     : null;
 
+  // Flip active/reference ids AND the physical side flag together so the
+  // panel the user clicked stays in the same slot — only its role changes.
   function swapReference() {
     swapReferenceStore();
+    toggleActiveSide();
     clearSelection();
   }
 
