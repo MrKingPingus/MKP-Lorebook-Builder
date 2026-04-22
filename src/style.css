@@ -295,12 +295,38 @@ input:focus, textarea:focus, select:focus {
   min-height: 0;
   position: relative;
 }
-/* Desktop: row layout so Build and side panel sit side by side */
-.floating-window:not(.floating-window--mobile) .window-body {
-  flex-direction: row;
-}
 .window-body--lander {
   overflow-y: auto;
+}
+
+/* Shared pane row: BuildPanel + (crosstalk) ReferencePanel + MenuPanel.
+   Desktop lays out in a row; mobile stacks via column. Intentionally neither
+   `position: relative` nor `overflow: hidden` — MenuPanel's mobile overlay
+   uses `position: absolute; inset: 0`, which must resolve (and be painted)
+   against .window-body so it covers the hoisted filter bar too. Individual
+   panels already clip their own overflow. */
+.pane-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.floating-window:not(.floating-window--mobile) .pane-split {
+  flex-direction: row;
+}
+.pane-split-slot {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Hoisted search + filter + sort bar — sits above the pane split.
+   Separator border is provided by .type-filter-bar's own border-bottom. */
+.global-filter-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
 }
 
 /* ============================================================

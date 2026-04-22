@@ -7,6 +7,7 @@
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
+import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
@@ -15,6 +16,11 @@ export function ReferencePanel() {
   const { referenceLorebook, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const { items }                                                   = useLorebookSwitcher();
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
+
+  // Apply the same search/filter/sort/group pipeline the active side uses, so
+  // the hoisted GlobalFilterBar drives both panels in parallel.
+  const referenceEntries = referenceLorebook?.entries ?? [];
+  const { displayEntries } = useDisplayEntries(referenceEntries);
 
   // Picker options: every saved lorebook except the currently active one.
   const pickerItems = items.filter((item) => !item.isActive);
@@ -62,11 +68,13 @@ export function ReferencePanel() {
           <div className="reference-panel-empty">
             Pick a lorebook above to view it side-by-side.
           </div>
-        ) : referenceLorebook.entries.length === 0 ? (
+        ) : referenceEntries.length === 0 ? (
           <div className="reference-panel-empty">No entries.</div>
+        ) : displayEntries.length === 0 ? (
+          <div className="reference-panel-empty">No entries match the current filter.</div>
         ) : (
           <div className="reference-panel-entries" onMouseDown={onSwap}>
-            {referenceLorebook.entries.map((entry, idx) => {
+            {displayEntries.map((entry, idx) => {
               const typeDef       = ENTRY_TYPES.find((t) => t.id === entry.type);
               const typeColor     = typeDef?.color ?? '#9ba1ad';
               const snapshotCount = entry.snapshots?.length ?? 0;

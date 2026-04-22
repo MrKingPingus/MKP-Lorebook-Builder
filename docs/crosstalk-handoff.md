@@ -18,6 +18,7 @@ A dual-active-editor prototype was built, debugged, and **retracted**. Design pi
 - **B2 (done)**: `src/hooks/use-reference-lorebook.js` — thin component-facing wrapper over the B1 store API. Returns `referenceLorebook` (resolved object), `setReferenceLorebookId`, `swapReference`, `clearReference`. `swapReference` calls the store swap and then `clearSelection()` from `ui-store` — selection is active-only, so swapping would otherwise leave the new active side holding selected ids that belong to the old lorebook.
 - **B3 (done)**: `src/components/feature/ReferencePanel.jsx` + matching CSS. Read-only render: picker (filters out active id via `useLorebookSwitcher`), lorebook name, entry list with type-color accent, stats badge, rollback-snapshot indicator, and trigger chips. One `onMouseDown={swapReference}` handler on the name bar and on the inner `.reference-panel-entries` wrapper — picker lives outside the swap surfaces, and the scroll container is the outer `.reference-panel-body` (scrollbar clicks don't land on the swap-handling inner wrapper).
 - **B4 (done)**: `FloatingWindow.jsx` gates a second `flex: 1` slot beside `BuildPanel` on a module-level `crosstalkEnabled` constant read once from `?crosstalk=1`. When active, `ReferencePanel` renders to the right of Build and inherits the existing row layout on `.window-body`; the thin divider is the `border-left` already on `.reference-panel` from B3. Normal mode is byte-identical to pre-B4 (the new branch only runs when the query flag is set). `MenuPanel` still opens to the far right of both panels when used together. Mobile stacks via the existing `flex-direction: column` on `.window-body`.
+- **C1 (done)**: New `src/hooks/use-display-entries.js` wraps the `useSearch → useTypeFilter → useSort → group-by-type` pipeline so multiple callers derive from the same ui-store state. New `src/components/feature/GlobalFilterBar.jsx` hosts `SearchBar` + `TypeFilterBar` and sits above the pane split in `FloatingWindow.jsx`. `BuildPanel` now only renders the mobile lorebook-name field + `EntryList`. `ReferencePanel` runs its entries through `useDisplayEntries` so it honors the same filter/sort as the active side; empty-filter path shows a "No entries match" message. Layout change: `.window-body` stays column on desktop, and the new `.pane-split` takes over as the flex row (Build | Reference | MenuPanel). Placement is the same in single-panel and crosstalk modes — the bar always lives above the pane. MenuPanel's mobile full-screen overlay still works because `.pane-split` is intentionally not positioned and doesn't clip overflow, so `position: absolute; inset: 0` resolves to `.window-body`.
 - **`docs/glossary.md` created** — plain-language reference doc for non-engineer audience. Grows over time.
 
 ## Why the retreat
@@ -31,10 +32,6 @@ Each commit below is a natural stopping point. Verify with `npm run build` betwe
 ### Phase B — Reference-panel scaffold (gated)
 
 Complete. Panel renders behind `?crosstalk=1`; swap-on-click is wired.
-
-### Phase C — Global search/filter/sort
-
-- **C1**: Promote the search bar, filter chips, and sort dropdown above the pane split. Both panels consume the same `ui-store` fields. In single-panel mode the bar sits above the panel as well — minor shuffle; validate visually before continuing. If unacceptable, duplicate the placement logic (keep in-panel when not in crosstalk).
 
 ### Phase D — Lateral find & replace
 
@@ -62,4 +59,6 @@ Complete. Panel renders behind `?crosstalk=1`; swap-on-click is wired.
 
 ## Start here
 
-Phase B is done. Load the app with `?crosstalk=1` in the URL and pick a reference lorebook from the right-hand panel picker; clicking any entry or the name bar on the right should flip the two sides. Then start **C1** — hoist `SearchBar`, `TypeFilterBar`, and the sort dropdown out of `BuildPanel` and above the pane split so both sides consume the same `ui-store` filter state. Keep the placement consistent in non-crosstalk mode as a first cut; if that reads badly, conditionally re-embed for the single-panel view. Revisit the open question on autosave (#1) after a real session of swapping — that's the simplest way to surface any staleness.
+Phase C1 is done. Load the app with `?crosstalk=1`, pick a reference lorebook, and verify: search/sort/type-filter changes in the hoisted bar drive both panels; in single-panel mode the bar sits above `BuildPanel` with no visual regression; select-mode + bulk actions still target the active lorebook only; mobile stacking still works; the menu panel still opens full-screen on mobile.
+
+Then start **D1** — extend `use-find-replace.js` with an optional `lorebookIds` array (default `[activeLorebookId]`; in crosstalk `[activeLorebookId, referenceLorebookId]` with nulls filtered). Preview should group results per-lorebook. D2 follows with two Apply buttons ("Apply to Active", "Apply to Reference"); apply-to-reference swaps, applies, swaps back — all state flips, no remount. Revisit the open question on autosave (#1) after a real session of swapping — that's the simplest way to surface any staleness.

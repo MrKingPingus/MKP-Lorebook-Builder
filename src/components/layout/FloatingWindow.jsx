@@ -8,6 +8,7 @@ import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
 import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
+import { GlobalFilterBar }     from '../feature/GlobalFilterBar.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
 import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
@@ -53,15 +54,19 @@ export function FloatingWindow() {
           <WindowHeader />
 
           <div className="window-body">
-            <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
-              <BuildPanel />
-            </div>
-            {crosstalkEnabled && (
-              <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
-                <ReferencePanel />
+            <GlobalFilterBar />
+
+            <div className="pane-split">
+              <div className="pane-split-slot">
+                <BuildPanel />
               </div>
-            )}
-            <MenuPanel />
+              {crosstalkEnabled && (
+                <div className="pane-split-slot">
+                  <ReferencePanel />
+                </div>
+              )}
+              <MenuPanel />
+            </div>
 
             {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
             {showAppendImport && <AppendImportPanel />}
