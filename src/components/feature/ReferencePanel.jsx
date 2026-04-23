@@ -1,9 +1,8 @@
 // Read-only reference lorebook panel rendered alongside the active BuildPanel
-// in crosstalk mode. Every edit-shaped surface (name, entry row, trigger chips)
-// wraps a single onMouseDown that calls swapReference() and bails — the follow-
-// up click then lands on the now-active side and edits the lorebook the user
-// actually pointed at. The picker, scroll area, and (once wired) search/filter
-// are exempt.
+// in crosstalk mode. Clicking anywhere on the entries area triggers
+// swapReference — the follow-up click then lands on the now-active side and
+// edits the lorebook the user actually pointed at. The header (label +
+// picker) is exempt so the picker stays usable without triggering a swap.
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
@@ -30,17 +29,16 @@ export function ReferencePanel() {
   }
 
   // Single swap handler — swap before any click-driven edit UI can mount.
-  // Applied to every edit-shaped surface; picker and scroll are exempt.
   function onSwap() {
     swapReference();
   }
 
   return (
     <div className="reference-panel">
-      <div className="reference-panel-header">
-        <div className="field-label">REFERENCE</div>
+      <div className="pane-header">
+        <div className="field-label pane-header-label">REFERENCE</div>
         <select
-          className="reference-panel-picker"
+          className="pane-header-picker"
           value={referenceLorebook?.id ?? ''}
           onChange={onPickerChange}
         >
@@ -52,16 +50,6 @@ export function ReferencePanel() {
           ))}
         </select>
       </div>
-
-      {referenceLorebook && (
-        <div
-          className="reference-panel-name"
-          onMouseDown={onSwap}
-          title="Click to edit this lorebook (swaps with active)"
-        >
-          {referenceLorebook.name || '(unnamed)'}
-        </div>
-      )}
 
       <div className="reference-panel-body">
         {!referenceLorebook ? (
