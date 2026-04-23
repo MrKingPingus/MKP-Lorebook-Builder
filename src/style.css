@@ -209,6 +209,26 @@ input:focus, textarea:focus, select:focus {
 }
 .lorebook-hidden-count:hover { color: var(--text); }
 
+/* Small caret button next to the name input — opens LorebookSwitchPopover in
+   solo mode so rename (input) and switch (button) live side by side. */
+.lorebook-switch-btn {
+  margin-left: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+.lorebook-switch-btn:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface2);
+}
+
 /* Lorebook count badge */
 .lorebook-count-badge {
   display: flex;
@@ -1270,6 +1290,71 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition);
 }
 .hidden-entries-unhide:hover { background: rgba(245,158,11,.12); }
+
+/* Lorebook switch popover — opened from the caret button in WindowHeader */
+.lorebook-switch-popover {
+  min-width: 200px;
+  max-width: 260px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lorebook-switch-popover-title {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 4px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.lorebook-switch-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 6px;
+}
+.lorebook-switch-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lorebook-switch-list::-webkit-scrollbar { width: 4px; }
+.lorebook-switch-list::-webkit-scrollbar-track { background: transparent; }
+.lorebook-switch-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.lorebook-switch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lorebook-switch-item:hover { background: var(--surface3); }
+.lorebook-switch-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.lorebook-switch-item-time {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
 .chip-label {
   overflow: hidden;
   text-overflow: ellipsis;

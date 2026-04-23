@@ -2,6 +2,7 @@
 import { useUi }             from '../../hooks/use-ui.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
 import { useMenuPanel }      from '../../hooks/use-menu-panel.js';
+import { CROSSTALK_ENABLED } from '../../constants/crosstalk.js';
 import { WindowHeader }      from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
@@ -13,11 +14,6 @@ import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
 import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
-
-// Dev-only gate for the crosstalk split view. Read once at module load —
-// toggling without a reload is not a supported flow. Removed in Phase 9 E1.
-const crosstalkEnabled = typeof window !== 'undefined'
-  && new URLSearchParams(window.location.search).get('crosstalk') === '1';
 
 export function FloatingWindow() {
   const isMobile         = useMobile();
@@ -62,9 +58,9 @@ export function FloatingWindow() {
                   the panel the user clicked (via swap) stays in the same
                   physical position. Outside crosstalk, left is always Build. */}
               <div className="pane-split-slot">
-                {crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
+                {CROSSTALK_ENABLED && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
               </div>
-              {crosstalkEnabled && (
+              {CROSSTALK_ENABLED && (
                 <div className="pane-split-slot">
                   {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
                 </div>

@@ -1,13 +1,14 @@
-// Build tab content — composes a pane header (ACTIVE label + picker to switch
-// which lorebook is active), the mobile lorebook-name field, and EntryList.
-// SearchBar, TypeFilterBar, and sort are hoisted to GlobalFilterBar above the
-// pane split.
+// Build tab content. In crosstalk mode a pane header (ACTIVE label + picker)
+// renders up top so the active side mirrors ReferencePanel's chrome; in solo
+// mode the pane header is suppressed — switch+rename live in WindowHeader
+// instead. SearchBar / TypeFilterBar / sort are hoisted to GlobalFilterBar.
 import { useEntries }           from '../../hooks/use-entries.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { CROSSTALK_ENABLED }    from '../../constants/crosstalk.js';
 import { EntryList }            from './EntryList.jsx';
 
 export function BuildPanel() {
@@ -28,21 +29,23 @@ export function BuildPanel() {
 
   return (
     <div className="build-panel">
-      <div className="pane-header">
-        <div className="field-label pane-header-label">ACTIVE</div>
-        <select
-          className="pane-header-picker"
-          value={activeLorebook?.id ?? ''}
-          onChange={onPickerChange}
-        >
-          {!activeLorebook && <option value="">— Pick a lorebook —</option>}
-          {pickerItems.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name || '(unnamed)'}
-            </option>
-          ))}
-        </select>
-      </div>
+      {CROSSTALK_ENABLED && (
+        <div className="pane-header">
+          <div className="field-label pane-header-label">ACTIVE</div>
+          <select
+            className="pane-header-picker"
+            value={activeLorebook?.id ?? ''}
+            onChange={onPickerChange}
+          >
+            {!activeLorebook && <option value="">— Pick a lorebook —</option>}
+            {pickerItems.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name || '(unnamed)'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Lorebook name field — mobile only; desktop shows it in the window header */}
       {isMobile && (
