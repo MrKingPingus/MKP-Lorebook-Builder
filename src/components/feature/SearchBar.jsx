@@ -26,10 +26,11 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
     findText, setFindText,
     replaceText, setReplaceText,
     matchCount: frMatchCount,
+    matchesByLorebook,
     replaceAll,
     scope, toggleScope, allSelected,
     scopeOpen, setScopeOpen,
-  } = useFindReplace(entries);
+  } = useFindReplace();
   const { selectedCount } = useSelection();
   const isMobile           = useMobile();
   const sortMode           = useUi((s) => s.sortMode);
@@ -203,6 +204,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
             replaceText={replaceText}
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
+            matchesByLorebook={matchesByLorebook}
             replaceAll={replaceAll}
             scope={scope}
             toggleScope={toggleScope}
@@ -244,6 +246,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
             replaceText={replaceText}
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
+            matchesByLorebook={matchesByLorebook}
             replaceAll={replaceAll}
             scope={scope}
             toggleScope={toggleScope}

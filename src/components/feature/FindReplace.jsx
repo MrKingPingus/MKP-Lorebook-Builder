@@ -12,7 +12,8 @@ const SCOPE_CHIPS = [
 export function FindReplace({
   findText, setFindText,
   replaceText, setReplaceText,
-  matchCount, replaceAll,
+  matchCount, matchesByLorebook = [],
+  replaceAll,
   scope, toggleScope, allSelected,
   scopeOpen, setScopeOpen,
   row = 'all',
@@ -65,6 +66,16 @@ export function FindReplace({
 
       {scopeOpen && (
         <div className="replace-scope-popover">
+          {matchesByLorebook.length > 1 && (
+            <ul className="replace-scope-matches">
+              {matchesByLorebook.map((m) => (
+                <li key={m.id} className="replace-scope-matches-row">
+                  <span className="replace-scope-matches-name">{m.name || '(unnamed)'}</span>
+                  <span className="replace-scope-matches-count">{m.count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="replace-scope-chips">
             {SCOPE_CHIPS.map(({ key, label }) => (
               <button
