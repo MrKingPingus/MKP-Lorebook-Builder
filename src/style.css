@@ -642,6 +642,14 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.match-counter--multi {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.match-counter-role  { color: var(--muted2); }
+.match-counter-count { color: var(--yellow); }
+.match-counter-sep   { color: var(--muted2); margin: 0 2px; }
 
 /* Find & Replace row */
 .find-input, .replace-input {
