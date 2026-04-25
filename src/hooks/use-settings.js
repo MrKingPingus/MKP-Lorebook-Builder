@@ -1,6 +1,7 @@
 // Read and persist all user preference fields through settings-store and storage-service
 import { useSettingsStore } from '../state/settings-store.js';
 import { useUiStore }       from '../state/ui-store.js';
+import { useLorebookStore } from '../state/lorebook-store.js';
 import { writeJson }        from '../services/storage-service.js';
 import { SETTINGS_KEY }     from '../constants/storage-keys.js';
 
@@ -21,6 +22,7 @@ export function useSettings() {
   const fabCustomSize            = useSettingsStore((s) => s.fabCustomSize);
   const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
   const keepMenuOpenAfterImport  = useSettingsStore((s) => s.keepMenuOpenAfterImport);
+  const crosstalkEnabled         = useSettingsStore((s) => s.crosstalkEnabled);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -43,6 +45,7 @@ export function useSettings() {
       fabCustomSize,
       rollbackDefaultEnabled,
       keepMenuOpenAfterImport,
+      crosstalkEnabled,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -74,6 +77,7 @@ export function useSettings() {
     fabCustomSize,
     rollbackDefaultEnabled,
     keepMenuOpenAfterImport,
+    crosstalkEnabled,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -91,5 +95,12 @@ export function useSettings() {
     setFabCustomSize:            (v) => updateSetting('fabCustomSize', v),
     setRollbackDefaultEnabled:   (v) => updateSetting('rollbackDefaultEnabled', v),
     setKeepMenuOpenAfterImport:  (v) => updateSetting('keepMenuOpenAfterImport', v),
+    setCrosstalkEnabled: (v) => {
+      updateSetting('crosstalkEnabled', v);
+      // Turning crosstalk off nulls the reference id so a re-show starts
+      // fresh. Active id and selection stay put — the active book doesn't
+      // change when the panel is hidden.
+      if (!v) useLorebookStore.getState().setReferenceLorebookId(null);
+    },
   };
 }

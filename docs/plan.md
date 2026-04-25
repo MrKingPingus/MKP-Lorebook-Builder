@@ -120,10 +120,10 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 - [x] `use-reference-lorebook.js` hook exposing the reference and the swap action
 - [x] `ReferencePanel` component — read-only render of the reference lorebook with its own picker (excludes active id)
 - [x] Swap-on-edit-click — single `onMouseDown` handler on edit-shaped reference surfaces that calls `swapReference()` before any edit UI can mount
-- [ ] Global search/filter/sort bar promoted above the pane split in crosstalk mode; both panes consume the same filter state from `ui-store`
-- [ ] Lateral find & replace — preview scans both active and reference entries; per-side Apply buttons (Apply to Active / Apply to Reference) satisfy the per-lorebook confirmation requirement
+- [x] Global search/filter/sort bar promoted above the pane split in crosstalk mode; both panes consume the same filter state from `ui-store`
+- [x] Lateral find & replace — preview scans both active and reference entries; per-side Apply buttons (Apply to Active / Apply to Reference / Apply to Both) satisfy the per-lorebook confirmation requirement
 - [ ] Cross-pane diff highlighting (optional, uses `diff-service.js`) — when the same-named entry exists on both sides, highlight differing fields
-- [ ] Menu toggle to show/hide the reference panel (once stable; gated behind `?crosstalk=1` during development)
+- [x] Menu toggle to show/hide the reference panel (Settings → "Show reference panel"; replaces the development-only `?crosstalk=1` query gate)
 
 **Rollback Diff Highlighting:**
 - [ ] Wires `diff-service.js` into the rollback preview pane; activates the previously inert "Highlight Differences" button; field-level delta highlighting renders between snapshot and current entry state

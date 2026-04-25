@@ -1,9 +1,9 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
-import { useUi }             from '../../hooks/use-ui.js';
-import { useMobile }         from '../../hooks/use-mobile.js';
-import { useMenuPanel }      from '../../hooks/use-menu-panel.js';
-import { CROSSTALK_ENABLED } from '../../constants/crosstalk.js';
-import { WindowHeader }      from './WindowHeader.jsx';
+import { useUi }                from '../../hooks/use-ui.js';
+import { useMobile }            from '../../hooks/use-mobile.js';
+import { useMenuPanel }         from '../../hooks/use-menu-panel.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
@@ -22,6 +22,7 @@ export function FloatingWindow() {
   const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
   const activeSide       = useUi((s) => s.activeSide);
+  const { crosstalkEnabled } = useReferenceLorebook();
 
   // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
   useMenuPanel();
@@ -58,9 +59,9 @@ export function FloatingWindow() {
                   the panel the user clicked (via swap) stays in the same
                   physical position. Outside crosstalk, left is always Build. */}
               <div className="pane-split-slot">
-                {CROSSTALK_ENABLED && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
+                {crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
               </div>
-              {CROSSTALK_ENABLED && (
+              {crosstalkEnabled && (
                 <div className="pane-split-slot">
                   {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
                 </div>

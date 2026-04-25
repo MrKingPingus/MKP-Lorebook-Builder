@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore } from '../state/history-store.js';
 import { findReplace, countMatches, matchDetails } from '../services/find-replace.js';
-import { CROSSTALK_ENABLED } from '../constants/crosstalk.js';
 
 const DEFAULT_SCOPE = { title: true, triggers: true, description: true };
 
@@ -29,7 +28,9 @@ export function useFindReplace({ lorebookIds } = {}) {
   const swapReferenceIds    = useLorebookStore((s) => s.swapReference);
   const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
 
-  const defaultIds = CROSSTALK_ENABLED && referenceLorebookId
+  // Reference id is nulled when crosstalk is off (see use-settings.setCrosstalkEnabled),
+  // so a non-null reference here implies crosstalk is on.
+  const defaultIds = referenceLorebookId
     ? [activeLorebookId, referenceLorebookId]
     : [activeLorebookId];
   const resolvedIds = (lorebookIds ?? defaultIds).filter((id) => id && lorebooks[id]);

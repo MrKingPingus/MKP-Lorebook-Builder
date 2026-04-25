@@ -8,7 +8,6 @@ import { useMobile }            from '../../hooks/use-mobile.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
-import { CROSSTALK_ENABLED }    from '../../constants/crosstalk.js';
 import { EntryList }            from './EntryList.jsx';
 
 export function BuildPanel() {
@@ -17,7 +16,7 @@ export function BuildPanel() {
   const isMobile                                 = useMobile();
   const { activeLorebook, renameLorebook }       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
-  const { referenceLorebook }                    = useReferenceLorebook();
+  const { referenceLorebook, crosstalkEnabled }  = useReferenceLorebook();
 
   // Mirror ReferencePanel: picker options exclude the opposite side so a
   // lorebook can't occupy both slots at once.
@@ -29,7 +28,7 @@ export function BuildPanel() {
 
   return (
     <div className="build-panel">
-      {CROSSTALK_ENABLED && (
+      {crosstalkEnabled && (
         <div className="pane-header">
           <div className="field-label pane-header-label">ACTIVE</div>
           <select

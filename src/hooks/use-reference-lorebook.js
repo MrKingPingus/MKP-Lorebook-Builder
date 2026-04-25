@@ -1,11 +1,15 @@
 // Reference lorebook (read-only side of crosstalk): resolves the id to the
-// lorebook object, and exposes the setter, swap, and clear actions.
-// Selection is active-only — clear it on swap so the new active side doesn't
-// inherit selected ids that belong to a different lorebook.
+// lorebook object, and exposes the setter, swap, and clear actions plus the
+// `crosstalkEnabled` feature flag (single source of truth for whether the
+// reference panel and per-book find/replace UI render). Selection is
+// active-only — clear it on swap so the new active side doesn't inherit
+// selected ids that belong to a different lorebook.
 import { useLorebookStore } from '../state/lorebook-store.js';
+import { useSettingsStore } from '../state/settings-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 
 export function useReferenceLorebook() {
+  const crosstalkEnabled       = useSettingsStore((s) => s.crosstalkEnabled);
   const referenceLorebookId    = useLorebookStore((s) => s.referenceLorebookId);
   const lorebooks              = useLorebookStore((s) => s.lorebooks);
   const setReferenceLorebookId = useLorebookStore((s) => s.setReferenceLorebookId);
@@ -30,6 +34,7 @@ export function useReferenceLorebook() {
   }
 
   return {
+    crosstalkEnabled,
     referenceLorebook,
     setReferenceLorebookId,
     swapReference,

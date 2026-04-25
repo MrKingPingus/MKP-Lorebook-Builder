@@ -37,6 +37,8 @@ export function SettingsPanel() {
     setRollbackDefaultEnabled,
     keepMenuOpenAfterImport,
     setKeepMenuOpenAfterImport,
+    crosstalkEnabled,
+    setCrosstalkEnabled,
   } = useSettings();
 
   const {
@@ -150,6 +152,21 @@ export function SettingsPanel() {
         </label>
         <div className="settings-hint">
           When on, the menu panel stays open after a successful import. On mobile the menu always closes (full-screen overlay).
+        </div>
+      </div>
+
+      {/* ── Reference panel (crosstalk) ── */}
+      <div className="settings-group">
+        <label className="settings-label">
+          <span>Show reference panel</span>
+          <input
+            type="checkbox"
+            checked={crosstalkEnabled}
+            onChange={(e) => setCrosstalkEnabled(e.target.checked)}
+          />
+        </label>
+        <div className="settings-hint">
+          Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Turning this off clears the current reference selection.
         </div>
       </div>
 

@@ -3,9 +3,9 @@ import { useRef, useState } from 'react';
 import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
-import { useUi }         from '../../hooks/use-ui.js';
-import { CROSSTALK_ENABLED } from '../../constants/crosstalk.js';
-import { MenuButton }    from './MenuButton.jsx';
+import { useUi }                from '../../hooks/use-ui.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { MenuButton }           from './MenuButton.jsx';
 import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
 import { LorebookSwitchPopover }  from '../feature/LorebookSwitchPopover.jsx';
 
@@ -13,6 +13,7 @@ export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
+  const { crosstalkEnabled }               = useReferenceLorebook();
   const setShowLander                      = useUi((s) => s.setShowLander);
   const hiddenBtnRef                       = useRef(null);
   const [hiddenOpen, setHiddenOpen]        = useState(false);
@@ -24,7 +25,7 @@ export function WindowHeader() {
   const hiddenEntries = activeLorebook?.entries.filter((e) => e.hiddenFromExport) ?? [];
   // Only surface the switch affordance in solo mode on desktop — crosstalk
   // has per-pane pickers and mobile routes switching through the menu panel.
-  const showSwitchButton = !CROSSTALK_ENABLED && !isMobile;
+  const showSwitchButton = !crosstalkEnabled && !isMobile;
 
   function toggleHidden() {
     if (hiddenOpen) {

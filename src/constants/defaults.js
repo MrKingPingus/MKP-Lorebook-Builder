@@ -26,6 +26,8 @@ export const DEFAULT_SETTINGS = {
   fabCustomSize:            60,          // px, used only when fabSize === 'custom'
   // Desktop: keep the menu panel open after importing a lorebook (mobile always closes)
   keepMenuOpenAfterImport:  false,
+  // Show the read-only reference panel beside the active panel for cross-book search/find-replace
+  crosstalkEnabled:         false,
 };
 
 export const DEFAULT_ENTRY = {

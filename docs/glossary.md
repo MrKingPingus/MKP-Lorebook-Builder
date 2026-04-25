@@ -126,7 +126,7 @@ Plain-language definitions for technical terms that come up when discussing this
 
 **Shim / polyfill** — A small piece of code that fills a gap, usually for compatibility. CLAUDE.md warns against "backwards-compatibility shims" — don't pretend old data shapes still exist if you can just migrate the data.
 
-**Feature flag / gate** — A conditional that turns a feature on or off. The `?crosstalk=1` URL parameter is a dev-only gate: the crosstalk UI only renders if you add that to the URL.
+**Feature flag / gate** — A conditional that turns a feature on or off. The crosstalk reference panel is gated by the `crosstalkEnabled` setting (Settings → "Show reference panel"); during Phase 9 development it lived behind a `?crosstalk=1` URL parameter that's since been removed.
 
 **Surface / widening surface** — The set of places in the codebase you'd need to change to accomplish something. "Widening surface" = a change that ended up touching more files than expected, usually a sign that the original design didn't anticipate it.
 
