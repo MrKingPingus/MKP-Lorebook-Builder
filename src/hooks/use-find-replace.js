@@ -2,18 +2,20 @@
 import { useState, useEffect } from 'react';
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore } from '../state/history-store.js';
-import { findReplace, countMatches } from '../services/find-replace.js';
+import { findReplace, countMatches, matchDetails } from '../services/find-replace.js';
 import { CROSSTALK_ENABLED } from '../constants/crosstalk.js';
 
 const DEFAULT_SCOPE = { title: true, triggers: true, description: true };
 
 // `lorebookIds` is optional. Default is `[activeLorebookId]`; in crosstalk
 // with a reference set, `[activeLorebookId, referenceLorebookId]` (nulls and
-// unknown ids filtered). `matchesByLorebook` exposes a per-book breakdown so
-// the preview can show which lorebook owns each hit. `replaceInActive` mutates
-// the active lorebook; `replaceInReference` temporarily swaps ids at the store
-// level so the snapshot+update target the reference book, then swaps back —
-// only the ids flip, the visual side flag and selection are untouched.
+// unknown ids filtered). `matchesByLorebook` exposes a per-book breakdown
+// (count + per-entry details with field locations) so the preview can show
+// which entries own each hit. `replaceInActive` mutates the active lorebook;
+// `replaceInReference` temporarily swaps ids at the store level so the
+// snapshot+update target the reference book, then swaps back — only the ids
+// flip, the visual side flag and selection are untouched. `replaceInBoth`
+// composes both, pushing two snapshots in sequence.
 export function useFindReplace({ lorebookIds } = {}) {
   const [findText, setFindText]       = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -45,7 +47,8 @@ export function useFindReplace({ lorebookIds } = {}) {
   const matchesByLorebook = resolvedIds.map((id) => ({
     id,
     name: lorebooks[id].name,
-    count: countMatches(lorebooks[id].entries, findText, scope),
+    count:   countMatches(lorebooks[id].entries, findText, scope),
+    entries: matchDetails(lorebooks[id].entries, findText, scope),
   }));
   const matchCount          = matchesByLorebook.reduce((sum, m) => sum + m.count, 0);
   const activeMatchCount    = matchesByLorebook.find((m) => m.id === activeLorebookId)?.count ?? 0;
@@ -89,6 +92,16 @@ export function useFindReplace({ lorebookIds } = {}) {
     setScopeOpen(false);
   }
 
+  // Apply to both books in one click. Snapshots stack — active first, then
+  // reference — so undo unwinds the reference mutation first, then the active
+  // one. Same per-book undo caveat as `replaceInReference` applies on the
+  // reference step (snapshot lands on the active stack regardless of which
+  // book mutated).
+  function replaceInBoth() {
+    replaceInActive();
+    replaceInReference();
+  }
+
   return {
     findText, setFindText,
     replaceText, setReplaceText,
@@ -98,6 +111,7 @@ export function useFindReplace({ lorebookIds } = {}) {
     referenceMatchCount,
     replaceInActive,
     replaceInReference,
+    replaceInBoth,
     scope, toggleScope, allSelected,
     scopeOpen, setScopeOpen,
   };

@@ -8,13 +8,15 @@ const SCOPE_CHIPS = [
   { key: 'description', label: 'Description' },
 ];
 
+const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
+
 // row: 'all' (default) | 'inputs' (find+replace fields only) | 'actions' (replace button only)
 export function FindReplace({
   findText, setFindText,
   replaceText, setReplaceText,
   matchCount, matchesByLorebook = [],
   activeMatchCount = 0, referenceMatchCount = 0,
-  replaceInActive, replaceInReference,
+  replaceInActive, replaceInReference, replaceInBoth,
   scope, toggleScope, allSelected,
   scopeOpen, setScopeOpen,
   row = 'all',
@@ -40,6 +42,7 @@ export function FindReplace({
 
   const scopeEmpty = !scope.title && !scope.triggers && !scope.description;
   const crosstalk = matchesByLorebook.length > 1;
+  const anyEntries = matchesByLorebook.some((m) => m.entries && m.entries.length > 0);
 
   const inputs = (
     <>
@@ -70,15 +73,35 @@ export function FindReplace({
 
       {scopeOpen && (
         <div className="replace-scope-popover">
-          {crosstalk && (
-            <ul className="replace-scope-matches">
+          {anyEntries && (
+            <div className="replace-scope-matches">
               {matchesByLorebook.map((m) => (
-                <li key={m.id} className="replace-scope-matches-row">
-                  <span className="replace-scope-matches-name">{m.name || '(unnamed)'}</span>
-                  <span className="replace-scope-matches-count">{m.count}</span>
-                </li>
+                <section key={m.id} className="replace-scope-matches-book">
+                  {crosstalk && (
+                    <div className="replace-scope-matches-row">
+                      <span className="replace-scope-matches-name">{m.name || '(unnamed)'}</span>
+                      <span className="replace-scope-matches-count">{m.count}</span>
+                    </div>
+                  )}
+                  {m.entries.length > 0 && (
+                    <ul className="replace-scope-matches-entries">
+                      {m.entries.map((e) => (
+                        <li key={e.id} className="replace-scope-matches-entry">
+                          <span className="replace-scope-matches-entry-name">{e.name || '(unnamed)'}</span>
+                          <span className="replace-scope-matches-entry-tags">
+                            {e.locations.map((loc) => (
+                              <span key={loc} className={`search-dropdown-tag search-dropdown-tag--${loc}`}>
+                                {LOCATION_LABELS[loc]}
+                              </span>
+                            ))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               ))}
-            </ul>
+            </div>
           )}
           <div className="replace-scope-chips">
             {SCOPE_CHIPS.map(({ key, label }) => (
@@ -106,6 +129,13 @@ export function FindReplace({
                 disabled={referenceMatchCount === 0 || scopeEmpty}
               >
                 Apply to Reference ({referenceMatchCount})
+              </button>
+              <button
+                className="replace-scope-proceed"
+                onClick={replaceInBoth}
+                disabled={matchCount === 0 || scopeEmpty}
+              >
+                Apply to Both ({matchCount})
               </button>
             </div>
           ) : (
