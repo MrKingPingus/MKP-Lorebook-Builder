@@ -28,7 +28,8 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
     replaceText, setReplaceText,
     matchCount: frMatchCount,
     matchesByLorebook,
-    replaceAll,
+    activeMatchCount, referenceMatchCount,
+    replaceInActive, replaceInReference,
     scope, toggleScope, allSelected,
     scopeOpen, setScopeOpen,
   } = useFindReplace();
@@ -206,7 +207,10 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
             matchesByLorebook={matchesByLorebook}
-            replaceAll={replaceAll}
+            activeMatchCount={activeMatchCount}
+            referenceMatchCount={referenceMatchCount}
+            replaceInActive={replaceInActive}
+            replaceInReference={replaceInReference}
             scope={scope}
             toggleScope={toggleScope}
             allSelected={allSelected}
@@ -248,7 +252,10 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
             matchesByLorebook={matchesByLorebook}
-            replaceAll={replaceAll}
+            activeMatchCount={activeMatchCount}
+            referenceMatchCount={referenceMatchCount}
+            replaceInActive={replaceInActive}
+            replaceInReference={replaceInReference}
             scope={scope}
             toggleScope={toggleScope}
             allSelected={allSelected}

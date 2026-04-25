@@ -742,6 +742,11 @@ input:focus, textarea:focus, select:focus {
 }
 .replace-scope-proceed:hover:not(:disabled) { background: #dc2626; }
 .replace-scope-proceed:disabled { opacity: 0.4; cursor: default; }
+.replace-scope-apply-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 /* Mobile find-replace second row */
 .search-bar-row2 {

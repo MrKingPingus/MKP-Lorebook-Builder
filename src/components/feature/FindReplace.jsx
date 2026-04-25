@@ -13,7 +13,8 @@ export function FindReplace({
   findText, setFindText,
   replaceText, setReplaceText,
   matchCount, matchesByLorebook = [],
-  replaceAll,
+  activeMatchCount = 0, referenceMatchCount = 0,
+  replaceInActive, replaceInReference,
   scope, toggleScope, allSelected,
   scopeOpen, setScopeOpen,
   row = 'all',
@@ -36,6 +37,9 @@ export function FindReplace({
     if (key === 'all') return allSelected;
     return scope[key];
   }
+
+  const scopeEmpty = !scope.title && !scope.triggers && !scope.description;
+  const crosstalk = matchesByLorebook.length > 1;
 
   const inputs = (
     <>
@@ -66,7 +70,7 @@ export function FindReplace({
 
       {scopeOpen && (
         <div className="replace-scope-popover">
-          {matchesByLorebook.length > 1 && (
+          {crosstalk && (
             <ul className="replace-scope-matches">
               {matchesByLorebook.map((m) => (
                 <li key={m.id} className="replace-scope-matches-row">
@@ -87,13 +91,32 @@ export function FindReplace({
               </button>
             ))}
           </div>
-          <button
-            className="replace-scope-proceed"
-            onClick={replaceAll}
-            disabled={matchCount === 0 || (!scope.title && !scope.triggers && !scope.description)}
-          >
-            Proceed
-          </button>
+          {crosstalk ? (
+            <div className="replace-scope-apply-row">
+              <button
+                className="replace-scope-proceed"
+                onClick={replaceInActive}
+                disabled={activeMatchCount === 0 || scopeEmpty}
+              >
+                Apply to Active ({activeMatchCount})
+              </button>
+              <button
+                className="replace-scope-proceed"
+                onClick={replaceInReference}
+                disabled={referenceMatchCount === 0 || scopeEmpty}
+              >
+                Apply to Reference ({referenceMatchCount})
+              </button>
+            </div>
+          ) : (
+            <button
+              className="replace-scope-proceed"
+              onClick={replaceInActive}
+              disabled={matchCount === 0 || scopeEmpty}
+            >
+              Proceed
+            </button>
+          )}
         </div>
       )}
     </div>

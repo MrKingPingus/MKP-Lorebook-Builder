@@ -10,8 +10,10 @@ const DEFAULT_SCOPE = { title: true, triggers: true, description: true };
 // `lorebookIds` is optional. Default is `[activeLorebookId]`; in crosstalk
 // with a reference set, `[activeLorebookId, referenceLorebookId]` (nulls and
 // unknown ids filtered). `matchesByLorebook` exposes a per-book breakdown so
-// the preview can show which lorebook owns each hit. `replaceAll` still
-// mutates the active lorebook only — per-side apply lands in D2.
+// the preview can show which lorebook owns each hit. `replaceInActive` mutates
+// the active lorebook; `replaceInReference` temporarily swaps ids at the store
+// level so the snapshot+update target the reference book, then swaps back —
+// only the ids flip, the visual side flag and selection are untouched.
 export function useFindReplace({ lorebookIds } = {}) {
   const [findText, setFindText]       = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -22,6 +24,7 @@ export function useFindReplace({ lorebookIds } = {}) {
   const referenceLorebookId = useLorebookStore((s) => s.referenceLorebookId);
   const lorebooks           = useLorebookStore((s) => s.lorebooks);
   const updateActiveEntries = useLorebookStore((s) => s.updateActiveEntries);
+  const swapReferenceIds    = useLorebookStore((s) => s.swapReference);
   const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
 
   const defaultIds = CROSSTALK_ENABLED && referenceLorebookId
@@ -44,7 +47,9 @@ export function useFindReplace({ lorebookIds } = {}) {
     name: lorebooks[id].name,
     count: countMatches(lorebooks[id].entries, findText, scope),
   }));
-  const matchCount = matchesByLorebook.reduce((sum, m) => sum + m.count, 0);
+  const matchCount          = matchesByLorebook.reduce((sum, m) => sum + m.count, 0);
+  const activeMatchCount    = matchesByLorebook.find((m) => m.id === activeLorebookId)?.count ?? 0;
+  const referenceMatchCount = matchesByLorebook.find((m) => m.id === referenceLorebookId)?.count ?? 0;
 
   function toggleScope(field) {
     if (field === 'all') {
@@ -57,7 +62,7 @@ export function useFindReplace({ lorebookIds } = {}) {
   // Whether "All" is effectively selected (all three fields on)
   const allSelected = scope.title && scope.triggers && scope.description;
 
-  function replaceAll() {
+  function replaceInActive() {
     if (!findText) return;
     const active = lorebooks[activeLorebookId];
     if (!active) return;
@@ -67,12 +72,32 @@ export function useFindReplace({ lorebookIds } = {}) {
     setScopeOpen(false);
   }
 
+  // Swap ids at the store level so the reference book becomes active for the
+  // snapshot+update, then swap back. Snapshot is taken *after* the swap so it
+  // captures the right pre-state. The visual side flag stays put — only ids
+  // flip, both swaps happen synchronously, and the lorebook map ends up with
+  // the reference book's entries replaced.
+  function replaceInReference() {
+    if (!findText) return;
+    const ref = lorebooks[referenceLorebookId];
+    if (!ref) return;
+    swapReferenceIds();
+    pushSnapshot({ entries: [...ref.entries] });
+    const updated = findReplace(ref.entries, findText, replaceText, scope);
+    updateActiveEntries(updated);
+    swapReferenceIds();
+    setScopeOpen(false);
+  }
+
   return {
     findText, setFindText,
     replaceText, setReplaceText,
     matchCount,
     matchesByLorebook,
-    replaceAll,
+    activeMatchCount,
+    referenceMatchCount,
+    replaceInActive,
+    replaceInReference,
     scope, toggleScope, allSelected,
     scopeOpen, setScopeOpen,
   };
