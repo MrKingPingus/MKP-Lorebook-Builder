@@ -34,6 +34,14 @@
   --blue:     #60a5fa;
   --gold:     #eab308;
   --accent:        #ef4444;
+  /* Semantic color tokens — see docs/constants-reference.md for the rule.
+     destructive  = irreversible/overwrite actions (Replace, Delete, Apply, Confirm).
+     passive-agree = stateful toggle is on; user actively chose this state.
+     accent kept as the primary-emphasis exception (FAB, lander hero buttons). */
+  --destructive:        #ef4444;
+  --destructive-hover:  #dc2626;
+  --passive-agree:        #60a5fa;
+  --passive-agree-hover:  #3b82f6;
   --focus-border:  #a0b5d6;
   --radius:   5px;
   --radius-lg: 8px;
@@ -286,7 +294,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition), color var(--transition);
 }
 .menu-dropdown-item:hover { background: var(--surface3); color: var(--text); }
-.menu-dropdown-item--active { color: var(--accent); }
+.menu-dropdown-item--active { color: var(--passive-agree); }
 
 /* Close button */
 .header-close {
@@ -405,14 +413,23 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--border2);
 }
 .footer-btn:disabled { opacity: 0.38; cursor: default; }
+/* Toggle modifier — track-outline treatment when off so the user can read it
+   as "this fills with the active color when on." Pair with .footer-btn--active
+   for the on state. Active uses passive-agree blue per the color taxonomy. */
+.footer-btn--toggle {
+  border-color: rgba(96,165,250,.3);
+}
+.footer-btn--toggle:hover:not(:disabled) {
+  border-color: rgba(96,165,250,.55);
+}
 .footer-btn--active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--passive-agree);
+  border-color: var(--passive-agree);
   color: #fff;
 }
 .footer-btn--active:hover:not(:disabled) {
-  background: #dc2626;
-  border-color: #dc2626;
+  background: var(--passive-agree-hover);
+  border-color: var(--passive-agree-hover);
 }
 
 .footer-fab {
@@ -617,7 +634,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition), color var(--transition);
 }
 .sort-btn:hover { background: var(--surface3); color: var(--text); }
-.sort-btn--active { color: var(--accent); }
+.sort-btn--active { color: var(--passive-agree); }
 
 .sort-dropdown {
   position: absolute;
@@ -642,7 +659,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition), color var(--transition);
 }
 .sort-dropdown-item:hover { background: var(--surface3); color: var(--text); }
-.sort-dropdown-item--active { color: var(--accent); }
+.sort-dropdown-item--active { color: var(--passive-agree); }
 
 /* Match counter */
 .match-counter {
@@ -773,11 +790,11 @@ input:focus, textarea:focus, select:focus {
 }
 .replace-scope-chip:hover { border-color: var(--border2); color: var(--text); }
 .replace-scope-chip--active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--passive-agree);
+  border-color: var(--passive-agree);
   color: #fff;
 }
-.replace-scope-chip--active:hover { background: #dc2626; border-color: #dc2626; }
+.replace-scope-chip--active:hover { background: var(--passive-agree-hover); border-color: var(--passive-agree-hover); }
 .replace-scope-proceed {
   padding: 5px 10px;
   background: var(--accent);
@@ -1963,7 +1980,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition);
 }
 .switcher-item:hover { background: var(--surface3); }
-.switcher-item--active { background: rgba(239,68,68,.1); }
+.switcher-item--active { background: rgba(96,165,250,.12); }
 .switcher-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .switcher-time { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 .switcher-delete {
@@ -2043,7 +2060,7 @@ input:focus, textarea:focus, select:focus {
   transition: all var(--transition);
 }
 .format-tab:hover { border-color: var(--border2); color: var(--text); }
-.format-tab--active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.format-tab--active { background: var(--passive-agree); border-color: var(--passive-agree); color: #fff; }
 
 .import-label {
   text-align: center;
@@ -2674,18 +2691,13 @@ kbd {
   flex-shrink: 0;
 }
 .lorebook-panel-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  display: block;
+  width: calc(100% - 24px);
+  margin: 10px 12px;
   padding: 9px 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--text);
+  text-align: center;
   flex-shrink: 0;
-  cursor: pointer;
 }
-.lorebook-panel-toggle input { cursor: pointer; }
 
 /* ============================================================
    Hotbar slot config (Settings panel)

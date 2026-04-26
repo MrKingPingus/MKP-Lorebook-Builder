@@ -20,9 +20,14 @@ function HotbarSlot({ action }) {
     execute();
   }
 
+  // A boolean `active` (true OR false) marks this as a stateful toggle, so it
+  // gets the track-outline treatment when off and the filled blue when on.
+  // `active === undefined` means it's a one-shot command and stays neutral.
+  const isToggle = typeof active === 'boolean';
+
   return (
     <button
-      className={`footer-btn${active ? ' footer-btn--active' : ''}`}
+      className={`footer-btn${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
       onClick={handleClick}
       disabled={disabled}
       title={descriptor.title}

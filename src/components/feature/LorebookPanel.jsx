@@ -98,14 +98,12 @@ export function LorebookPanel() {
 
   return (
     <div className="lorebook-panel">
-      <label className="lorebook-panel-toggle">
-        <span>Show reference panel</span>
-        <input
-          type="checkbox"
-          checked={crosstalkEnabled}
-          onChange={(e) => setCrosstalkEnabled(e.target.checked)}
-        />
-      </label>
+      <button
+        className={`footer-btn footer-btn--toggle lorebook-panel-toggle${crosstalkEnabled ? ' footer-btn--active' : ''}`}
+        onClick={() => setCrosstalkEnabled(!crosstalkEnabled)}
+      >
+        Select Reference Lorebook
+      </button>
 
       {pendingId && (
         <div className="lorebook-panel-prompt">
