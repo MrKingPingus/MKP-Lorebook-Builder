@@ -3,6 +3,9 @@
 // swapReference — the follow-up click then lands on the now-active side and
 // edits the lorebook the user actually pointed at. The header (label +
 // picker) is exempt so the picker stays usable without triggering a swap.
+// The Desc button + any expanded description body also opt out of swap so
+// readers can peek and select-to-copy without committing to an edit pivot.
+import { useState }              from 'react';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
@@ -17,6 +20,10 @@ export function ReferencePanel() {
   const { items }                                                   = useLorebookSwitcher();
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
+
+  // Ephemeral expand state — resets on swap (panel unmounts) and on lorebook
+  // switch. A Set of entry ids whose description is currently revealed.
+  const [expandedIds, setExpandedIds] = useState(() => new Set());
 
   // Apply the same search/filter/sort/group pipeline the active side uses, so
   // the hoisted GlobalFilterBar drives both panels in parallel.
@@ -33,6 +40,23 @@ export function ReferencePanel() {
   // Single swap handler — swap before any click-driven edit UI can mount.
   function onSwap() {
     swapReference();
+  }
+
+  function toggleExpanded(id, e) {
+    // Stop the swap-on-mousedown handler on the entries container from firing.
+    e.stopPropagation();
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else              next.add(id);
+      return next;
+    });
+  }
+
+  // Mousedown blocker for elements inside a card that should NOT trigger swap
+  // (the Desc button itself, and any expanded description body).
+  function stopSwap(e) {
+    e.stopPropagation();
   }
 
   return (
@@ -68,6 +92,8 @@ export function ReferencePanel() {
               const typeDef       = ENTRY_TYPES.find((t) => t.id === entry.type);
               const typeColor     = typeDef?.color ?? '#9ba1ad';
               const snapshotCount = entry.snapshots?.length ?? 0;
+              const isExpanded    = expandedIds.has(entry.id);
+              const hasDescription = (entry.description ?? '').length > 0;
               return (
                 <div
                   key={entry.id}
@@ -96,6 +122,15 @@ export function ReferencePanel() {
                           ↺ {snapshotCount}
                         </span>
                       )}
+                      {hasDescription && (
+                        <button
+                          className="card-action-btn"
+                          onMouseDown={stopSwap}
+                          onClick={(e) => toggleExpanded(entry.id, e)}
+                        >
+                          {isExpanded ? '▲ Desc' : '▼ Desc'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   {entry.triggers.length > 0 && (
@@ -113,6 +148,11 @@ export function ReferencePanel() {
                           </span>
                         );
                       })}
+                    </div>
+                  )}
+                  {isExpanded && hasDescription && (
+                    <div className="reference-entry-description" onMouseDown={stopSwap}>
+                      {entry.description}
                     </div>
                   )}
                 </div>

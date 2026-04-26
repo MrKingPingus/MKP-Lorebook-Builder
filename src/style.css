@@ -3219,3 +3219,19 @@ kbd {
   color: var(--text);
   white-space: nowrap;
 }
+
+/* Inline description revealed by the per-card Desc toggle. Read-only, with a
+   passive-agree left border so it visually reads as supplementary info, not
+   editable content. */
+.reference-entry-description {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--surface3);
+  border-left: 3px solid var(--passive-agree);
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
