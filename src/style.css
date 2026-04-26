@@ -3234,4 +3234,8 @@ kbd {
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
+  /* I-beam cursor — the entries container inherits cursor:pointer to advertise
+     swap-on-click; inside the description body we want the standard text
+     cursor since the body opts out of swap and exists for selection/copy. */
+  cursor: text;
 }
