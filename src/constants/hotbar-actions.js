@@ -27,6 +27,12 @@ export const HOTBAR_ACTIONS = [
     icon:    '↓',
     title:   'Append entries from file or text',
   },
+  {
+    id:      'toggle_crosstalk',
+    label:   'Reference',
+    icon:    '⇆',
+    title:   'Show/hide reference panel',
+  },
 ];
 
 // Keyed map for O(1) lookup in use-hotbar-actions.js

@@ -150,7 +150,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         id={`entry-${entry.id}`}
         className={`entry-card entry-card--mobile${isSelected ? ' entry-card--selected' : ''}`}
         style={{ '--type-color': typeColor }}
-        onClick={() => isSelectMode ? toggleSelected(entry.id) : openEntry(entry.id)}
+        onClick={() => isSelectMode ? toggleSelected(entry.id, 'active') : openEntry(entry.id)}
       >
         <div className="entry-card-mobile-index">#{index}</div>
         <div className="entry-card-mobile-row">
@@ -190,7 +190,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       id={`entry-${entry.id}`}
       className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}`}
       style={{ '--type-color': typeColor }}
-      onClick={isSelectMode ? () => toggleSelected(entry.id) : undefined}
+      onClick={isSelectMode ? () => toggleSelected(entry.id, 'active') : undefined}
     >
       {/* ── Card header ── */}
       <div

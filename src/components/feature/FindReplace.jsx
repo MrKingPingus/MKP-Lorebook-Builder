@@ -8,11 +8,15 @@ const SCOPE_CHIPS = [
   { key: 'description', label: 'Description' },
 ];
 
+const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
+
 // row: 'all' (default) | 'inputs' (find+replace fields only) | 'actions' (replace button only)
 export function FindReplace({
   findText, setFindText,
   replaceText, setReplaceText,
-  matchCount, replaceAll,
+  matchCount, matchesByLorebook = [],
+  activeMatchCount = 0, referenceMatchCount = 0,
+  replaceInActive, replaceInReference, replaceInBoth,
   scope, toggleScope, allSelected,
   scopeOpen, setScopeOpen,
   row = 'all',
@@ -35,6 +39,10 @@ export function FindReplace({
     if (key === 'all') return allSelected;
     return scope[key];
   }
+
+  const scopeEmpty = !scope.title && !scope.triggers && !scope.description;
+  const crosstalk = matchesByLorebook.length > 1;
+  const anyEntries = matchesByLorebook.some((m) => m.entries && m.entries.length > 0);
 
   const inputs = (
     <>
@@ -65,6 +73,36 @@ export function FindReplace({
 
       {scopeOpen && (
         <div className="replace-scope-popover">
+          {anyEntries && (
+            <div className="replace-scope-matches">
+              {matchesByLorebook.map((m) => (
+                <section key={m.id} className="replace-scope-matches-book">
+                  {crosstalk && (
+                    <div className="replace-scope-matches-row">
+                      <span className="replace-scope-matches-name">{m.name || '(unnamed)'}</span>
+                      <span className="replace-scope-matches-count">{m.count}</span>
+                    </div>
+                  )}
+                  {m.entries.length > 0 && (
+                    <ul className="replace-scope-matches-entries">
+                      {m.entries.map((e) => (
+                        <li key={e.id} className="replace-scope-matches-entry">
+                          <span className="replace-scope-matches-entry-name">{e.name || '(unnamed)'}</span>
+                          <span className="replace-scope-matches-entry-tags">
+                            {e.locations.map((loc) => (
+                              <span key={loc} className={`search-dropdown-tag search-dropdown-tag--${loc}`}>
+                                {LOCATION_LABELS[loc]}
+                              </span>
+                            ))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              ))}
+            </div>
+          )}
           <div className="replace-scope-chips">
             {SCOPE_CHIPS.map(({ key, label }) => (
               <button
@@ -76,13 +114,39 @@ export function FindReplace({
               </button>
             ))}
           </div>
-          <button
-            className="replace-scope-proceed"
-            onClick={replaceAll}
-            disabled={matchCount === 0 || (!scope.title && !scope.triggers && !scope.description)}
-          >
-            Proceed
-          </button>
+          {crosstalk ? (
+            <div className="replace-scope-apply-row">
+              <button
+                className="replace-scope-proceed"
+                onClick={replaceInActive}
+                disabled={activeMatchCount === 0 || scopeEmpty}
+              >
+                Apply to Active ({activeMatchCount})
+              </button>
+              <button
+                className="replace-scope-proceed"
+                onClick={replaceInReference}
+                disabled={referenceMatchCount === 0 || scopeEmpty}
+              >
+                Apply to Reference ({referenceMatchCount})
+              </button>
+              <button
+                className="replace-scope-proceed"
+                onClick={replaceInBoth}
+                disabled={matchCount === 0 || scopeEmpty}
+              >
+                Apply to Both ({matchCount})
+              </button>
+            </div>
+          ) : (
+            <button
+              className="replace-scope-proceed"
+              onClick={replaceInActive}
+              disabled={matchCount === 0 || scopeEmpty}
+            >
+              Proceed
+            </button>
+          )}
         </div>
       )}
     </div>

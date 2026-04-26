@@ -71,6 +71,10 @@ GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions enviro
 ## File Editing
 - When the Edit tool fails due to unicode characters (em-dashes, non-breaking spaces, etc.), use targeted `sed` commands for surgical replacements — do **not** load and rewrite the entire file via Python or similar; that dumps the full file contents into context unnecessarily
 
+## Communication
+
+When an exploratory or design discussion includes multiple decisions to make, finish the message with a numbered list of the specific clarifications you need from the user — one decision per item, with the options enumerated `(a)/(b)/(c)`. Lay out reasoning and tradeoffs in prose above the list as usual, but the trailing list should be self-contained enough that the user can reply with `1. a, 2. b, 3. yes` and unambiguously approve the path forward.
+
 ## Token Cost Warnings
 
 Some actions consume a disproportionate number of tokens. Claude should warn the user **before** performing any of the following:

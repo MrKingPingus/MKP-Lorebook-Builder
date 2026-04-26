@@ -3,20 +3,29 @@ import { useRef, useState } from 'react';
 import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
-import { useUi }         from '../../hooks/use-ui.js';
-import { MenuButton }    from './MenuButton.jsx';
-import { HiddenEntriesPopover } from '../feature/HiddenEntriesPopover.jsx';
+import { useUi }                from '../../hooks/use-ui.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { MenuButton }           from './MenuButton.jsx';
+import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
+import { LorebookSwitchPopover }  from '../feature/LorebookSwitchPopover.jsx';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
+  const { crosstalkEnabled }               = useReferenceLorebook();
   const setShowLander                      = useUi((s) => s.setShowLander);
   const hiddenBtnRef                       = useRef(null);
   const [hiddenOpen, setHiddenOpen]        = useState(false);
   const [hiddenAnchor, setHiddenAnchor]    = useState(null);
+  const switchBtnRef                       = useRef(null);
+  const [switchOpen, setSwitchOpen]        = useState(false);
+  const [switchAnchor, setSwitchAnchor]    = useState(null);
 
   const hiddenEntries = activeLorebook?.entries.filter((e) => e.hiddenFromExport) ?? [];
+  // Only surface the switch affordance in solo mode on desktop — crosstalk
+  // has per-pane pickers and mobile routes switching through the menu panel.
+  const showSwitchButton = !crosstalkEnabled && !isMobile;
 
   function toggleHidden() {
     if (hiddenOpen) {
@@ -25,6 +34,15 @@ export function WindowHeader() {
     }
     setHiddenAnchor(hiddenBtnRef.current?.getBoundingClientRect() ?? null);
     setHiddenOpen(true);
+  }
+
+  function toggleSwitch() {
+    if (switchOpen) {
+      setSwitchOpen(false);
+      return;
+    }
+    setSwitchAnchor(switchBtnRef.current?.getBoundingClientRect() ?? null);
+    setSwitchOpen(true);
   }
 
   return (
@@ -50,6 +68,24 @@ export function WindowHeader() {
             onPointerDown={(e) => e.stopPropagation()}
             spellCheck={false}
           />
+          {showSwitchButton && (
+            <button
+              ref={switchBtnRef}
+              className="lorebook-switch-btn"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={toggleSwitch}
+              title="Switch to another lorebook"
+              aria-label="Switch lorebook"
+            >
+              ▼
+            </button>
+          )}
+          {switchOpen && (
+            <LorebookSwitchPopover
+              anchorRect={switchAnchor}
+              onClose={() => setSwitchOpen(false)}
+            />
+          )}
           {activeLorebook && (
             <span className="lorebook-entry-count" title="Total entries in this lorebook">
               · {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}

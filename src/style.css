@@ -34,6 +34,14 @@
   --blue:     #60a5fa;
   --gold:     #eab308;
   --accent:        #ef4444;
+  /* Semantic color tokens — see docs/constants-reference.md for the rule.
+     destructive  = irreversible/overwrite actions (Replace, Delete, Apply, Confirm).
+     passive-agree = stateful toggle is on; user actively chose this state.
+     accent kept as the primary-emphasis exception (FAB, lander hero buttons). */
+  --destructive:        #ef4444;
+  --destructive-hover:  #dc2626;
+  --passive-agree:        #60a5fa;
+  --passive-agree-hover:  #3b82f6;
   --focus-border:  #a0b5d6;
   --radius:   5px;
   --radius-lg: 8px;
@@ -209,6 +217,26 @@ input:focus, textarea:focus, select:focus {
 }
 .lorebook-hidden-count:hover { color: var(--text); }
 
+/* Small caret button next to the name input — opens LorebookSwitchPopover in
+   solo mode so rename (input) and switch (button) live side by side. */
+.lorebook-switch-btn {
+  margin-left: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+.lorebook-switch-btn:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface2);
+}
+
 /* Lorebook count badge */
 .lorebook-count-badge {
   display: flex;
@@ -266,7 +294,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition), color var(--transition);
 }
 .menu-dropdown-item:hover { background: var(--surface3); color: var(--text); }
-.menu-dropdown-item--active { color: var(--accent); }
+.menu-dropdown-item--active { color: var(--passive-agree); }
 
 /* Close button */
 .header-close {
@@ -295,12 +323,47 @@ input:focus, textarea:focus, select:focus {
   min-height: 0;
   position: relative;
 }
-/* Desktop: row layout so Build and side panel sit side by side */
-.floating-window:not(.floating-window--mobile) .window-body {
-  flex-direction: row;
-}
 .window-body--lander {
   overflow-y: auto;
+}
+
+/* Shared pane row: BuildPanel + (crosstalk) ReferencePanel + MenuPanel.
+   Desktop lays out in a row; mobile stacks via column. Intentionally neither
+   `position: relative` nor `overflow: hidden` — MenuPanel's mobile overlay
+   uses `position: absolute; inset: 0`, which must resolve (and be painted)
+   against .window-body so it covers the hoisted filter bar too. Individual
+   panels already clip their own overflow. */
+.pane-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.floating-window:not(.floating-window--mobile) .pane-split {
+  flex-direction: row;
+}
+.pane-split-slot {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+/* Divider between adjacent panes — sits on the slot boundary so it doesn't
+   care whether Build or Reference occupies a given slot. Desktop row uses a
+   left border; mobile column uses a top border. */
+.floating-window:not(.floating-window--mobile) .pane-split > .pane-split-slot + .pane-split-slot {
+  border-left: 1px solid var(--border);
+}
+.floating-window--mobile .pane-split > .pane-split-slot + .pane-split-slot {
+  border-top: 1px solid var(--border);
+}
+
+/* Hoisted search + filter + sort bar — sits above the pane split.
+   Separator border is provided by .type-filter-bar's own border-bottom. */
+.global-filter-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
 }
 
 /* ============================================================
@@ -350,6 +413,24 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--border2);
 }
 .footer-btn:disabled { opacity: 0.38; cursor: default; }
+/* Toggle modifier — track-outline treatment when off so the user can read it
+   as "this fills with the active color when on." Pair with .footer-btn--active
+   for the on state. Active uses passive-agree blue per the color taxonomy. */
+.footer-btn--toggle {
+  border-color: rgba(96,165,250,.3);
+}
+.footer-btn--toggle:hover:not(:disabled) {
+  border-color: rgba(96,165,250,.55);
+}
+.footer-btn--active {
+  background: var(--passive-agree);
+  border-color: var(--passive-agree);
+  color: #fff;
+}
+.footer-btn--active:hover:not(:disabled) {
+  background: var(--passive-agree-hover);
+  border-color: var(--passive-agree-hover);
+}
 
 .footer-fab {
   /* width/height/font-size driven by inline style from Hotbar.jsx (settings-based) */
@@ -553,7 +634,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition), color var(--transition);
 }
 .sort-btn:hover { background: var(--surface3); color: var(--text); }
-.sort-btn--active { color: var(--accent); }
+.sort-btn--active { color: var(--passive-agree); }
 
 .sort-dropdown {
   position: absolute;
@@ -578,7 +659,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition), color var(--transition);
 }
 .sort-dropdown-item:hover { background: var(--surface3); color: var(--text); }
-.sort-dropdown-item--active { color: var(--accent); }
+.sort-dropdown-item--active { color: var(--passive-agree); }
 
 /* Match counter */
 .match-counter {
@@ -587,6 +668,14 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.match-counter--multi {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.match-counter-role  { color: var(--muted2); }
+.match-counter-count { color: var(--yellow); }
+.match-counter-sep   { color: var(--muted2); margin: 0 2px; }
 
 /* Find & Replace row */
 .find-input, .replace-input {
@@ -616,8 +705,9 @@ input:focus, textarea:focus, select:focus {
 .replace-scope-popover {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
-  min-width: 180px;
+  right: 0;
+  min-width: 260px;
+  max-width: 360px;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
@@ -627,6 +717,62 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.replace-scope-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid var(--border2);
+  font-size: 12px;
+  color: var(--muted2);
+}
+.replace-scope-matches-book {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.replace-scope-matches-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.replace-scope-matches-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.replace-scope-matches-count { color: var(--text); }
+.replace-scope-matches-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 6px;
+  border-left: 1px solid var(--border);
+}
+.replace-scope-matches-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+}
+.replace-scope-matches-entry-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.replace-scope-matches-entry-tags {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
 }
 .replace-scope-chips {
   display: flex;
@@ -644,11 +790,11 @@ input:focus, textarea:focus, select:focus {
 }
 .replace-scope-chip:hover { border-color: var(--border2); color: var(--text); }
 .replace-scope-chip--active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--passive-agree);
+  border-color: var(--passive-agree);
   color: #fff;
 }
-.replace-scope-chip--active:hover { background: #dc2626; border-color: #dc2626; }
+.replace-scope-chip--active:hover { background: var(--passive-agree-hover); border-color: var(--passive-agree-hover); }
 .replace-scope-proceed {
   padding: 5px 10px;
   background: var(--accent);
@@ -659,6 +805,11 @@ input:focus, textarea:focus, select:focus {
 }
 .replace-scope-proceed:hover:not(:disabled) { background: #dc2626; }
 .replace-scope-proceed:disabled { opacity: 0.4; cursor: default; }
+.replace-scope-apply-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 /* Mobile find-replace second row */
 .search-bar-row2 {
@@ -1148,6 +1299,20 @@ input:focus, textarea:focus, select:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.chip-conflict-section-header {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 4px 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.chip-conflict-section-header:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
 .chip-conflict-popover-divider {
   height: 1px;
   background: var(--border);
@@ -1235,6 +1400,71 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition);
 }
 .hidden-entries-unhide:hover { background: rgba(245,158,11,.12); }
+
+/* Lorebook switch popover — opened from the caret button in WindowHeader */
+.lorebook-switch-popover {
+  min-width: 200px;
+  max-width: 260px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lorebook-switch-popover-title {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 4px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.lorebook-switch-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 6px;
+}
+.lorebook-switch-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lorebook-switch-list::-webkit-scrollbar { width: 4px; }
+.lorebook-switch-list::-webkit-scrollbar-track { background: transparent; }
+.lorebook-switch-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.lorebook-switch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lorebook-switch-item:hover { background: var(--surface3); }
+.lorebook-switch-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.lorebook-switch-item-time {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
 .chip-label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1764,7 +1994,7 @@ input:focus, textarea:focus, select:focus {
   transition: background var(--transition);
 }
 .switcher-item:hover { background: var(--surface3); }
-.switcher-item--active { background: rgba(239,68,68,.1); }
+.switcher-item--active { background: rgba(96,165,250,.12); }
 .switcher-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .switcher-time { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 .switcher-delete {
@@ -1844,7 +2074,7 @@ input:focus, textarea:focus, select:focus {
   transition: all var(--transition);
 }
 .format-tab:hover { border-color: var(--border2); color: var(--text); }
-.format-tab--active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.format-tab--active { background: var(--passive-agree); border-color: var(--passive-agree); color: #fff; }
 
 .import-label {
   text-align: center;
@@ -2474,6 +2704,14 @@ kbd {
   background: var(--surface2);
   flex-shrink: 0;
 }
+.lorebook-panel-toggle {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 10px 12px;
+  padding: 9px 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
 
 /* ============================================================
    Hotbar slot config (Settings panel)
@@ -2839,3 +3077,185 @@ kbd {
 }
 .rollback-reenable-btn:hover { color: var(--accent, #60a5fa); }
 .hotbar-slot-select:focus { outline: none; border-color: var(--border2); }
+
+/* ============================================================
+   Pane Header (ACTIVE / REFERENCE — label + inline picker)
+   ============================================================ */
+/* §PANE-HEADER */
+/* Shared header for BuildPanel and ReferencePanel so both sides occupy the
+   same vertical space. Label on the left, picker on the right, single row. */
+.pane-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 36px;
+  box-sizing: border-box;
+}
+.pane-header-label {
+  flex-shrink: 0;
+  margin: 0;
+}
+.pane-header-picker {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  padding: 3px 6px;
+  box-sizing: border-box;
+  line-height: 1.3;
+}
+.pane-header-picker:focus {
+  outline: none;
+  border-color: var(--focus-border);
+}
+
+/* ============================================================
+   Reference Panel (crosstalk — read-only side)
+   ============================================================ */
+/* §REFERENCE-PANEL */
+.reference-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+/* Dim the reference entries so active vs reference is visually unambiguous.
+   Header (label + picker) stays full-opacity so the picker doesn't read as
+   disabled. Hover fades the body back to 1 — a soft "this is the side
+   you'll edit if you click" cue. */
+.reference-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  opacity: 0.62;
+  transition: opacity var(--transition);
+}
+.reference-panel:hover .reference-panel-body {
+  opacity: 1;
+}
+.reference-panel-body::-webkit-scrollbar { width: 5px; }
+.reference-panel-body::-webkit-scrollbar-track { background: transparent; }
+.reference-panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.reference-panel-empty {
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.reference-panel-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  cursor: pointer;
+}
+
+.reference-entry-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--type-color, #9ba1ad);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: filter var(--transition);
+}
+.reference-entry-card:hover {
+  filter: brightness(1.08);
+}
+
+.reference-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.reference-entry-label {
+  font-size: 13px;
+  font-weight: 700;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reference-entry-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.reference-entry-rollback {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.reference-entry-triggers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.reference-entry-trigger {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Select mode — reference cards mirror the active side's selection visuals
+   (cursor, brighten-on-select, type-color inset ring) so the multi-book copy
+   flow looks the same regardless of which side the user is sourcing from. */
+.reference-entry-card--selectable {
+  cursor: pointer;
+  user-select: none;
+}
+.reference-entry-card--selectable:hover {
+  filter: brightness(1.08);
+}
+.reference-entry-card--selected {
+  filter: brightness(1.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--type-color, #9ba1ad) inset;
+}
+.reference-entry-card--selected:hover {
+  filter: brightness(1.22);
+  transform: translateY(-3px);
+}
+
+/* Inline description revealed by the per-card Desc toggle. Read-only, with a
+   passive-agree left border so it visually reads as supplementary info, not
+   editable content. */
+.reference-entry-description {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--surface3);
+  border-left: 3px solid var(--passive-agree);
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  /* I-beam cursor — the entries container inherits cursor:pointer to advertise
+     swap-on-click; inside the description body we want the standard text
+     cursor since the body opts out of swap and exists for selection/copy. */
+  cursor: text;
+}

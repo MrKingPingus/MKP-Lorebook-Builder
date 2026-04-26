@@ -20,16 +20,20 @@ const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc'
 
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
 // visibleIds: ordered list of entry ids currently visible after search + type filter + sort/group
-export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, visibleIds = [] }) {
+// referenceVisibleIds: same, for the reference book in crosstalk; empty otherwise
+// matches: [{role, matchCount, entryMatchCount}] — one entry in normal mode, active + reference in crosstalk
+export function SearchBar({ entries, matches = [], matchDetails, visibleIds = [], referenceVisibleIds = [] }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
   const {
     findText, setFindText,
     replaceText, setReplaceText,
     matchCount: frMatchCount,
-    replaceAll,
+    matchesByLorebook,
+    activeMatchCount, referenceMatchCount,
+    replaceInActive, replaceInReference, replaceInBoth,
     scope, toggleScope, allSelected,
     scopeOpen, setScopeOpen,
-  } = useFindReplace(entries);
+  } = useFindReplace();
   const { selectedCount } = useSelection();
   const isMobile           = useMobile();
   const sortMode           = useUi((s) => s.sortMode);
@@ -203,7 +207,12 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
             replaceText={replaceText}
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
-            replaceAll={replaceAll}
+            matchesByLorebook={matchesByLorebook}
+            activeMatchCount={activeMatchCount}
+            referenceMatchCount={referenceMatchCount}
+            replaceInActive={replaceInActive}
+            replaceInReference={replaceInReference}
+            replaceInBoth={replaceInBoth}
             scope={scope}
             toggleScope={toggleScope}
             allSelected={allSelected}
@@ -216,7 +225,7 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
           <span className="match-counter match-counter--select">{selectedCount} selected</span>
         )}
         {!mobileFindReplace && searchMode !== 'select' && (
-          <MatchCounter matchCount={matchCount} entryMatchCount={entryMatchCount} />
+          <MatchCounter matches={matches} />
         )}
         {!mobileFindReplace && (
           <select
@@ -233,7 +242,9 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
       </div>
 
       {/* Select mode: bulk action row */}
-      {searchMode === 'select' && <BulkActionBar visibleIds={visibleIds} />}
+      {searchMode === 'select' && (
+        <BulkActionBar visibleIds={visibleIds} referenceVisibleIds={referenceVisibleIds} />
+      )}
 
       {/* Mobile find-replace: second row with Replace button and mode select */}
       {mobileFindReplace && (
@@ -244,7 +255,12 @@ export function SearchBar({ entries, matchCount, entryMatchCount, matchDetails, 
             replaceText={replaceText}
             setReplaceText={setReplaceText}
             matchCount={frMatchCount}
-            replaceAll={replaceAll}
+            matchesByLorebook={matchesByLorebook}
+            activeMatchCount={activeMatchCount}
+            referenceMatchCount={referenceMatchCount}
+            replaceInActive={replaceInActive}
+            replaceInReference={replaceInReference}
+            replaceInBoth={replaceInBoth}
             scope={scope}
             toggleScope={toggleScope}
             allSelected={allSelected}

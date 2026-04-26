@@ -94,20 +94,36 @@ Proper-noun suggestions no longer cross sentence boundaries; suggestions toggle 
 
 ## Phase 9 — Global Features
 
-**Goal:** The app can compare two lorebooks side by side for congruency, and users have a dedicated planner for drafting future entries.
+**Goal:** The app can show two lorebooks side by side for congruency-checking, lateral search, and lateral find & replace. Users have a dedicated planner for drafting future entries.
+
+### Design: Active + Reference
+
+A dual-editor prototype (two `BuildPanel` instances behind a side-aware context) was attempted and retracted after it surfaced pervasive issues with two active editors sharing stores — autosave clobber, dangling slot references after delete, lorebook creation taking over the focused slot, and a widening refactor surface across every edit hook. Crosstalk uses an **active + reference** model instead:
+
+- The **active side** is the existing single-lorebook editor. Unchanged.
+- The **reference side** renders a second lorebook **read-only**.
+- Clicking any edit-shaped element on the reference side (entry card body, Expand, Remove, FAB, name input, trigger editor, description textarea) **swaps** active ↔ reference in one Zustand state flip — no remount, no reload. Reads as "I edited that side."
+- Picker, scroll position, and expanded-entry state stay per-side (do not swap).
+- Search, filter, and sort are **global** — one UI above the pane split drives both sides. This natively satisfies the lateral-search requirement.
+- Same lorebook on both sides is structurally forbidden (reference picker hides the active id; picking the active id from the reference picker triggers a swap).
+
+Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every other store and hook retains its single-active-lorebook semantics.
 
 ### Prerequisites
 
-- [ ] **Comparison Panel** — panel-within-window component that slides in as a secondary pane following the `MenuPanel` pattern; holds two entry cards side by side for review and decision-making. Context-triggered (opens in response to a specific operation, not a standalone button). Owned by this phase since Lorebook Crosstalk is its only remaining consumer.
-- [ ] **`diff-service.js`** — compares two entry objects field by field and returns a structured delta; plugs into the Comparison Panel; used by Lorebook Crosstalk and rollback diff highlighting.
+- [ ] **`diff-service.js`** — compares two entry objects field by field and returns a structured delta. Used for rollback diff highlighting and (optional) cross-pane difference highlighting on same-named entries.
 
 ### Features
 
-**Lorebook Crosstalk:**
-- [ ] Secondary lorebook loader — loads a second saved lorebook into a read-only comparison instance without disturbing the active lorebook
-- [ ] Cross-lorebook entry diff — uses `diff-service.js` to compare matching entries across both lorebooks and surface discrepancies
-- [ ] Lateral search — extends search to operate across both lorebooks simultaneously
-- [ ] Lateral find & replace — extends find & replace to operate across both lorebooks with per-lorebook confirmation
+**Lorebook Crosstalk (Active + Reference):**
+- [x] `referenceLorebookId` field + `setReferenceLorebookId` / `swapReference` actions in `lorebook-store`; invariant that reference ≠ active
+- [x] `use-reference-lorebook.js` hook exposing the reference and the swap action
+- [x] `ReferencePanel` component — read-only render of the reference lorebook with its own picker (excludes active id)
+- [x] Swap-on-edit-click — single `onMouseDown` handler on edit-shaped reference surfaces that calls `swapReference()` before any edit UI can mount
+- [x] Global search/filter/sort bar promoted above the pane split in crosstalk mode; both panes consume the same filter state from `ui-store`
+- [x] Lateral find & replace — preview scans both active and reference entries; per-side Apply buttons (Apply to Active / Apply to Reference / Apply to Both) satisfy the per-lorebook confirmation requirement
+- [ ] Cross-pane diff highlighting (optional, uses `diff-service.js`) — when the same-named entry exists on both sides, highlight differing fields
+- [x] Menu toggle to show/hide the reference panel (Settings → "Show reference panel"; replaces the development-only `?crosstalk=1` query gate)
 
 **Rollback Diff Highlighting:**
 - [ ] Wires `diff-service.js` into the rollback preview pane; activates the previously inert "Highlight Differences" button; field-level delta highlighting renders between snapshot and current entry state
@@ -119,9 +135,9 @@ Proper-noun suggestions no longer cross sentence boundaries; suggestions toggle 
 
 ### Stop Condition
 
-User can load a second lorebook into crosstalk mode, confirm that entries present in both are diff'd and discrepancies surfaced, and run a search that returns results from both; user can create a planner note, convert it to an entry stub, and filter the build page to show only unfilled stubs; user can open a saved rollback snapshot and click "Highlight Differences" to see field-level changes highlighted.
+User can set a reference lorebook on the right side, see both active and reference lists render, click any edit-shaped element on the reference to swap (editing then occurs on that side), search across both panes from one global bar, and run find & replace with a per-side Apply; user can create a planner note, convert it to an entry stub, and filter the build page to show only unfilled stubs; user can open a saved rollback snapshot and click "Highlight Differences" to see field-level changes highlighted.
 
-**Estimated Complexity:** High
+**Estimated Complexity:** Medium (reduced from High after the active+reference pivot)
 
 ---
 

@@ -1,12 +1,15 @@
 // Draggable resizable floating window shell — applies position and size from ui-store, owns resize handles
-import { useUi }             from '../../hooks/use-ui.js';
-import { useMobile }         from '../../hooks/use-mobile.js';
-import { useMenuPanel }      from '../../hooks/use-menu-panel.js';
-import { WindowHeader }      from './WindowHeader.jsx';
+import { useUi }                from '../../hooks/use-ui.js';
+import { useMobile }            from '../../hooks/use-mobile.js';
+import { useMenuPanel }         from '../../hooks/use-menu-panel.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
+import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
+import { GlobalFilterBar }     from '../feature/GlobalFilterBar.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
 import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
@@ -18,6 +21,8 @@ export function FloatingWindow() {
   const windowSize       = useUi((s) => s.windowSize);
   const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
+  const activeSide       = useUi((s) => s.activeSide);
+  const { crosstalkEnabled } = useReferenceLorebook();
 
   // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
   useMenuPanel();
@@ -47,10 +52,22 @@ export function FloatingWindow() {
           <WindowHeader />
 
           <div className="window-body">
-            <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
-              <BuildPanel />
+            <GlobalFilterBar />
+
+            <div className="pane-split">
+              {/* In crosstalk mode the slot contents flip with activeSide so
+                  the panel the user clicked (via swap) stays in the same
+                  physical position. Outside crosstalk, left is always Build. */}
+              <div className="pane-split-slot">
+                {crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
+              </div>
+              {crosstalkEnabled && (
+                <div className="pane-split-slot">
+                  {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
+                </div>
+              )}
+              <MenuPanel />
             </div>
-            <MenuPanel />
 
             {/* Footer "Import Entries" overlay — appends entries to active lorebook */}
             {showAppendImport && <AppendImportPanel />}

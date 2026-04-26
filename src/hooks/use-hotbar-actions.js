@@ -7,6 +7,8 @@ import { useSettings }      from './use-settings.js';
 import { HOTBAR_ACTION_MAP } from '../constants/hotbar-actions.js';
 
 // Each resolver receives shared hook outputs and returns { execute, disabled }
+// — plus an optional `active: boolean` for stateful toggles (e.g. crosstalk)
+// so the slot can render an "on" treatment instead of a flat command button.
 const RESOLVERS = {
   undo: ({ undo, canUndo }) => ({
     execute:  undo,
@@ -24,15 +26,25 @@ const RESOLVERS = {
     execute:  () => setShowAppendImport(true),
     disabled: false,
   }),
+  toggle_crosstalk: ({ crosstalkEnabled, setCrosstalkEnabled }) => ({
+    execute:  () => setCrosstalkEnabled(!crosstalkEnabled),
+    disabled: false,
+    active:   crosstalkEnabled,
+  }),
 };
 
 export function useHotbarActions() {
-  const { undo, redo, canUndo, canRedo } = useUndoRedo();
-  const { addEntry, clearAllEntries }    = useEntries();
-  const setShowAppendImport              = useUi((s) => s.setShowAppendImport);
-  const { hotbarSlots }                  = useSettings();
+  const { undo, redo, canUndo, canRedo }            = useUndoRedo();
+  const { addEntry, clearAllEntries }               = useEntries();
+  const setShowAppendImport                         = useUi((s) => s.setShowAppendImport);
+  const { hotbarSlots, crosstalkEnabled, setCrosstalkEnabled } = useSettings();
 
-  const context = { undo, redo, canUndo, canRedo, clearAllEntries, setShowAppendImport };
+  const context = {
+    undo, redo, canUndo, canRedo,
+    clearAllEntries,
+    setShowAppendImport,
+    crosstalkEnabled, setCrosstalkEnabled,
+  };
 
   const slots = hotbarSlots.map((id) => {
     if (!id) return null;

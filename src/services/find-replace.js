@@ -36,6 +36,26 @@ export function countMatches(entries, find, scope = DEFAULT_SCOPE) {
 }
 
 /**
+ * For each entry that has at least one match in the scoped fields, return
+ * `{ id, name, locations }` where locations is `('name'|'trigger'|'description')[]`.
+ * Drives the find/replace popover preview list.
+ */
+export function matchDetails(entries, find, scope = DEFAULT_SCOPE) {
+  if (!find) return [];
+  const pattern = new RegExp(escapeRegex(find), 'gi');
+  const has = (str) => str.match(pattern) !== null;
+  const out = [];
+  for (const entry of entries) {
+    const locations = [];
+    if (scope.title       && has(entry.name))                    locations.push('name');
+    if (scope.triggers    && entry.triggers.some((t) => has(t))) locations.push('trigger');
+    if (scope.description && has(entry.description))             locations.push('description');
+    if (locations.length > 0) out.push({ id: entry.id, name: entry.name, locations });
+  }
+  return out;
+}
+
+/**
  * Bulk change entry type for a given set of ids; entries not in the set are returned unchanged.
  * No-op when the target type already matches — preserves reference equality per-entry.
  */
