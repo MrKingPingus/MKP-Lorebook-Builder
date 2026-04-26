@@ -145,6 +145,20 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  // Same as updateAllowedOverlaps but targets an arbitrary lorebook by id —
+  // used by cross-book trigger crosstalk so an "Allow" can write to both the
+  // active and reference books in a single user action.
+  updateAllowedOverlapsForId: (id, allowedOverlaps) =>
+    set((state) => {
+      if (!state.lorebooks[id]) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: { ...state.lorebooks[id], allowedOverlaps },
+        },
+      };
+    }),
+
   setLorebookRollback: (patch) =>
     set((state) => {
       const id = state.activeLorebookId;

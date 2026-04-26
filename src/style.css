@@ -1299,6 +1299,20 @@ input:focus, textarea:focus, select:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.chip-conflict-section-header {
+  font-size: 10px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 4px 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.chip-conflict-section-header:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
 .chip-conflict-popover-divider {
   height: 1px;
   background: var(--border);

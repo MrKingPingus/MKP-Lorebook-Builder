@@ -4,6 +4,7 @@ import { createPortal }     from 'react-dom';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useHtmlEscape }    from '../../hooks/use-html-escape.js';
 import { useUi }            from '../../hooks/use-ui.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { TypeColorDot }     from './TypeColorDot.jsx';
 
 export function Chip({ label, onDelete, onRename, color, highlight, ringColor, conflictEntries, acknowledged, onAllow, onRevoke }) {
@@ -18,6 +19,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   const hoverTimer  = useRef(null);
   const isMobile    = useMobile();
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
+  const { swapReference }  = useReferenceLorebook();
 
   function startEdit() {
     setDraft(label);
@@ -58,12 +60,16 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
     clearTimeout(hoverTimer.current);
   }
 
-  function navigateToEntry(id) {
-    setSearchFocusedId(id);
+  function navigateToEntry(entry) {
+    // Cross-book conflict: target entry lives in the reference book. Swap so
+    // it becomes active before scrolling — only the active panel renders
+    // entry DOM ids (`#entry-<id>`), so navigation only resolves on that side.
+    if (entry.isOtherBook) swapReference();
+    setSearchFocusedId(entry.id);
     setPopoverOpen(false);
     // Defer scroll until after React re-renders the card into its expanded state
     requestAnimationFrame(() => {
-      document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }
 
@@ -124,16 +130,33 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
             {acknowledged ? 'Shared with' : 'Conflict with'}
           </div>
           <div className="chip-conflict-entries">
-            {conflictEntries.map((e) => (
-              <button
-                key={e.id}
-                className="chip-conflict-entry"
-                onClick={() => navigateToEntry(e.id)}
-              >
-                <TypeColorDot type={e.type} />
-                <span className="chip-conflict-entry-name">{e.name || '(unnamed)'}</span>
-              </button>
-            ))}
+            {(() => {
+              const sameBook  = conflictEntries.filter((e) => !e.isOtherBook);
+              const otherBook = conflictEntries.filter((e) =>  e.isOtherBook);
+              // Only section when the conflict actually spans both books.
+              const sectioned = sameBook.length > 0 && otherBook.length > 0;
+              const renderRow = (e) => (
+                <button
+                  key={e.id}
+                  className="chip-conflict-entry"
+                  onClick={() => navigateToEntry(e)}
+                >
+                  <TypeColorDot type={e.type} />
+                  <span className="chip-conflict-entry-name">{e.name || '(unnamed)'}</span>
+                </button>
+              );
+              if (!sectioned) {
+                return conflictEntries.map(renderRow);
+              }
+              return (
+                <>
+                  <div className="chip-conflict-section-header">This lorebook</div>
+                  {sameBook.map(renderRow)}
+                  <div className="chip-conflict-section-header">Reference lorebook</div>
+                  {otherBook.map(renderRow)}
+                </>
+              );
+            })()}
           </div>
           <div className="chip-conflict-popover-divider" />
           {onAllow && (

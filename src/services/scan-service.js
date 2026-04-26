@@ -38,3 +38,35 @@ export function scanCrosstalk(entries) {
 
   return triggerIndex;
 }
+
+/**
+ * Cross-book crosstalk scan: like scanCrosstalk but accepts multiple books and
+ * tags each finding with its `bookId`. Used by `useCrosstalk` when the
+ * reference panel is on so chip rings on either side surface conflicts that
+ * span both books, not just within-book duplicates.
+ *
+ * Input: `[{ entries, bookId }, ...]`
+ * Returns: `Map<triggerLower, [{id, name, type, bookId}, ...]>`
+ *   — only triggers shared by 2+ entries (across any books) appear.
+ */
+export function scanCrosstalkAcrossBooks(books) {
+  const triggerIndex = new Map();
+  for (const { entries, bookId } of books) {
+    for (const entry of entries) {
+      for (const trigger of entry.triggers) {
+        const key = trigger.toLowerCase();
+        if (!triggerIndex.has(key)) triggerIndex.set(key, []);
+        triggerIndex.get(key).push({
+          id:     entry.id,
+          name:   entry.name,
+          type:   entry.type,
+          bookId,
+        });
+      }
+    }
+  }
+  for (const [key, list] of triggerIndex) {
+    if (list.length < 2) triggerIndex.delete(key);
+  }
+  return triggerIndex;
+}

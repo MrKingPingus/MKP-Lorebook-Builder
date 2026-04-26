@@ -7,6 +7,7 @@ import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
+import { useCrosstalk }         from '../../hooks/use-crosstalk.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
@@ -15,6 +16,7 @@ export function ReferencePanel() {
   const { referenceLorebook, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const { items }                                                   = useLorebookSwitcher();
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
+  const { conflictMap, allowedOverlaps }                            = useCrosstalk();
 
   // Apply the same search/filter/sort/group pipeline the active side uses, so
   // the hoisted GlobalFilterBar drives both panels in parallel.
@@ -98,11 +100,19 @@ export function ReferencePanel() {
                   </div>
                   {entry.triggers.length > 0 && (
                     <div className="reference-entry-triggers">
-                      {entry.triggers.map((trigger, i) => (
-                        <span key={i} className="reference-entry-trigger">
-                          {trigger}
-                        </span>
-                      ))}
+                      {entry.triggers.map((trigger, i) => {
+                        const key            = trigger.toLowerCase();
+                        const isConflict     = conflictMap.has(key);
+                        const isAcknowledged = allowedOverlaps.includes(key);
+                        const ringStyle = isConflict
+                          ? { boxShadow: `0 0 0 2px ${isAcknowledged ? 'var(--blue)' : 'var(--yellow)'}` }
+                          : undefined;
+                        return (
+                          <span key={i} className="reference-entry-trigger" style={ringStyle}>
+                            {trigger}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
