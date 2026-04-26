@@ -3220,6 +3220,26 @@ kbd {
   white-space: nowrap;
 }
 
+/* Select mode — reference cards mirror the active side's selection visuals
+   (cursor, brighten-on-select, type-color inset ring) so the multi-book copy
+   flow looks the same regardless of which side the user is sourcing from. */
+.reference-entry-card--selectable {
+  cursor: pointer;
+  user-select: none;
+}
+.reference-entry-card--selectable:hover {
+  filter: brightness(1.08);
+}
+.reference-entry-card--selected {
+  filter: brightness(1.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--type-color, #9ba1ad) inset;
+}
+.reference-entry-card--selected:hover {
+  filter: brightness(1.22);
+  transform: translateY(-3px);
+}
+
 /* Inline description revealed by the per-card Desc toggle. Read-only, with a
    passive-agree left border so it visually reads as supplementary info, not
    editable content. */

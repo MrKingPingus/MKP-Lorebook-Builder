@@ -33,6 +33,7 @@ export function GlobalFilterBar() {
         matches={matches}
         matchDetails={active.displayMatchDetails}
         visibleIds={active.displayEntries.map((e) => e.id)}
+        referenceVisibleIds={reference.displayEntries.map((e) => e.id)}
       />
       <TypeFilterBar entries={entries} />
     </div>

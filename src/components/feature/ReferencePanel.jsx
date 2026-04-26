@@ -5,12 +5,16 @@
 // picker) is exempt so the picker stays usable without triggering a swap.
 // The Desc button + any expanded description body also opt out of swap so
 // readers can peek and select-to-copy without committing to an edit pivot.
+// In Select mode, the panel becomes a click-to-select source — swap is
+// suppressed and clicking a card toggles its membership in the shared
+// selection set (with side='reference').
 import { useState }              from 'react';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useCrosstalk }         from '../../hooks/use-crosstalk.js';
+import { useSelection }         from '../../hooks/use-selection.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
@@ -20,6 +24,7 @@ export function ReferencePanel() {
   const { items }                                                   = useLorebookSwitcher();
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
+  const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
 
   // Ephemeral expand state — resets on swap (panel unmounts) and on lorebook
   // switch. A Set of entry ids whose description is currently revealed.
@@ -87,18 +92,26 @@ export function ReferencePanel() {
         ) : displayEntries.length === 0 ? (
           <div className="reference-panel-empty">No entries match the current filter.</div>
         ) : (
-          <div className="reference-panel-entries" onMouseDown={onSwap}>
+          <div
+            className="reference-panel-entries"
+            onMouseDown={isSelectMode ? undefined : onSwap}
+          >
             {displayEntries.map((entry, idx) => {
               const typeDef       = ENTRY_TYPES.find((t) => t.id === entry.type);
               const typeColor     = typeDef?.color ?? '#9ba1ad';
               const snapshotCount = entry.snapshots?.length ?? 0;
               const isExpanded    = expandedIds.has(entry.id);
               const hasDescription = (entry.description ?? '').length > 0;
+              const isSelected    = selectedIds.has(entry.id);
+              const cardClassName = `reference-entry-card${
+                isSelectMode ? ' reference-entry-card--selectable' : ''
+              }${isSelected ? ' reference-entry-card--selected' : ''}`;
               return (
                 <div
                   key={entry.id}
-                  className="reference-entry-card"
+                  className={cardClassName}
                   style={{ '--type-color': typeColor }}
+                  onClick={isSelectMode ? () => toggleSelected(entry.id, 'reference') : undefined}
                 >
                   <div className="reference-entry-header">
                     <TypeColorDot type={entry.type} />

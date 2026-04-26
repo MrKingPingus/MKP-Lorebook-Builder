@@ -7,6 +7,8 @@ export const useUiStore = create((set) => ({
   searchQuery: '',
   searchMode:  'search',    // 'search' | 'find-replace' | 'select'
   selectedIds: new Set(),   // Set<entryId> — entries selected while searchMode === 'select'
+  selectionSide: null,      // 'active' | 'reference' | null — which side the current selection
+                            //   was clicked from. Locks "Copy to other panel" semantics.
   typeFilter:  [],          // empty = show all
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
@@ -28,24 +30,39 @@ export const useUiStore = create((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchMode:  (searchMode)  =>
     set((state) => {
-      // Leaving select mode clears any lingering selection
+      // Leaving select mode clears any lingering selection (and its side).
       if (state.searchMode === 'select' && searchMode !== 'select' && state.selectedIds.size > 0) {
-        return { searchMode, selectedIds: new Set() };
+        return { searchMode, selectedIds: new Set(), selectionSide: null };
       }
       return { searchMode };
     }),
-  toggleSelected: (id) =>
+  toggleSelected: (id, side) =>
     set((state) => {
+      // Switching sides mid-selection: clear the existing selection and start
+      // a fresh one on the side the user just clicked.
+      if (state.selectionSide && side && state.selectionSide !== side) {
+        return { selectedIds: new Set([id]), selectionSide: side };
+      }
       const next = new Set(state.selectedIds);
       if (next.has(id)) next.delete(id); else next.add(id);
-      return { selectedIds: next };
+      return {
+        selectedIds: next,
+        selectionSide: next.size === 0 ? null : (state.selectionSide ?? side ?? null),
+      };
     }),
-  clearSelection:   ()    => set({ selectedIds: new Set() }),
-  selectAllVisible: (ids) =>
+  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null }),
+  selectAllVisible: (ids, side) =>
     set((state) => {
-      const next = new Set(state.selectedIds);
-      for (const id of ids) next.add(id);
-      return { selectedIds: next };
+      // If the user is on a different side than the existing selection, clear
+      // and switch — same rule as toggleSelected.
+      const baseSet = (state.selectionSide && side && state.selectionSide !== side)
+        ? new Set()
+        : new Set(state.selectedIds);
+      for (const id of ids) baseSet.add(id);
+      return {
+        selectedIds: baseSet,
+        selectionSide: baseSet.size === 0 ? null : (side ?? state.selectionSide ?? null),
+      };
     }),
   setTypeFilter:  (typeFilter)  => set({ typeFilter }),
   setWindowPos:   (windowPos)   => set({ windowPos }),

@@ -20,8 +20,9 @@ const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc'
 
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
 // visibleIds: ordered list of entry ids currently visible after search + type filter + sort/group
+// referenceVisibleIds: same, for the reference book in crosstalk; empty otherwise
 // matches: [{role, matchCount, entryMatchCount}] — one entry in normal mode, active + reference in crosstalk
-export function SearchBar({ entries, matches = [], matchDetails, visibleIds = [] }) {
+export function SearchBar({ entries, matches = [], matchDetails, visibleIds = [], referenceVisibleIds = [] }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
   const {
     findText, setFindText,
@@ -241,7 +242,9 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
       </div>
 
       {/* Select mode: bulk action row */}
-      {searchMode === 'select' && <BulkActionBar visibleIds={visibleIds} />}
+      {searchMode === 'select' && (
+        <BulkActionBar visibleIds={visibleIds} referenceVisibleIds={referenceVisibleIds} />
+      )}
 
       {/* Mobile find-replace: second row with Replace button and mode select */}
       {mobileFindReplace && (

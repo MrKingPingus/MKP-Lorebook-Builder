@@ -5,6 +5,7 @@ import { useUiStore } from '../state/ui-store.js';
 export function useSelection() {
   const searchMode       = useUiStore((s) => s.searchMode);
   const selectedIds      = useUiStore((s) => s.selectedIds);
+  const selectionSide    = useUiStore((s) => s.selectionSide);
   const toggleSelected   = useUiStore((s) => s.toggleSelected);
   const clearSelection   = useUiStore((s) => s.clearSelection);
   const selectAllVisible = useUiStore((s) => s.selectAllVisible);
@@ -13,6 +14,7 @@ export function useSelection() {
   return {
     isSelectMode: searchMode === 'select',
     selectedIds,
+    selectionSide,
     selectedCount: selectedIds.size,
     hasSelection:  selectedIds.size > 0,
     toggleSelected,
