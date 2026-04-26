@@ -4,14 +4,14 @@
 
 Crosstalk lets you keep a second lorebook open beside the one you're editing. The book on the right is read-only — you can look at its entries, see how they overlap with what you're building, and lift things from it into your own book — but typing always happens on the left.
 
-When you click anywhere on the right panel, the two books swap places: the book you clicked becomes editable and the one you were just editing slides over to the right. So you're never locked out of either; you always edit whichever side you're pointing at.
+When you click anywhere on the right panel (except an expanded "desc"), the two books swap places: the book you clicked becomes editable and the one you were just editing slides over to the right. So you're never locked out of either; you always edit whichever side you're pointing at.
 
 ## Turning it on
 
 Crosstalk is off by default. There are three places to switch it on, all of which do the same thing:
 
-- The **Lorebooks** panel in the menu has a "Select Reference Lorebook" button at the bottom
-- The hotbar has a **Reference** action (the ⇆ icon)
+- The **Lorebooks** panel in the menu has a "Select Reference Lorebook" button at the top
+- The hotbar has a **Reference** action (the ⇆ icon). This must be added manually by navigating to the settings/hotbar slots section (currently at the bottom of the page)
 - The Settings panel has a "Show reference panel" toggle
 
 When crosstalk is on, the editor splits into two columns. Until you pick a reference book the right column will tell you to choose one.
@@ -78,5 +78,6 @@ A few things to know, especially while this is in beta:
 - **Undo across books is limited.** Each book has its own rollback history. Cross-book operations — find/replace into reference, copy-to-reference — don't snapshot the destination book. Undo on the active side won't reach over to the reference side.
 - **The reference pick is not saved.** Whether crosstalk itself is on or off persists between sessions, but which book is currently in the reference slot does not.
 - **Cross-book conflict scanning needs both halves.** Crosstalk has to be on with a reference picked for the trigger conflict system to see across both books. If you turn crosstalk off, you'll only see same-book conflicts again until you turn it back on.
+- **Mobile is hilariously undertested and underdeveloped**. I straight up didn't test the mobile version. I'll be dedicating some dev time to it eventually, but I would use it at your own risk. 
 
 That's the whole feature. Try it on a duplicate copy of a lorebook first before depending on it for important data.
