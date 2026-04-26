@@ -11,7 +11,7 @@ function HotbarSlot({ action }) {
     return <div className="hotbar-slot hotbar-slot--empty" aria-hidden="true" />;
   }
 
-  const { descriptor, execute, disabled } = action;
+  const { descriptor, execute, disabled, active } = action;
 
   function handleClick() {
     if (descriptor.confirm) {
@@ -22,7 +22,7 @@ function HotbarSlot({ action }) {
 
   return (
     <button
-      className="footer-btn"
+      className={`footer-btn${active ? ' footer-btn--active' : ''}`}
       onClick={handleClick}
       disabled={disabled}
       title={descriptor.title}

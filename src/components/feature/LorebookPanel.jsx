@@ -5,6 +5,7 @@ import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useExport }            from '../../hooks/use-export.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
+import { useSettings }          from '../../hooks/use-settings.js';
 
 export function LorebookPanel() {
   const { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebookSwitcher();
@@ -17,6 +18,7 @@ export function LorebookPanel() {
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
   const isMobile           = useMobile();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
+  const { crosstalkEnabled, setCrosstalkEnabled } = useSettings();
 
   // On mobile the menu is a full-screen overlay, so selecting a lorebook should
   // drop the user back to the entries they just switched to.
@@ -96,6 +98,15 @@ export function LorebookPanel() {
 
   return (
     <div className="lorebook-panel">
+      <label className="lorebook-panel-toggle">
+        <span>Show reference panel</span>
+        <input
+          type="checkbox"
+          checked={crosstalkEnabled}
+          onChange={(e) => setCrosstalkEnabled(e.target.checked)}
+        />
+      </label>
+
       {pendingId && (
         <div className="lorebook-panel-prompt">
           <div className="switcher-prompt-text">
