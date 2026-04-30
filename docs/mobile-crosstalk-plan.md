@@ -168,6 +168,25 @@ choreography is new.
 
 ---
 
+## Phase Status
+
+Implementation is phased so each phase leaves the app in a working state.
+Per CLAUDE.md, new `ui-store` fields are added in the phase that consumes
+them rather than all up front.
+
+- **Phase 1 — Foundation (structural)** ✅
+  - Suppressed second `pane-split-slot` on mobile in `FloatingWindow.jsx`
+  - Suppressed crosstalk pane-header on mobile in `BuildPanel.jsx`
+  - Added mobile-only reference picker to `SettingsPanel.jsx`
+  - Renamed setting label to "Pair with reference lorebook" on mobile;
+    updated hint text to describe the annotation/overlay model
+- **Phase 2 — Peek overlay primitive** ⏳
+- **Phase 3 — Annotations layer** ⏳
+- **Phase 4 — Single-entry push + segmented swap** ⏳
+- **Phase 5 — Pick from Reference pose** ⏳
+
+---
+
 ## Implementation Tasks
 
 - [ ] Add `peekReferenceEntryId` field + setter to `ui-store.js`

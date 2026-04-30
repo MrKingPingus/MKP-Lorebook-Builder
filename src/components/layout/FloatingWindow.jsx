@@ -57,11 +57,13 @@ export function FloatingWindow() {
             <div className="pane-split">
               {/* In crosstalk mode the slot contents flip with activeSide so
                   the panel the user clicked (via swap) stays in the same
-                  physical position. Outside crosstalk, left is always Build. */}
+                  physical position. Outside crosstalk, left is always Build.
+                  Mobile never renders the second slot — crosstalk on mobile
+                  surfaces via inline annotations and overlays instead. */}
               <div className="pane-split-slot">
-                {crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
+                {!isMobile && crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
               </div>
-              {crosstalkEnabled && (
+              {!isMobile && crosstalkEnabled && (
                 <div className="pane-split-slot">
                   {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
                 </div>

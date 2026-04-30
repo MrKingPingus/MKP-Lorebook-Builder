@@ -124,6 +124,7 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 - [x] Lateral find & replace — preview scans both active and reference entries; per-side Apply buttons (Apply to Active / Apply to Reference / Apply to Both) satisfy the per-lorebook confirmation requirement
 - [ ] Cross-pane diff highlighting (optional, uses `diff-service.js`) — when the same-named entry exists on both sides, highlight differing fields
 - [x] Menu toggle to show/hide the reference panel (Settings → "Show reference panel"; replaces the development-only `?crosstalk=1` query gate)
+- [ ] **Mobile crosstalk redesign** — replaces the broken side-by-side layout on mobile with an overlay/annotation model. Anchor never moves without explicit gesture; reference content surfaces as inline annotations on active entries and one-deep peek overlays. Multi-select pull uses a temporary "pose" against the existing Select mode. Full plan and phasing in `docs/mobile-crosstalk-plan.md`.
 
 **Rollback Diff Highlighting:**
 - [ ] Wires `diff-service.js` into the rollback preview pane; activates the previously inert "Highlight Differences" button; field-level delta highlighting renders between snapshot and current entry state

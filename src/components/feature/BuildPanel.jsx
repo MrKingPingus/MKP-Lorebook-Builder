@@ -28,7 +28,7 @@ export function BuildPanel() {
 
   return (
     <div className="build-panel">
-      {crosstalkEnabled && (
+      {crosstalkEnabled && !isMobile && (
         <div className="pane-header">
           <div className="field-label pane-header-label">ACTIVE</div>
           <select
