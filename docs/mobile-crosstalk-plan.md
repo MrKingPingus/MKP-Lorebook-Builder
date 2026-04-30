@@ -177,9 +177,12 @@ them rather than all up front.
 - **Phase 1 — Foundation (structural)** ✅
   - Suppressed second `pane-split-slot` on mobile in `FloatingWindow.jsx`
   - Suppressed crosstalk pane-header on mobile in `BuildPanel.jsx`
-  - Added mobile-only reference picker to `SettingsPanel.jsx`
+  - Added mobile-only reference picker to `LorebookPanel.jsx`,
+    directly beneath the "Select Reference Lorebook" toggle (initially
+    placed in `SettingsPanel.jsx`; moved during Phase 2 review since
+    pairing is a lorebook relationship, not a preference)
   - Renamed setting label to "Pair with reference lorebook" on mobile;
-    updated hint text to describe the annotation/overlay model
+    hint text directs mobile users to the Lorebooks tab for the picker
 - **Phase 2 — Peek overlay primitive** ✅
   - Added `peekReferenceEntryId` field + `setPeekReferenceEntryId` to `ui-store.js`
   - Created `use-peek-overlay.js` hook resolving the peek id to an entry and exposing `closePeek`, `copyToActive`, `visitEntry`

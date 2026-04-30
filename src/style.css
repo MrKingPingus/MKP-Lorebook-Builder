@@ -2720,6 +2720,23 @@ kbd {
   flex-shrink: 0;
 }
 
+.lorebook-panel-reference-picker {
+  display: block;
+  width: calc(100% - 24px);
+  margin: -2px 12px 8px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.lorebook-panel-reference-picker:focus {
+  outline: none;
+  border-color: var(--focus-border);
+}
+
 /* ============================================================
    Hotbar slot config (Settings panel)
    ============================================================ */
