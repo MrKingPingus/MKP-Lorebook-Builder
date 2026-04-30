@@ -94,6 +94,24 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface3);
 }
 
+/* iOS Safari auto-zooms when a form field with font-size < 16px is focused.
+   Force a 16px minimum on every form element on mobile so focusing any
+   input/select/textarea no longer triggers the zoom. !important is needed
+   because each form element's own class typically sets a smaller font. */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Disable the iOS double-tap-zoom delay on tappable surfaces. Pinch-to-zoom
+   still works; this only kills the gesture that fires when two taps land
+   close in time (e.g. tap chip → tap row in popover). */
+button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
+.entry-card, .reference-entry-card, .chip-conflict-entry {
+  touch-action: manipulation;
+}
+
 /* §APP-ROOT */
 /* --- App root --- */
 .app-root {
@@ -508,6 +526,28 @@ input:focus, textarea:focus, select:focus {
 .build-lorebook-name-input:focus {
   outline: none;
   border-color: var(--focus-border);
+}
+.build-lorebook-reference {
+  margin-top: 8px;
+}
+.build-lorebook-reference-value {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+.build-lorebook-reference-value--empty {
+  color: var(--muted);
+  font-style: italic;
 }
 
 /* ============================================================

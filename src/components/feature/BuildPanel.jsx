@@ -22,11 +22,14 @@ export function BuildPanel() {
   const isMobile                                 = useMobile();
   const { activeLorebook, renameLorebook }       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
-  const { referenceLorebook, crosstalkEnabled }  = useReferenceLorebook();
+  const { referenceLorebook, crosstalkEnabled, setReferenceLorebookId } = useReferenceLorebook();
 
   const switchBtnRef                       = useRef(null);
   const [switchOpen, setSwitchOpen]        = useState(false);
   const [switchAnchor, setSwitchAnchor]    = useState(null);
+  const refSwitchBtnRef                    = useRef(null);
+  const [refSwitchOpen, setRefSwitchOpen]  = useState(false);
+  const [refSwitchAnchor, setRefSwitchAnchor] = useState(null);
 
   // Mirror ReferencePanel: picker options exclude the opposite side so a
   // lorebook can't occupy both slots at once.
@@ -43,6 +46,15 @@ export function BuildPanel() {
     }
     setSwitchAnchor(switchBtnRef.current?.getBoundingClientRect() ?? null);
     setSwitchOpen(true);
+  }
+
+  function toggleRefSwitch() {
+    if (refSwitchOpen) {
+      setRefSwitchOpen(false);
+      return;
+    }
+    setRefSwitchAnchor(refSwitchBtnRef.current?.getBoundingClientRect() ?? null);
+    setRefSwitchOpen(true);
   }
 
   return (
@@ -94,6 +106,42 @@ export function BuildPanel() {
               />
             )}
           </div>
+
+          {/* Reference indicator + quick switcher — mobile-only, visible
+              whenever crosstalk is enabled. Read-only display of the paired
+              book name with a chevron that opens the same popover, set up
+              to update the reference instead of switching active. */}
+          {crosstalkEnabled && (
+            <div className="build-lorebook-reference">
+              <div className="field-label">REFERENCE</div>
+              <div className="build-lorebook-name-row">
+                <div
+                  className={`build-lorebook-reference-value${
+                    referenceLorebook ? '' : ' build-lorebook-reference-value--empty'
+                  }`}
+                >
+                  {referenceLorebook?.name || '— Pick a reference —'}
+                </div>
+                <button
+                  ref={refSwitchBtnRef}
+                  className="lorebook-switch-btn"
+                  onClick={toggleRefSwitch}
+                  title="Change reference lorebook"
+                  aria-label="Change reference lorebook"
+                >
+                  ▼
+                </button>
+                {refSwitchOpen && (
+                  <LorebookSwitchPopover
+                    anchorRect={refSwitchAnchor}
+                    onClose={() => setRefSwitchOpen(false)}
+                    onPick={(id) => setReferenceLorebookId(id)}
+                    title="Reference lorebook…"
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
       <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />

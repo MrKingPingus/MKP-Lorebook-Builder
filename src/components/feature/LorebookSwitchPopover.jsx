@@ -3,11 +3,14 @@
 // Renaming still happens in the name input itself; this popover owns the
 // "pick another book" affordance only, mirroring the split control in solo
 // mode (crosstalk uses the per-pane pickers instead).
+//
+// `onPick` overrides the default "switch active" behavior for callers that
+// want a different action on selection (e.g. setting the reference book).
 import { useEffect, useRef } from 'react';
 import { createPortal }      from 'react-dom';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
 
-export function LorebookSwitchPopover({ anchorRect, onClose, excludeIds = [] }) {
+export function LorebookSwitchPopover({ anchorRect, onClose, excludeIds = [], onPick, title = 'Switch to…' }) {
   const popoverRef = useRef(null);
   const { items, switchLorebook } = useLorebookSwitcher();
 
@@ -28,7 +31,8 @@ export function LorebookSwitchPopover({ anchorRect, onClose, excludeIds = [] }) 
   }, [onClose]);
 
   function pick(id) {
-    switchLorebook(id);
+    if (onPick) onPick(id);
+    else        switchLorebook(id);
     onClose();
   }
 
@@ -49,7 +53,7 @@ export function LorebookSwitchPopover({ anchorRect, onClose, excludeIds = [] }) 
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="lorebook-switch-popover-title">Switch to…</div>
+      <div className="lorebook-switch-popover-title">{title}</div>
       {others.length === 0 ? (
         <div className="lorebook-switch-empty">No other lorebooks saved.</div>
       ) : (
