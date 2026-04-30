@@ -7,11 +7,11 @@ import { useEffect, useRef } from 'react';
 import { createPortal }      from 'react-dom';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
 
-export function LorebookSwitchPopover({ anchorRect, onClose }) {
+export function LorebookSwitchPopover({ anchorRect, onClose, excludeIds = [] }) {
   const popoverRef = useRef(null);
   const { items, switchLorebook } = useLorebookSwitcher();
 
-  const others = items.filter((item) => !item.isActive);
+  const others = items.filter((item) => !item.isActive && !excludeIds.includes(item.id));
 
   useEffect(() => {
     function onDocClick(e) {

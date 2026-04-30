@@ -18,8 +18,9 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   const chipRef     = useRef(null);
   const hoverTimer  = useRef(null);
   const isMobile    = useMobile();
-  const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
-  const { swapReference }  = useReferenceLorebook();
+  const setSearchFocusedId      = useUi((s) => s.setSearchFocusedId);
+  const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const { swapReference }       = useReferenceLorebook();
 
   function startEdit() {
     setDraft(label);
@@ -61,12 +62,20 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   }
 
   function navigateToEntry(entry) {
-    // Cross-book conflict: target entry lives in the reference book. Swap so
-    // it becomes active before scrolling — only the active panel renders
-    // entry DOM ids (`#entry-<id>`), so navigation only resolves on that side.
+    setPopoverOpen(false);
+    // Mobile cross-book: open the peek overlay instead of swapping. Keeps the
+    // user anchored in the active book — they can copy or explicitly visit
+    // from inside the overlay.
+    if (isMobile && entry.isOtherBook) {
+      setPeekReferenceEntryId(entry.id);
+      return;
+    }
+    // Cross-book conflict on desktop: target entry lives in the reference
+    // book. Swap so it becomes active before scrolling — only the active
+    // panel renders entry DOM ids (`#entry-<id>`), so navigation only
+    // resolves on that side.
     if (entry.isOtherBook) swapReference();
     setSearchFocusedId(entry.id);
-    setPopoverOpen(false);
     // Defer scroll until after React re-renders the card into its expanded state
     requestAnimationFrame(() => {
       document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

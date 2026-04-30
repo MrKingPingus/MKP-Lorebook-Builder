@@ -12,7 +12,8 @@ import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
 import { GlobalFilterBar }     from '../feature/GlobalFilterBar.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
-import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
+import { EntryDetailPanel }       from '../feature/EntryDetailPanel.jsx';
+import { ReferenceEntryOverlay }  from '../feature/ReferenceEntryOverlay.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
 
 export function FloatingWindow() {
@@ -79,6 +80,11 @@ export function FloatingWindow() {
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}
+
+          {/* Mobile reference-entry peek — overlays everything (including the
+              entry detail panel) when a reference entry is tapped from a chip
+              conflict popover, search hit, name badge, or crosstalk row. */}
+          {isMobile && <ReferenceEntryOverlay />}
 
           {/* Lorebook name prompt — appears after new lorebook creation */}
           <LorebookNameModal />

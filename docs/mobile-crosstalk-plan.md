@@ -180,7 +180,14 @@ them rather than all up front.
   - Added mobile-only reference picker to `SettingsPanel.jsx`
   - Renamed setting label to "Pair with reference lorebook" on mobile;
     updated hint text to describe the annotation/overlay model
-- **Phase 2 — Peek overlay primitive** ⏳
+- **Phase 2 — Peek overlay primitive** ✅
+  - Added `peekReferenceEntryId` field + `setPeekReferenceEntryId` to `ui-store.js`
+  - Created `use-peek-overlay.js` hook resolving the peek id to an entry and exposing `closePeek`, `copyToActive`, `visitEntry`
+  - Created `ReferenceEntryOverlay.jsx` — read-only entry display with the two footer actions
+  - Wired the trigger chip conflict popover (`Chip.jsx`) so mobile cross-book navigation routes to peek instead of swap-and-scroll
+  - Rendered the overlay from `FloatingWindow.jsx` on mobile only
+  - Added mobile lorebook switcher chevron + popover to `BuildPanel.jsx` (always available on mobile, paired reference id excluded from the list)
+  - Extended `LorebookSwitchPopover.jsx` to accept an `excludeIds` prop
 - **Phase 3 — Annotations layer** ⏳
 - **Phase 4 — Single-entry push + segmented swap** ⏳
 - **Phase 5 — Pick from Reference pose** ⏳
