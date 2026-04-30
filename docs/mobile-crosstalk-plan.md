@@ -35,9 +35,10 @@ The reference book is never rendered as a list on mobile.
 | Peek overlay depth | One-deep. Opening another reference entry from within an overlay replaces the current one. |
 | Crosstalk surfacing in entry detail | Collapsible Crosstalk row, hidden until ≥1 overlap exists. Lists same-name match (top-pinned) plus shared trigger keywords. |
 | Role-swap control | Segmented `ACTIVE` / `REFERENCE` button above the entry list. Hidden when no reference is paired. |
-| Active → reference copy | Small "Copy to reference" action in the active entry detail panel footer. Rare-case path. |
-| Reference → active copy | "Copy to active" as primary footer action on the peek overlay. Dominant path. |
-| Multi-select cross-book copy on mobile | Dropped. Cross-book copy is single-entry only on mobile. |
+| Active → reference copy | Small "Copy to reference" action in the active entry detail panel footer. Rare-case path. Multi-select push deferred. |
+| Reference → active copy | "Copy to active" as primary footer action on the peek overlay (single entry). Multi-select pull happens via the **Pick from Reference** pose — see below. |
+| Multi-select cross-book pull on mobile | Supported via a temporary "pose" — entering pick mode swaps roles so the reference book is rendered in the active slot; user uses standard Select mode against it; commit performs the copy and swaps back. |
+| Multi-select cross-book push on mobile | Deferred. The plumbing supports it (the same swap-and-back pattern works in reverse), but no entry point is exposed yet — revisit after pull is in real use. |
 | "Also in reference" name badge | Only on exact same-name match. |
 | Search results dropdown | Unified list; reference-side hits get a "ref" pill; tap → peek overlay. |
 | Find & Replace layout | Unchanged. Three buttons (Apply to Active / Reference / Both) retained. |
@@ -63,6 +64,52 @@ reference-aware affordance routes through.
 
 State: a single `peekReferenceEntryId` field on `ui-store` (ephemeral; null
 when no peek is open).
+
+---
+
+## Pick from Reference (multi-select pull)
+
+Multi-select cross-book pull on mobile uses a temporary **pose** rather than a
+new picker component. The user enters pick mode from inside Select mode; the
+app calls `swapReference()` so the reference book is now rendered in the
+active slot, and the existing Select mode UX operates against it unchanged.
+On commit, the selected entries are copied to the original active book and
+the swap is reversed. Reuses existing primitives — no parallel selection
+plumbing.
+
+**Entry point:** a "Copy From Reference" button in `BulkActionBar`, sitting
+beside the "Change Type…" button. Visible only when
+`isMobile && crosstalkEnabled && referenceLorebook && !pickFromReferenceMode`.
+
+**Modality:** pick mode is modal-ish for the duration —
+
+- A banner renders at the top of the entry list: "Picking from [Reference
+  Name] — Cancel".
+- The segmented `ACTIVE` / `REFERENCE` swap control is hidden.
+- Peek overlays are suppressed (the user is already browsing the reference
+  book directly — nothing to peek).
+- The menu panel still works normally.
+- Exit paths: banner Cancel, bar's `× Exit`, or commit (Copy & Done).
+
+**Bar contents during pick mode:**
+
+- `× Exit` reads as Cancel — swaps back, clears selection, exits Select mode.
+- Select All Visible / Deselect All / Change Type… work as today against the
+  posed reference book.
+- The "Copy From Reference" entry-point button is hidden (already in pose).
+- A "Copy & Done" button replaces it: commits `copyToOtherPanel()` (which
+  already does the right cross-book copy because `selectionSide === 'active'`
+  during pose), then swaps back, clears selection, exits Select mode.
+
+**State:** a `pickFromReferenceMode: boolean` field on `ui-store`, plus
+`enterPickFromReference()` / `exitPickFromReference(commit)` actions that
+bundle the swap, selection clear, and Select mode entry/exit.
+
+**Why this works without new plumbing:** `useSelection`,
+`use-bulk-actions.js`'s `copyToOtherPanel`, and the existing `BulkActionBar`
+all operate on whichever lorebook is currently active — they don't care that
+"active" is the reference book during the pose. Only the entry/exit
+choreography is new.
 
 ---
 
@@ -110,9 +157,14 @@ when no peek is open).
   buttons retained.
 
 ### Selection / bulk
-- **`BulkActionBar.jsx`** — drop the cross-pane copy variant on mobile.
-  Selection on mobile is active-side only. Active-side bulk actions
-  (delete, etc.) remain available.
+- **`BulkActionBar.jsx`** — outside pick mode on mobile, the existing
+  cross-pane copy button is suppressed (since reference isn't visible to
+  select from, and multi-select push is deferred). A new "Copy From
+  Reference" button is added beside "Change Type…", visible only when
+  `isMobile && crosstalkEnabled && referenceLorebook && !pickFromReferenceMode`.
+  Tapping it calls `enterPickFromReference()`. During pick mode, the bar
+  re-renders with a "Copy & Done" commit button in place of the entry-point
+  button, and `× Exit` becomes the Cancel path. Desktop bar is unchanged.
 
 ---
 
@@ -140,7 +192,18 @@ when no peek is open).
       dropdown; tap → set `peekReferenceEntryId`
 - [ ] Add "Copy to reference" footer action to active
       `EntryDetailPanel.jsx`
-- [ ] Hide cross-pane copy in `BulkActionBar.jsx` on mobile
+- [ ] Add `pickFromReferenceMode` field + `enterPickFromReference()` /
+      `exitPickFromReference(commit)` actions to `ui-store.js`
+- [ ] Add "Copy From Reference" entry-point button to `BulkActionBar.jsx`,
+      mobile + crosstalk-paired only
+- [ ] Render pick-mode banner ("Picking from [Reference Name] — Cancel")
+      above the entry list while `pickFromReferenceMode` is true
+- [ ] Re-skin `BulkActionBar.jsx` during pick mode: hide entry-point button,
+      show "Copy & Done" commit button, repurpose `× Exit` as Cancel
+- [ ] Hide segmented `ACTIVE` / `REFERENCE` swap control during pick mode
+- [ ] Suppress peek overlay rendering during pick mode
+- [ ] Suppress the existing cross-pane copy variant in `BulkActionBar.jsx`
+      on mobile *outside* pick mode (push is deferred)
 
 ---
 
@@ -165,6 +228,11 @@ On a mobile viewport with crosstalk enabled and a reference lorebook paired:
 - The segmented `ACTIVE` / `REFERENCE` control swaps roles via
   `swapReference()` and is hidden when no reference is paired
 - The active entry detail panel exposes a "Copy to reference" action
+- Entering Select mode shows a "Copy From Reference" button beside
+  "Change Type…"; tapping it enters pick mode (banner appears, segmented
+  swap control disappears, peek overlays are suppressed); the user can
+  multi-select reference entries via standard Select UX; "Copy & Done"
+  commits the copy and swaps back; `× Exit` cancels and swaps back
 - F&R retains the existing three Apply buttons unchanged
 - Desktop crosstalk behaviour is byte-for-byte identical to before this
   redesign
@@ -177,7 +245,8 @@ On a mobile viewport with crosstalk enabled and a reference lorebook paired:
 - Multi-deep peek stacking
 - Diff-based overlap detection in the Crosstalk row (would depend on the
   Phase 9 `diff-service.js` prerequisite)
-- Batch cross-book copy on mobile
+- Multi-select push (active → reference) on mobile — the swap-and-back
+  pattern supports it symmetrically, but no entry point is exposed yet
 
 ---
 
@@ -191,3 +260,5 @@ On a mobile viewport with crosstalk enabled and a reference lorebook paired:
   row once `diff-service.js` exists
 - Whether the setting label change ("Pair with reference lorebook") should
   apply globally or only on mobile
+- Whether to expose a multi-select push entry point ("Send to Reference"
+  in `BulkActionBar` on mobile) once the pull pose has seen real use
