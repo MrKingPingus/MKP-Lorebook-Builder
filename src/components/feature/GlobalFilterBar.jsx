@@ -32,6 +32,7 @@ export function GlobalFilterBar() {
         entries={entries}
         matches={matches}
         matchDetails={active.displayMatchDetails}
+        referenceMatchDetails={reference.displayMatchDetails}
         visibleIds={active.displayEntries.map((e) => e.id)}
         referenceVisibleIds={reference.displayEntries.map((e) => e.id)}
       />

@@ -655,6 +655,24 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .search-dropdown-tag--name    { color: var(--accent); border-color: var(--accent); }
 .search-dropdown-tag--trigger { color: var(--green);  border-color: var(--green); }
 .search-dropdown-tag--description { color: var(--muted2); }
+.search-dropdown-tag--ref {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: transparent;
+}
+
+.search-dropdown-section-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 6px 10px 2px;
+}
+
+.search-dropdown-item--reference .search-dropdown-name {
+  color: var(--muted2);
+}
 
 .search-mode-select {
   flex-shrink: 0;
@@ -3322,6 +3340,122 @@ kbd {
      swap-on-click; inside the description body we want the standard text
      cursor since the body opts out of swap and exists for selection/copy. */
   cursor: text;
+}
+
+/* ============================================================
+   Reference annotations — name badge + collapsible Crosstalk row
+   ============================================================ */
+/* §REFERENCE-ANNOTATIONS */
+.entry-ref-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: transparent;
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.entry-ref-badge:hover {
+  background: var(--blue);
+  color: var(--surface);
+}
+.entry-ref-badge--header {
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+.crosstalk-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  overflow: hidden;
+}
+.crosstalk-row-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.crosstalk-row-toggle:hover {
+  background: var(--surface3);
+}
+.crosstalk-row-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.crosstalk-row-count {
+  color: var(--blue);
+  font-weight: 700;
+}
+.crosstalk-row-chevron {
+  color: var(--muted2);
+  font-size: 11px;
+}
+.crosstalk-row-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.crosstalk-row-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+}
+.crosstalk-row-item:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+.crosstalk-row-item:hover {
+  background: var(--surface3);
+}
+.crosstalk-row-item-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crosstalk-row-item-tags {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.crosstalk-row-tag {
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.crosstalk-row-tag--same-name {
+  color: var(--blue);
+  border-color: var(--blue);
+}
+.crosstalk-row-tag--trigger {
+  color: var(--green);
+  border-color: var(--green);
 }
 
 /* ============================================================

@@ -19,10 +19,11 @@ const SORT_OPTIONS = [
 const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
 
 // matchDetails: [{id, name, locations}] — ordered list of matching entries in display order
+// referenceMatchDetails: same shape, for reference-side hits; only shown on mobile in a separate dropdown section
 // visibleIds: ordered list of entry ids currently visible after search + type filter + sort/group
 // referenceVisibleIds: same, for the reference book in crosstalk; empty otherwise
 // matches: [{role, matchCount, entryMatchCount}] — one entry in normal mode, active + reference in crosstalk
-export function SearchBar({ entries, matches = [], matchDetails, visibleIds = [], referenceVisibleIds = [] }) {
+export function SearchBar({ entries, matches = [], matchDetails, referenceMatchDetails = [], visibleIds = [], referenceVisibleIds = [] }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
   const {
     findText, setFindText,
@@ -39,6 +40,7 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
   const sortMode           = useUi((s) => s.sortMode);
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
+  const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
 
   const [sortOpen,      setSortOpen]      = useState(false);
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
@@ -128,11 +130,20 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
     setDropdownOpen(false);
   }
 
-  function openDropdownIfResults() {
-    if (searchQuery.trim() && matchDetails?.length > 0) setDropdownOpen(true);
+  function onReferenceResultClick(id) {
+    setPeekReferenceEntryId(id);
+    setDropdownOpen(false);
   }
 
-  const showDropdown = dropdownOpen && searchQuery.trim() && matchDetails?.length > 0;
+  // Reference hits only surface in the dropdown on mobile — desktop has the
+  // reference panel visible already.
+  const showReferenceSection = isMobile && referenceMatchDetails && referenceMatchDetails.length > 0;
+
+  function openDropdownIfResults() {
+    if (searchQuery.trim() && (matchDetails?.length > 0 || showReferenceSection)) setDropdownOpen(true);
+  }
+
+  const showDropdown = dropdownOpen && searchQuery.trim() && (matchDetails?.length > 0 || showReferenceSection);
   const mobileFindReplace = isMobile && searchMode === 'find-replace';
 
   const sortBtn = (
@@ -180,7 +191,10 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
             )}
             {showDropdown && (
               <div className="search-dropdown">
-                {matchDetails.map((m) => (
+                {matchDetails?.length > 0 && showReferenceSection && (
+                  <div className="search-dropdown-section-header">Active</div>
+                )}
+                {matchDetails?.map((m) => (
                   <button
                     key={m.id}
                     className="search-dropdown-item"
@@ -196,6 +210,28 @@ export function SearchBar({ entries, matches = [], matchDetails, visibleIds = []
                     </span>
                   </button>
                 ))}
+                {showReferenceSection && (
+                  <>
+                    <div className="search-dropdown-section-header">Reference</div>
+                    {referenceMatchDetails.map((m) => (
+                      <button
+                        key={`ref-${m.id}`}
+                        className="search-dropdown-item search-dropdown-item--reference"
+                        onMouseDown={(e) => { e.preventDefault(); onReferenceResultClick(m.id); }}
+                      >
+                        <span className="search-dropdown-name">{m.name || '(unnamed)'}</span>
+                        <span className="search-dropdown-tags">
+                          <span className="search-dropdown-tag search-dropdown-tag--ref">ref</span>
+                          {m.locations.map((loc) => (
+                            <span key={loc} className={`search-dropdown-tag search-dropdown-tag--${loc}`}>
+                              {LOCATION_LABELS[loc]}
+                            </span>
+                          ))}
+                        </span>
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </div>

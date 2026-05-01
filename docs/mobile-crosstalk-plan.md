@@ -191,7 +191,14 @@ them rather than all up front.
   - Rendered the overlay from `FloatingWindow.jsx` on mobile only
   - Added mobile lorebook switcher chevron + popover to `BuildPanel.jsx` (always available on mobile, paired reference id excluded from the list)
   - Extended `LorebookSwitchPopover.jsx` to accept an `excludeIds` prop
-- **Phase 3 — Annotations layer** ⏳
+- **Phase 3 — Annotations layer** ✅
+  - New `use-name-match.js` hook returning a Map of active-entry-id → reference-entry-id for case-insensitive same-name matches
+  - Mobile entry card (`EntryCard.jsx` mobile branch) — small "ref" badge inline with the entry name when a same-named reference entry exists; tap stops propagation and opens peek
+  - `EntryDetailPanel.jsx` header — same-name "ref" badge next to the title; tap opens peek
+  - New `CrosstalkRow.jsx` component — collapsible section inside the entry detail body, hidden until ≥1 reference entry overlaps (same-name or shared trigger). Same-name match top-pinned; rows tag overlap kind (same name / N triggers); tap opens peek
+  - `SearchBar.jsx` — when `isMobile && referenceMatchDetails.length > 0`, dropdown gains an "Active" / "Reference" sectioning, with a "ref" pill on each reference-side row; tap opens peek instead of scrolling
+  - `GlobalFilterBar.jsx` — passes `referenceMatchDetails` through to SearchBar
+  - CSS — `.entry-ref-badge`, `.crosstalk-row*`, `.search-dropdown-tag--ref`, `.search-dropdown-section-header`
 - **Phase 4 — Single-entry push + segmented swap** ⏳
 - **Phase 5 — Pick from Reference pose** ⏳
 

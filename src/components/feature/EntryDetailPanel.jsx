@@ -5,6 +5,7 @@ import { useEntries }      from '../../hooks/use-entries.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useCrosstalk }    from '../../hooks/use-crosstalk.js';
+import { useNameMatch }    from '../../hooks/use-name-match.js';
 import { useRollback }     from '../../hooks/use-rollback.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { TypeSelector }    from './TypeSelector.jsx';
@@ -12,6 +13,7 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
+import { CrosstalkRow }    from './CrosstalkRow.jsx';
 
 export function EntryDetailPanel() {
   const { activeEntryId, closeEntry } = useEntryDetail();
@@ -22,6 +24,8 @@ export function EntryDetailPanel() {
   const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { entryTypeView, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
+  const nameMatchMap = useNameMatch();
+  const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const nameInputRef = useRef(null);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
@@ -72,7 +76,18 @@ export function EntryDetailPanel() {
         <button className="entry-detail-back" onClick={handleBack}>
           ← Back
         </button>
-        <span className="entry-detail-title">{entry?.name || '(unnamed)'}</span>
+        <span className="entry-detail-title">
+          {entry?.name || '(unnamed)'}
+          {entry && nameMatchMap.has(entry.id) && (
+            <button
+              className="entry-ref-badge entry-ref-badge--header"
+              onClick={() => setPeekReferenceEntryId(nameMatchMap.get(entry.id))}
+              title="Same-named entry exists in the reference book — tap to peek"
+            >
+              ref
+            </button>
+          )}
+        </span>
         <button className="entry-detail-remove" onClick={handleRemove}>
           Remove
         </button>
@@ -119,6 +134,10 @@ export function EntryDetailPanel() {
               spellCheck={false}
             />
           </div>
+
+          {/* Crosstalk row — collapsible; hidden when this entry has no
+              same-name or shared-trigger overlap with the reference book */}
+          <CrosstalkRow entry={entry} />
 
           {/* Entry Type — dropdown (default) or full button grid (setting) */}
           <div className="entry-detail-section">
