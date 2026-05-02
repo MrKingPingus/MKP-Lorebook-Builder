@@ -17,7 +17,15 @@ export function CrosstalkRow({ entry }) {
   const { referenceLorebook }   = useReferenceLorebook();
   const nameMatchMap            = useNameMatch();
 
-  if (!referenceLorebook) return null;
+  // TEMP debug strip — renders before any early returns so we can see which
+  // guard is bailing. Remove once cause is found.
+  const debugLine = (
+    <div className="entry-detail-section" style={{ padding: '6px 8px', background: 'rgba(239,68,68,0.1)', border: '1px dashed var(--coral)', borderRadius: 4, fontSize: 11, color: 'var(--coral)' }}>
+      ctRow: refBook={referenceLorebook ? 'yes' : 'NO'} · refEntries={referenceLorebook?.entries?.length ?? 'n/a'} · nameMatchMapSize={nameMatchMap.size} · conflictMapSize={conflictMap.size} · entryTriggers={entry.triggers.length}
+    </div>
+  );
+
+  if (!referenceLorebook) return debugLine;
 
   const sameNameRefId = nameMatchMap.get(entry.id) ?? null;
 
@@ -46,13 +54,14 @@ export function CrosstalkRow({ entry }) {
     ordered.push({ refId, sharedTriggers: triggers, isSameName: false });
   }
 
-  // TEMP debug strip — shows the guard values inline so we can see why the
-  // Crosstalk row isn't appearing on mobile. Remove once the cause is found.
   if (ordered.length === 0) {
     return (
-      <div className="entry-detail-section" style={{ padding: '6px 8px', background: 'rgba(239,68,68,0.1)', border: '1px dashed var(--coral)', borderRadius: 4, fontSize: 11, color: 'var(--coral)' }}>
-        debug: refBook={referenceLorebook ? 'yes' : 'no'} · sameNameRef={sameNameRefId ? 'yes' : 'no'} · sharedTriggerEntries={sharedByRef.size} · nameMatchMapSize={nameMatchMap.size} · conflictMapSize={conflictMap.size}
-      </div>
+      <>
+        {debugLine}
+        <div className="entry-detail-section" style={{ padding: '6px 8px', background: 'rgba(239,68,68,0.1)', border: '1px dashed var(--coral)', borderRadius: 4, fontSize: 11, color: 'var(--coral)' }}>
+          ordered=0 · sameNameRef={sameNameRefId ? 'yes' : 'no'} · sharedTriggerEntries={sharedByRef.size}
+        </div>
+      </>
     );
   }
 
