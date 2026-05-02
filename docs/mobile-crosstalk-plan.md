@@ -33,7 +33,7 @@ The reference book is never rendered as a list on mobile.
 |---|---|
 | Default model for reference on mobile | Inline annotations only, plus a peek-overlay layer. No reference list rendered. |
 | Peek overlay depth | One-deep. Opening another reference entry from within an overlay replaces the current one. |
-| Crosstalk surfacing in entry detail | Collapsible Crosstalk row, hidden until ≥1 overlap exists. Lists same-name match (top-pinned) plus shared trigger keywords. |
+| Crosstalk surfacing in entry detail | Inline only — REF badge in the entry name when a same-name reference entry exists, plus the existing chip conflict popover for trigger overlaps. The collapsible Crosstalk row from earlier drafts was dropped during testing as redundant with the badge + chip popover + search dropdown reference section + browse sheet. |
 | Role-swap control | Segmented `ACTIVE` / `REFERENCE` button above the entry list. Hidden when no reference is paired. |
 | Active → reference copy | Small "Copy to reference" action in the active entry detail panel footer. Rare-case path. Multi-select push deferred. |
 | Reference → active copy | "Copy to active" as primary footer action on the peek overlay (single entry). Multi-select pull happens via the **Pick from Reference** pose — see below. |
@@ -134,11 +134,6 @@ choreography is new.
 - **`EntryCard.jsx`** and **`EntryDetailPanel.jsx`** — render a small "ref"
   badge next to the entry name when a same-named entry exists in the
   reference book. Tap → opens peek overlay for that reference entry.
-- **`EntryDetailPanel.jsx`** — add a collapsible Crosstalk row, hidden until
-  ≥1 overlap exists. Contents:
-  - Same-name match, top-pinned, when present
-  - One row per shared trigger keyword (sourced from `conflictMap`)
-  - Each row taps through to the peek overlay
 - **`EntryDetailPanel.jsx` footer** — add a small "Copy to reference" action
   for the rare push direction.
 
@@ -195,10 +190,10 @@ them rather than all up front.
   - New `use-name-match.js` hook returning a Map of active-entry-id → reference-entry-id for case-insensitive same-name matches
   - Mobile entry card (`EntryCard.jsx` mobile branch) — small "ref" badge inline with the entry name when a same-named reference entry exists; tap stops propagation and opens peek
   - `EntryDetailPanel.jsx` header — same-name "ref" badge next to the title; tap opens peek
-  - New `CrosstalkRow.jsx` component — collapsible section inside the entry detail body, hidden until ≥1 reference entry overlaps (same-name or shared trigger). Same-name match top-pinned; rows tag overlap kind (same name / N triggers); tap opens peek
   - `SearchBar.jsx` — when `isMobile && referenceMatchDetails.length > 0`, dropdown gains an "Active" / "Reference" sectioning, with a "ref" pill on each reference-side row; tap opens peek instead of scrolling
   - `GlobalFilterBar.jsx` — passes `referenceMatchDetails` through to SearchBar
-  - CSS — `.entry-ref-badge`, `.crosstalk-row*`, `.search-dropdown-tag--ref`, `.search-dropdown-section-header`
+  - CSS — `.entry-ref-badge`, `.search-dropdown-tag--ref`, `.search-dropdown-section-header`
+  - **Note:** an earlier draft included a `CrosstalkRow.jsx` collapsible row inside the entry detail body, listing every reference entry that overlaps with the active entry by same-name or shared trigger. It was dropped during testing — the same information is already surfaced by the REF badge, chip conflict popover, search dropdown reference section, and browse sheet, making the row redundant and inscrutable.
 - **Phase 4 — Single-entry push + segmented swap** ⏳
 - **Phase 5 — Pick from Reference pose** ⏳
 
@@ -219,9 +214,6 @@ them rather than all up front.
 - [ ] Update setting label to "Pair with reference lorebook" on mobile
 - [ ] Add same-name "ref" badge to entry name on `EntryCard.jsx` and
       `EntryDetailPanel.jsx`; tap → set `peekReferenceEntryId`
-- [ ] Add collapsible Crosstalk row to `EntryDetailPanel.jsx`: same-name
-      top-pinned + shared trigger rows; rows tap → set
-      `peekReferenceEntryId`
 - [ ] Mobile-branch the trigger chip conflict popover so reference-side
       rows route to peek instead of navigation
 - [ ] Add "ref" pill to reference-side rows in the search results
@@ -254,9 +246,6 @@ On a mobile viewport with crosstalk enabled and a reference lorebook paired:
   tapping a tagged hit opens the peek overlay
 - An active entry with a same-name reference match displays a "ref" badge;
   tapping it opens the peek overlay
-- Expanded entry detail shows a collapsible Crosstalk row when ≥1 overlap
-  exists; same-name is top-pinned, shared triggers follow; each row taps
-  through to the peek overlay
 - The peek overlay's "Copy to active" successfully pulls the entry into
   the active book
 - The peek overlay's "Visit this entry" successfully swaps roles and
@@ -279,8 +268,8 @@ On a mobile viewport with crosstalk enabled and a reference lorebook paired:
 
 - Desktop crosstalk UI (unchanged)
 - Multi-deep peek stacking
-- Diff-based overlap detection in the Crosstalk row (would depend on the
-  Phase 9 `diff-service.js` prerequisite)
+- Diff-based overlap detection (would depend on the Phase 9 `diff-service.js`
+  prerequisite)
 - Multi-select push (active → reference) on mobile — the swap-and-back
   pattern supports it symmetrically, but no entry point is exposed yet
 
