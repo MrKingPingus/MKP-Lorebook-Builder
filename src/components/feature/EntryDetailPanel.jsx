@@ -135,6 +135,13 @@ export function EntryDetailPanel() {
             />
           </div>
 
+          {/* TEMP debug marker — proves the bundle is fresh and the slot
+              between ENTRY NAME and ENTRY TYPE is reachable. If you don't
+              see this, the bundle is still cached. Remove once verified. */}
+          <div style={{ padding: '6px 8px', background: 'rgba(96,165,250,0.18)', border: '1px dashed var(--blue)', borderRadius: 4, fontSize: 11, color: 'var(--blue)', textAlign: 'center' }}>
+            DEBUG: bundle build 610f5d7+ — CrosstalkRow slot is here
+          </div>
+
           {/* Crosstalk row — collapsible; hidden when this entry has no
               same-name or shared-trigger overlap with the reference book */}
           <CrosstalkRow entry={entry} />
