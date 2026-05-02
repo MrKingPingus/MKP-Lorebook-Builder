@@ -556,6 +556,66 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   font-style: italic;
 }
 
+/* Segmented role-swap control (mobile crosstalk). Sits just above the entry
+   list and one tap on the inactive segment swaps roles. The active segment
+   is rendered as a disabled button so its visual state is unambiguous and
+   focus-style behaves like the rest of the form chrome. */
+.role-swap-segmented {
+  display: flex;
+  margin: 8px 12px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface2);
+}
+.role-swap-segment {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--muted2);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  min-width: 0;
+}
+.role-swap-segment:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+.role-swap-segment:hover:not(:disabled) {
+  background: var(--surface3);
+  color: var(--text);
+}
+.role-swap-segment--active {
+  background: var(--blue);
+  color: var(--surface);
+  cursor: default;
+}
+.role-swap-segment--active .role-swap-segment-role,
+.role-swap-segment--active .role-swap-segment-name {
+  color: var(--surface);
+}
+.role-swap-segment-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.role-swap-segment-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 /* ============================================================
    Search Bar
    ============================================================ */
@@ -2874,6 +2934,28 @@ kbd {
   background: var(--yellow);
   color: #000;
   border-color: var(--yellow);
+}
+
+/* Push entry → reference copy button (mobile entry detail footer). Visually
+   subordinate to Rollback and Hide-from-Export — the rare-case path. */
+.copy-to-reference-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--blue);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.copy-to-reference-btn:hover {
+  background: var(--blue);
+  color: var(--surface);
+}
+.copy-to-reference-btn--flash {
+  background: var(--green);
+  color: var(--surface);
+  border-color: var(--green);
 }
 
 .entry-hidden-icon {

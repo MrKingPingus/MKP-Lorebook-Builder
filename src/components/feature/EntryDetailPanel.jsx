@@ -6,6 +6,8 @@ import { useUi }           from '../../hooks/use-ui.js';
 import { useSettings }     from '../../hooks/use-settings.js';
 import { useCrosstalk }    from '../../hooks/use-crosstalk.js';
 import { useNameMatch }    from '../../hooks/use-name-match.js';
+import { useReferenceLorebook }     from '../../hooks/use-reference-lorebook.js';
+import { useCopyEntryToReference }  from '../../hooks/use-copy-entry-to-reference.js';
 import { useRollback }     from '../../hooks/use-rollback.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { TypeSelector }    from './TypeSelector.jsx';
@@ -25,9 +27,12 @@ export function EntryDetailPanel() {
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const nameMatchMap = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();
+  const { copyEntryToReference }                = useCopyEntryToReference();
   const nameInputRef = useRef(null);
-  const [rollbackOpen, setRollbackOpen]       = useState(false);
-  const [suppressChecked, setSuppressChecked] = useState(false);
+  const [rollbackOpen, setRollbackOpen]         = useState(false);
+  const [suppressChecked, setSuppressChecked]   = useState(false);
+  const [copiedFlash,  setCopiedFlash]          = useState(false);
 
   const entry = entries.find((e) => e.id === activeEntryId) ?? null;
 
@@ -66,6 +71,14 @@ export function EntryDetailPanel() {
       setSuppressChecked(false);
       closeEntry();
     });
+  }
+
+  function handleCopyToReference() {
+    if (!entry) return;
+    const ok = copyEntryToReference(entry);
+    if (!ok) return;
+    setCopiedFlash(true);
+    setTimeout(() => setCopiedFlash(false), 1500);
   }
 
   return (
@@ -237,6 +250,16 @@ export function EntryDetailPanel() {
               >
                 {entry.hiddenFromExport ? 'Hidden from Export' : 'Hide from Export'}
               </button>
+              {crosstalkEnabled && referenceLorebook && (
+                <button
+                  className={`copy-to-reference-btn${copiedFlash ? ' copy-to-reference-btn--flash' : ''}`}
+                  onClick={handleCopyToReference}
+                  title={`Copy this entry into ${referenceLorebook.name || 'the reference lorebook'}`}
+                  type="button"
+                >
+                  {copiedFlash ? '✓ Copied' : '↗ Copy to Reference'}
+                </button>
+              )}
             </div>
 
             {rollbackOpen && rollback.enabled && (

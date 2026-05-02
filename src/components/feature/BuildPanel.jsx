@@ -23,7 +23,7 @@ export function BuildPanel() {
   const isMobile                                 = useMobile();
   const { activeLorebook, renameLorebook }       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
-  const { referenceLorebook, crosstalkEnabled, setReferenceLorebookId } = useReferenceLorebook();
+  const { referenceLorebook, crosstalkEnabled, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const setReferenceBrowseOpen = useUi((s) => s.setReferenceBrowseOpen);
 
   const switchBtnRef                       = useRef(null);
@@ -160,6 +160,33 @@ export function BuildPanel() {
               </div>
             </div>
           )}
+        </div>
+      )}
+      {/* Segmented role-swap control — mobile only, hidden when no reference
+          paired. Tapping the inactive segment calls swapReference() so the
+          user can edit the reference book without losing their place via the
+          chevron picker. The active book always stays on the left segment. */}
+      {isMobile && crosstalkEnabled && referenceLorebook && (
+        <div className="role-swap-segmented">
+          <button
+            className="role-swap-segment role-swap-segment--active"
+            type="button"
+            disabled
+            aria-pressed="true"
+          >
+            <span className="role-swap-segment-role">ACTIVE</span>
+            <span className="role-swap-segment-name">{activeLorebook?.name || '(unnamed)'}</span>
+          </button>
+          <button
+            className="role-swap-segment"
+            type="button"
+            onClick={swapReference}
+            aria-pressed="false"
+            title={`Swap roles — edit ${referenceLorebook.name || 'the reference lorebook'}`}
+          >
+            <span className="role-swap-segment-role">REFERENCE</span>
+            <span className="role-swap-segment-name">{referenceLorebook.name || '(unnamed)'}</span>
+          </button>
         </div>
       )}
       <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />

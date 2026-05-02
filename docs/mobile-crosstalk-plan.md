@@ -194,7 +194,11 @@ them rather than all up front.
   - `GlobalFilterBar.jsx` — passes `referenceMatchDetails` through to SearchBar
   - CSS — `.entry-ref-badge`, `.search-dropdown-tag--ref`, `.search-dropdown-section-header`
   - **Note:** an earlier draft included a `CrosstalkRow.jsx` collapsible row inside the entry detail body, listing every reference entry that overlaps with the active entry by same-name or shared trigger. It was dropped during testing — the same information is already surfaced by the REF badge, chip conflict popover, search dropdown reference section, and browse sheet, making the row redundant and inscrutable.
-- **Phase 4 — Single-entry push + segmented swap** ⏳
+- **Phase 4 — Single-entry push + segmented swap** ✅
+  - New `use-copy-entry-to-reference.js` hook — clones an entry and appends it to the paired reference book; no history snapshot (history is active-only)
+  - `EntryDetailPanel.jsx` footer — added "↗ Copy to Reference" button beside Hide-from-Export, visible only when `crosstalkEnabled && referenceLorebook`. Briefly flashes green "✓ Copied" on success.
+  - `BuildPanel.jsx` — added segmented `ACTIVE | REFERENCE` control just above the EntryList, mobile + crosstalk-paired only. Active segment is the disabled left button; tapping the inactive segment calls `swapReference()`. Each segment shows the role label plus the lorebook name so users can see what they're swapping into.
+  - CSS — `.copy-to-reference-btn`, `.copy-to-reference-btn--flash`, `.role-swap-segmented`, `.role-swap-segment*`
 - **Phase 5 — Pick from Reference pose** ⏳
 
 ---
