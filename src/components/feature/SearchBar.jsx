@@ -195,6 +195,14 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             )}
             {showDropdown && (
               <div className="search-dropdown">
+                {/* Mobile: counter inline at the top of the dropdown so the
+                    bar's row 2 doesn't have to host it. Desktop still shows
+                    the standalone counter beside the input. */}
+                {isMobile && (
+                  <div className="search-dropdown-counter">
+                    <MatchCounter matches={matches} />
+                  </div>
+                )}
                 {matchDetails?.length > 0 && showReferenceSection && (
                   <div className="search-dropdown-section-header">Active</div>
                 )}
@@ -281,13 +289,14 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
         {sortBtn}
       </div>
 
-      {/* Mobile search/select: second row with counter + mode select so the
-          search input on row 1 keeps the full width. */}
+      {/* Mobile search/select: second row with mode select. In select mode
+          the selected-count stays inline since there's no dropdown to host
+          it; in search mode the count moves into the dropdown header. */}
       {mobileSearch && (
         <div className="search-bar-row2">
-          {searchMode === 'select'
-            ? <span className="match-counter match-counter--select">{selectedCount} selected</span>
-            : <MatchCounter matches={matches} />}
+          {searchMode === 'select' && (
+            <span className="match-counter match-counter--select">{selectedCount} selected</span>
+          )}
           <select
             className="search-mode-select"
             value={searchMode}

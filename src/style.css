@@ -556,10 +556,10 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   font-style: italic;
 }
 
-/* Segmented role-swap control (mobile crosstalk). Sits just above the entry
-   list and one tap on the inactive segment swaps roles. The active segment
-   is rendered as a disabled button so its visual state is unambiguous and
-   focus-style behaves like the rest of the form chrome. */
+/* Consolidated lorebook role bar (mobile). In crosstalk mode renders as
+   two segments — ACTIVE | REFERENCE — with inline rename on active and a
+   ⋯ menu on reference (Change / Browse / Unpair). Outside crosstalk uses
+   the .lorebook-bar-solo variant below. */
 .role-swap-segmented {
   display: flex;
   margin: 8px 12px 0;
@@ -571,10 +571,9 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .role-swap-segment {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1px;
+  justify-content: space-between;
+  gap: 4px;
   padding: 6px 8px;
   background: transparent;
   border: none;
@@ -588,9 +587,14 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .role-swap-segment:not(:last-child) {
   border-right: 1px solid var(--border);
 }
-.role-swap-segment:hover:not(:disabled) {
+.role-swap-segment:hover:not([aria-pressed="true"]) {
   background: var(--surface3);
   color: var(--text);
+}
+.role-swap-segment[aria-pressed="true"] {
+  background: var(--blue);
+  color: var(--surface);
+  cursor: default;
 }
 .role-swap-segment--active {
   background: var(--blue);
@@ -598,8 +602,18 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   cursor: default;
 }
 .role-swap-segment--active .role-swap-segment-role,
-.role-swap-segment--active .role-swap-segment-name {
+.role-swap-segment--active .role-swap-segment-name,
+.role-swap-segment[aria-pressed="true"] .role-swap-segment-role,
+.role-swap-segment[aria-pressed="true"] .role-swap-segment-name {
   color: var(--surface);
+}
+.role-swap-segment-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
 }
 .role-swap-segment-role {
   font-size: 10px;
@@ -614,6 +628,115 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+.role-swap-segment-action {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 4px;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.role-swap-segment-action:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.role-swap-rename-input {
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--focus-border);
+  border-radius: 3px;
+  padding: 2px 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Reference menu popover (Change / Browse / Unpair) */
+.role-swap-ref-menu {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 180px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+}
+.role-swap-ref-menu-item {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.role-swap-ref-menu-item:hover {
+  background: var(--surface3);
+}
+.role-swap-ref-menu-item:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+.role-swap-ref-menu-item--destructive {
+  color: var(--coral);
+}
+
+/* Solo variant — single row when crosstalk is off or no reference paired */
+.lorebook-bar-solo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.lorebook-bar-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lorebook-bar-rename-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--focus-border);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.lorebook-bar-action {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.lorebook-bar-action:hover {
+  background: var(--border);
+  color: var(--text);
 }
 
 /* ============================================================
@@ -674,9 +797,21 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   z-index: 300;
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
   padding: 4px;
+}
+/* Mobile: counter strip at the top of the dropdown so the bar's row 2
+   doesn't have to host it. */
+.search-dropdown-counter {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted2);
+  margin-bottom: 4px;
+}
+.search-dropdown-counter .match-counter {
+  font-size: 11px;
 }
 
 .search-dropdown-item {
@@ -1086,6 +1221,92 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   border-color: var(--border2);
   color: var(--text);
   border-style: dashed;
+}
+
+/* Mobile collapsed type-filter button + popover (replaces inline pill row) */
+.type-filter-bar--mobile {
+  padding: 6px 12px;
+  gap: 0;
+}
+.type-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.type-filter-button:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+.type-filter-button--active {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.type-filter-button-chevron {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.type-filter-popover {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 200px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+}
+.type-filter-popover-section {
+  display: flex;
+  flex-direction: column;
+}
+.type-filter-popover-divider {
+  height: 1px;
+  background: var(--border);
+}
+.type-filter-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.type-filter-popover-row:hover {
+  background: var(--surface3);
+}
+.type-filter-popover-row--active {
+  color: var(--blue);
+  font-weight: 600;
+}
+.type-filter-popover-check {
+  width: 14px;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 13px;
+}
+.type-filter-popover-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.type-filter-popover-label {
+  flex: 1;
 }
 
 .filter-hint {

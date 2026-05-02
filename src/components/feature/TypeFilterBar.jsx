@@ -1,14 +1,18 @@
-// Filter bar: type pills, Group by type toggle (mobile inline), Expand All (desktop only)
-import { ENTRY_TYPES }   from '../../constants/entry-types.js';
-import { useTypeFilter } from '../../hooks/use-type-filter.js';
-import { useUi }         from '../../hooks/use-ui.js';
-import { useMobile }     from '../../hooks/use-mobile.js';
+// Filter bar: type pills, Group by type toggle (mobile inline), Expand All (desktop only).
+// On mobile the type pills + Group-by-type are collapsed into a single "Filter ▾"
+// button that opens a popover with checkboxes — saves two rows of vertical chrome.
+import { useState, useRef, useEffect } from 'react';
+import { createPortal }    from 'react-dom';
+import { ENTRY_TYPES }     from '../../constants/entry-types.js';
+import { useTypeFilter }   from '../../hooks/use-type-filter.js';
+import { useUi }           from '../../hooks/use-ui.js';
+import { useMobile }       from '../../hooks/use-mobile.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
-  const expandAll    = useUi((s) => s.expandAll);
-  const collapseAll  = useUi((s) => s.collapseAll);
-  const groupByType  = useUi((s) => s.groupByType);
+  const expandAll      = useUi((s) => s.expandAll);
+  const collapseAll    = useUi((s) => s.collapseAll);
+  const groupByType    = useUi((s) => s.groupByType);
   const setExpandAll   = useUi((s) => s.setExpandAll);
   const setCollapseAll = useUi((s) => s.setCollapseAll);
   const setGroupByType = useUi((s) => s.setGroupByType);
@@ -37,6 +41,101 @@ export function TypeFilterBar({ entries }) {
     }
   }
 
+  // === Mobile: collapsed Filter ▾ button + popover ===
+  const [open, setOpen]         = useState(false);
+  const [anchor, setAnchor]     = useState(null);
+  const btnRef    = useRef(null);
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e) {
+      if (popoverRef.current?.contains(e.target)) return;
+      if (btnRef.current?.contains(e.target))     return;
+      setOpen(false);
+    }
+    const id = setTimeout(() => document.addEventListener('click', onDoc), 0);
+    return () => { clearTimeout(id); document.removeEventListener('click', onDoc); };
+  }, [open]);
+
+  function toggleOpen() {
+    if (open) { setOpen(false); return; }
+    setAnchor(btnRef.current?.getBoundingClientRect() ?? null);
+    setOpen(true);
+  }
+
+  if (isMobile) {
+    const filterCount = typeFilter.length;
+    const summary = filterCount === 0
+      ? (groupByType ? 'Filter · Grouped' : 'Filter')
+      : `Filter (${filterCount})${groupByType ? ' · Grouped' : ''}`;
+    const isActive = filterCount > 0 || groupByType;
+    return (
+      <div className="type-filter-bar type-filter-bar--mobile">
+        <button
+          ref={btnRef}
+          className={`type-filter-button${isActive ? ' type-filter-button--active' : ''}`}
+          onClick={toggleOpen}
+          type="button"
+          aria-haspopup="true"
+          aria-expanded={open}
+        >
+          {summary} <span className="type-filter-button-chevron">▾</span>
+        </button>
+        {open && createPortal(
+          <div
+            ref={popoverRef}
+            className="type-filter-popover"
+            style={{
+              position: 'fixed',
+              top:  (anchor?.bottom ?? 0) + 6,
+              left: Math.max(8, Math.min((anchor?.left ?? 0), window.innerWidth - 240)),
+            }}
+          >
+            <div className="type-filter-popover-section">
+              <button
+                className={`type-filter-popover-row${filterCount === 0 ? ' type-filter-popover-row--active' : ''}`}
+                onClick={() => { clearFilter(); }}
+                type="button"
+              >
+                <span className="type-filter-popover-check">{filterCount === 0 ? '✓' : ''}</span>
+                <span className="type-filter-popover-label">All types</span>
+              </button>
+              {ENTRY_TYPES.map((t) => {
+                const active = typeFilter.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    className={`type-filter-popover-row${active ? ' type-filter-popover-row--active' : ''}`}
+                    onClick={() => toggleTypeFilter(t.id)}
+                    type="button"
+                  >
+                    <span className="type-filter-popover-check">{active ? '✓' : ''}</span>
+                    <span className="type-filter-popover-swatch" style={{ background: t.color }} />
+                    <span className="type-filter-popover-label">{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="type-filter-popover-divider" />
+            <div className="type-filter-popover-section">
+              <button
+                className={`type-filter-popover-row${groupByType ? ' type-filter-popover-row--active' : ''}`}
+                onClick={() => setGroupByType(!groupByType)}
+                type="button"
+              >
+                <span className="type-filter-popover-check">{groupByType ? '✓' : ''}</span>
+                <span className="type-filter-popover-label">Group by type</span>
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+      </div>
+    );
+  }
+
+  // === Desktop: original inline pills ===
   return (
     <div className="type-filter-bar">
       {/* All pill */}
