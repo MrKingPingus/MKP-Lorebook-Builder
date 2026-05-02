@@ -46,7 +46,15 @@ export function CrosstalkRow({ entry }) {
     ordered.push({ refId, sharedTriggers: triggers, isSameName: false });
   }
 
-  if (ordered.length === 0) return null;
+  // TEMP debug strip — shows the guard values inline so we can see why the
+  // Crosstalk row isn't appearing on mobile. Remove once the cause is found.
+  if (ordered.length === 0) {
+    return (
+      <div className="entry-detail-section" style={{ padding: '6px 8px', background: 'rgba(239,68,68,0.1)', border: '1px dashed var(--coral)', borderRadius: 4, fontSize: 11, color: 'var(--coral)' }}>
+        debug: refBook={referenceLorebook ? 'yes' : 'no'} · sameNameRef={sameNameRefId ? 'yes' : 'no'} · sharedTriggerEntries={sharedByRef.size} · nameMatchMapSize={nameMatchMap.size} · conflictMapSize={conflictMap.size}
+      </div>
+    );
+  }
 
   return (
     <div className="entry-detail-section crosstalk-row">
