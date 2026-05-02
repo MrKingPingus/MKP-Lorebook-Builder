@@ -145,6 +145,10 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
 
   const showDropdown = dropdownOpen && searchQuery.trim() && (matchDetails?.length > 0 || showReferenceSection);
   const mobileFindReplace = isMobile && searchMode === 'find-replace';
+  // On mobile in search/select modes the input + counter + mode select + sort
+  // all fighting for one row squeezes the input to a thumbnail. Move counter
+  // and mode-select to a second row so the input gets the full width.
+  const mobileSearch      = isMobile && !mobileFindReplace;
 
   const sortBtn = (
     <div className="sort-btn-wrap" ref={sortWrapRef} onPointerDown={(e) => e.stopPropagation()}>
@@ -257,13 +261,13 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             row={mobileFindReplace ? 'inputs' : 'all'}
           />
         )}
-        {!mobileFindReplace && searchMode === 'select' && (
+        {!mobileFindReplace && !mobileSearch && searchMode === 'select' && (
           <span className="match-counter match-counter--select">{selectedCount} selected</span>
         )}
-        {!mobileFindReplace && searchMode !== 'select' && (
+        {!mobileFindReplace && !mobileSearch && searchMode !== 'select' && (
           <MatchCounter matches={matches} />
         )}
-        {!mobileFindReplace && (
+        {!mobileFindReplace && !mobileSearch && (
           <select
             className="search-mode-select"
             value={searchMode}
@@ -276,6 +280,25 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
         )}
         {sortBtn}
       </div>
+
+      {/* Mobile search/select: second row with counter + mode select so the
+          search input on row 1 keeps the full width. */}
+      {mobileSearch && (
+        <div className="search-bar-row2">
+          {searchMode === 'select'
+            ? <span className="match-counter match-counter--select">{selectedCount} selected</span>
+            : <MatchCounter matches={matches} />}
+          <select
+            className="search-mode-select"
+            value={searchMode}
+            onChange={onModeChange}
+          >
+            <option value="search">Search</option>
+            <option value="find-replace">Find/Replace</option>
+            <option value="select">Select</option>
+          </select>
+        </div>
+      )}
 
       {/* Select mode: bulk action row */}
       {searchMode === 'select' && (

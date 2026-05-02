@@ -84,7 +84,7 @@ export function EntryDetailPanel() {
               onClick={() => setPeekReferenceEntryId(nameMatchMap.get(entry.id))}
               title="Same-named entry exists in the reference book — tap to peek"
             >
-              ref
+              in reference <span className="entry-ref-badge-arrow">↗</span>
             </button>
           )}
         </span>
@@ -198,6 +198,7 @@ export function EntryDetailPanel() {
               </select>
             </div>
             <TriggerChips
+              entryId={entry.id}
               triggers={entry.triggers}
               delimiter={triggerDelimiter}
               searchQuery={searchQuery}

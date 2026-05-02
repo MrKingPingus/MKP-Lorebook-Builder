@@ -26,6 +26,7 @@ export const useUiStore = create((set) => ({
   activeSide: 'left',          // 'left' | 'right' — which physical slot holds the active lorebook in crosstalk mode.
                                //   swapReference flips roles AND this flag so the clicked panel stays put.
   peekReferenceEntryId: null,  // mobile-only — id of the reference entry currently shown in the peek overlay; null = closed
+  referenceBrowseOpen:  false, // mobile-only — true when the read-only reference browse sheet is open
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -81,6 +82,7 @@ export const useUiStore = create((set) => ({
   setPendingFocusLorebookName:  (pendingFocusLorebookName)  => set({ pendingFocusLorebookName }),
   toggleActiveSide: () => set((s) => ({ activeSide: s.activeSide === 'left' ? 'right' : 'left' })),
   setPeekReferenceEntryId: (peekReferenceEntryId) => set({ peekReferenceEntryId }),
+  setReferenceBrowseOpen:  (referenceBrowseOpen)  => set({ referenceBrowseOpen }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

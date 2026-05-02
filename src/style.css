@@ -544,6 +544,12 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   overflow: hidden;
   text-overflow: ellipsis;
   box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.build-lorebook-reference-value:hover {
+  border-color: var(--focus-border);
 }
 .build-lorebook-reference-value--empty {
   color: var(--muted);
@@ -886,6 +892,7 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .search-bar-row2 .replace-btn-wrap    { flex-shrink: 0; }
 .search-bar-row2 .replace-all-btn    { white-space: nowrap; }
 .search-bar-row2 .search-mode-select { flex-shrink: 0; }
+.search-bar-row2 .match-counter      { flex: 1; min-width: 0; }
 
 /* Select-mode counter (e.g. "3 selected") reuses .match-counter typography */
 .match-counter--select { color: var(--accent); }
@@ -3349,9 +3356,10 @@ kbd {
 .entry-ref-badge {
   display: inline-flex;
   align-items: center;
+  gap: 3px;
   margin-left: 6px;
-  padding: 1px 6px;
-  background: transparent;
+  padding: 2px 7px;
+  background: rgba(96, 165, 250, 0.14);
   border: 1px solid var(--blue);
   border-radius: 4px;
   color: var(--blue);
@@ -3365,6 +3373,10 @@ kbd {
 .entry-ref-badge:hover {
   background: var(--blue);
   color: var(--surface);
+}
+.entry-ref-badge-arrow {
+  font-size: 11px;
+  font-weight: 600;
 }
 .entry-ref-badge--header {
   margin-left: 8px;
@@ -3576,4 +3588,106 @@ kbd {
 .reference-entry-overlay-action--primary:hover {
   background: var(--accent);
   opacity: 0.9;
+}
+
+/* ============================================================
+   Reference Browse Sheet (mobile only)
+   ============================================================ */
+/* §REFERENCE-BROWSE-SHEET */
+.reference-browse-sheet {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  z-index: 18;  /* below peek overlay (20), above entry detail panel (10) */
+}
+.reference-browse-sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 48px;
+}
+.reference-browse-sheet-back {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.reference-browse-sheet-back:hover { opacity: 0.8; }
+.reference-browse-sheet-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.reference-browse-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reference-browse-sheet-empty {
+  text-align: center;
+  color: var(--muted2);
+  padding: 24px 12px;
+  font-size: 13px;
+}
+.reference-browse-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+.reference-browse-sheet-row:hover {
+  border-color: var(--focus-border);
+}
+.reference-browse-sheet-row-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.reference-browse-sheet-row-meta {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+/* Browse button inside the REFERENCE row of BuildPanel */
+.lorebook-browse-btn {
+  flex-shrink: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lorebook-browse-btn:hover {
+  border-color: var(--focus-border);
 }

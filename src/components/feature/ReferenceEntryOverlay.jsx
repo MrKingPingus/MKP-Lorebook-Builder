@@ -3,12 +3,21 @@
 // open). One-deep: opening another peek replaces this one. Two footer
 // actions — Copy to active (pulls the entry in) and Visit this entry
 // (swaps roles and opens the entry's detail panel).
+import { useEffect }      from 'react';
 import { usePeekOverlay } from '../../hooks/use-peek-overlay.js';
 import { TypeColorDot }   from '../ui/TypeColorDot.jsx';
 import { ENTRY_TYPES }    from '../../constants/entry-types.js';
 
 export function ReferenceEntryOverlay() {
   const { peekEntry, closePeek, copyToActive, visitEntry } = usePeekOverlay();
+
+  // Drop focus from whatever opened the overlay (chip-input, search input,
+  // entry-name field) — otherwise iOS keeps the keyboard up over a read-only view.
+  useEffect(() => {
+    if (peekEntry && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [peekEntry?.id]);
 
   if (!peekEntry) return null;
 

@@ -10,6 +10,7 @@ import { useRef, useState }     from 'react';
 import { useEntries }           from '../../hooks/use-entries.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
+import { useUi }                from '../../hooks/use-ui.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
@@ -23,6 +24,7 @@ export function BuildPanel() {
   const { activeLorebook, renameLorebook }       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
   const { referenceLorebook, crosstalkEnabled, setReferenceLorebookId } = useReferenceLorebook();
+  const setReferenceBrowseOpen = useUi((s) => s.setReferenceBrowseOpen);
 
   const switchBtnRef                       = useRef(null);
   const [switchOpen, setSwitchOpen]        = useState(false);
@@ -115,22 +117,38 @@ export function BuildPanel() {
             <div className="build-lorebook-reference">
               <div className="field-label">REFERENCE</div>
               <div className="build-lorebook-name-row">
-                <div
+                <button
+                  ref={refSwitchBtnRef}
                   className={`build-lorebook-reference-value${
                     referenceLorebook ? '' : ' build-lorebook-reference-value--empty'
                   }`}
+                  onClick={toggleRefSwitch}
+                  title="Change reference lorebook"
+                  aria-label="Change reference lorebook"
+                  type="button"
                 >
                   {referenceLorebook?.name || '— Pick a reference —'}
-                </div>
+                </button>
                 <button
-                  ref={refSwitchBtnRef}
                   className="lorebook-switch-btn"
                   onClick={toggleRefSwitch}
                   title="Change reference lorebook"
                   aria-label="Change reference lorebook"
+                  type="button"
                 >
                   ▼
                 </button>
+                {referenceLorebook && (
+                  <button
+                    className="lorebook-browse-btn"
+                    onClick={() => setReferenceBrowseOpen(true)}
+                    title="Browse reference entries"
+                    aria-label="Browse reference entries"
+                    type="button"
+                  >
+                    Browse
+                  </button>
+                )}
                 {refSwitchOpen && (
                   <LorebookSwitchPopover
                     anchorRect={refSwitchAnchor}

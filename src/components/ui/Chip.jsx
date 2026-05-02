@@ -1,5 +1,5 @@
 // Single trigger keyword chip with inline editing, × delete, and optional conflict ring + popover
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal }     from 'react-dom';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useHtmlEscape }    from '../../hooks/use-html-escape.js';
@@ -60,6 +60,20 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   function keepPopover()  {
     clearTimeout(hoverTimer.current);
   }
+
+  // Mobile: hover events fire on the first tap but mouseleave never fires, so
+  // the popover gets stuck open. Dismiss when the user taps anywhere outside
+  // both the chip and the popover.
+  useEffect(() => {
+    if (!popoverOpen || !isMobile) return;
+    function onPointer(e) {
+      if (chipRef.current?.contains(e.target))    return;
+      if (popoverRef.current?.contains(e.target)) return;
+      setPopoverOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointer);
+    return () => document.removeEventListener('pointerdown', onPointer);
+  }, [popoverOpen, isMobile]);
 
   function navigateToEntry(entry) {
     setPopoverOpen(false);

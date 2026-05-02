@@ -166,7 +166,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 onClick={(e) => { e.stopPropagation(); setPeekReferenceEntryId(sameNameRefId); }}
                 title="Same-named entry exists in the reference book — tap to peek"
               >
-                ref
+                ref <span className="entry-ref-badge-arrow">↗</span>
               </button>
             )}
           </span>
@@ -354,6 +354,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             </div>
 
             <TriggerChips
+              entryId={entry.id}
               triggers={entry.triggers}
               delimiter={triggerDelimiter}
               searchQuery={searchQuery}

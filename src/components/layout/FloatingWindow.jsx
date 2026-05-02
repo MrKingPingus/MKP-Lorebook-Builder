@@ -14,6 +14,7 @@ import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
 import { EntryDetailPanel }       from '../feature/EntryDetailPanel.jsx';
 import { ReferenceEntryOverlay }  from '../feature/ReferenceEntryOverlay.jsx';
+import { ReferenceBrowseSheet }   from '../feature/ReferenceBrowseSheet.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
 
 export function FloatingWindow() {
@@ -81,9 +82,16 @@ export function FloatingWindow() {
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}
 
+          {/* Mobile read-only browse sheet for the paired reference book —
+              opens from the REFERENCE row in BuildPanel. Sits below the peek
+              overlay so tapping a row opens the peek without dismissing the
+              sheet behind it. */}
+          {isMobile && <ReferenceBrowseSheet />}
+
           {/* Mobile reference-entry peek — overlays everything (including the
-              entry detail panel) when a reference entry is tapped from a chip
-              conflict popover, search hit, name badge, or crosstalk row. */}
+              entry detail panel and the browse sheet) when a reference entry
+              is tapped from a chip popover, search hit, name badge, crosstalk
+              row, or browse sheet. */}
           {isMobile && <ReferenceEntryOverlay />}
 
           {/* Lorebook name prompt — appears after new lorebook creation */}
