@@ -685,7 +685,6 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   min-width: 180px;
-  z-index: 30;
   display: flex;
   flex-direction: column;
 }

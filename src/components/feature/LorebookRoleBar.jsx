@@ -33,7 +33,6 @@ export function LorebookRoleBar() {
   const renameInputRef = useRef(null);
 
   function openRename() {
-    console.log('[LorebookRoleBar] openRename fired');
     setRenameDraft(activeLorebook?.name ?? '');
     setRenameOpen(true);
     setTimeout(() => renameInputRef.current?.focus(), 0);
@@ -56,7 +55,6 @@ export function LorebookRoleBar() {
   const refMenuBtnRef = useRef(null);
 
   function openRefMenu() {
-    console.log('[LorebookRoleBar] openRefMenu fired');
     setRefMenuAnchor(refMenuBtnRef.current?.getBoundingClientRect() ?? null);
     setRefMenuOpen(true);
   }
