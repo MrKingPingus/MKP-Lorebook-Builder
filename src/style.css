@@ -576,36 +576,44 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   gap: 4px;
   padding: 6px 8px;
   background: transparent;
-  border: none;
-  border-radius: 0;
   color: var(--muted2);
-  font-family: inherit;
-  cursor: pointer;
   transition: background var(--transition), color var(--transition);
   min-width: 0;
 }
 .role-swap-segment:not(:last-child) {
   border-right: 1px solid var(--border);
 }
-.role-swap-segment:hover:not([aria-pressed="true"]) {
-  background: var(--surface3);
-  color: var(--text);
-}
-.role-swap-segment[aria-pressed="true"] {
-  background: var(--blue);
-  color: var(--surface);
-  cursor: default;
-}
 .role-swap-segment--active {
   background: var(--blue);
   color: var(--surface);
-  cursor: default;
 }
 .role-swap-segment--active .role-swap-segment-role,
-.role-swap-segment--active .role-swap-segment-name,
-.role-swap-segment[aria-pressed="true"] .role-swap-segment-role,
-.role-swap-segment[aria-pressed="true"] .role-swap-segment-name {
+.role-swap-segment--active .role-swap-segment-name {
   color: var(--surface);
+}
+/* The tap-to-swap button on the inactive segment fills the segment so any
+   tap (outside the action icon) triggers the swap. */
+.role-swap-segment-tap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.role-swap-segment-tap:hover {
+  color: var(--text);
+}
+.role-swap-segment-tap .role-swap-segment-role,
+.role-swap-segment-tap .role-swap-segment-name {
+  color: inherit;
 }
 .role-swap-segment-content {
   display: flex;
@@ -656,6 +664,15 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   padding: 2px 6px;
   width: 100%;
   min-width: 0;
+}
+
+/* Transparent backdrop for portal popovers — catches outside taps so the
+   popover can close reliably without racing a document.click listener. */
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 29;
 }
 
 /* Reference menu popover (Change / Browse / Unpair) */

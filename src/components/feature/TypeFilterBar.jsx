@@ -42,24 +42,19 @@ export function TypeFilterBar({ entries }) {
   }
 
   // === Mobile: collapsed Filter ▾ button + popover ===
-  const [open, setOpen]         = useState(false);
-  const [anchor, setAnchor]     = useState(null);
-  const btnRef    = useRef(null);
-  const popoverRef = useRef(null);
+  const [open, setOpen]     = useState(false);
+  const [anchor, setAnchor] = useState(null);
+  const btnRef = useRef(null);
 
+  // Close on Escape
   useEffect(() => {
     if (!open) return;
-    function onDoc(e) {
-      if (popoverRef.current?.contains(e.target)) return;
-      if (btnRef.current?.contains(e.target))     return;
-      setOpen(false);
-    }
-    const id = setTimeout(() => document.addEventListener('click', onDoc), 0);
-    return () => { clearTimeout(id); document.removeEventListener('click', onDoc); };
+    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  function toggleOpen() {
-    if (open) { setOpen(false); return; }
+  function openPopover() {
     setAnchor(btnRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
   }
@@ -75,7 +70,7 @@ export function TypeFilterBar({ entries }) {
         <button
           ref={btnRef}
           className={`type-filter-button${isActive ? ' type-filter-button--active' : ''}`}
-          onClick={toggleOpen}
+          onClick={openPopover}
           type="button"
           aria-haspopup="true"
           aria-expanded={open}
@@ -83,52 +78,54 @@ export function TypeFilterBar({ entries }) {
           {summary} <span className="type-filter-button-chevron">▾</span>
         </button>
         {open && createPortal(
-          <div
-            ref={popoverRef}
-            className="type-filter-popover"
-            style={{
-              position: 'fixed',
-              top:  (anchor?.bottom ?? 0) + 6,
-              left: Math.max(8, Math.min((anchor?.left ?? 0), window.innerWidth - 240)),
-            }}
-          >
-            <div className="type-filter-popover-section">
-              <button
-                className={`type-filter-popover-row${filterCount === 0 ? ' type-filter-popover-row--active' : ''}`}
-                onClick={() => { clearFilter(); }}
-                type="button"
-              >
-                <span className="type-filter-popover-check">{filterCount === 0 ? '✓' : ''}</span>
-                <span className="type-filter-popover-label">All types</span>
-              </button>
-              {ENTRY_TYPES.map((t) => {
-                const active = typeFilter.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    className={`type-filter-popover-row${active ? ' type-filter-popover-row--active' : ''}`}
-                    onClick={() => toggleTypeFilter(t.id)}
-                    type="button"
-                  >
-                    <span className="type-filter-popover-check">{active ? '✓' : ''}</span>
-                    <span className="type-filter-popover-swatch" style={{ background: t.color }} />
-                    <span className="type-filter-popover-label">{t.label}</span>
-                  </button>
-                );
-              })}
+          <>
+            <div className="popover-backdrop" onClick={() => setOpen(false)} />
+            <div
+              className="type-filter-popover"
+              style={{
+                position: 'fixed',
+                top:  (anchor?.bottom ?? 0) + 6,
+                left: Math.max(8, Math.min((anchor?.left ?? 0), window.innerWidth - 240)),
+              }}
+            >
+              <div className="type-filter-popover-section">
+                <button
+                  className={`type-filter-popover-row${filterCount === 0 ? ' type-filter-popover-row--active' : ''}`}
+                  onClick={clearFilter}
+                  type="button"
+                >
+                  <span className="type-filter-popover-check">{filterCount === 0 ? '✓' : ''}</span>
+                  <span className="type-filter-popover-label">All types</span>
+                </button>
+                {ENTRY_TYPES.map((t) => {
+                  const active = typeFilter.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      className={`type-filter-popover-row${active ? ' type-filter-popover-row--active' : ''}`}
+                      onClick={() => toggleTypeFilter(t.id)}
+                      type="button"
+                    >
+                      <span className="type-filter-popover-check">{active ? '✓' : ''}</span>
+                      <span className="type-filter-popover-swatch" style={{ background: t.color }} />
+                      <span className="type-filter-popover-label">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="type-filter-popover-divider" />
+              <div className="type-filter-popover-section">
+                <button
+                  className={`type-filter-popover-row${groupByType ? ' type-filter-popover-row--active' : ''}`}
+                  onClick={() => setGroupByType(!groupByType)}
+                  type="button"
+                >
+                  <span className="type-filter-popover-check">{groupByType ? '✓' : ''}</span>
+                  <span className="type-filter-popover-label">Group by type</span>
+                </button>
+              </div>
             </div>
-            <div className="type-filter-popover-divider" />
-            <div className="type-filter-popover-section">
-              <button
-                className={`type-filter-popover-row${groupByType ? ' type-filter-popover-row--active' : ''}`}
-                onClick={() => setGroupByType(!groupByType)}
-                type="button"
-              >
-                <span className="type-filter-popover-check">{groupByType ? '✓' : ''}</span>
-                <span className="type-filter-popover-label">Group by type</span>
-              </button>
-            </div>
-          </div>,
+          </>,
           document.body,
         )}
       </div>
