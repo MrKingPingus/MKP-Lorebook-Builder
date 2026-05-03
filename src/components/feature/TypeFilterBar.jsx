@@ -55,6 +55,7 @@ export function TypeFilterBar({ entries }) {
   }, [open]);
 
   function openPopover() {
+    console.log('[TypeFilterBar] openPopover fired');
     setAnchor(btnRef.current?.getBoundingClientRect() ?? null);
     setOpen(true);
   }

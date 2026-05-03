@@ -672,11 +672,14 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   position: fixed;
   inset: 0;
   background: transparent;
-  z-index: 29;
+  z-index: 999;
+  pointer-events: auto;
 }
 
 /* Reference menu popover (Change / Browse / Unpair) */
 .role-swap-ref-menu {
+  position: fixed;
+  z-index: 1000;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1272,12 +1275,13 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   opacity: 0.8;
 }
 .type-filter-popover {
+  position: fixed;
+  z-index: 1000;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   min-width: 200px;
-  z-index: 30;
   display: flex;
   flex-direction: column;
 }
