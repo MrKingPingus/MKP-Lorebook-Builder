@@ -3767,6 +3767,20 @@ kbd {
   font-size: 11px;
   font-weight: 600;
 }
+/* Pick-from-Reference pose variant: books are swapped, so a name match
+   against the now-reference (originally active) book means this entry
+   would duplicate on copy. Rendered as a non-tappable indicator in green
+   to read as "already there" rather than "go look at it". */
+.entry-ref-badge--in-active {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+  cursor: default;
+}
+.entry-ref-badge--in-active:hover {
+  background: rgba(52, 211, 153, 0.18);
+  color: var(--green);
+}
 .entry-ref-badge--header {
   margin-left: 8px;
   font-size: 11px;

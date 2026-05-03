@@ -28,6 +28,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const nameMatchMap = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const expandAll              = useUi((s) => s.expandAll);
@@ -161,13 +162,25 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <span className="entry-card-mobile-name">
             {entry.name || '(unnamed)'}
             {sameNameRefId && (
-              <button
-                className="entry-ref-badge"
-                onClick={(e) => { e.stopPropagation(); setPeekReferenceEntryId(sameNameRefId); }}
-                title="Same-named entry exists in the reference book — tap to peek"
-              >
-                ref <span className="entry-ref-badge-arrow">↗</span>
-              </button>
+              pickFromReferenceMode ? (
+                // During Pick from Reference pose, books are swapped — a name
+                // match means this reference-side entry is also in the user's
+                // original active book, i.e. copying it would duplicate.
+                <span
+                  className="entry-ref-badge entry-ref-badge--in-active"
+                  title="Same-named entry already exists in your active book — copying would duplicate"
+                >
+                  in active
+                </span>
+              ) : (
+                <button
+                  className="entry-ref-badge"
+                  onClick={(e) => { e.stopPropagation(); setPeekReferenceEntryId(sameNameRefId); }}
+                  title="Same-named entry exists in the reference book — tap to peek"
+                >
+                  ref <span className="entry-ref-badge-arrow">↗</span>
+                </button>
+              )
             )}
           </span>
           <div className="entry-card-mobile-right">

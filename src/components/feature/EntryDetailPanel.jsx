@@ -27,6 +27,7 @@ export function EntryDetailPanel() {
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const nameMatchMap = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
   const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();
   const { copyEntryToReference }                = useCopyEntryToReference();
   const nameInputRef = useRef(null);
@@ -91,13 +92,22 @@ export function EntryDetailPanel() {
         <span className="entry-detail-title">
           {entry?.name || '(unnamed)'}
           {entry && nameMatchMap.has(entry.id) && (
-            <button
-              className="entry-ref-badge entry-ref-badge--header"
-              onClick={() => setPeekReferenceEntryId(nameMatchMap.get(entry.id))}
-              title="Same-named entry exists in the reference book — tap to peek"
-            >
-              in reference <span className="entry-ref-badge-arrow">↗</span>
-            </button>
+            pickFromReferenceMode ? (
+              <span
+                className="entry-ref-badge entry-ref-badge--header entry-ref-badge--in-active"
+                title="Same-named entry already exists in your active book — copying would duplicate"
+              >
+                in active
+              </span>
+            ) : (
+              <button
+                className="entry-ref-badge entry-ref-badge--header"
+                onClick={() => setPeekReferenceEntryId(nameMatchMap.get(entry.id))}
+                title="Same-named entry exists in the reference book — tap to peek"
+              >
+                in reference <span className="entry-ref-badge-arrow">↗</span>
+              </button>
+            )
           )}
         </span>
         <button className="entry-detail-remove" onClick={handleRemove}>
