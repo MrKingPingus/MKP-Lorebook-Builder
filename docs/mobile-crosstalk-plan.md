@@ -199,7 +199,24 @@ them rather than all up front.
   - `EntryDetailPanel.jsx` footer — added "↗ Copy to Reference" button beside Hide-from-Export, visible only when `crosstalkEnabled && referenceLorebook`. Briefly flashes green "✓ Copied" on success.
   - `BuildPanel.jsx` — added segmented `ACTIVE | REFERENCE` control just above the EntryList, mobile + crosstalk-paired only. Active segment is the disabled left button; tapping the inactive segment calls `swapReference()`. Each segment shows the role label plus the lorebook name so users can see what they're swapping into.
   - CSS — `.copy-to-reference-btn`, `.copy-to-reference-btn--flash`, `.role-swap-segmented`, `.role-swap-segment*`
-- **Phase 5 — Pick from Reference pose** ⏳
+- **Phase 5 — Pick from Reference pose** ✅
+  - Added `pickFromReferenceMode` field + setter to `ui-store.js`
+  - New `use-pick-from-reference.js` hook bundles the choreography:
+    `enterPickFromReference()` swaps roles + ensures Select mode + sets
+    the flag; `exitPickFromReference(commit)` optionally calls
+    `copyToOtherPanel()`, swaps back, clears selection, exits Select
+    mode, clears the flag
+  - `BulkActionBar.jsx` — added "Copy From Reference" entry-point button
+    (mobile + crosstalk-paired + outside pose), "Copy & Done" commit
+    button (mobile + inside pose), and rebadged "× Exit" → "× Cancel"
+    while in pose. The existing cross-pane copy button is now hidden on
+    mobile (push remains deferred — desktop unchanged)
+  - `BuildPanel.jsx` — hides `LorebookRoleBar` during pose and renders a
+    "Picking from {name} — Cancel" banner in its place
+  - `ReferenceEntryOverlay.jsx` — returns null during pose so the peek
+    overlay doesn't fire while the user is browsing reference directly
+  - CSS — `.pick-from-reference-banner*`, `.bulk-action-apply--pick-entry`,
+    `.bulk-action-apply--commit`
 
 ---
 

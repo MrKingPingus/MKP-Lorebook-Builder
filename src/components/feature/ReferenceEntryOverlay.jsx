@@ -5,11 +5,13 @@
 // (swaps roles and opens the entry's detail panel).
 import { useEffect }      from 'react';
 import { usePeekOverlay } from '../../hooks/use-peek-overlay.js';
+import { useUi }          from '../../hooks/use-ui.js';
 import { TypeColorDot }   from '../ui/TypeColorDot.jsx';
 import { ENTRY_TYPES }    from '../../constants/entry-types.js';
 
 export function ReferenceEntryOverlay() {
   const { peekEntry, closePeek, copyToActive, visitEntry } = usePeekOverlay();
+  const pickFromReferenceMode = useUi((s) => s.pickFromReferenceMode);
 
   // Drop focus from whatever opened the overlay (chip-input, search input,
   // entry-name field) — otherwise iOS keeps the keyboard up over a read-only view.
@@ -19,6 +21,9 @@ export function ReferenceEntryOverlay() {
     }
   }, [peekEntry?.id]);
 
+  // During Pick from Reference pose, the user is already browsing the
+  // reference book directly — peek would be redundant and disorienting.
+  if (pickFromReferenceMode) return null;
   if (!peekEntry) return null;
 
   const typeDef   = ENTRY_TYPES.find((t) => t.id === peekEntry.type);

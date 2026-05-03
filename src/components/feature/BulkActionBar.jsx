@@ -1,9 +1,11 @@
 // Row of bulk actions shown while searchMode === 'select' — exit, select-all-visible, change-type chips row
 import { useRef, useEffect, useState } from 'react';
-import { useSelection }         from '../../hooks/use-selection.js';
-import { useBulkActions }       from '../../hooks/use-bulk-actions.js';
-import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
-import { ENTRY_TYPES }          from '../../constants/entry-types.js';
+import { useSelection }            from '../../hooks/use-selection.js';
+import { useBulkActions }          from '../../hooks/use-bulk-actions.js';
+import { useReferenceLorebook }    from '../../hooks/use-reference-lorebook.js';
+import { useMobile }               from '../../hooks/use-mobile.js';
+import { usePickFromReference }    from '../../hooks/use-pick-from-reference.js';
+import { ENTRY_TYPES }             from '../../constants/entry-types.js';
 
 export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   const {
@@ -14,8 +16,10 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     selectAllVisible,
     exitSelectMode,
   } = useSelection();
-  const { applyTypeChange, copyToOtherPanel } = useBulkActions();
+  const { applyTypeChange, copyToOtherPanel }   = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
+  const isMobile = useMobile();
+  const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
   const [chipsOpen, setChipsOpen] = useState(false);
   const barRef = useRef(null);
@@ -34,7 +38,22 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
 
   function onExit() {
     setChipsOpen(false);
-    exitSelectMode();
+    if (pickFromReferenceMode) {
+      // In pose, "× Exit" reads as Cancel — swap back, abandon picks.
+      exitPickFromReference(false);
+    } else {
+      exitSelectMode();
+    }
+  }
+
+  function onEnterPick() {
+    setChipsOpen(false);
+    enterPickFromReference();
+  }
+
+  function onCommitPick() {
+    setChipsOpen(false);
+    exitPickFromReference(true);
   }
 
   function onSelectAllVisible() {
@@ -56,9 +75,11 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     setChipsOpen(false);
   }
 
-  // Copy button only appears in crosstalk with both books available. Label
-  // tracks the source side so the destination is always the *other* panel.
-  const showCopyBtn = crosstalkEnabled && !!referenceLorebook;
+  // Existing cross-pane copy button. Desktop: shows when crosstalk paired.
+  // Mobile: hidden outside pose since the reference book isn't visible to
+  // select from there (push is deferred — see Phase 5 plan); inside pose
+  // the dedicated "Copy & Done" commit replaces it.
+  const showCopyBtn = crosstalkEnabled && !!referenceLorebook && !isMobile;
   const copyLabel = selectionSide === 'reference'
     ? 'Copy to Active'
     : selectionSide === 'active'
@@ -67,10 +88,19 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   const copyDisabled = !hasSelection || !selectionSide;
   const selectAllDisabled = (selectionSide === 'reference' ? referenceVisibleIds : visibleIds).length === 0;
 
+  // Pick-from-Reference entry point — mobile + crosstalk paired + outside pose.
+  const showPickEntry = isMobile && crosstalkEnabled && !!referenceLorebook && !pickFromReferenceMode;
+  // Commit button — mobile + inside pose.
+  const showCommit    = isMobile && pickFromReferenceMode;
+
   return (
     <div className="bulk-action-bar" ref={barRef}>
-      <button className="bulk-action-btn bulk-action-btn--exit" onClick={onExit} title="Exit select mode">
-        × Exit
+      <button
+        className="bulk-action-btn bulk-action-btn--exit"
+        onClick={onExit}
+        title={pickFromReferenceMode ? 'Cancel pick — discard selections and swap back' : 'Exit select mode'}
+      >
+        × {pickFromReferenceMode ? 'Cancel' : 'Exit'}
       </button>
       <button
         className="bulk-action-btn"
@@ -108,6 +138,29 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
             : 'Select entries first'}
         >
           {copyLabel}
+        </button>
+      )}
+
+      {showPickEntry && (
+        <button
+          className="bulk-action-apply bulk-action-apply--pick-entry"
+          onClick={onEnterPick}
+          title={`Browse ${referenceLorebook?.name || 'the reference lorebook'} to multi-select entries to copy here`}
+          type="button"
+        >
+          Copy From Reference
+        </button>
+      )}
+
+      {showCommit && (
+        <button
+          className="bulk-action-apply bulk-action-apply--commit"
+          onClick={onCommitPick}
+          disabled={!hasSelection}
+          title={hasSelection ? `Copy ${selectedCount} entr${selectedCount === 1 ? 'y' : 'ies'} into the original active lorebook and exit pose` : 'Select entries first'}
+          type="button"
+        >
+          Copy &amp; Done
         </button>
       )}
 

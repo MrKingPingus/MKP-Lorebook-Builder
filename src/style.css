@@ -666,6 +666,49 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   min-width: 0;
 }
 
+/* Pick from Reference banner — replaces the role-swap segmented bar while
+   in pose. Reminds the user the books are temporarily swapped and gives a
+   one-tap Cancel path. The matching Cancel/Commit also live in
+   BulkActionBar; this banner is purely informational + convenience. */
+.pick-from-reference-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  background: rgba(96, 165, 250, 0.18);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  color: var(--blue);
+  font-size: 13px;
+}
+.pick-from-reference-banner-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pick-from-reference-banner-text strong {
+  font-weight: 700;
+}
+.pick-from-reference-banner-cancel {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pick-from-reference-banner-cancel:hover {
+  background: var(--blue);
+  color: var(--surface);
+}
+
 /* Transparent backdrop for portal popovers — catches outside taps so the
    popover can close reliably without racing a document.click listener. */
 .popover-backdrop {
@@ -1163,6 +1206,29 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 }
 .bulk-action-apply:hover:not(:disabled) { background: #dc2626; }
 .bulk-action-apply:disabled { opacity: 0.4; cursor: default; }
+
+/* Pick from Reference entry-point — outside pose, on mobile only. Visually
+   distinct from the destructive "Change Type…" / Copy buttons so it reads
+   as a navigational pose-enter rather than a destructive bulk action. */
+.bulk-action-apply--pick-entry {
+  background: var(--surface3);
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+.bulk-action-apply--pick-entry:hover:not(:disabled) {
+  background: var(--blue);
+  color: var(--surface);
+}
+
+/* Pick from Reference commit — green so it reads as "complete the pose".
+   Replaces the entry-point button while in pose. */
+.bulk-action-apply--commit {
+  background: var(--green);
+  color: var(--surface);
+}
+.bulk-action-apply--commit:hover:not(:disabled) {
+  background: #1ea876;
+}
 
 /* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
 .bulk-action-chips {
