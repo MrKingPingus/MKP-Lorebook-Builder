@@ -1,5 +1,5 @@
 // Single trigger keyword chip with inline editing, × delete, and optional conflict ring + popover
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal }     from 'react-dom';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useHtmlEscape }    from '../../hooks/use-html-escape.js';
@@ -18,8 +18,9 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   const chipRef     = useRef(null);
   const hoverTimer  = useRef(null);
   const isMobile    = useMobile();
-  const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
-  const { swapReference }  = useReferenceLorebook();
+  const setSearchFocusedId      = useUi((s) => s.setSearchFocusedId);
+  const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const { swapReference }       = useReferenceLorebook();
 
   function startEdit() {
     setDraft(label);
@@ -60,13 +61,35 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
     clearTimeout(hoverTimer.current);
   }
 
+  // Mobile: hover events fire on the first tap but mouseleave never fires, so
+  // the popover gets stuck open. Dismiss when the user taps anywhere outside
+  // both the chip and the popover.
+  useEffect(() => {
+    if (!popoverOpen || !isMobile) return;
+    function onPointer(e) {
+      if (chipRef.current?.contains(e.target))    return;
+      if (popoverRef.current?.contains(e.target)) return;
+      setPopoverOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointer);
+    return () => document.removeEventListener('pointerdown', onPointer);
+  }, [popoverOpen, isMobile]);
+
   function navigateToEntry(entry) {
-    // Cross-book conflict: target entry lives in the reference book. Swap so
-    // it becomes active before scrolling — only the active panel renders
-    // entry DOM ids (`#entry-<id>`), so navigation only resolves on that side.
+    setPopoverOpen(false);
+    // Mobile cross-book: open the peek overlay instead of swapping. Keeps the
+    // user anchored in the active book — they can copy or explicitly visit
+    // from inside the overlay.
+    if (isMobile && entry.isOtherBook) {
+      setPeekReferenceEntryId(entry.id);
+      return;
+    }
+    // Cross-book conflict on desktop: target entry lives in the reference
+    // book. Swap so it becomes active before scrolling — only the active
+    // panel renders entry DOM ids (`#entry-<id>`), so navigation only
+    // resolves on that side.
     if (entry.isOtherBook) swapReference();
     setSearchFocusedId(entry.id);
-    setPopoverOpen(false);
     // Defer scroll until after React re-renders the card into its expanded state
     requestAnimationFrame(() => {
       document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

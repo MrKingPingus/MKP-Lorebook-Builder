@@ -2,21 +2,28 @@
 // renders up top so the active side mirrors ReferencePanel's chrome; in solo
 // mode the pane header is suppressed — switch+rename live in WindowHeader
 // instead. SearchBar / TypeFilterBar / sort are hoisted to GlobalFilterBar.
+// On mobile, the LorebookRoleBar consolidates name + reference + role-swap
+// into a single segmented bar (or a single solo row when crosstalk is off).
+// During the Pick from Reference pose the role bar is hidden and a banner
+// reminds the user they're in a transient mode and how to exit.
 import { useEntries }           from '../../hooks/use-entries.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { usePickFromReference } from '../../hooks/use-pick-from-reference.js';
 import { EntryList }            from './EntryList.jsx';
+import { LorebookRoleBar }      from './LorebookRoleBar.jsx';
 
 export function BuildPanel() {
   const { entries }                              = useEntries();
   const { displayEntries, effectiveGroupByType } = useDisplayEntries(entries);
   const isMobile                                 = useMobile();
-  const { activeLorebook, renameLorebook }       = useLorebook();
+  const { activeLorebook }                       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
   const { referenceLorebook, crosstalkEnabled }  = useReferenceLorebook();
+  const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
 
   // Mirror ReferencePanel: picker options exclude the opposite side so a
   // lorebook can't occupy both slots at once.
@@ -28,7 +35,7 @@ export function BuildPanel() {
 
   return (
     <div className="build-panel">
-      {crosstalkEnabled && (
+      {crosstalkEnabled && !isMobile && (
         <div className="pane-header">
           <div className="field-label pane-header-label">ACTIVE</div>
           <select
@@ -46,19 +53,23 @@ export function BuildPanel() {
         </div>
       )}
 
-      {/* Lorebook name field — mobile only; desktop shows it in the window header */}
-      {isMobile && (
-        <div className="build-lorebook-name">
-          <div className="field-label">LOREBOOK NAME</div>
-          <input
-            className="build-lorebook-name-input"
-            value={activeLorebook?.name ?? ''}
-            onChange={(e) => renameLorebook(e.target.value)}
-            placeholder="Lorebook name…"
-            spellCheck={false}
-          />
+      {isMobile && !pickFromReferenceMode && <LorebookRoleBar />}
+
+      {isMobile && pickFromReferenceMode && (
+        <div className="pick-from-reference-banner">
+          <span className="pick-from-reference-banner-text">
+            Picking from <strong>{activeLorebook?.name || '(unnamed)'}</strong>
+          </span>
+          <button
+            className="pick-from-reference-banner-cancel"
+            onClick={() => exitPickFromReference(false)}
+            type="button"
+          >
+            Cancel
+          </button>
         </div>
       )}
+
       <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />
     </div>
   );

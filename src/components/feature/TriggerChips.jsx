@@ -9,7 +9,7 @@ function escapeDelim(d) {
   return d.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
 
-export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap, ignoreLimitWarning = false, onToggleLimitWarning }) {
+export function TriggerChips({ entryId = null, triggers, onUpdate, delimiter = ',', searchQuery = '', conflictMap = null, allowedOverlaps = [], onAllowOverlap, onRevokeOverlap, ignoreLimitWarning = false, onToggleLimitWarning }) {
   const inputRef  = useRef(null);
   const [flashDupe, setFlashDupe] = useState(false);
   const dupeTimer = useRef(null);
@@ -86,7 +86,9 @@ export function TriggerChips({ triggers, onUpdate, delimiter = ',', searchQuery 
     <div className="trigger-chips-wrapper">
       <div className="trigger-chips" onClick={() => inputRef.current?.focus()} style={tieredBorderStyle}>
         {triggers.map((t, i) => {
-          const conflictEntries = conflictMap?.get(t.toLowerCase()) ?? [];
+          // Exclude the parent entry's own id — a trigger can't conflict with itself.
+          const rawConflicts    = conflictMap?.get(t.toLowerCase()) ?? [];
+          const conflictEntries = entryId ? rawConflicts.filter((c) => c.id !== entryId) : rawConflicts;
           const isConflict      = conflictEntries.length > 0;
           const isAcknowledged  = allowedOverlaps.includes(t.toLowerCase());
           const ringColor = isConflict

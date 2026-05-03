@@ -94,6 +94,24 @@ input:focus, textarea:focus, select:focus {
   background: var(--surface3);
 }
 
+/* iOS Safari auto-zooms when a form field with font-size < 16px is focused.
+   Force a 16px minimum on every form element on mobile so focusing any
+   input/select/textarea no longer triggers the zoom. !important is needed
+   because each form element's own class typically sets a smaller font. */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Disable the iOS double-tap-zoom delay on tappable surfaces. Pinch-to-zoom
+   still works; this only kills the gesture that fires when two taps land
+   close in time (e.g. tap chip → tap row in popover). */
+button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
+.entry-card, .reference-entry-card, .chip-conflict-entry {
+  touch-action: manipulation;
+}
+
 /* §APP-ROOT */
 /* --- App root --- */
 .app-root {
@@ -486,8 +504,15 @@ input:focus, textarea:focus, select:focus {
   padding: 12px 12px 8px;
   border-bottom: 1px solid var(--border);
 }
+.build-lorebook-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
 .build-lorebook-name-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -501,6 +526,279 @@ input:focus, textarea:focus, select:focus {
 .build-lorebook-name-input:focus {
   outline: none;
   border-color: var(--focus-border);
+}
+.build-lorebook-reference {
+  margin-top: 8px;
+}
+.build-lorebook-reference-value {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.build-lorebook-reference-value:hover {
+  border-color: var(--focus-border);
+}
+.build-lorebook-reference-value--empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Consolidated lorebook role bar (mobile). In crosstalk mode renders as
+   two segments — ACTIVE | REFERENCE — with inline rename on active and a
+   ⋯ menu on reference (Change / Browse / Unpair). Outside crosstalk uses
+   the .lorebook-bar-solo variant below. */
+.role-swap-segmented {
+  display: flex;
+  margin: 8px 12px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface2);
+}
+.role-swap-segment {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--muted2);
+  transition: background var(--transition), color var(--transition);
+  min-width: 0;
+}
+.role-swap-segment:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+.role-swap-segment--active {
+  background: var(--blue);
+  color: var(--surface);
+}
+.role-swap-segment--active .role-swap-segment-role,
+.role-swap-segment--active .role-swap-segment-name {
+  color: var(--surface);
+}
+/* The tap-to-swap button on the inactive segment fills the segment so any
+   tap (outside the action icon) triggers the swap. */
+.role-swap-segment-tap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.role-swap-segment-tap:hover {
+  color: var(--text);
+}
+.role-swap-segment-tap .role-swap-segment-role,
+.role-swap-segment-tap .role-swap-segment-name {
+  color: inherit;
+}
+.role-swap-segment-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.role-swap-segment-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.role-swap-segment-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.role-swap-segment-action {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 4px;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.role-swap-segment-action:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.role-swap-rename-input {
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--focus-border);
+  border-radius: 3px;
+  padding: 2px 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Pick from Reference banner — replaces the role-swap segmented bar while
+   in pose. Reminds the user the books are temporarily swapped and gives a
+   one-tap Cancel path. The matching Cancel/Commit also live in
+   BulkActionBar; this banner is purely informational + convenience. */
+.pick-from-reference-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  background: rgba(96, 165, 250, 0.18);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  color: var(--blue);
+  font-size: 13px;
+}
+.pick-from-reference-banner-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pick-from-reference-banner-text strong {
+  font-weight: 700;
+}
+.pick-from-reference-banner-cancel {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pick-from-reference-banner-cancel:hover {
+  background: var(--blue);
+  color: var(--surface);
+}
+
+/* Transparent backdrop for portal popovers — catches outside taps so the
+   popover can close reliably without racing a document.click listener. */
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 999;
+  pointer-events: auto;
+}
+
+/* Reference menu popover (Change / Browse / Unpair) */
+.role-swap-ref-menu {
+  position: fixed;
+  z-index: 1000;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+.role-swap-ref-menu-item {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.role-swap-ref-menu-item:hover {
+  background: var(--surface3);
+}
+.role-swap-ref-menu-item:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+.role-swap-ref-menu-item--destructive {
+  color: var(--coral);
+}
+
+/* Solo variant — single row when crosstalk is off or no reference paired */
+.lorebook-bar-solo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.lorebook-bar-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lorebook-bar-rename-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--focus-border);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.lorebook-bar-action {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.lorebook-bar-action:hover {
+  background: var(--border);
+  color: var(--text);
 }
 
 /* ============================================================
@@ -561,9 +859,21 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   z-index: 300;
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
   padding: 4px;
+}
+/* Mobile: counter strip at the top of the dropdown so the bar's row 2
+   doesn't have to host it. */
+.search-dropdown-counter {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted2);
+  margin-bottom: 4px;
+}
+.search-dropdown-counter .match-counter {
+  font-size: 11px;
 }
 
 .search-dropdown-item {
@@ -608,6 +918,24 @@ input:focus, textarea:focus, select:focus {
 .search-dropdown-tag--name    { color: var(--accent); border-color: var(--accent); }
 .search-dropdown-tag--trigger { color: var(--green);  border-color: var(--green); }
 .search-dropdown-tag--description { color: var(--muted2); }
+.search-dropdown-tag--ref {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: transparent;
+}
+
+.search-dropdown-section-header {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 6px 10px 2px;
+}
+
+.search-dropdown-item--reference .search-dropdown-name {
+  color: var(--muted2);
+}
 
 .search-mode-select {
   flex-shrink: 0;
@@ -821,6 +1149,7 @@ input:focus, textarea:focus, select:focus {
 .search-bar-row2 .replace-btn-wrap    { flex-shrink: 0; }
 .search-bar-row2 .replace-all-btn    { white-space: nowrap; }
 .search-bar-row2 .search-mode-select { flex-shrink: 0; }
+.search-bar-row2 .match-counter      { flex: 1; min-width: 0; }
 
 /* Select-mode counter (e.g. "3 selected") reuses .match-counter typography */
 .match-counter--select { color: var(--accent); }
@@ -877,6 +1206,29 @@ input:focus, textarea:focus, select:focus {
 }
 .bulk-action-apply:hover:not(:disabled) { background: #dc2626; }
 .bulk-action-apply:disabled { opacity: 0.4; cursor: default; }
+
+/* Pick from Reference entry-point — outside pose, on mobile only. Visually
+   distinct from the destructive "Change Type…" / Copy buttons so it reads
+   as a navigational pose-enter rather than a destructive bulk action. */
+.bulk-action-apply--pick-entry {
+  background: var(--surface3);
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+.bulk-action-apply--pick-entry:hover:not(:disabled) {
+  background: var(--blue);
+  color: var(--surface);
+}
+
+/* Pick from Reference commit — green so it reads as "complete the pose".
+   Replaces the entry-point button while in pose. */
+.bulk-action-apply--commit {
+  background: var(--green);
+  color: var(--surface);
+}
+.bulk-action-apply--commit:hover:not(:disabled) {
+  background: #1ea876;
+}
 
 /* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
 .bulk-action-chips {
@@ -954,6 +1306,93 @@ input:focus, textarea:focus, select:focus {
   border-color: var(--border2);
   color: var(--text);
   border-style: dashed;
+}
+
+/* Mobile collapsed type-filter button + popover (replaces inline pill row) */
+.type-filter-bar--mobile {
+  padding: 6px 12px;
+  gap: 0;
+}
+.type-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.type-filter-button:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+.type-filter-button--active {
+  background: rgba(96, 165, 250, 0.15);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.type-filter-button-chevron {
+  font-size: 10px;
+  opacity: 0.8;
+}
+.type-filter-popover {
+  position: fixed;
+  z-index: 1000;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+.type-filter-popover-section {
+  display: flex;
+  flex-direction: column;
+}
+.type-filter-popover-divider {
+  height: 1px;
+  background: var(--border);
+}
+.type-filter-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.type-filter-popover-row:hover {
+  background: var(--surface3);
+}
+.type-filter-popover-row--active {
+  color: var(--blue);
+  font-weight: 600;
+}
+.type-filter-popover-check {
+  width: 14px;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 13px;
+}
+.type-filter-popover-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.type-filter-popover-label {
+  flex: 1;
 }
 
 .filter-hint {
@@ -2713,6 +3152,23 @@ kbd {
   flex-shrink: 0;
 }
 
+.lorebook-panel-reference-picker {
+  display: block;
+  width: calc(100% - 24px);
+  margin: -2px 12px 8px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.lorebook-panel-reference-picker:focus {
+  outline: none;
+  border-color: var(--focus-border);
+}
+
 /* ============================================================
    Hotbar slot config (Settings panel)
    ============================================================ */
@@ -2785,6 +3241,28 @@ kbd {
   background: var(--yellow);
   color: #000;
   border-color: var(--yellow);
+}
+
+/* Push entry → reference copy button (mobile entry detail footer). Visually
+   subordinate to Rollback and Hide-from-Export — the rare-case path. */
+.copy-to-reference-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--blue);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.copy-to-reference-btn:hover {
+  background: var(--blue);
+  color: var(--surface);
+}
+.copy-to-reference-btn--flash {
+  background: var(--green);
+  color: var(--surface);
+  border-color: var(--green);
 }
 
 .entry-hidden-icon {
@@ -3258,4 +3736,274 @@ kbd {
      swap-on-click; inside the description body we want the standard text
      cursor since the body opts out of swap and exists for selection/copy. */
   cursor: text;
+}
+
+/* ============================================================
+   Reference annotations — name badge
+   ============================================================ */
+/* §REFERENCE-ANNOTATIONS */
+.entry-ref-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 2px 7px;
+  background: rgba(96, 165, 250, 0.14);
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.entry-ref-badge:hover {
+  background: var(--blue);
+  color: var(--surface);
+}
+.entry-ref-badge-arrow {
+  font-size: 11px;
+  font-weight: 600;
+}
+/* Pick-from-Reference pose variant: books are swapped, so a name match
+   against the now-reference (originally active) book means this entry
+   would duplicate on copy. Rendered as a non-tappable indicator in green
+   to read as "already there" rather than "go look at it". */
+.entry-ref-badge--in-active {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+  cursor: default;
+}
+.entry-ref-badge--in-active:hover {
+  background: rgba(52, 211, 153, 0.18);
+  color: var(--green);
+}
+.entry-ref-badge--header {
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+/* ============================================================
+   Reference Entry Peek Overlay (mobile only)
+   ============================================================ */
+/* §REFERENCE-ENTRY-OVERLAY */
+.reference-entry-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  z-index: 20;
+}
+
+.reference-entry-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.reference-entry-overlay-back {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.reference-entry-overlay-back:hover { opacity: 0.8; }
+
+.reference-entry-overlay-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.reference-entry-overlay-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reference-entry-overlay-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reference-entry-overlay-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reference-entry-overlay-triggers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reference-entry-overlay-description {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reference-entry-overlay-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.reference-entry-overlay-action {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.reference-entry-overlay-action:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+}
+.reference-entry-overlay-action--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+.reference-entry-overlay-action--primary:hover {
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+/* ============================================================
+   Reference Browse Sheet (mobile only)
+   ============================================================ */
+/* §REFERENCE-BROWSE-SHEET */
+.reference-browse-sheet {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  z-index: 18;  /* below peek overlay (20), above entry detail panel (10) */
+}
+.reference-browse-sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 48px;
+}
+.reference-browse-sheet-back {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.reference-browse-sheet-back:hover { opacity: 0.8; }
+.reference-browse-sheet-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.reference-browse-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reference-browse-sheet-empty {
+  text-align: center;
+  color: var(--muted2);
+  padding: 24px 12px;
+  font-size: 13px;
+}
+.reference-browse-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+}
+.reference-browse-sheet-row:hover {
+  border-color: var(--focus-border);
+}
+.reference-browse-sheet-row-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.reference-browse-sheet-row-meta {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--muted2);
+}
+
+/* Browse button inside the REFERENCE row of BuildPanel */
+.lorebook-browse-btn {
+  flex-shrink: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lorebook-browse-btn:hover {
+  border-color: var(--focus-border);
 }

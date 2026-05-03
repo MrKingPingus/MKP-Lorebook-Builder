@@ -1,6 +1,7 @@
 // Settings tab content — all user preference controls
 import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
+import { useMobile }         from '../../hooks/use-mobile.js';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, ROLLBACK_SNAPSHOT_WARN, ROLLBACK_MAX_CUSTOM } from '../../constants/limits.js';
 
@@ -49,6 +50,8 @@ export function SettingsPanel() {
     setSnapshotCount,
     setAutoSnapshot,
   } = useRollbackConfig();
+
+  const isMobile = useMobile();
 
   function updateSlot(index, value) {
     const next = [...hotbarSlots];
@@ -158,7 +161,7 @@ export function SettingsPanel() {
       {/* ── Reference panel (crosstalk) ── */}
       <div className="settings-group">
         <label className="settings-label">
-          <span>Show reference panel</span>
+          <span>{isMobile ? 'Pair with reference lorebook' : 'Show reference panel'}</span>
           <input
             type="checkbox"
             checked={crosstalkEnabled}
@@ -166,7 +169,9 @@ export function SettingsPanel() {
           />
         </label>
         <div className="settings-hint">
-          Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Turning this off clears the current reference selection.
+          {isMobile
+            ? 'Pairs a second lorebook as a reference. Shared triggers, same-named entries, and search hits in the paired book surface as inline annotations and overlays on the active book. Pick which book to pair from the Lorebooks tab.'
+            : 'Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Turning this off clears the current reference selection.'}
         </div>
       </div>
 

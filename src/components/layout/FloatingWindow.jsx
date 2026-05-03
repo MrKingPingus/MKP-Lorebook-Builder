@@ -12,7 +12,9 @@ import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
 import { GlobalFilterBar }     from '../feature/GlobalFilterBar.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
-import { EntryDetailPanel }    from '../feature/EntryDetailPanel.jsx';
+import { EntryDetailPanel }       from '../feature/EntryDetailPanel.jsx';
+import { ReferenceEntryOverlay }  from '../feature/ReferenceEntryOverlay.jsx';
+import { ReferenceBrowseSheet }   from '../feature/ReferenceBrowseSheet.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
 
 export function FloatingWindow() {
@@ -57,11 +59,13 @@ export function FloatingWindow() {
             <div className="pane-split">
               {/* In crosstalk mode the slot contents flip with activeSide so
                   the panel the user clicked (via swap) stays in the same
-                  physical position. Outside crosstalk, left is always Build. */}
+                  physical position. Outside crosstalk, left is always Build.
+                  Mobile never renders the second slot — crosstalk on mobile
+                  surfaces via inline annotations and overlays instead. */}
               <div className="pane-split-slot">
-                {crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
+                {!isMobile && crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
               </div>
-              {crosstalkEnabled && (
+              {!isMobile && crosstalkEnabled && (
                 <div className="pane-split-slot">
                   {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
                 </div>
@@ -77,6 +81,18 @@ export function FloatingWindow() {
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}
+
+          {/* Mobile read-only browse sheet for the paired reference book —
+              opens from the REFERENCE row in BuildPanel. Sits below the peek
+              overlay so tapping a row opens the peek without dismissing the
+              sheet behind it. */}
+          {isMobile && <ReferenceBrowseSheet />}
+
+          {/* Mobile reference-entry peek — overlays everything (including the
+              entry detail panel and the browse sheet) when a reference entry
+              is tapped from a chip popover, search hit, name badge, crosstalk
+              row, or browse sheet. */}
+          {isMobile && <ReferenceEntryOverlay />}
 
           {/* Lorebook name prompt — appears after new lorebook creation */}
           <LorebookNameModal />

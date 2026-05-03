@@ -6,6 +6,7 @@ import { useExport }            from '../../hooks/use-export.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useSettings }          from '../../hooks/use-settings.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 
 export function LorebookPanel() {
   const { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebookSwitcher();
@@ -19,6 +20,12 @@ export function LorebookPanel() {
   const isMobile           = useMobile();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
   const { crosstalkEnabled, setCrosstalkEnabled } = useSettings();
+  const { referenceLorebook, setReferenceLorebookId } = useReferenceLorebook();
+
+  // Mobile-only reference picker: lives directly under the toggle so
+  // the pairing relationship is owned by the Lorebooks tab. On desktop
+  // the picker stays in the ReferencePanel pane header.
+  const referencePickerItems = items.filter((item) => !item.isActive);
 
   // On mobile the menu is a full-screen overlay, so selecting a lorebook should
   // drop the user back to the entries they just switched to.
@@ -104,6 +111,21 @@ export function LorebookPanel() {
       >
         Select Reference Lorebook
       </button>
+
+      {isMobile && crosstalkEnabled && (
+        <select
+          className="lorebook-panel-reference-picker"
+          value={referenceLorebook?.id ?? ''}
+          onChange={(e) => setReferenceLorebookId(e.target.value || null)}
+        >
+          <option value="">— Pick a reference lorebook —</option>
+          {referencePickerItems.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name || '(unnamed)'}
+            </option>
+          ))}
+        </select>
+      )}
 
       {pendingId && (
         <div className="lorebook-panel-prompt">

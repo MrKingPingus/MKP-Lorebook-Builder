@@ -12,6 +12,7 @@ import { useMobile }      from '../../hooks/use-mobile.js';
 import { useUi }          from '../../hooks/use-ui.js';
 import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
+import { useNameMatch }   from '../../hooks/use-name-match.js';
 import { useRollback }    from '../../hooks/use-rollback.js';
 import { useIsSelectMode, useIsSelected, useToggleSelected } from '../../hooks/use-selection.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
@@ -25,6 +26,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [suppressChecked, setSuppressChecked] = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
+  const nameMatchMap = useNameMatch();
+  const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const expandAll              = useUi((s) => s.expandAll);
@@ -145,6 +149,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   // ── Mobile card — slim tap-to-open row ──────────────────────────────────────
   if (isMobile) {
+    const sameNameRefId = nameMatchMap.get(entry.id) ?? null;
     return (
       <div
         id={`entry-${entry.id}`}
@@ -156,6 +161,27 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         <div className="entry-card-mobile-row">
           <span className="entry-card-mobile-name">
             {entry.name || '(unnamed)'}
+            {sameNameRefId && (
+              pickFromReferenceMode ? (
+                // During Pick from Reference pose, books are swapped — a name
+                // match means this reference-side entry is also in the user's
+                // original active book, i.e. copying it would duplicate.
+                <span
+                  className="entry-ref-badge entry-ref-badge--in-active"
+                  title="Same-named entry already exists in your active book — copying would duplicate"
+                >
+                  in active
+                </span>
+              ) : (
+                <button
+                  className="entry-ref-badge"
+                  onClick={(e) => { e.stopPropagation(); setPeekReferenceEntryId(sameNameRefId); }}
+                  title="Same-named entry exists in the reference book — tap to peek"
+                >
+                  ref <span className="entry-ref-badge-arrow">↗</span>
+                </button>
+              )
+            )}
           </span>
           <div className="entry-card-mobile-right">
             {entry.hiddenFromExport && (
@@ -341,6 +367,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             </div>
 
             <TriggerChips
+              entryId={entry.id}
               triggers={entry.triggers}
               delimiter={triggerDelimiter}
               searchQuery={searchQuery}
