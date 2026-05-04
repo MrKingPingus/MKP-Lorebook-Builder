@@ -148,6 +148,11 @@ Features noted here are not assigned to a phase. They are documented to preserve
 
 ---
 
+**Storage Usage Transparency**
+A user-facing meter showing total localStorage consumed by the app, with a per-feature breakdown (lorebooks, settings, rollback snapshots, autosave drafts, any future caches). Browsers cap per-origin storage at 5–10 MB and the failure mode is silent — writes start throwing `QuotaExceededError` and autosave quietly fails. Becomes more important as rollback snapshots accumulate and as future features add cached data. Implementation lives in `storage-service.js` (the only file allowed to touch `localStorage` per architecture rules); a small panel in Settings shows current usage with a progress bar against an estimated quota. Per-feature breakdown requires a known key-prefix convention so `storage-service.js` can sum bytes by category — most existing keys already follow one. Depends on: nothing blocking. Worth doing before any feature lands that could introduce unbounded growth in localStorage.
+
+---
+
 **Lorebook JSON Metadata Portability (`_meta`)**
 Add `createdAt` and `lastModified` timestamps to lorebook objects. Export: optional checkbox "Include metadata" appends a `_meta` block (timestamps + settings snapshot) to the JSON. Import: detect `_meta` block and prompt user to apply or skip the saved settings. Requires updates to `json-export.js`, `json-import.js`, lorebook creation, and `autosave.js`. Deferred from Polish Pass 2 — good idea but not yet worth the resource investment.
 
@@ -172,6 +177,9 @@ The Phase 9 Lorebook Crosstalk uses a panel-within-window approach. For power us
 
 **Category-Weighted Suggestion Variants**
 `suggestion-engine.js` applies different suggestion weights and candidate pools based on entry type, so suggestions for a character entry differ meaningfully from those for a location entry. Requires a per-type lookup table or seed word list to have real impact. Deferred from Phase 7 until a lookup table approach is designed. Depends on: suggestion engine architecture being stable.
+
+**Thesaurus Trigger Suggestions**
+When enabled via Settings, hovering (or tapping on mobile) a suggestion chip opens a dropdown of five synonym chips that can be added as triggers in one click; a "More" button at the bottom pages through additional synonyms five at a time (mirrors the existing reroll-page pattern in `use-suggestions.js`) and disappears when the synonym pool is exhausted. The synonym dropdown is anchored to the hovered chip and is independent from the main suggestion list — clicking a synonym adds it as a trigger directly. Data source: Datamuse API (`rel_syn`, free, no API key, CORS-friendly) — strict synonyms only at first; broaden to `ml=` (means-like) later if useful. New `thesaurus-service.js` (plain `fetch`) and `use-thesaurus.js` hook (per-word in-memory cache, loading state, page index per word); `SuggestionsTray.jsx` gains a hover/tap-anchored dropdown pattern that doesn't yet exist in the codebase. A Settings toggle ("Enable thesaurus suggestions") doubles as the mobile entry point — when on, chips expose a tap target that opens the dropdown instead of relying on hover alone. Caveats: proper nouns (which dominate the suggestion pool) and multi-word phrases have no useful synonyms, so the dropdown needs a graceful "no synonyms" state; cache is intentionally in-memory only to keep localStorage pressure off the rollback/autosave budget. Depends on: nothing blocking.
 
 ---
 
