@@ -8,27 +8,48 @@
 // definition level — the per-definition `synonyms` field exists in the
 // schema but is almost always empty in practice. So one "sense" entry here
 // = one part of speech, not one individual definition.
+//
+// Inflection fallback: the API indexes lemmas (base forms), so plurals,
+// gerunds, past tense, etc. typically 404. If the original word returns
+// empty, we try base-form candidates from the lemmatizer in priority order.
 import { THESAURUS_SENSE_CAP } from '../constants/limits.js';
+import { lemmaCandidates }    from './lemmatize.js';
 
 const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
 
 /**
- * Fetch sense-grouped synonyms for a single word. Never throws — failures
- * resolve to a tagged error so callers can render a retry state.
+ * Fetch sense-grouped synonyms for a single word, with lemma fallback.
+ * Never throws — failures resolve to a tagged error so callers can render
+ * a retry state.
  *
  * Returns:
  *   { ok: true, senses: Array<{ partOfSpeech, definition, synonyms: string[] }> }
  *   { ok: false, error: 'network' | 'http' }
- *
- * Senses with no synonyms are dropped; remaining senses capped to
- * THESAURUS_SENSE_CAP (top of dictionary order, which roughly tracks
- * frequency).
  */
 export async function fetchSynonyms(word) {
   const q = (word || '').trim();
   if (!q) return { ok: true, senses: [] };
 
-  const url = `${ENDPOINT}/${encodeURIComponent(q)}`;
+  // Try the user's word first; if it has synonyms, we're done.
+  const primary = await fetchOne(q);
+  if (!primary.ok) return primary;
+  if (primary.senses.length > 0) return primary;
+
+  // Empty result on the original — try lemma candidates (features → feature,
+  // lives → life, majoring → major). First hit wins; network errors on a
+  // single candidate don't fail the whole lookup.
+  for (const candidate of lemmaCandidates(q)) {
+    const result = await fetchOne(candidate);
+    if (!result.ok) continue;
+    if (result.senses.length > 0) return result;
+  }
+
+  return { ok: true, senses: [] };
+}
+
+/** Single API call → senses[] (no lemma fallback). */
+async function fetchOne(word) {
+  const url = `${ENDPOINT}/${encodeURIComponent(word)}`;
   let res;
   try {
     res = await fetch(url);
@@ -46,7 +67,7 @@ export async function fetchSynonyms(word) {
   }
   if (!Array.isArray(body) || body.length === 0) return { ok: true, senses: [] };
 
-  const lowerSource = q.toLowerCase();
+  const lowerSource = word.toLowerCase();
   const senses = [];
 
   // Multiple top-level entries can occur (different etymologies). Flatten
