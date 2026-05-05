@@ -18,8 +18,9 @@ export function ThesaurusPopover({
   onMouseLeave,
 }) {
   const { senses, senseIndex, currentSense, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
-  const [selected, setSelected] = useState(() => new Set());
-  const [pos,      setPos]      = useState(null);
+  const [selected,   setSelected]   = useState(() => new Set());
+  const [pos,        setPos]        = useState(null);
+  const [interacted, setInteracted] = useState(false);
   const popoverRef = useRef(null);
 
   // Position once per anchor change. Mirror Chip.jsx's pattern: pin above
@@ -33,10 +34,14 @@ export function ThesaurusPopover({
     });
   }, [anchorEl, word]);
 
-  // Reset selection whenever the source word changes. Selection persists
-  // across sense changes within the same word — users can pick from sense 1,
-  // cycle to sense 3, pick more, then Add everything in one commit.
-  useEffect(() => { setSelected(new Set()); }, [word]);
+  // Reset selection and interaction state whenever the source word changes.
+  // Selection persists across sense changes within the same word — users can
+  // pick from sense 1, cycle to sense 3, pick more, then Add everything in
+  // one commit.
+  useEffect(() => {
+    setSelected(new Set());
+    setInteracted(false);
+  }, [word]);
 
   // Outside-click + Escape dismissal
   useEffect(() => {
@@ -55,12 +60,15 @@ export function ThesaurusPopover({
   }, [anchorEl, onClose]);
 
   function toggle(w) {
+    setInteracted(true);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(w)) next.delete(w); else next.add(w);
       return next;
     });
   }
+  function pinAndPrev() { setInteracted(true); prevSense(); }
+  function pinAndNext() { setInteracted(true); nextSense(); }
 
   function commit() {
     if (selected.size === 0) return;
@@ -80,7 +88,7 @@ export function ThesaurusPopover({
       className="thesaurus-popover"
       style={{ position: 'fixed', left: pos.left, bottom: pos.bottom, maxWidth: POPOVER_MAX_WIDTH }}
       onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onMouseLeave={interacted ? undefined : onMouseLeave}
     >
       <div className="thesaurus-popover-header">
         <div className="thesaurus-popover-title" title={`Synonyms for "${word}"`}>
@@ -100,7 +108,7 @@ export function ThesaurusPopover({
         <div className="thesaurus-sense-bar">
           <button
             className="thesaurus-sense-arrow"
-            onClick={prevSense}
+            onClick={pinAndPrev}
             disabled={!hasMultipleSenses}
             title="Previous definition"
           >
@@ -119,7 +127,7 @@ export function ThesaurusPopover({
           </div>
           <button
             className="thesaurus-sense-arrow"
-            onClick={nextSense}
+            onClick={pinAndNext}
             disabled={!hasMultipleSenses}
             title="Next definition"
           >
