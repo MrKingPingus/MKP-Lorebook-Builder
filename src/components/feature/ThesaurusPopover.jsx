@@ -15,7 +15,7 @@ export function ThesaurusPopover({
   onMouseEnter,
   onMouseLeave,
 }) {
-  const { words, loading, error, hasMore, nextPage, retry, total } = useThesaurus(word);
+  const { words, loading, error, retry, total } = useThesaurus(word);
   const [selected, setSelected] = useState(() => new Set());
   const [pos,      setPos]      = useState(null);
   const popoverRef = useRef(null);
@@ -125,12 +125,6 @@ export function ThesaurusPopover({
           </div>
         )}
       </div>
-
-      {!loading && !error && hasMore && (
-        <button className="thesaurus-more" onClick={nextPage} title="Show more synonyms">
-          More ▾
-        </button>
-      )}
     </div>,
     document.body
   );
