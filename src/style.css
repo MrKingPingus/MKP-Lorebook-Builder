@@ -2303,6 +2303,66 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   cursor: default;
   pointer-events: none;
 }
+.thesaurus-sense-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--muted2);
+}
+.thesaurus-sense-arrow {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 10px;
+  transition: background var(--transition), color var(--transition), opacity var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.thesaurus-sense-arrow:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .thesaurus-sense-arrow:hover:not(:disabled) {
+    background: var(--surface3);
+    color: var(--text);
+  }
+}
+.thesaurus-sense-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.thesaurus-sense-pos {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.thesaurus-sense-def {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.25;
+  /* Clamp to two lines so a long definition doesn't push the chips far down */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.thesaurus-sense-counter {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 .thesaurus-popover-body {
   display: flex;
   flex-direction: column;

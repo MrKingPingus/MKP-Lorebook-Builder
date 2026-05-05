@@ -195,7 +195,7 @@ export function SettingsPanel() {
       {/* ── Thesaurus synonyms ── */}
       <div className="settings-group">
         <label className="settings-label">
-          <span>Look up synonyms via Datamuse</span>
+          <span>Look up synonyms via the dictionary API</span>
           <input
             type="checkbox"
             checked={thesaurusEnabled}
@@ -204,8 +204,8 @@ export function SettingsPanel() {
         </label>
         <div className="settings-hint">
           {isMobile
-            ? 'Long-press a suggestion chip to open a synonym popover; tap synonyms to select, then Add. Fetches from api.datamuse.com on first hover per word; results are cached for the session.'
-            : 'Hover a suggestion chip to open a synonym popover; click synonyms to select, then Add. Fetches from api.datamuse.com on first hover per word; results are cached for the session.'}
+            ? 'Long-press a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, tap synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'
+            : 'Hover a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, click synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'}
         </div>
       </div>
 

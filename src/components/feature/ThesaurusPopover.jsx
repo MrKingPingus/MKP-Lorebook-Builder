@@ -1,10 +1,12 @@
-// Chip-anchored synonym popover. Multi-select mini-chips, "Add" commits all
-// selected synonyms as triggers in one shot, "More" pages 5 at a time.
+// Chip-anchored synonym popover. Multi-select mini-chips, "Add" commits
+// all selected synonyms in one shot. Definitions cycle via ◀ ▶ arrows so
+// users can pick the sense relevant to their entry (e.g., "good" as
+// virtuous vs. "good" as high-quality).
 import { useState, useEffect, useRef } from 'react';
-import { createPortal }    from 'react-dom';
-import { useThesaurus }    from '../../hooks/use-thesaurus.js';
+import { createPortal } from 'react-dom';
+import { useThesaurus } from '../../hooks/use-thesaurus.js';
 
-const POPOVER_MAX_WIDTH = 260;
+const POPOVER_MAX_WIDTH = 280;
 
 export function ThesaurusPopover({
   word,
@@ -15,13 +17,13 @@ export function ThesaurusPopover({
   onMouseEnter,
   onMouseLeave,
 }) {
-  const { words, loading, error, retry, total } = useThesaurus(word);
+  const { senses, senseIndex, currentSense, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
   const [selected, setSelected] = useState(() => new Set());
   const [pos,      setPos]      = useState(null);
   const popoverRef = useRef(null);
 
-  // Position once per anchor change. Mirror Chip.jsx's pattern: pin the
-  // popover above the anchor and clamp left within the viewport.
+  // Position once per anchor change. Mirror Chip.jsx's pattern: pin above
+  // the anchor and clamp left within the viewport.
   useEffect(() => {
     if (!anchorEl) return;
     const rect = anchorEl.getBoundingClientRect();
@@ -31,7 +33,9 @@ export function ThesaurusPopover({
     });
   }, [anchorEl, word]);
 
-  // Reset selection whenever the source word changes
+  // Reset selection whenever the source word changes. Selection persists
+  // across sense changes within the same word — users can pick from sense 1,
+  // cycle to sense 3, pick more, then Add everything in one commit.
   useEffect(() => { setSelected(new Set()); }, [word]);
 
   // Outside-click + Escape dismissal
@@ -67,7 +71,8 @@ export function ThesaurusPopover({
   if (!pos) return null;
 
   const existingLower = new Set((existingTriggers || []).map((t) => t.toLowerCase()));
-  const showEmpty = !loading && !error && total === 0;
+  const hasMultipleSenses = senses.length > 1;
+  const showEmpty = !loading && !error && senses.length === 0;
 
   return createPortal(
     <div
@@ -91,6 +96,38 @@ export function ThesaurusPopover({
         </button>
       </div>
 
+      {currentSense && (
+        <div className="thesaurus-sense-bar">
+          <button
+            className="thesaurus-sense-arrow"
+            onClick={prevSense}
+            disabled={!hasMultipleSenses}
+            title="Previous definition"
+          >
+            ◀
+          </button>
+          <div className="thesaurus-sense-text">
+            {currentSense.partOfSpeech && (
+              <span className="thesaurus-sense-pos">{currentSense.partOfSpeech}</span>
+            )}
+            <span className="thesaurus-sense-def" title={currentSense.definition}>
+              {currentSense.definition}
+            </span>
+          </div>
+          <div className="thesaurus-sense-counter">
+            {hasMultipleSenses ? `${senseIndex + 1}/${senses.length}` : ''}
+          </div>
+          <button
+            className="thesaurus-sense-arrow"
+            onClick={nextSense}
+            disabled={!hasMultipleSenses}
+            title="Next definition"
+          >
+            ▶
+          </button>
+        </div>
+      )}
+
       <div className="thesaurus-popover-body">
         {loading && <div className="thesaurus-state">Loading…</div>}
 
@@ -105,9 +142,9 @@ export function ThesaurusPopover({
           <div className="thesaurus-state thesaurus-state--empty">No synonyms found.</div>
         )}
 
-        {!loading && !error && words.length > 0 && (
+        {currentSense && (
           <div className="thesaurus-chips">
-            {words.map((w) => {
+            {currentSense.synonyms.map((w) => {
               const already    = existingLower.has(w.toLowerCase());
               const isSelected = selected.has(w);
               return (
