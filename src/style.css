@@ -2246,6 +2246,127 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   color: var(--muted);
 }
 
+/* ── Thesaurus popover (chip-anchored synonym dropdown) ── */
+.thesaurus-popover {
+  /* position/bottom/left come from inline style set by the portal */
+  min-width: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.thesaurus-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.thesaurus-popover-title {
+  flex: 1;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thesaurus-add-btn {
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  transition: opacity var(--transition), background var(--transition);
+}
+.thesaurus-add-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.thesaurus-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px;
+}
+.thesaurus-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.thesaurus-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted2);
+  background: var(--surface3);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.thesaurus-chip:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+}
+.thesaurus-chip--selected,
+.thesaurus-chip--selected:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(52,211,153,.18);
+}
+.thesaurus-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.thesaurus-state {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 4px;
+}
+.thesaurus-state--empty {
+  font-style: italic;
+}
+.thesaurus-state--error {
+  color: var(--muted2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.thesaurus-retry {
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface3);
+  color: var(--text);
+  font-size: 11px;
+}
+.thesaurus-retry:hover {
+  background: var(--surface);
+}
+.thesaurus-more {
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--muted2);
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+  transition: background var(--transition), color var(--transition);
+}
+.thesaurus-more:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
 /* ============================================================
    Description Area
    ============================================================ */

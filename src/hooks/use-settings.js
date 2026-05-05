@@ -23,6 +23,7 @@ export function useSettings() {
   const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
   const keepMenuOpenAfterImport  = useSettingsStore((s) => s.keepMenuOpenAfterImport);
   const crosstalkEnabled         = useSettingsStore((s) => s.crosstalkEnabled);
+  const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -46,6 +47,7 @@ export function useSettings() {
       rollbackDefaultEnabled,
       keepMenuOpenAfterImport,
       crosstalkEnabled,
+      thesaurusEnabled,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -78,6 +80,7 @@ export function useSettings() {
     rollbackDefaultEnabled,
     keepMenuOpenAfterImport,
     crosstalkEnabled,
+    thesaurusEnabled,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -102,5 +105,6 @@ export function useSettings() {
       // change when the panel is hidden.
       if (!v) useLorebookStore.getState().setReferenceLorebookId(null);
     },
+    setThesaurusEnabled:         (v) => updateSetting('thesaurusEnabled', v),
   };
 }

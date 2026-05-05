@@ -60,6 +60,14 @@ export function EntryDetailPanel() {
     update({ triggers: [...entry.triggers, word] }, true);
   }
 
+  // Batch-add path for the thesaurus popover (avoids stale-read on synchronous loops)
+  function addTriggers(words) {
+    if (!entry) return;
+    const next = [...entry.triggers];
+    for (const w of words) if (!next.includes(w)) next.push(w);
+    if (next.length !== entry.triggers.length) update({ triggers: next }, true);
+  }
+
   function handleRemove() {
     if (!entry) return;
     removeEntry(entry.id);
@@ -229,7 +237,7 @@ export function EntryDetailPanel() {
           </div>
 
           {/* Suggestions */}
-          <SuggestionsTray entry={entry} onAddTrigger={addTrigger} />
+          <SuggestionsTray entry={entry} onAddTrigger={addTrigger} onAddTriggers={addTriggers} />
 
           {/* Description */}
           <DescriptionArea

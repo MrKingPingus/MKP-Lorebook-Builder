@@ -28,6 +28,9 @@ export const DEFAULT_SETTINGS = {
   keepMenuOpenAfterImport:  false,
   // Show the read-only reference panel beside the active panel for cross-book search/find-replace
   crosstalkEnabled:         false,
+  // When on, hovering a suggestion chip (or long-pressing on mobile) opens a synonym popover
+  // sourced from the Datamuse API (rel_syn, strict synonyms only). In-memory cache only.
+  thesaurusEnabled:         true,
 };
 
 export const DEFAULT_ENTRY = {
