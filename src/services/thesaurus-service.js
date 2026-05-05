@@ -1,7 +1,13 @@
 // Sense-aware synonym lookup via dictionaryapi.dev (free, no API key,
-// CORS-friendly). Returns synonyms grouped by definition so the popover
-// can disambiguate between meanings (e.g., "good" as moral vs. "good"
-// as quality). Plain fetch, no React, no localStorage.
+// CORS-friendly). Wraps WordNet/Wiktionary. Returns synonyms grouped by
+// part of speech so the popover can disambiguate (e.g., "good" as an
+// adjective vs. "good" as a noun). Plain fetch, no React, no localStorage.
+//
+// Note on granularity: dictionaryapi.dev populates the `synonyms` array at
+// the meaning level (one per part-of-speech), not at the individual
+// definition level — the per-definition `synonyms` field exists in the
+// schema but is almost always empty in practice. So one "sense" entry here
+// = one part of speech, not one individual definition.
 import { THESAURUS_SENSE_CAP } from '../constants/limits.js';
 
 const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
@@ -12,11 +18,11 @@ const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
  *
  * Returns:
  *   { ok: true, senses: Array<{ partOfSpeech, definition, synonyms: string[] }> }
- *   { ok: false, error: 'network' | 'http' | 'notfound' }
+ *   { ok: false, error: 'network' | 'http' }
  *
- * Senses are filtered to those with non-empty synonym lists, deduped
- * (a synonym appearing in multiple senses is kept in each — paged UI
- * lets users see context per sense), and capped to THESAURUS_SENSE_CAP.
+ * Senses with no synonyms are dropped; remaining senses capped to
+ * THESAURUS_SENSE_CAP (top of dictionary order, which roughly tracks
+ * frequency).
  */
 export async function fetchSynonyms(word) {
   const q = (word || '').trim();
@@ -43,23 +49,35 @@ export async function fetchSynonyms(word) {
   const lowerSource = q.toLowerCase();
   const senses = [];
 
-  // The API can return multiple top-level entries (e.g., different etymologies).
-  // Flatten meanings across all entries; dictionary order roughly tracks frequency.
+  // Multiple top-level entries can occur (different etymologies). Flatten
+  // meanings across all entries; each meaning yields one sense entry
+  // (keyed by part of speech).
   for (const entry of body) {
     const meanings = Array.isArray(entry?.meanings) ? entry.meanings : [];
     for (const meaning of meanings) {
       const partOfSpeech = meaning?.partOfSpeech || '';
       const definitions  = Array.isArray(meaning?.definitions) ? meaning.definitions : [];
 
-      for (const def of definitions) {
-        const definition = (def?.definition || '').trim();
-        const rawSyns    = Array.isArray(def?.synonyms) ? def.synonyms : [];
-        const synonyms   = dedupeSynonyms(rawSyns, lowerSource);
-        if (synonyms.length === 0 || !definition) continue;
-        senses.push({ partOfSpeech, definition, synonyms });
-        if (senses.length >= THESAURUS_SENSE_CAP) {
-          return { ok: true, senses };
+      // Primary source: PoS-level synonym pool. Fall back to a union of
+      // any non-empty definition-level synonym arrays (rare but possible).
+      let rawSyns = Array.isArray(meaning?.synonyms) ? meaning.synonyms : [];
+      if (rawSyns.length === 0) {
+        const merged = [];
+        for (const def of definitions) {
+          if (Array.isArray(def?.synonyms)) merged.push(...def.synonyms);
         }
+        rawSyns = merged;
+      }
+
+      const synonyms = dedupeSynonyms(rawSyns, lowerSource);
+      if (synonyms.length === 0) continue;
+
+      // Representative gloss for this PoS = the first non-empty definition.
+      const gloss = definitions.find((d) => (d?.definition || '').trim())?.definition?.trim() || '';
+
+      senses.push({ partOfSpeech, definition: gloss, synonyms });
+      if (senses.length >= THESAURUS_SENSE_CAP) {
+        return { ok: true, senses };
       }
     }
   }
