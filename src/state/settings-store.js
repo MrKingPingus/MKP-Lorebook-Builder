@@ -21,6 +21,7 @@ export const useSettingsStore = create((set) => ({
   setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
   setRollbackDefaultEnabled:   (rollbackDefaultEnabled)   => set({ rollbackDefaultEnabled }),
   setKeepMenuOpenAfterImport:  (keepMenuOpenAfterImport)  => set({ keepMenuOpenAfterImport }),
+  setThesaurusEnabled:         (thesaurusEnabled)         => set({ thesaurusEnabled }),
 
   applySettings: (settings) => set(settings),
 }));

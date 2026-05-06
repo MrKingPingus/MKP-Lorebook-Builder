@@ -2234,11 +2234,17 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   color: var(--muted2);
   background: var(--surface3);
   transition: border-color var(--transition), color var(--transition), background var(--transition);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.suggestion-chip:hover {
-  border-color: var(--green);
-  color: var(--green);
-  background: rgba(52,211,153,.1);
+@media (hover: hover) {
+  .suggestion-chip:hover {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(52,211,153,.1);
+  }
 }
 
 .suggestions-empty {
@@ -2246,6 +2252,189 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   color: var(--muted);
 }
 
+/* ── Thesaurus popover (chip-anchored synonym dropdown) ── */
+.thesaurus-popover {
+  /* position/bottom/left come from inline style set by the portal */
+  min-width: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.thesaurus-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.thesaurus-popover-title {
+  flex: 1;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thesaurus-add-btn {
+  flex: 0 0 auto;
+  min-width: 56px;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  transition: opacity var(--transition), background var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.thesaurus-add-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.thesaurus-sense-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--muted2);
+}
+.thesaurus-sense-arrow {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 10px;
+  transition: background var(--transition), color var(--transition), opacity var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.thesaurus-sense-arrow:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .thesaurus-sense-arrow:hover:not(:disabled) {
+    background: var(--surface3);
+    color: var(--text);
+  }
+}
+.thesaurus-sense-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.thesaurus-sense-pos {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.thesaurus-sense-def {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.25;
+  /* Clamp to two lines so a long definition doesn't push the chips far down */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.thesaurus-sense-counter {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.thesaurus-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px;
+  min-height: 100px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.thesaurus-popover-body::-webkit-scrollbar { width: 4px; }
+.thesaurus-popover-body::-webkit-scrollbar-track { background: transparent; }
+.thesaurus-popover-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.thesaurus-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.thesaurus-chip {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted2);
+  background: var(--surface3);
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  .thesaurus-chip:hover:not(:disabled) {
+    border-color: var(--green);
+    color: var(--green);
+  }
+}
+.thesaurus-chip--selected,
+.thesaurus-chip--selected:hover {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(52,211,153,.18);
+}
+.thesaurus-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.thesaurus-state {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 4px;
+}
+.thesaurus-state--empty {
+  font-style: italic;
+}
+.thesaurus-state--error {
+  color: var(--muted2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.thesaurus-retry {
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface3);
+  color: var(--text);
+  font-size: 11px;
+}
+.thesaurus-retry:hover {
+  background: var(--surface);
+}
 /* ============================================================
    Description Area
    ============================================================ */

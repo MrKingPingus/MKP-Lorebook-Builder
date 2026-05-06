@@ -108,6 +108,14 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     }
   }
 
+  // Batch-add path for the thesaurus popover. Looping addTrigger would read
+  // stale entry.triggers per call and only persist the last word.
+  function addTriggers(words) {
+    const next = [...entry.triggers];
+    for (const w of words) if (!next.includes(w)) next.push(w);
+    if (next.length !== entry.triggers.length) update({ triggers: next }, true);
+  }
+
   // Build highlighted entry name HTML for the collapsed header
   function highlightedName() {
     const displayName = entry.name || '(unnamed)';
@@ -387,7 +395,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </div>
 
           {/* Row 3: Suggestions tray */}
-          <SuggestionsTray entry={entry} onAddTrigger={addTrigger} />
+          <SuggestionsTray entry={entry} onAddTrigger={addTrigger} onAddTriggers={addTriggers} />
 
           {/* Row 4: Description */}
           <DescriptionArea
