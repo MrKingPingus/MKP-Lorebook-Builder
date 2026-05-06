@@ -102,13 +102,6 @@ input:focus, textarea:focus, select:focus {
   input, textarea, select {
     font-size: 16px !important;
   }
-  /* The description textarea has a transparent caret-only layer with a
-     visible highlight <div> rendered on top. Force the overlay to match
-     the bumped textarea size so the rendered text and the caret stay
-     pixel-aligned. */
-  .description-highlight {
-    font-size: 16px;
-  }
 }
 
 /* Disable the iOS double-tap-zoom delay on tappable surfaces. Pinch-to-zoom
@@ -2456,16 +2449,33 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   position: relative;
 }
 
+/* Both the textarea and the highlight overlay must wrap text identically,
+   otherwise the textarea's caret (rendered relative to its own wrapping)
+   drifts away from the visible text (rendered by the overlay div). Every
+   text-metrics property below is shared so the two layers render the
+   same line breaks at the same y-coordinates. */
+.description-textarea,
+.description-highlight {
+  padding: 8px 10px;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 21px;
+  letter-spacing: 0;
+  word-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 4;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+
 .description-textarea {
   width: 100%;
   resize: none;
   overflow: hidden;
-  padding: 8px 10px;
-  border-radius: var(--radius);
-  font-size: 13px;
-  line-height: 1.6;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border-color: var(--border);
   color: transparent;
   caret-color: var(--text);
   position: relative;
@@ -2477,15 +2487,23 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .description-highlight {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  padding: 8px 10px;
-  font-size: 13px;
-  line-height: 1.6;
   color: var(--text);
   pointer-events: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
   overflow: hidden;
   z-index: 2;
+}
+
+/* On mobile the global iOS-zoom guard above forces every textarea to 16px
+   via !important. Match the overlay so wrapping and caret position stay
+   aligned, and pin line-height in pixels for the larger size. */
+@media (max-width: 767px) {
+  .description-highlight {
+    font-size: 16px;
+  }
+  .description-textarea,
+  .description-highlight {
+    line-height: 26px;
+  }
 }
 
 .search-mark {
