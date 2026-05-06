@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { useHtmlEscape } from '../../hooks/use-html-escape.js';
 
-export function DescriptionHighlight({ text, query, style }) {
+export function DescriptionHighlight({ text, query }) {
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const html = useMemo(() => {
     if (!query) return escapeHtml(text);
@@ -15,7 +15,6 @@ export function DescriptionHighlight({ text, query, style }) {
   return (
     <div
       className="description-highlight"
-      style={style}
       aria-hidden="true"
       dangerouslySetInnerHTML={{ __html: html + '\n' }}
     />

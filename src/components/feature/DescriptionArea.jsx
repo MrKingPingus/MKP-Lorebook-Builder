@@ -80,7 +80,6 @@ export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, o
         <DescriptionHighlight
           text={value}
           query={searchQuery}
-          style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
         />
         <textarea
           ref={textareaRef}
