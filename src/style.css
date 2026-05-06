@@ -102,6 +102,13 @@ input:focus, textarea:focus, select:focus {
   input, textarea, select {
     font-size: 16px !important;
   }
+  /* The description textarea has a transparent caret-only layer with a
+     visible highlight <div> rendered on top. Force the overlay to match
+     the bumped textarea size so the rendered text and the caret stay
+     pixel-aligned. */
+  .description-highlight {
+    font-size: 16px;
+  }
 }
 
 /* Disable the iOS double-tap-zoom delay on tappable surfaces. Pinch-to-zoom
