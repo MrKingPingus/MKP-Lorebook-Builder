@@ -26,9 +26,11 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [suppressChecked, setSuppressChecked] = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
-  const nameMatchMap = useNameMatch();
+  const { activeToRef: nameMatchMap } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
+  const crossFlashId            = useUi((s) => s.crossFlashId);
+  const setCrossFlashId         = useUi((s) => s.setCrossFlashId);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const expandAll              = useUi((s) => s.expandAll);
@@ -97,6 +99,23 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const typeDef  = ENTRY_TYPES.find((t) => t.id === entry.type);
   const typeColor = typeDef?.color ?? '#9ba1ad';
 
+  const sameNameRefId   = nameMatchMap.get(entry.id) ?? null;
+  const isCrossFlashing = crossFlashId === entry.id;
+
+  // Cross-pane "in both books" jump — flash the matching reference card and
+  // scroll it into view. Uses ui-store crossFlashId so the reference card can
+  // pick up a transient highlight class without a shared parent.
+  function jumpToReference(refId) {
+    setCrossFlashId(refId);
+    requestAnimationFrame(() => {
+      document.getElementById(`ref-entry-${refId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    setTimeout(() => {
+      // Only clear if it's still us — avoid stomping a later jump
+      if (useUi.getState().crossFlashId === refId) setCrossFlashId(null);
+    }, 1400);
+  }
+
   function update(patch, discrete = false) {
     rollback.onBeforeEdit();
     onUpdate(entry.id, patch, discrete);
@@ -157,11 +176,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   // ── Mobile card — slim tap-to-open row ──────────────────────────────────────
   if (isMobile) {
-    const sameNameRefId = nameMatchMap.get(entry.id) ?? null;
     return (
       <div
         id={`entry-${entry.id}`}
-        className={`entry-card entry-card--mobile${isSelected ? ' entry-card--selected' : ''}`}
+        className={`entry-card entry-card--mobile${isSelected ? ' entry-card--selected' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}`}
         style={{ '--type-color': typeColor }}
         onClick={() => isSelectMode ? toggleSelected(entry.id, 'active') : openEntry(entry.id)}
       >
@@ -222,7 +240,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   return (
     <div
       id={`entry-${entry.id}`}
-      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}`}
+      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}`}
       style={{ '--type-color': typeColor }}
       onClick={isSelectMode ? () => toggleSelected(entry.id, 'active') : undefined}
     >
@@ -254,6 +272,16 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               <line x1="1" y1="1" x2="23" y2="23"/>
             </svg>
           </span>
+        )}
+        {sameNameRefId && (
+          <button
+            className="entry-ref-badge entry-ref-badge--header"
+            onClick={(e) => { e.stopPropagation(); jumpToReference(sameNameRefId); }}
+            title="Same-named entry exists in the reference book — click to jump to it"
+            type="button"
+          >
+            in both <span className="entry-ref-badge-arrow">↗</span>
+          </button>
         )}
         <div className="entry-card-header-right">
           {!hideEntryStats && (

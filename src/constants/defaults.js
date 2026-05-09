@@ -28,6 +28,11 @@ export const DEFAULT_SETTINGS = {
   keepMenuOpenAfterImport:  false,
   // Show the read-only reference panel beside the active panel for cross-book search/find-replace
   crosstalkEnabled:         false,
+  // Crosstalk pane behaviour:
+  //   'click-to-edit'        — clicking the reference pane swaps roles AND visually swaps panes (default)
+  //   'fixed-active-left'    — active pinned to the left column; a Swap button trades books between roles
+  //   'fixed-active-right'   — active pinned to the right column; same behaviour, mirrored
+  crosstalkSwapMode:        'click-to-edit',
   // When on, hovering a suggestion chip (or long-pressing on mobile) opens a synonym popover
   // sourced from the Datamuse API (rel_syn, strict synonyms only). In-memory cache only.
   thesaurusEnabled:         true,

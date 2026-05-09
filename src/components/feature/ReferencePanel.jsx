@@ -15,6 +15,8 @@ import { useSettings }          from '../../hooks/use-settings.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useCrosstalk }         from '../../hooks/use-crosstalk.js';
 import { useSelection }         from '../../hooks/use-selection.js';
+import { useNameMatch }         from '../../hooks/use-name-match.js';
+import { useUi }                from '../../hooks/use-ui.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
@@ -25,6 +27,11 @@ export function ReferencePanel() {
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
+  const { refToActive }                                             = useNameMatch();
+  const { crosstalkSwapMode }                                       = useSettings();
+  const crossFlashId    = useUi((s) => s.crossFlashId);
+  const setCrossFlashId = useUi((s) => s.setCrossFlashId);
+  const swapOnClick     = crosstalkSwapMode === 'click-to-edit';
 
   // Ephemeral expand state — resets on swap (panel unmounts) and on lorebook
   // switch. A Set of entry ids whose description is currently revealed.
@@ -64,6 +71,17 @@ export function ReferencePanel() {
     e.stopPropagation();
   }
 
+  // Cross-pane jump: flash the matching active card and scroll it into view.
+  function jumpToActive(activeId) {
+    setCrossFlashId(activeId);
+    requestAnimationFrame(() => {
+      document.getElementById(`entry-${activeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    setTimeout(() => {
+      if (useUi.getState().crossFlashId === activeId) setCrossFlashId(null);
+    }, 1400);
+  }
+
   return (
     <div className="reference-panel">
       <div className="pane-header">
@@ -94,7 +112,7 @@ export function ReferencePanel() {
         ) : (
           <div
             className="reference-panel-entries"
-            onMouseDown={isSelectMode ? undefined : onSwap}
+            onMouseDown={isSelectMode || !swapOnClick ? undefined : onSwap}
           >
             {displayEntries.map((entry, idx) => {
               const typeDef       = ENTRY_TYPES.find((t) => t.id === entry.type);
@@ -103,12 +121,17 @@ export function ReferencePanel() {
               const isExpanded    = expandedIds.has(entry.id);
               const hasDescription = (entry.description ?? '').length > 0;
               const isSelected    = selectedIds.has(entry.id);
+              const sameNameActiveId = refToActive.get(entry.id) ?? null;
+              const isCrossFlashing  = crossFlashId === entry.id;
               const cardClassName = `reference-entry-card${
                 isSelectMode ? ' reference-entry-card--selectable' : ''
-              }${isSelected ? ' reference-entry-card--selected' : ''}`;
+              }${isSelected ? ' reference-entry-card--selected' : ''}${
+                isCrossFlashing ? ' reference-entry-card--cross-flash' : ''
+              }`;
               return (
                 <div
                   key={entry.id}
+                  id={`ref-entry-${entry.id}`}
                   className={cardClassName}
                   style={{ '--type-color': typeColor }}
                   onClick={isSelectMode ? () => toggleSelected(entry.id, 'reference') : undefined}
@@ -118,6 +141,17 @@ export function ReferencePanel() {
                     <span className="reference-entry-label" style={{ color: typeColor }}>
                       #{idx + 1}: {entry.name || '(unnamed)'}
                     </span>
+                    {sameNameActiveId && (
+                      <button
+                        className="entry-ref-badge entry-ref-badge--header"
+                        onMouseDown={stopSwap}
+                        onClick={(e) => { e.stopPropagation(); jumpToActive(sameNameActiveId); }}
+                        title="Same-named entry exists in the active book — click to jump to it"
+                        type="button"
+                      >
+                        in both <span className="entry-ref-badge-arrow">↗</span>
+                      </button>
+                    )}
                     <div className="reference-entry-header-right">
                       {!hideEntryStats && (
                         <StatsBadge

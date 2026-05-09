@@ -1,19 +1,22 @@
 // Search input with mode select, sort button, match counter, Enter-key navigation, and results dropdown
 import { useState, useRef, useEffect } from 'react';
-import { useSearch }      from '../../hooks/use-search.js';
-import { useUi }          from '../../hooks/use-ui.js';
-import { useFindReplace } from '../../hooks/use-find-replace.js';
-import { useSelection }   from '../../hooks/use-selection.js';
-import { useMobile }      from '../../hooks/use-mobile.js';
+import { useSearch }            from '../../hooks/use-search.js';
+import { useUi }                from '../../hooks/use-ui.js';
+import { useFindReplace }       from '../../hooks/use-find-replace.js';
+import { useSelection }         from '../../hooks/use-selection.js';
+import { useMobile }            from '../../hooks/use-mobile.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { MatchCounter }   from '../ui/MatchCounter.jsx';
 import { FindReplace }    from './FindReplace.jsx';
 import { BulkActionBar }  from './BulkActionBar.jsx';
 
 const SORT_OPTIONS = [
-  { value: 'default',       label: 'Default' },
-  { value: 'alpha-asc',     label: 'A → Z' },
-  { value: 'alpha-desc',    label: 'Z → A' },
-  { value: 'last-modified', label: 'Last Modified' },
+  { value: 'default',            label: 'Default' },
+  { value: 'alpha-asc',          label: 'A → Z' },
+  { value: 'alpha-desc',         label: 'Z → A' },
+  { value: 'last-modified',      label: 'Last Modified' },
+  { value: 'cross-match-first',  label: 'In both books first', crosstalkOnly: true },
+  { value: 'cross-match-last',   label: 'In both books last',  crosstalkOnly: true },
 ];
 
 const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
@@ -37,6 +40,8 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   } = useFindReplace();
   const { selectedCount } = useSelection();
   const isMobile           = useMobile();
+  const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
+  const crosstalkActive    = crosstalkEnabled && !!referenceLorebook;
   const sortMode           = useUi((s) => s.sortMode);
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
@@ -161,7 +166,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
       </button>
       {sortOpen && (
         <div className="sort-dropdown">
-          {SORT_OPTIONS.map((opt) => (
+          {SORT_OPTIONS.filter((opt) => !opt.crosstalkOnly || crosstalkActive).map((opt) => (
             <button
               key={opt.value}
               className={`sort-dropdown-item${sortMode === opt.value ? ' sort-dropdown-item--active' : ''}`}

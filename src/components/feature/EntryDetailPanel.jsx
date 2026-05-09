@@ -25,7 +25,7 @@ export function EntryDetailPanel() {
   const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { entryTypeView, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
-  const nameMatchMap = useNameMatch();
+  const { activeToRef: nameMatchMap } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
   const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();

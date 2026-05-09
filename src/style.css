@@ -2898,7 +2898,38 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .export-filename-input:focus { border-color: var(--border2); outline: none; }
 
 /* Settings */
-.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; height: 100%; }
+.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: 100%; }
+.settings-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  overflow: hidden;
+}
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.settings-section-header:hover { background: var(--surface3); }
+.settings-section--open .settings-section-header { border-bottom: 1px solid var(--border); }
+.settings-section-chevron { width: 12px; font-size: 10px; color: var(--muted); }
+.settings-section-title { flex: 1; }
+.settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 14px 12px;
+}
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
 .settings-label { font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .settings-hint { font-size: 11px; color: var(--muted); line-height: 1.6; }
@@ -3807,6 +3838,23 @@ kbd {
   outline: none;
   border-color: var(--focus-border);
 }
+.pane-header-swap-btn {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pane-header-swap-btn:hover {
+  background: var(--blue);
+  color: var(--surface);
+  border-color: var(--blue);
+}
 
 /* ============================================================
    Reference Panel (crosstalk — read-only side)
@@ -3998,6 +4046,19 @@ kbd {
 .entry-ref-badge--header {
   margin-left: 8px;
   font-size: 11px;
+}
+
+/* Brief highlight applied to whichever card is the target of a cross-pane
+   "in both books" jump. The transient outline catches the eye after the
+   smooth scroll, then fades. */
+@keyframes cross-flash-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.0); }
+  20%  { box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.0); }
+}
+.entry-card--cross-flash,
+.reference-entry-card--cross-flash {
+  animation: cross-flash-pulse 1.3s ease-out;
 }
 
 /* ============================================================
