@@ -7,7 +7,7 @@ import { useUi }            from '../../hooks/use-ui.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { TypeColorDot }     from './TypeColorDot.jsx';
 
-export function Chip({ label, onDelete, onRename, color, highlight, ringColor, conflictEntries, acknowledged, onAllow, onRevoke }) {
+export function Chip({ label, onDelete, onRename, color, highlight, ringColor, conflictEntries, acknowledged, onAllow, onRevoke, readOnly = false }) {
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const [editing,     setEditing]     = useState(false);
   const [draft,       setDraft]       = useState(label);
@@ -122,8 +122,8 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
       ) : (
         <span
           className="chip-label"
-          onClick={isMobile ? startEdit : undefined}
-          onDoubleClick={isMobile ? undefined : startEdit}
+          onClick={readOnly ? undefined : (isMobile ? startEdit : undefined)}
+          onDoubleClick={readOnly ? undefined : (isMobile ? undefined : startEdit)}
           {...(highlight
             ? {
                 dangerouslySetInnerHTML: {
@@ -138,7 +138,9 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           {highlight ? undefined : label}
         </span>
       )}
-      <button className="chip-delete" onClick={onDelete} title="Remove trigger">×</button>
+      {!readOnly && (
+        <button className="chip-delete" onClick={onDelete} title="Remove trigger">×</button>
+      )}
 
       {/* Conflict popover — rendered via portal to escape overflow:hidden on .entry-card */}
       {conflictEntries && popoverOpen && createPortal(

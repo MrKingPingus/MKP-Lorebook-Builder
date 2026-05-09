@@ -25,6 +25,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
+  const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
@@ -136,17 +137,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       setExpandAll(false);
       setCollapseAll(false);
     }
-    // Scroll once on entry — wait a frame so the now-expanded body is in flow
     requestAnimationFrame(() => {
       document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }, [isComparing, isMobile]);
-
-  // Collapsing the active card exits compare mode (transient pose per
-  // decision #6a — once you collapse the card you've left the comparison).
-  useEffect(() => {
-    if (isComparing && collapsed && !isMobile) setCompareEntryId(null);
-  }, [collapsed, isComparing, isMobile]);
 
   // Per-field copy: pulls just the named field from the reference entry into
   // the active entry. discrete=true so each click lands as its own undo step.
@@ -425,17 +419,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               <div className="field-label">
                 ENTRY NAME
                 {isComparing && compareDelta?.name && (
-                  <>
-                    <span className="diff-modified-dot" title="Differs from reference">●</span>
-                    <button
-                      className="field-copy-btn"
-                      onClick={() => copyField('name')}
-                      title="Copy name from reference"
-                      type="button"
-                    >
-                      ← copy
-                    </button>
-                  </>
+                  <span className="diff-modified-dot" title="Differs from reference">●</span>
                 )}
               </div>
               <input
@@ -451,17 +435,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               <div className="field-label">
                 ENTRY TYPE
                 {isComparing && compareDelta?.type && (
-                  <>
-                    <span className="diff-modified-dot" title="Differs from reference">●</span>
-                    <button
-                      className="field-copy-btn"
-                      onClick={() => copyField('type')}
-                      title="Copy type from reference"
-                      type="button"
-                    >
-                      ← copy
-                    </button>
-                  </>
+                  <span className="diff-modified-dot" title="Differs from reference">●</span>
                 )}
               </div>
               <TypeSelector
@@ -477,17 +451,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               <div className="field-label">
                 TRIGGER KEYWORDS
                 {isComparing && compareDelta?.changedFields.has('triggers') && (
-                  <>
-                    <span className="diff-modified-dot" title="Differs from reference">●</span>
-                    <button
-                      className="field-copy-btn"
-                      onClick={() => copyField('triggers')}
-                      title="Replace triggers with reference triggers"
-                      type="button"
-                    >
-                      ← copy
-                    </button>
-                  </>
+                  <span className="diff-modified-dot" title="Differs from reference">●</span>
                 )}
               </div>
               {(() => {
@@ -556,27 +520,58 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             diffsFromReference={isComparing && !!compareDelta?.description}
             diffSegments={isComparing ? compareDelta?.description?.segments ?? null : null}
             labelLeftAdornment={isComparing && compareDelta?.description ? (
-              <>
-                <span className="diff-modified-dot" title="Differs from reference">●</span>
-                <button
-                  className="field-copy-btn"
-                  onClick={() => copyField('description')}
-                  title="Copy description from reference"
-                  type="button"
-                >
-                  ← copy
-                </button>
-              </>
+              <span className="diff-modified-dot" title="Differs from reference">●</span>
             ) : null}
             labelRightAdornment={isComparing ? (
-              <button
-                className="copy-all-from-ref-btn"
-                onClick={copyAllFromReference}
-                title="Replace every field of this entry with the reference entry's values"
-                type="button"
-              >
-                ⇇ Copy All from Reference
-              </button>
+              <>
+                {compareDelta && compareDelta.changedFields.size > 0 && (
+                  <div className="copy-menu-wrap">
+                    <button
+                      className="copy-menu-btn"
+                      onClick={(e) => { e.stopPropagation(); setCopyMenuOpen((v) => !v); }}
+                      title="Copy a single field from the reference entry"
+                      type="button"
+                    >
+                      ← Copy…
+                    </button>
+                    {copyMenuOpen && (
+                      <>
+                        <div className="copy-menu-backdrop" onClick={() => setCopyMenuOpen(false)} />
+                        <div className="copy-menu" role="menu">
+                          {compareDelta.changedFields.has('name') && (
+                            <button className="copy-menu-item" onClick={() => { copyField('name'); setCopyMenuOpen(false); }} type="button">
+                              Name
+                            </button>
+                          )}
+                          {compareDelta.changedFields.has('type') && (
+                            <button className="copy-menu-item" onClick={() => { copyField('type'); setCopyMenuOpen(false); }} type="button">
+                              Type
+                            </button>
+                          )}
+                          {compareDelta.changedFields.has('triggers') && (
+                            <button className="copy-menu-item" onClick={() => { copyField('triggers'); setCopyMenuOpen(false); }} type="button">
+                              Triggers
+                            </button>
+                          )}
+                          {compareDelta.changedFields.has('description') && (
+                            <button className="copy-menu-item" onClick={() => { copyField('description'); setCopyMenuOpen(false); }} type="button">
+                              Description
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                <button
+                  className="copy-all-from-ref-btn"
+                  onClick={copyAllFromReference}
+                  title="Replace every field of this entry with the reference entry's values"
+                  type="button"
+                >
+                  ⇇ Copy All from Reference
+                </button>
+              </>
             ) : null}
           />
 

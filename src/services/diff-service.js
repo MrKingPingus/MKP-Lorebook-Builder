@@ -12,9 +12,13 @@
 
 // Tokenize on whitespace boundaries while preserving the whitespace runs as
 // their own tokens, so the diff segments can be concatenated back into a
-// faithful reconstruction of the input.
+// faithful reconstruction of the input. Word characters (incl. straight and
+// curly apostrophes so contractions like "Akaya's" stay one token) are split
+// from punctuation runs — otherwise trailing punctuation drift makes the
+// shared word fail to match (e.g. "laundromat," vs "laundromat." would both
+// appear as wholesale changes instead of a shared "laundromat").
 function tokenize(text) {
-  return text.match(/\s+|\S+/g) ?? [];
+  return text.match(/\s+|[\w'’]+|[^\s\w'’]+/g) ?? [];
 }
 
 // Cap to avoid quadratic blow-up on pathological inputs (e.g. multi-thousand

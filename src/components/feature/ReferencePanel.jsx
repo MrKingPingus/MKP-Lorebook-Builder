@@ -17,9 +17,11 @@ import { useCrosstalk }         from '../../hooks/use-crosstalk.js';
 import { useSelection }         from '../../hooks/use-selection.js';
 import { useNameMatch }         from '../../hooks/use-name-match.js';
 import { useUi }                from '../../hooks/use-ui.js';
-import { entriesShallowEqual }  from '../../services/diff-service.js';
+import { entriesShallowEqual, diffEntries } from '../../services/diff-service.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
+import { Chip }                 from '../ui/Chip.jsx';
+import { DescriptionArea }      from './DescriptionArea.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
 
 export function ReferencePanel() {
@@ -163,6 +165,118 @@ export function ReferencePanel() {
               }${isSelected ? ' reference-entry-card--selected' : ''}${
                 isCrossFlashing ? ' reference-entry-card--cross-flash' : ''
               }${isComparePartner ? ' reference-entry-card--compare-partner' : ''}`;
+
+              // Compare partner: render a full mirror of the active editor's
+              // expanded layout — read-only inputs, read-only chips, and a
+              // description overlay that paints 'del' segments (text in
+              // reference but not in active) in red. Other reference cards
+              // keep the existing truncated chip-row layout.
+              if (isComparePartner && matchedActiveEntry) {
+                const refDelta = diffEntries(entry, matchedActiveEntry);
+                const isComparingHere = compareEntryId === sameNameActiveId;
+                return (
+                  <div
+                    key={entry.id}
+                    id={`ref-entry-${entry.id}`}
+                    className={`entry-card entry-card--reference-mirror${isCrossFlashing ? ' entry-card--cross-flash' : ''}${isComparePartner ? ' reference-entry-card--compare-partner' : ''}`}
+                    style={{ '--type-color': typeColor }}
+                    onMouseDown={stopSwap}
+                  >
+                    <div className="entry-card-header">
+                      <TypeColorDot type={entry.type} />
+                      <span className="entry-label" style={{ color: typeColor }}>
+                        #{idx + 1}: {entry.name || '(unnamed)'}
+                      </span>
+                      <button
+                        className={`entry-ref-badge entry-ref-badge--header entry-ref-badge--diff${isComparingHere ? ' entry-ref-badge--comparing' : ''}`}
+                        onMouseDown={stopSwap}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCompareEntryId(isComparingHere ? null : sameNameActiveId);
+                        }}
+                        title={isComparingHere ? 'Click to exit compare mode' : 'Click to compare side by side'}
+                        type="button"
+                      >
+                        {isComparingHere ? 'comparing ✎' : 'differs ⚖'}
+                      </button>
+                      <div className="entry-card-header-right">
+                        {!hideEntryStats && (
+                          <StatsBadge
+                            triggerCount={entry.triggers.length}
+                            charCount={entry.description.length}
+                            counterTiers={counterTiers}
+                            tieredEnabled={tieredCounterEnabled}
+                          />
+                        )}
+                        {snapshotCount > 0 && (
+                          <span
+                            className="reference-entry-rollback"
+                            title={`${snapshotCount} rollback snapshot${snapshotCount === 1 ? '' : 's'}`}
+                          >
+                            ↺ {snapshotCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="entry-card-body" onMouseDown={stopSwap}>
+                      <div className="entry-fields-row">
+                        <div className="entry-field entry-field--name">
+                          <div className="field-label">ENTRY NAME</div>
+                          <input
+                            className="entry-name-field"
+                            value={entry.name}
+                            readOnly
+                            tabIndex={-1}
+                          />
+                        </div>
+                        <div className="entry-field entry-field--type">
+                          <div className="field-label">ENTRY TYPE</div>
+                          <select className="type-selector" value={entry.type} disabled>
+                            {ENTRY_TYPES.map((t) => (
+                              <option key={t.id} value={t.id}>{t.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="trigger-section">
+                        <div className="trigger-section-header">
+                          <div className="field-label">TRIGGER KEYWORDS</div>
+                        </div>
+                        <div className="trigger-chips-wrapper">
+                          <div className="trigger-chips trigger-chips--readonly">
+                            {entry.triggers.map((t, i) => {
+                              const key            = t.toLowerCase();
+                              const isConflict     = conflictMap.has(key);
+                              const isAcknowledged = allowedOverlaps.includes(key);
+                              const ringColor = isConflict
+                                ? (isAcknowledged ? 'var(--blue)' : 'var(--yellow)')
+                                : null;
+                              return (
+                                <Chip
+                                  key={i}
+                                  label={t}
+                                  ringColor={ringColor}
+                                  acknowledged={isAcknowledged}
+                                  readOnly
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <DescriptionArea
+                        value={entry.description}
+                        onChange={() => {}}
+                        readOnly
+                        hideFooter
+                        diffSegments={refDelta.description?.segments ?? null}
+                        diffSide="reference"
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={entry.id}

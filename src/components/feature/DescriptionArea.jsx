@@ -11,10 +11,13 @@ export function DescriptionArea({
   onChange,
   ignoreLimitWarning = false,
   onToggleLimitWarning,
-  diffsFromReference = false,
-  diffSegments       = null,
-  labelLeftAdornment = null,
+  diffsFromReference  = false,
+  diffSegments        = null,
+  diffSide            = 'active',
+  labelLeftAdornment  = null,
   labelRightAdornment = null,
+  readOnly            = false,
+  hideFooter          = false,
 }) {
   const textareaRef = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
@@ -96,12 +99,14 @@ export function DescriptionArea({
           text={value}
           query={searchQuery}
           diffSegments={diffSegments}
+          diffSide={diffSide}
         />
         <textarea
           ref={textareaRef}
           className="description-textarea"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={readOnly ? undefined : (e) => onChange(e.target.value)}
+          readOnly={readOnly}
           placeholder="Entry description…"
           spellCheck={false}
           onMouseDown={(e) => e.stopPropagation()}
@@ -109,23 +114,25 @@ export function DescriptionArea({
           style={tieredBorderStyle}
         />
       </div>
-      <div className="description-footer">
-        <CharCounter
-          count={value.length}
-          limit={CHAR_LIMIT}
-          tiers={counterTiers}
-          tieredEnabled={tieredCounterEnabled}
-        />
-        {overYellow && onToggleLimitWarning && (
-          <button
-            className={`override-pill override-pill--${ignoreLimitWarning ? 'active' : pillTier}`}
-            onClick={onToggleLimitWarning}
-            title={ignoreLimitWarning ? 'Limit override on — click to re-enable warnings' : 'Ignore the character limit warning for this entry'}
-          >
-            {ignoreLimitWarning ? 'Limit Ignored' : 'Ignore Limit'}
-          </button>
-        )}
-      </div>
+      {!hideFooter && (
+        <div className="description-footer">
+          <CharCounter
+            count={value.length}
+            limit={CHAR_LIMIT}
+            tiers={counterTiers}
+            tieredEnabled={tieredCounterEnabled}
+          />
+          {overYellow && onToggleLimitWarning && (
+            <button
+              className={`override-pill override-pill--${ignoreLimitWarning ? 'active' : pillTier}`}
+              onClick={onToggleLimitWarning}
+              title={ignoreLimitWarning ? 'Limit override on — click to re-enable warnings' : 'Ignore the character limit warning for this entry'}
+            >
+              {ignoreLimitWarning ? 'Limit Ignored' : 'Ignore Limit'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

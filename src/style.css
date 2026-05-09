@@ -4089,6 +4089,7 @@ kbd {
    in either the rollback preview or the cross-pane diff popover. */
 .diff-modified-dot {
   display: inline-block;
+  margin-left: 6px;
   margin-right: 5px;
   color: var(--yellow);
   font-size: 10px;
@@ -4276,9 +4277,18 @@ kbd {
 }
 
 /* Inline diff overlay inside the description — green outline boxes around
-   words that exist in active but not in reference. Box-only, no fill. */
+   words that exist in active but not in reference (active side); red
+   outline boxes around words that exist in reference but not in active
+   (reference side mirror). Box-only, no fill, so the underlying text
+   reads normally and the boxes hug the words. */
 .diff-overlay-add {
   border: 1px solid var(--green);
+  border-radius: 3px;
+  padding: 0 1px;
+  margin: 0 -1px;
+}
+.diff-overlay-del {
+  border: 1px solid var(--red);
   border-radius: 3px;
   padding: 0 1px;
   margin: 0 -1px;
@@ -4286,6 +4296,89 @@ kbd {
 
 .reference-entry-card--compare-partner {
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55);
+}
+
+/* Reference mirror — when compare mode is engaged, the matched reference
+   card is rendered using the active editor's expanded layout so the user
+   can scan both sides at the same dimensions. The inputs/selects are
+   read-only; the description textarea is read-only with a 'reference'
+   diff overlay (red outlines on segments missing from the active side).
+   Trigger input is hidden. */
+.entry-card--reference-mirror {
+  cursor: default;
+}
+.entry-card--reference-mirror .entry-name-field[readonly],
+.entry-card--reference-mirror .type-selector[disabled],
+.entry-card--reference-mirror .description-textarea[readonly] {
+  opacity: 1;            /* keep readable; readOnly browser default dims it */
+  cursor: default;
+  background: var(--surface2);
+}
+.trigger-chips--readonly {
+  cursor: default;
+}
+.trigger-chips--readonly .trigger-input {
+  display: none;
+}
+
+/* Copy-menu trigger button + popover — sits in the DESCRIPTION label row
+   on the active card while compare mode is engaged, just left of the
+   "Copy All from Reference" button. One menu per active editor; the
+   backdrop closes it on outside click. */
+.copy-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-right: 6px;
+}
+.copy-menu-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.copy-menu-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--surface);
+}
+.copy-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.copy-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 41;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.copy-menu-item {
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.copy-menu-item:hover {
+  background: var(--blue);
+  color: var(--surface);
 }
 
 /* ============================================================
