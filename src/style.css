@@ -4062,6 +4062,283 @@ kbd {
 }
 
 /* ============================================================
+   Diff visuals — shared between rollback preview and cross-pane popover
+   ============================================================ */
+/* Cross-pane "in both" badge variants — green when entries match exactly,
+   yellow when they differ. Sits on top of the base .entry-ref-badge styles. */
+.entry-ref-badge--match {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+}
+.entry-ref-badge--match:hover {
+  background: var(--green);
+  color: var(--surface);
+}
+.entry-ref-badge--diff {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.entry-ref-badge--diff:hover {
+  background: var(--yellow);
+  color: var(--surface);
+}
+
+/* Field-label modifier dot — small filled circle that flags a changed field
+   in either the rollback preview or the cross-pane diff popover. */
+.diff-modified-dot {
+  display: inline-block;
+  margin-right: 5px;
+  color: var(--yellow);
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+/* Inline word-level segments. 'same' renders as plain text; 'add'/'del' get
+   a tinted background + sign. Word boundaries already include their own
+   whitespace so segments concat cleanly. */
+.diff-seg--same { color: inherit; }
+.diff-seg--add {
+  background: rgba(52, 211, 153, 0.22);
+  color: var(--text);
+  border-radius: 2px;
+}
+.diff-seg--del {
+  background: rgba(239, 68, 68, 0.22);
+  color: var(--text);
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.7);
+  border-radius: 2px;
+}
+
+/* Trigger chips inside a diff row — common stays neutral, added is green,
+   removed is red-strikethrough. Tighter than the editor's chip styling so
+   a long trigger list doesn't blow out the row. */
+.diff-trigger-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.diff-trigger {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+.diff-trigger--same {
+  background: var(--surface3);
+  border-color: var(--border);
+  color: var(--muted2);
+}
+.diff-trigger--added {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+}
+.diff-trigger--removed {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: var(--red);
+  color: var(--red);
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.7);
+}
+.diff-trigger--empty {
+  background: transparent;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Rollback preview "Highlight Differences" toggle bar */
+.rollback-diff-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+}
+.rollback-diff-toggle {
+  padding: 3px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rollback-diff-toggle:hover {
+  background: var(--surface);
+}
+.rollback-diff-toggle--on {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--surface);
+}
+.rollback-diff-toggle--on:hover {
+  background: var(--blue);
+}
+.rollback-diff-count {
+  font-size: 11px;
+  color: var(--muted2);
+}
+.diff-after-hint {
+  color: var(--muted2);
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* ============================================================
+   Cross-pane diff popover (modal-style, centered, portaled)
+   ============================================================ */
+.cross-diff-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 9000;
+}
+.cross-diff-popover {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 40px));
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  z-index: 9001;
+  overflow: hidden;
+}
+.cross-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.cross-diff-header-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cross-diff-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.cross-diff-subtitle {
+  font-size: 11px;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cross-diff-count {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--muted2);
+}
+.cross-diff-close-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cross-diff-close-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.cross-diff-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cross-diff-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cross-diff-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.cross-diff-value {
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-word;
+}
+.cross-diff-row--desc .cross-diff-description {
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.cross-diff-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cross-diff-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+  justify-content: flex-end;
+}
+.cross-diff-action-btn {
+  padding: 5px 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cross-diff-action-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--surface);
+}
+.cross-diff-action-btn--close {
+  margin-left: auto;
+}
+
+/* ============================================================
    Reference Entry Peek Overlay (mobile only)
    ============================================================ */
 /* §REFERENCE-ENTRY-OVERLAY */

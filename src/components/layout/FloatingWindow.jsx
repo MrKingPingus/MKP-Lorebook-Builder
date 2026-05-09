@@ -10,6 +10,7 @@ import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
 import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
+import { CrossDiffPopover }    from '../feature/CrossDiffPopover.jsx';
 import { GlobalFilterBar }     from '../feature/GlobalFilterBar.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
@@ -102,6 +103,9 @@ export function FloatingWindow() {
               is tapped from a chip popover, search hit, name badge, crosstalk
               row, or browse sheet. */}
           {isMobile && <ReferenceEntryOverlay />}
+
+          {/* Cross-pane diff popover — opens from "differs" badge on either side */}
+          {!isMobile && <CrossDiffPopover />}
 
           {/* Lorebook name prompt — appears after new lorebook creation */}
           <LorebookNameModal />

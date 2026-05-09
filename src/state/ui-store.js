@@ -29,6 +29,7 @@ export const useUiStore = create((set) => ({
   referenceBrowseOpen:  false, // mobile-only — true when the read-only reference browse sheet is open
   pickFromReferenceMode: false, // mobile-only — true while the user is in the swap-and-back "Pick from Reference" pose (browsing reference as if it were active to multi-select for copy back to original active)
   crossFlashId:          null,  // entry id currently flashing as the target of a cross-pane "in both books" jump; auto-clears on a timer
+  crossDiffActiveId:     null,  // active-side entry id whose cross-pane diff popover is open; null = closed
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -87,6 +88,7 @@ export const useUiStore = create((set) => ({
   setReferenceBrowseOpen:  (referenceBrowseOpen)  => set({ referenceBrowseOpen }),
   setPickFromReferenceMode: (pickFromReferenceMode) => set({ pickFromReferenceMode }),
   setCrossFlashId:          (crossFlashId)          => set({ crossFlashId }),
+  setCrossDiffActiveId:     (crossDiffActiveId)     => set({ crossDiffActiveId }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

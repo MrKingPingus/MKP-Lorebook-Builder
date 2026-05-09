@@ -1,16 +1,18 @@
 // Rollback panel: snapshot list and snapshot preview (stacked current/snapshot display)
-import { useState }    from 'react';
-import { ENTRY_TYPES } from '../../constants/entry-types.js';
+import { useState }     from 'react';
+import { ENTRY_TYPES }  from '../../constants/entry-types.js';
+import { diffEntries }  from '../../services/diff-service.js';
 
 function formatTimestamp(ts) {
   return new Date(ts).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual, promptSuppressed, onReEnablePrompt }) {
+export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual, promptSuppressed, onReEnablePrompt }) {
   const [view, setView]                       = useState('list'); // 'list' | 'preview'
   const [previewIndex, setPreviewIndex]       = useState(null);
   const [editingLabelIdx, setEditingLabelIdx] = useState(null);
   const [labelDraft, setLabelDraft]           = useState('');
+  const [diffOn, setDiffOn]                   = useState(false);
 
   function openPreview(i) {
     setPreviewIndex(i);
@@ -20,6 +22,7 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin
   function backToList() {
     setView('list');
     setPreviewIndex(null);
+    setDiffOn(false);
   }
 
   function commitLabel(i) {
@@ -122,6 +125,18 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin
 
   if (!snap) { backToList(); return null; }
 
+  // Diff is computed snapshot → current ("what changed since the snapshot").
+  // The preview shows the snapshot (the older state), so:
+  //   - 'del' segments = text that was removed since the snapshot (i.e. only
+  //     in the snapshot)
+  //   - 'add' segments = text that was added since the snapshot (i.e. only
+  //     in the current entry)
+  //   - 'same' = present in both
+  // Triggers row uses delta.triggers which already labels by direction.
+  const delta            = diffOn && currentEntry ? diffEntries(snap, currentEntry) : null;
+  const changedCount     = delta ? delta.changedFields.size : 0;
+  const isFieldChanged   = (name) => delta?.changedFields.has(name) ?? false;
+
   return (
     <div className="rollback-panel rollback-panel--preview">
       <div className="rollback-panel-header">
@@ -134,27 +149,92 @@ export function RollbackPanel({ snapshots, onRestore, onUpdateLabel, onTogglePin
         </span>
       </div>
 
+      {currentEntry && (
+        <div className="rollback-diff-bar">
+          <button
+            className={`rollback-diff-toggle${diffOn ? ' rollback-diff-toggle--on' : ''}`}
+            onClick={() => setDiffOn((v) => !v)}
+            type="button"
+            title="Compare snapshot to current entry"
+          >
+            {diffOn ? '✓ ' : ''}Highlight Differences
+          </button>
+          {diffOn && (
+            <span className="rollback-diff-count">
+              {changedCount === 0
+                ? 'No differences'
+                : `${changedCount} field${changedCount === 1 ? '' : 's'} changed`}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="rollback-preview-body">
         <div className="rollback-preview-row">
-          <span className="rollback-preview-label">Name</span>
-          <span className="rollback-preview-value">{snap.name || '(unnamed)'}</span>
-        </div>
-        <div className="rollback-preview-row">
-          <span className="rollback-preview-label">Type</span>
-          <span className="rollback-preview-value" style={{ color: typeDef?.color ?? 'inherit' }}>
-            {typeDef?.label ?? snap.type}
+          <span className="rollback-preview-label">
+            {diffOn && isFieldChanged('name') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            Name
+          </span>
+          <span className="rollback-preview-value">
+            {snap.name || '(unnamed)'}
+            {diffOn && delta?.name && (
+              <span className="diff-after-hint"> → {delta.name.after || '(unnamed)'}</span>
+            )}
           </span>
         </div>
         <div className="rollback-preview-row">
-          <span className="rollback-preview-label">Triggers</span>
+          <span className="rollback-preview-label">
+            {diffOn && isFieldChanged('type') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            Type
+          </span>
+          <span className="rollback-preview-value" style={{ color: typeDef?.color ?? 'inherit' }}>
+            {typeDef?.label ?? snap.type}
+            {diffOn && delta?.type && (
+              <span className="diff-after-hint" style={{ color: 'var(--muted)' }}>
+                {' '}→ {ENTRY_TYPES.find((t) => t.id === delta.type.after)?.label ?? delta.type.after}
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="rollback-preview-row">
+          <span className="rollback-preview-label">
+            {diffOn && isFieldChanged('triggers') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            Triggers
+          </span>
           <span className="rollback-preview-value">
-            {snap.triggers.length === 0 ? '(none)' : snap.triggers.join(', ')}
+            {!diffOn ? (
+              snap.triggers.length === 0 ? '(none)' : snap.triggers.join(', ')
+            ) : (
+              <span className="diff-trigger-row">
+                {delta?.triggers.common.map((t) => (
+                  <span key={`c-${t}`} className="diff-trigger diff-trigger--same">{t}</span>
+                ))}
+                {delta?.triggers.removed.map((t) => (
+                  <span key={`r-${t}`} className="diff-trigger diff-trigger--removed" title="Removed since snapshot">{t}</span>
+                ))}
+                {delta?.triggers.added.map((t) => (
+                  <span key={`a-${t}`} className="diff-trigger diff-trigger--added" title="Added since snapshot">{t}</span>
+                ))}
+                {delta && delta.triggers.common.length + delta.triggers.added.length + delta.triggers.removed.length === 0 && (
+                  <span className="diff-trigger diff-trigger--empty">(none on either side)</span>
+                )}
+              </span>
+            )}
           </span>
         </div>
         <div className="rollback-preview-row rollback-preview-row--desc">
-          <span className="rollback-preview-label">Description</span>
+          <span className="rollback-preview-label">
+            {diffOn && isFieldChanged('description') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            Description
+          </span>
           <div className="rollback-preview-description">
-            {snap.description || '(empty)'}
+            {!diffOn || !delta?.description ? (
+              snap.description || '(empty)'
+            ) : (
+              delta.description.segments.map((seg, i) => (
+                <span key={i} className={`diff-seg diff-seg--${seg.kind}`}>{seg.text}</span>
+              ))
+            )}
           </div>
         </div>
       </div>

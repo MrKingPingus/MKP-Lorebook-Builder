@@ -283,6 +283,7 @@ export function EntryDetailPanel() {
             {rollbackOpen && rollback.enabled && (
               <RollbackPanel
                 snapshots={rollback.snapshots}
+                currentEntry={entry}
                 onRestore={rollback.restoreSnapshot}
                 onUpdateLabel={rollback.updateSnapshotLabel}
                 onTogglePin={rollback.toggleSnapshotPin}

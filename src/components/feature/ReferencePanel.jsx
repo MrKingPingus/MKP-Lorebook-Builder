@@ -17,6 +17,7 @@ import { useCrosstalk }         from '../../hooks/use-crosstalk.js';
 import { useSelection }         from '../../hooks/use-selection.js';
 import { useNameMatch }         from '../../hooks/use-name-match.js';
 import { useUi }                from '../../hooks/use-ui.js';
+import { entriesShallowEqual }  from '../../services/diff-service.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
@@ -27,11 +28,12 @@ export function ReferencePanel() {
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
-  const { refToActive }                                             = useNameMatch();
+  const { refToActive, matchedActiveByRef }                         = useNameMatch();
   const { crosstalkSwapMode }                                       = useSettings();
-  const crossFlashId    = useUi((s) => s.crossFlashId);
-  const setCrossFlashId = useUi((s) => s.setCrossFlashId);
-  const swapOnClick     = crosstalkSwapMode === 'click-to-edit';
+  const crossFlashId         = useUi((s) => s.crossFlashId);
+  const setCrossFlashId      = useUi((s) => s.setCrossFlashId);
+  const setCrossDiffActiveId = useUi((s) => s.setCrossDiffActiveId);
+  const swapOnClick          = crosstalkSwapMode === 'click-to-edit';
 
   // Ephemeral expand state — resets on swap (panel unmounts) and on lorebook
   // switch. A Set of entry ids whose description is currently revealed.
@@ -121,8 +123,10 @@ export function ReferencePanel() {
               const isExpanded    = expandedIds.has(entry.id);
               const hasDescription = (entry.description ?? '').length > 0;
               const isSelected    = selectedIds.has(entry.id);
-              const sameNameActiveId = refToActive.get(entry.id) ?? null;
-              const isCrossFlashing  = crossFlashId === entry.id;
+              const sameNameActiveId   = refToActive.get(entry.id) ?? null;
+              const matchedActiveEntry = matchedActiveByRef.get(entry.id) ?? null;
+              const matchedIsEqual     = matchedActiveEntry ? entriesShallowEqual(entry, matchedActiveEntry) : false;
+              const isCrossFlashing    = crossFlashId === entry.id;
               const cardClassName = `reference-entry-card${
                 isSelectMode ? ' reference-entry-card--selectable' : ''
               }${isSelected ? ' reference-entry-card--selected' : ''}${
@@ -143,13 +147,19 @@ export function ReferencePanel() {
                     </span>
                     {sameNameActiveId && (
                       <button
-                        className="entry-ref-badge entry-ref-badge--header"
+                        className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}`}
                         onMouseDown={stopSwap}
-                        onClick={(e) => { e.stopPropagation(); jumpToActive(sameNameActiveId); }}
-                        title="Same-named entry exists in the active book — click to jump to it"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (matchedIsEqual) jumpToActive(sameNameActiveId);
+                          else                setCrossDiffActiveId(sameNameActiveId);
+                        }}
+                        title={matchedIsEqual
+                          ? 'Identical entry exists in the active book — click to jump to it'
+                          : 'Same-named entry differs in the active book — click to compare'}
                         type="button"
                       >
-                        in both <span className="entry-ref-badge-arrow">↗</span>
+                        {matchedIsEqual ? 'in both ↗' : 'differs ⚖'}
                       </button>
                     )}
                     <div className="reference-entry-header-right">

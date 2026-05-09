@@ -14,6 +14,7 @@ import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
 import { useNameMatch }   from '../../hooks/use-name-match.js';
 import { useRollback }    from '../../hooks/use-rollback.js';
+import { entriesShallowEqual } from '../../services/diff-service.js';
 import { useIsSelectMode, useIsSelected, useToggleSelected } from '../../hooks/use-selection.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
@@ -26,11 +27,12 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [suppressChecked, setSuppressChecked] = useState(false);
   const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
-  const { activeToRef: nameMatchMap } = useNameMatch();
+  const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
   const crossFlashId            = useUi((s) => s.crossFlashId);
   const setCrossFlashId         = useUi((s) => s.setCrossFlashId);
+  const setCrossDiffActiveId    = useUi((s) => s.setCrossDiffActiveId);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const expandAll              = useUi((s) => s.expandAll);
@@ -100,7 +102,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const typeColor = typeDef?.color ?? '#9ba1ad';
 
   const sameNameRefId   = nameMatchMap.get(entry.id) ?? null;
+  const matchedRefEntry = matchedRefByActive.get(entry.id) ?? null;
+  const matchedIsEqual  = matchedRefEntry ? entriesShallowEqual(entry, matchedRefEntry) : false;
   const isCrossFlashing = crossFlashId === entry.id;
+
+  // Badge click: identical entries jump straight to the counterpart (cheap,
+  // common case); differing entries open the diff popover so the user can
+  // see what's actually different before deciding to navigate.
+  function onBadgeClick(e) {
+    e.stopPropagation();
+    if (!sameNameRefId) return;
+    if (matchedIsEqual) jumpToReference(sameNameRefId);
+    else                setCrossDiffActiveId(entry.id);
+  }
 
   // Cross-pane "in both books" jump — flash the matching reference card and
   // scroll it into view. Uses ui-store crossFlashId so the reference card can
@@ -275,12 +289,14 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         )}
         {sameNameRefId && (
           <button
-            className="entry-ref-badge entry-ref-badge--header"
-            onClick={(e) => { e.stopPropagation(); jumpToReference(sameNameRefId); }}
-            title="Same-named entry exists in the reference book — click to jump to it"
+            className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}`}
+            onClick={onBadgeClick}
+            title={matchedIsEqual
+              ? 'Identical entry exists in the reference book — click to jump to it'
+              : 'Same-named entry differs in the reference book — click to compare'}
             type="button"
           >
-            in both <span className="entry-ref-badge-arrow">↗</span>
+            {matchedIsEqual ? 'in both ↗' : 'differs ⚖'}
           </button>
         )}
         <div className="entry-card-header-right">
@@ -465,6 +481,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           {rollbackOpen && rollback.enabled && (
             <RollbackPanel
               snapshots={rollback.snapshots}
+              currentEntry={entry}
               onRestore={rollback.restoreSnapshot}
               onUpdateLabel={rollback.updateSnapshotLabel}
               onTogglePin={rollback.toggleSnapshotPin}
