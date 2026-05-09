@@ -4276,23 +4276,30 @@ kbd {
   color: var(--surface);
 }
 
-/* Inline diff overlay inside the description — green outline boxes around
-   words that exist in active but not in reference (active side); red
-   outline boxes around words that exist in reference but not in active
-   (reference side mirror). Box-only, no fill, so the underlying text
-   reads normally and the boxes hug the words. */
-.diff-overlay-add {
-  border: 1px solid var(--green);
-  border-radius: 3px;
-  padding: 0 1px;
-  margin: 0 -1px;
-}
+/* Diff outline overlay inside the description. The .diff-overlay-* spans
+   are invisible markers used purely as querySelector targets — the actual
+   outlines are drawn as absolutely-positioned divs in .diff-outline-layer,
+   sized from each marker's getBoundingClientRect. A multi-line marker
+   reports a single bounding box covering both lines, so the outline reads
+   as one continuous shape instead of CSS-sliced fragments. */
+.diff-overlay-add,
 .diff-overlay-del {
-  border: 1px solid var(--red);
-  border-radius: 3px;
-  padding: 0 1px;
-  margin: 0 -1px;
+  /* No visual styling — the outline layer renders the boxes. */
 }
+.diff-outline-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.diff-outline {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.diff-outline--add { border: 1.5px solid var(--green); }
+.diff-outline--del { border: 1.5px solid var(--red);   }
 
 .reference-entry-card--compare-partner {
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55);

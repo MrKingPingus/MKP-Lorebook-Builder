@@ -503,8 +503,12 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             />
           </div>
 
-          {/* Row 3: Suggestions tray */}
-          <SuggestionsTray entry={entry} onAddTrigger={addTrigger} onAddTriggers={addTriggers} />
+          {/* Row 3: Suggestions tray — hidden in compare mode so both sides
+              share the same minimal layout (the reference mirror doesn't
+              render a tray). Exit compare mode to access suggestions. */}
+          {!isComparing && (
+            <SuggestionsTray entry={entry} onAddTrigger={addTrigger} onAddTriggers={addTriggers} />
+          )}
 
           {/* Row 4: Description */}
           <DescriptionArea
@@ -519,6 +523,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             })}
             diffsFromReference={isComparing && !!compareDelta?.description}
             diffSegments={isComparing ? compareDelta?.description?.segments ?? null : null}
+            hideFooter={isComparing}
             labelLeftAdornment={isComparing && compareDelta?.description ? (
               <span className="diff-modified-dot" title="Differs from reference">●</span>
             ) : null}
@@ -575,7 +580,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             ) : null}
           />
 
-          {/* Row 5: Rollback */}
+          {/* Row 5: Rollback — hidden in compare mode so both sides share
+              the same minimal layout. Exit compare mode to access rollback. */}
+          {!isComparing && (<>
           <div className="rollback-footer">
             <button
               className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
@@ -612,6 +619,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               onReEnablePrompt={rollback.reEnablePrompt}
             />
           )}
+          </>)}
         </div>
       )}
     </div>
