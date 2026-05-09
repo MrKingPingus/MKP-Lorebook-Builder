@@ -4191,151 +4191,101 @@ kbd {
 }
 
 /* ============================================================
-   Cross-pane diff popover (modal-style, centered, portaled)
+   Side-by-side compare mode — engaged from the yellow "differs"
+   badge. Active editor gets per-field annotations (modified dot,
+   copy button, yellow left-border, green outline boxes around
+   description words that aren't in the reference). Reference
+   counterpart gets a partner highlight and force-expands.
    ============================================================ */
-.cross-diff-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 9000;
+.entry-ref-badge--comparing {
+  background: var(--yellow);
+  color: var(--surface);
 }
-.cross-diff-popover {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(720px, calc(100vw - 40px));
-  max-height: calc(100vh - 80px);
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  z-index: 9001;
-  overflow: hidden;
+.entry-ref-badge--comparing:hover {
+  background: var(--yellow);
+  color: var(--surface);
+  filter: brightness(1.1);
 }
-.cross-diff-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface2);
-}
-.cross-diff-header-titles {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.cross-diff-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-.cross-diff-subtitle {
-  font-size: 11px;
-  color: var(--muted2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.cross-diff-count {
-  flex-shrink: 0;
-  padding: 3px 8px;
+
+.field-copy-btn {
+  margin-left: 8px;
+  padding: 1px 7px;
   background: var(--surface3);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 11px;
+  border-radius: 3px;
   color: var(--muted2);
-}
-.cross-diff-close-btn {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius);
-  color: var(--muted2);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-.cross-diff-close-btn:hover {
-  background: var(--surface3);
-  color: var(--text);
-}
-.cross-diff-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.cross-diff-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.cross-diff-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--muted2);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.cross-diff-value {
-  font-size: 13px;
-  color: var(--text);
-  word-break: break-word;
-}
-.cross-diff-row--desc .cross-diff-description {
-  padding: 8px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 13px;
-  color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-  max-height: 320px;
-  overflow-y: auto;
-}
-.cross-diff-meta {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.cross-diff-actions {
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--border);
-  background: var(--surface2);
-  justify-content: flex-end;
-}
-.cross-diff-action-btn {
-  padding: 5px 12px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
   cursor: pointer;
 }
-.cross-diff-action-btn:hover {
+.field-copy-btn:hover {
   background: var(--blue);
   border-color: var(--blue);
   color: var(--surface);
 }
-.cross-diff-action-btn--close {
+
+.entry-field--differs > input,
+.entry-field--differs > select,
+.entry-field--differs .type-selector {
+  border-left: 3px solid var(--yellow);
+}
+.trigger-section--differs {
+  border-left: 3px solid var(--yellow);
+  padding-left: 8px;
+}
+.description-area--differs .description-textarea,
+.description-area--differs .description-highlight {
+  border-left: 3px solid var(--yellow);
+}
+
+.description-area-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.description-area-label-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.description-area-label-right {
+  display: inline-flex;
+  align-items: center;
   margin-left: auto;
+}
+
+.copy-all-from-ref-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.copy-all-from-ref-btn:hover {
+  background: var(--yellow);
+  color: var(--surface);
+}
+
+/* Inline diff overlay inside the description — green outline boxes around
+   words that exist in active but not in reference. Box-only, no fill. */
+.diff-overlay-add {
+  border: 1px solid var(--green);
+  border-radius: 3px;
+  padding: 0 1px;
+  margin: 0 -1px;
+}
+
+.reference-entry-card--compare-partner {
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55);
 }
 
 /* ============================================================

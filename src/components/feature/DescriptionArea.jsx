@@ -6,7 +6,16 @@ import { useSettings }  from '../../hooks/use-settings.js';
 import { useUi }        from '../../hooks/use-ui.js';
 import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/limits.js';
 
-export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, onToggleLimitWarning }) {
+export function DescriptionArea({
+  value,
+  onChange,
+  ignoreLimitWarning = false,
+  onToggleLimitWarning,
+  diffsFromReference = false,
+  diffSegments       = null,
+  labelLeftAdornment = null,
+  labelRightAdornment = null,
+}) {
   const textareaRef = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
@@ -72,14 +81,21 @@ export function DescriptionArea({ value, onChange, ignoreLimitWarning = false, o
   }, [resize]);
 
   return (
-    <div className="description-area">
-      <div className="field-label">
-        DESCRIPTION <span className="field-label-hint">({CHAR_LIMIT} char limit)</span>
+    <div className={`description-area${diffsFromReference ? ' description-area--differs' : ''}`}>
+      <div className="field-label description-area-label">
+        <span className="description-area-label-left">
+          DESCRIPTION <span className="field-label-hint">({CHAR_LIMIT} char limit)</span>
+          {labelLeftAdornment}
+        </span>
+        {labelRightAdornment && (
+          <span className="description-area-label-right">{labelRightAdornment}</span>
+        )}
       </div>
       <div className="description-wrapper">
         <DescriptionHighlight
           text={value}
           query={searchQuery}
+          diffSegments={diffSegments}
         />
         <textarea
           ref={textareaRef}

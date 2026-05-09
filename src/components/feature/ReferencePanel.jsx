@@ -8,7 +8,7 @@
 // In Select mode, the panel becomes a click-to-select source — swap is
 // suppressed and clicking a card toggles its membership in the shared
 // selection set (with side='reference').
-import { useState }              from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
@@ -28,12 +28,42 @@ export function ReferencePanel() {
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
-  const { refToActive, matchedActiveByRef }                         = useNameMatch();
+  const { refToActive, activeToRef, matchedActiveByRef }            = useNameMatch();
   const { crosstalkSwapMode }                                       = useSettings();
-  const crossFlashId         = useUi((s) => s.crossFlashId);
-  const setCrossFlashId      = useUi((s) => s.setCrossFlashId);
-  const setCrossDiffActiveId = useUi((s) => s.setCrossDiffActiveId);
-  const swapOnClick          = crosstalkSwapMode === 'click-to-edit';
+  const crossFlashId      = useUi((s) => s.crossFlashId);
+  const setCrossFlashId   = useUi((s) => s.setCrossFlashId);
+  const compareEntryId    = useUi((s) => s.compareEntryId);
+  const setCompareEntryId = useUi((s) => s.setCompareEntryId);
+  const swapOnClick       = crosstalkSwapMode === 'click-to-edit';
+
+  // While compare mode is engaged, force-expand the matched reference entry
+  // so the user can read it side by side with the editable active one.
+  // Remember the entry id we forced so we can collapse only that one when
+  // compare mode exits, leaving other manually-expanded entries alone.
+  const compareForcedRefId = compareEntryId ? activeToRef.get(compareEntryId) ?? null : null;
+  const lastForcedRefId    = useRef(null);
+  useEffect(() => {
+    if (compareForcedRefId && !expandedIds.has(compareForcedRefId)) {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        next.add(compareForcedRefId);
+        return next;
+      });
+      lastForcedRefId.current = compareForcedRefId;
+      requestAnimationFrame(() => {
+        document.getElementById(`ref-entry-${compareForcedRefId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    } else if (!compareForcedRefId && lastForcedRefId.current) {
+      const id = lastForcedRefId.current;
+      lastForcedRefId.current = null;
+      setExpandedIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [compareForcedRefId]);
 
   // Ephemeral expand state — resets on swap (panel unmounts) and on lorebook
   // switch. A Set of entry ids whose description is currently revealed.
@@ -127,11 +157,12 @@ export function ReferencePanel() {
               const matchedActiveEntry = matchedActiveByRef.get(entry.id) ?? null;
               const matchedIsEqual     = matchedActiveEntry ? entriesShallowEqual(entry, matchedActiveEntry) : false;
               const isCrossFlashing    = crossFlashId === entry.id;
+              const isComparePartner   = compareForcedRefId === entry.id;
               const cardClassName = `reference-entry-card${
                 isSelectMode ? ' reference-entry-card--selectable' : ''
               }${isSelected ? ' reference-entry-card--selected' : ''}${
                 isCrossFlashing ? ' reference-entry-card--cross-flash' : ''
-              }`;
+              }${isComparePartner ? ' reference-entry-card--compare-partner' : ''}`;
               return (
                 <div
                   key={entry.id}
@@ -145,23 +176,38 @@ export function ReferencePanel() {
                     <span className="reference-entry-label" style={{ color: typeColor }}>
                       #{idx + 1}: {entry.name || '(unnamed)'}
                     </span>
-                    {sameNameActiveId && (
-                      <button
-                        className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}`}
-                        onMouseDown={stopSwap}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (matchedIsEqual) jumpToActive(sameNameActiveId);
-                          else                setCrossDiffActiveId(sameNameActiveId);
-                        }}
-                        title={matchedIsEqual
-                          ? 'Identical entry exists in the active book — click to jump to it'
-                          : 'Same-named entry differs in the active book — click to compare'}
-                        type="button"
-                      >
-                        {matchedIsEqual ? 'in both ↗' : 'differs ⚖'}
-                      </button>
-                    )}
+                    {sameNameActiveId && (() => {
+                      const isComparing = compareEntryId === sameNameActiveId;
+                      return (
+                        <button
+                          className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing ? ' entry-ref-badge--comparing' : ''}`}
+                          onMouseDown={stopSwap}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (matchedIsEqual) {
+                              jumpToActive(sameNameActiveId);
+                            } else {
+                              setCompareEntryId(isComparing ? null : sameNameActiveId);
+                              if (!isComparing) {
+                                requestAnimationFrame(() => {
+                                  document.getElementById(`entry-${sameNameActiveId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                });
+                              }
+                            }
+                          }}
+                          title={
+                            matchedIsEqual
+                              ? 'Identical entry exists in the active book — click to jump to it'
+                              : isComparing
+                                ? 'Click to exit compare mode'
+                                : 'Same-named entry differs in the active book — click to compare side by side'
+                          }
+                          type="button"
+                        >
+                          {matchedIsEqual ? 'in both ↗' : (isComparing ? 'comparing ✎' : 'differs ⚖')}
+                        </button>
+                      );
+                    })()}
                     <div className="reference-entry-header-right">
                       {!hideEntryStats && (
                         <StatsBadge

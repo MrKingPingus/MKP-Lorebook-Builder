@@ -14,7 +14,7 @@ import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
 import { useNameMatch }   from '../../hooks/use-name-match.js';
 import { useRollback }    from '../../hooks/use-rollback.js';
-import { entriesShallowEqual } from '../../services/diff-service.js';
+import { diffEntries, entriesShallowEqual } from '../../services/diff-service.js';
 import { useIsSelectMode, useIsSelected, useToggleSelected } from '../../hooks/use-selection.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
@@ -32,7 +32,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const pickFromReferenceMode   = useUi((s) => s.pickFromReferenceMode);
   const crossFlashId            = useUi((s) => s.crossFlashId);
   const setCrossFlashId         = useUi((s) => s.setCrossFlashId);
-  const setCrossDiffActiveId    = useUi((s) => s.setCrossDiffActiveId);
+  const compareEntryId          = useUi((s) => s.compareEntryId);
+  const setCompareEntryId       = useUi((s) => s.setCompareEntryId);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const expandAll              = useUi((s) => s.expandAll);
@@ -105,15 +106,66 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const matchedRefEntry = matchedRefByActive.get(entry.id) ?? null;
   const matchedIsEqual  = matchedRefEntry ? entriesShallowEqual(entry, matchedRefEntry) : false;
   const isCrossFlashing = crossFlashId === entry.id;
+  const isComparing     = compareEntryId === entry.id && !!matchedRefEntry;
 
-  // Badge click: identical entries jump straight to the counterpart (cheap,
-  // common case); differing entries open the diff popover so the user can
-  // see what's actually different before deciding to navigate.
+  // Per-field delta is only computed while comparing this entry. The LCS in
+  // diffEntries is fast enough at typical entry sizes to recompute on every
+  // keystroke without a debounce.
+  const compareDelta = isComparing ? diffEntries(matchedRefEntry, entry) : null;
+
+  // Badge click:
+  //   - Green (identical) → jump straight to the counterpart
+  //   - Yellow (differs)  → toggle side-by-side compare mode for this pair
   function onBadgeClick(e) {
     e.stopPropagation();
     if (!sameNameRefId) return;
-    if (matchedIsEqual) jumpToReference(sameNameRefId);
-    else                setCrossDiffActiveId(entry.id);
+    if (matchedIsEqual) {
+      jumpToReference(sameNameRefId);
+    } else {
+      setCompareEntryId(isComparing ? null : entry.id);
+    }
+  }
+
+  // When compare mode targets this entry, force-expand the card and scroll
+  // it into view. Stop forcing once the user collapses it explicitly.
+  useEffect(() => {
+    if (isMobile || !isComparing) return;
+    if (collapsed) {
+      if (isSearchFocused) setSearchFocusedId(null);
+      setLocalCollapsed(false);
+      setExpandAll(false);
+      setCollapseAll(false);
+    }
+    // Scroll once on entry — wait a frame so the now-expanded body is in flow
+    requestAnimationFrame(() => {
+      document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }, [isComparing, isMobile]);
+
+  // Collapsing the active card exits compare mode (transient pose per
+  // decision #6a — once you collapse the card you've left the comparison).
+  useEffect(() => {
+    if (isComparing && collapsed && !isMobile) setCompareEntryId(null);
+  }, [collapsed, isComparing, isMobile]);
+
+  // Per-field copy: pulls just the named field from the reference entry into
+  // the active entry. discrete=true so each click lands as its own undo step.
+  function copyField(fieldName) {
+    if (!matchedRefEntry) return;
+    if (fieldName === 'triggers') {
+      update({ triggers: [...matchedRefEntry.triggers] }, true);
+    } else {
+      update({ [fieldName]: matchedRefEntry[fieldName] }, true);
+    }
+  }
+  function copyAllFromReference() {
+    if (!matchedRefEntry) return;
+    update({
+      name:        matchedRefEntry.name,
+      type:        matchedRefEntry.type,
+      description: matchedRefEntry.description,
+      triggers:    [...matchedRefEntry.triggers],
+    }, true);
   }
 
   // Cross-pane "in both books" jump — flash the matching reference card and
@@ -289,14 +341,18 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         )}
         {sameNameRefId && (
           <button
-            className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}`}
+            className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing ? ' entry-ref-badge--comparing' : ''}`}
             onClick={onBadgeClick}
-            title={matchedIsEqual
-              ? 'Identical entry exists in the reference book — click to jump to it'
-              : 'Same-named entry differs in the reference book — click to compare'}
+            title={
+              matchedIsEqual
+                ? 'Identical entry exists in the reference book — click to jump to it'
+                : isComparing
+                  ? 'Click to exit compare mode'
+                  : 'Same-named entry differs in the reference book — click to compare side by side'
+            }
             type="button"
           >
-            {matchedIsEqual ? 'in both ↗' : 'differs ⚖'}
+            {matchedIsEqual ? 'in both ↗' : (isComparing ? 'comparing ✎' : 'differs ⚖')}
           </button>
         )}
         <div className="entry-card-header-right">
@@ -365,8 +421,23 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
           {/* Row 1: Entry Name + Entry Type */}
           <div className="entry-fields-row">
-            <div className="entry-field entry-field--name">
-              <div className="field-label">ENTRY NAME</div>
+            <div className={`entry-field entry-field--name${isComparing && compareDelta?.name ? ' entry-field--differs' : ''}`}>
+              <div className="field-label">
+                ENTRY NAME
+                {isComparing && compareDelta?.name && (
+                  <>
+                    <span className="diff-modified-dot" title="Differs from reference">●</span>
+                    <button
+                      className="field-copy-btn"
+                      onClick={() => copyField('name')}
+                      title="Copy name from reference"
+                      type="button"
+                    >
+                      ← copy
+                    </button>
+                  </>
+                )}
+              </div>
               <input
                 ref={nameInputRef}
                 className="entry-name-field"
@@ -376,8 +447,23 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 spellCheck={false}
               />
             </div>
-            <div className="entry-field entry-field--type">
-              <div className="field-label">ENTRY TYPE</div>
+            <div className={`entry-field entry-field--type${isComparing && compareDelta?.type ? ' entry-field--differs' : ''}`}>
+              <div className="field-label">
+                ENTRY TYPE
+                {isComparing && compareDelta?.type && (
+                  <>
+                    <span className="diff-modified-dot" title="Differs from reference">●</span>
+                    <button
+                      className="field-copy-btn"
+                      onClick={() => copyField('type')}
+                      title="Copy type from reference"
+                      type="button"
+                    >
+                      ← copy
+                    </button>
+                  </>
+                )}
+              </div>
               <TypeSelector
                 value={entry.type}
                 onChange={(type) => update({ type }, true)}
@@ -386,9 +472,24 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </div>
 
           {/* Row 2: Trigger Keywords header + delimiter select */}
-          <div className="trigger-section">
+          <div className={`trigger-section${isComparing && compareDelta?.changedFields.has('triggers') ? ' trigger-section--differs' : ''}`}>
             <div className="trigger-section-header">
-              <div className="field-label">TRIGGER KEYWORDS</div>
+              <div className="field-label">
+                TRIGGER KEYWORDS
+                {isComparing && compareDelta?.changedFields.has('triggers') && (
+                  <>
+                    <span className="diff-modified-dot" title="Differs from reference">●</span>
+                    <button
+                      className="field-copy-btn"
+                      onClick={() => copyField('triggers')}
+                      title="Replace triggers with reference triggers"
+                      type="button"
+                    >
+                      ← copy
+                    </button>
+                  </>
+                )}
+              </div>
               {(() => {
                 const entryConflicts    = entry.triggers.map((t) => t.toLowerCase()).filter((t) => conflictMap.has(t));
                 const unacknowledged    = entryConflicts.filter((t) => !allowedOverlaps.includes(t));
@@ -452,6 +553,31 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 description: !entry.ignoreLimitWarnings?.description,
               },
             })}
+            diffsFromReference={isComparing && !!compareDelta?.description}
+            diffSegments={isComparing ? compareDelta?.description?.segments ?? null : null}
+            labelLeftAdornment={isComparing && compareDelta?.description ? (
+              <>
+                <span className="diff-modified-dot" title="Differs from reference">●</span>
+                <button
+                  className="field-copy-btn"
+                  onClick={() => copyField('description')}
+                  title="Copy description from reference"
+                  type="button"
+                >
+                  ← copy
+                </button>
+              </>
+            ) : null}
+            labelRightAdornment={isComparing ? (
+              <button
+                className="copy-all-from-ref-btn"
+                onClick={copyAllFromReference}
+                title="Replace every field of this entry with the reference entry's values"
+                type="button"
+              >
+                ⇇ Copy All from Reference
+              </button>
+            ) : null}
           />
 
           {/* Row 5: Rollback */}
