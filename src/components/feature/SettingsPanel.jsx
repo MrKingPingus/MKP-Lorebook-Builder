@@ -1,9 +1,29 @@
-// Settings tab content — all user preference controls
+// Settings tab content — all user preference controls, grouped into
+// collapsible categories so the panel stops being one long scroll.
+import { useState }          from 'react';
 import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, ROLLBACK_SNAPSHOT_WARN, ROLLBACK_MAX_CUSTOM } from '../../constants/limits.js';
+
+function SettingsSection({ id, title, openSet, toggleSection, children }) {
+  const isOpen = openSet.has(id);
+  return (
+    <div className={`settings-section${isOpen ? ' settings-section--open' : ''}`}>
+      <button
+        type="button"
+        className="settings-section-header"
+        onClick={() => toggleSection(id)}
+        aria-expanded={isOpen}
+      >
+        <span className="settings-section-chevron">{isOpen ? '▼' : '▶'}</span>
+        <span className="settings-section-title">{title}</span>
+      </button>
+      {isOpen && <div className="settings-section-body">{children}</div>}
+    </div>
+  );
+}
 
 export function SettingsPanel() {
   const {
@@ -40,6 +60,8 @@ export function SettingsPanel() {
     setKeepMenuOpenAfterImport,
     crosstalkEnabled,
     setCrosstalkEnabled,
+    crosstalkSwapMode,
+    setCrosstalkSwapMode,
     thesaurusEnabled,
     setThesaurusEnabled,
   } = useSettings();
@@ -55,6 +77,18 @@ export function SettingsPanel() {
 
   const isMobile = useMobile();
 
+  // Editing is open by default — most users land in Settings to tweak it.
+  // Other sections collapsed so the panel reads as a short menu.
+  const [openSet, setOpenSet] = useState(() => new Set(['editing']));
+  function toggleSection(id) {
+    setOpenSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else              next.add(id);
+      return next;
+    });
+  }
+
   function updateSlot(index, value) {
     const next = [...hotbarSlots];
     next[index] = value || null;
@@ -64,364 +98,404 @@ export function SettingsPanel() {
   return (
     <div className="settings-panel">
 
-      {/* ── Rollback ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Entry rollback (this lorebook)</span>
-          <input
-            type="checkbox"
-            checked={rollbackEnabled}
-            onChange={(e) => setRollbackEnabled(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          When on, a snapshot of each entry is saved before its first edit each session. Snapshots can be restored from the entry card.
+      {/* ════════════════════════════════════════════════════════════
+          Editing & Entries
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="editing" title="Editing & Entries" openSet={openSet} toggleSection={toggleSection}>
+
+        {/* Rollback (this lorebook) */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Entry rollback (this lorebook)</span>
+            <input
+              type="checkbox"
+              checked={rollbackEnabled}
+              onChange={(e) => setRollbackEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            When on, a snapshot of each entry is saved before its first edit each session. Snapshots can be restored from the entry card.
+          </div>
+
+          {rollbackEnabled && (
+            <>
+              <div className="settings-label" style={{ marginTop: 4 }}>Snapshots to keep per entry</div>
+              <div className="settings-row">
+                <select
+                  className="hotbar-slot-select"
+                  value={[1, 3, 5].includes(snapshotCount) ? String(snapshotCount) : 'custom'}
+                  onChange={(e) => {
+                    if (e.target.value === 'custom') {
+                      if ([1, 3, 5].includes(snapshotCount)) setSnapshotCount(7);
+                    } else {
+                      setSnapshotCount(Number(e.target.value));
+                    }
+                  }}
+                >
+                  <option value="1">1</option>
+                  <option value="3">3</option>
+                  <option value="5">5</option>
+                  <option value="custom">Go with God</option>
+                </select>
+                {![1, 3, 5].includes(snapshotCount) && (
+                  <input
+                    type="number"
+                    min={1}
+                    max={ROLLBACK_MAX_CUSTOM}
+                    value={snapshotCount}
+                    onChange={(e) => setSnapshotCount(Math.min(ROLLBACK_MAX_CUSTOM, Math.max(1, Number(e.target.value))))}
+                    style={{ width: 60 }}
+                  />
+                )}
+              </div>
+              {snapshotCount > ROLLBACK_SNAPSHOT_WARN && (
+                <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
+                  Storing more than {ROLLBACK_SNAPSHOT_WARN} snapshots per entry may noticeably increase localStorage usage on large lorebooks.
+                </div>
+              )}
+              <label className="settings-label" style={{ marginTop: 4 }}>
+                <span>Auto-snapshot on first edit</span>
+                <input
+                  type="checkbox"
+                  checked={autoSnapshot}
+                  onChange={(e) => setAutoSnapshot(e.target.checked)}
+                />
+              </label>
+              <div className="settings-hint">
+                When off, snapshots are only created manually via the entry's Rollback panel. The save prompt on close still appears.
+              </div>
+            </>
+          )}
         </div>
 
-        {rollbackEnabled && (
-          <>
-            <div className="settings-label" style={{ marginTop: 4 }}>Snapshots to keep per entry</div>
-            <div className="settings-row">
-              <select
-                className="hotbar-slot-select"
-                value={[1, 3, 5].includes(snapshotCount) ? String(snapshotCount) : 'custom'}
-                onChange={(e) => {
-                  if (e.target.value === 'custom') {
-                    // Only jump to default custom value if coming from a preset;
-                    // if already custom, leave the existing value alone
-                    if ([1, 3, 5].includes(snapshotCount)) setSnapshotCount(7);
-                  } else {
-                    setSnapshotCount(Number(e.target.value));
-                  }
-                }}
-              >
-                <option value="1">1</option>
-                <option value="3">3</option>
-                <option value="5">5</option>
-                <option value="custom">Go with God</option>
-              </select>
-              {![1, 3, 5].includes(snapshotCount) && (
-                <input
-                  type="number"
-                  min={1}
-                  max={ROLLBACK_MAX_CUSTOM}
-                  value={snapshotCount}
-                  onChange={(e) => setSnapshotCount(Math.min(ROLLBACK_MAX_CUSTOM, Math.max(1, Number(e.target.value))))}
-                  style={{ width: 60 }}
-                />
-              )}
-            </div>
-            {snapshotCount > ROLLBACK_SNAPSHOT_WARN && (
-              <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
-                Storing more than {ROLLBACK_SNAPSHOT_WARN} snapshots per entry may noticeably increase localStorage usage on large lorebooks.
-              </div>
-            )}
-            <label className="settings-label" style={{ marginTop: 4 }}>
-              <span>Auto-snapshot on first edit</span>
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Enable rollback for new lorebooks by default</span>
+            <input
+              type="checkbox"
+              checked={rollbackDefaultEnabled}
+              onChange={(e) => setRollbackDefaultEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            New lorebooks will start with rollback turned on automatically.
+          </div>
+        </div>
+
+        {/* Suggestions tray */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Suggestions collapsed by default</span>
+            <input
+              type="checkbox"
+              checked={hideSuggestionsByDefault}
+              onChange={(e) => setHideSuggestionsByDefault(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Start every entry's suggestion tray in the collapsed state.
+          </div>
+        </div>
+
+        {/* Thesaurus */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Look up synonyms via the dictionary API</span>
+            <input
+              type="checkbox"
+              checked={thesaurusEnabled}
+              onChange={(e) => setThesaurusEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            {isMobile
+              ? 'Long-press a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, tap synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'
+              : 'Hover a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, click synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'}
+          </div>
+        </div>
+
+        {/* Stats badges */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Hide entry stats badges</span>
+            <input
+              type="checkbox"
+              checked={hideEntryStats}
+              onChange={(e) => setHideEntryStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Hides the trigger count and character count badges in entry headers.
+          </div>
+        </div>
+
+        {/* Tiered counter colours */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Tiered counter colors (description &amp; triggers)</span>
+            <input
+              type="checkbox"
+              checked={tieredCounterEnabled}
+              onChange={(e) => setTieredCounterEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Character count thresholds</div>
+          <div className="settings-row">
+            <label>
+              Yellow at
               <input
-                type="checkbox"
-                checked={autoSnapshot}
-                onChange={(e) => setAutoSnapshot(e.target.checked)}
+                type="number"
+                min={0}
+                value={counterTiers.yellow}
+                onChange={(e) =>
+                  setCounterTiers({ ...counterTiers, yellow: Number(e.target.value) })
+                }
               />
             </label>
+            <label>
+              Red at
+              <input
+                type="number"
+                min={0}
+                value={counterTiers.red}
+                onChange={(e) =>
+                  setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
+                }
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Type selector style (mobile detail panel) */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Full type button grid in entry editor</span>
+            <input
+              type="checkbox"
+              checked={entryTypeView === 'buttons'}
+              onChange={(e) => setEntryTypeView(e.target.checked ? 'buttons' : 'dropdown')}
+            />
+          </label>
+          <div className="settings-hint">
+            Shows large type buttons instead of a compact dropdown when editing an entry. (Currently broken — has no visible effect.)
+          </div>
+        </div>
+
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          Reference / Crosstalk
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="reference" title="Reference & Crosstalk" openSet={openSet} toggleSection={toggleSection}>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>{isMobile ? 'Pair with reference lorebook' : 'Show reference panel'}</span>
+            <input
+              type="checkbox"
+              checked={crosstalkEnabled}
+              onChange={(e) => setCrosstalkEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            {isMobile
+              ? 'Pairs a second lorebook as a reference. Shared triggers, same-named entries, and search hits in the paired book surface as inline annotations and overlays on the active book. Pick which book to pair from the Lorebooks tab.'
+              : 'Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Turning this off clears the current reference selection.'}
+          </div>
+        </div>
+
+        {!isMobile && (
+          <div className="settings-group">
+            <div className="settings-label">Crosstalk swap behavior</div>
+            <select
+              className="hotbar-slot-select"
+              value={crosstalkSwapMode}
+              onChange={(e) => setCrosstalkSwapMode(e.target.value)}
+            >
+              <option value="click-to-edit">Click reference to swap (default)</option>
+              <option value="fixed-active-left">Fixed columns — Active on left</option>
+              <option value="fixed-active-right">Fixed columns — Active on right</option>
+            </select>
             <div className="settings-hint">
-              When off, snapshots are only created manually via the entry's Rollback panel. The save prompt on close still appears.
+              {crosstalkSwapMode === 'click-to-edit'
+                ? 'Clicking any edit-shaped element on the reference side swaps active and reference. The clicked panel stays in the same physical slot — only the role indicator moves.'
+                : 'Active and reference panels are pinned to fixed columns. Use the Swap button next to the active picker to trade which book is active without moving the columns.'}
             </div>
-          </>
-        )}
-      </div>
-
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Enable rollback for new lorebooks by default</span>
-          <input
-            type="checkbox"
-            checked={rollbackDefaultEnabled}
-            onChange={(e) => setRollbackDefaultEnabled(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          New lorebooks will start with rollback turned on automatically.
-        </div>
-      </div>
-
-      {/* ── Menu behavior ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Keep menu tab open after importing (desktop)</span>
-          <input
-            type="checkbox"
-            checked={keepMenuOpenAfterImport}
-            onChange={(e) => setKeepMenuOpenAfterImport(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          When on, the menu panel stays open after a successful import. On mobile the menu always closes (full-screen overlay).
-        </div>
-      </div>
-
-      {/* ── Reference panel (crosstalk) ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>{isMobile ? 'Pair with reference lorebook' : 'Show reference panel'}</span>
-          <input
-            type="checkbox"
-            checked={crosstalkEnabled}
-            onChange={(e) => setCrosstalkEnabled(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          {isMobile
-            ? 'Pairs a second lorebook as a reference. Shared triggers, same-named entries, and search hits in the paired book surface as inline annotations and overlays on the active book. Pick which book to pair from the Lorebooks tab.'
-            : 'Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Turning this off clears the current reference selection.'}
-        </div>
-      </div>
-
-      {/* ── Suggestions tray ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Suggestions collapsed by default</span>
-          <input
-            type="checkbox"
-            checked={hideSuggestionsByDefault}
-            onChange={(e) => setHideSuggestionsByDefault(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          Start every entry's suggestion tray in the collapsed state.
-        </div>
-      </div>
-
-      {/* ── Thesaurus synonyms ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Look up synonyms via the dictionary API</span>
-          <input
-            type="checkbox"
-            checked={thesaurusEnabled}
-            onChange={(e) => setThesaurusEnabled(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          {isMobile
-            ? 'Long-press a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, tap synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'
-            : 'Hover a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, click synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'}
-        </div>
-      </div>
-
-      {/* ── Entry stats ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Hide entry stats badges</span>
-          <input
-            type="checkbox"
-            checked={hideEntryStats}
-            onChange={(e) => setHideEntryStats(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          Hides the trigger count and character count badges in entry headers.
-        </div>
-      </div>
-
-      {/* ── Character counter ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Tiered counter colors (description &amp; triggers)</span>
-          <input
-            type="checkbox"
-            checked={tieredCounterEnabled}
-            onChange={(e) => setTieredCounterEnabled(e.target.checked)}
-          />
-        </label>
-        <div className="settings-hint">
-          Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
-        </div>
-      </div>
-
-      <div className="settings-group">
-        <div className="settings-label">Character count thresholds</div>
-        <div className="settings-row">
-          <label>
-            Yellow at
-            <input
-              type="number"
-              min={0}
-              value={counterTiers.yellow}
-              onChange={(e) =>
-                setCounterTiers({ ...counterTiers, yellow: Number(e.target.value) })
-              }
-            />
-          </label>
-          <label>
-            Red at
-            <input
-              type="number"
-              min={0}
-              value={counterTiers.red}
-              onChange={(e) =>
-                setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
-              }
-            />
-          </label>
-        </div>
-      </div>
-
-      {/* ── Window size ── */}
-      <div className="settings-group">
-        <div className="settings-label">Default window size</div>
-        <div className="settings-row">
-          <label>
-            Width
-            <input
-              type="number"
-              min={MIN_WINDOW_WIDTH}
-              value={defaultWindowWidth}
-              onChange={(e) => setDefaultWindowWidth(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Height
-            <input
-              type="number"
-              min={MIN_WINDOW_HEIGHT}
-              value={defaultWindowHeight}
-              onChange={(e) => setDefaultWindowHeight(Number(e.target.value))}
-            />
-          </label>
-        </div>
-        <button className="settings-reset-btn" onClick={resetWindow}>
-          Reset window to default size
-        </button>
-      </div>
-
-      {/* ── Hotkeys ── */}
-      <div className="settings-group">
-        <div className="settings-label">New entry hotkey</div>
-        <div className="settings-row settings-row--hotkey">
-          <span className="settings-hint">Alt +</span>
-          <input
-            type="text"
-            className="hotkey-input"
-            maxLength={1}
-            value={newEntryHotkey}
-            onChange={(e) => {
-              const v = e.target.value.toLowerCase();
-              if (v) setNewEntryHotkey(v);
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="settings-group">
-        <div className="settings-label">Undo hotkey</div>
-        <div className="settings-row settings-row--hotkey">
-          <span className="settings-hint">Ctrl +</span>
-          <input
-            type="text"
-            className="hotkey-input"
-            maxLength={1}
-            value={undoHotkey}
-            onChange={(e) => {
-              const v = e.target.value.toLowerCase();
-              if (v) setUndoHotkey(v);
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="settings-group">
-        <div className="settings-label">Redo hotkey</div>
-        <div className="settings-row settings-row--hotkey">
-          <span className="settings-hint">Ctrl +</span>
-          <input
-            type="text"
-            className="hotkey-input"
-            maxLength={1}
-            value={redoHotkey}
-            onChange={(e) => {
-              const v = e.target.value.toLowerCase();
-              if (v) setRedoHotkey(v);
-            }}
-          />
-        </div>
-        <div className="settings-hint">
-          <kbd>Alt+{newEntryHotkey.toUpperCase()}</kbd> New entry &nbsp;·&nbsp;
-          <kbd>Ctrl+{undoHotkey.toUpperCase()}</kbd> Undo &nbsp;·&nbsp;
-          <kbd>Ctrl+{redoHotkey.toUpperCase()}</kbd> Redo
-        </div>
-      </div>
-
-      {/* ── Entry type selector style (mobile detail panel) ── */}
-      <div className="settings-group">
-        <label className="settings-label">
-          <span>Full type button grid in entry editor</span>
-          <input
-            type="checkbox"
-            checked={entryTypeView === 'buttons'}
-            onChange={(e) => setEntryTypeView(e.target.checked ? 'buttons' : 'dropdown')}
-          />
-        </label>
-        <div className="settings-hint">
-          Shows large type buttons instead of a compact dropdown when editing an entry. (Currently broken — has no visible effect.)
-        </div>
-      </div>
-
-      {/* ── FAB button size ── */}
-      <div className="settings-group">
-        <div className="settings-label">FAB button size</div>
-        <select
-          className="hotbar-slot-select"
-          value={fabSize}
-          onChange={(e) => setFabSize(e.target.value)}
-        >
-          <option value="small">Small (44px)</option>
-          <option value="medium">Medium (54px)</option>
-          <option value="large">Large (64px)</option>
-          <option value="custom">Custom</option>
-        </select>
-        {fabSize === 'custom' && (
-          <div className="fab-custom-size-row">
-            <input
-              type="number"
-              min={32}
-              max={100}
-              value={fabCustomSize}
-              onChange={(e) => setFabCustomSize(Number(e.target.value))}
-            />
-            <span className="fab-custom-size-label">px</span>
           </div>
         )}
-      </div>
 
-      {/* ── Hotbar slots ── */}
-      <div className="settings-group">
-        <div className="settings-label">Hotbar slots</div>
-        <div className="settings-hint">
-          6 slots flank the + button (3 left, 3 right). Choose an action or leave empty.
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          Window & Layout
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="layout" title="Window & Layout" openSet={openSet} toggleSection={toggleSection}>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Keep menu tab open after importing (desktop)</span>
+            <input
+              type="checkbox"
+              checked={keepMenuOpenAfterImport}
+              onChange={(e) => setKeepMenuOpenAfterImport(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            When on, the menu panel stays open after a successful import. On mobile the menu always closes (full-screen overlay).
+          </div>
         </div>
-        <div className="hotbar-slot-config">
-          {hotbarSlots.map((slotId, i) => (
-            <label key={i} className="hotbar-slot-row">
-              <span className="hotbar-slot-label">
-                {i < 3 ? `Left ${i + 1}` : `Right ${i - 2}`}
-              </span>
-              <select
-                className="hotbar-slot-select"
-                value={slotId ?? ''}
-                onChange={(e) => updateSlot(i, e.target.value)}
-              >
-                <option value="">(empty)</option>
-                {HOTBAR_ACTIONS.map((action) => (
-                  <option key={action.id} value={action.id}>
-                    {action.icon} {action.label}
-                  </option>
-                ))}
-              </select>
+
+        <div className="settings-group">
+          <div className="settings-label">Default window size</div>
+          <div className="settings-row">
+            <label>
+              Width
+              <input
+                type="number"
+                min={MIN_WINDOW_WIDTH}
+                value={defaultWindowWidth}
+                onChange={(e) => setDefaultWindowWidth(Number(e.target.value))}
+              />
             </label>
-          ))}
+            <label>
+              Height
+              <input
+                type="number"
+                min={MIN_WINDOW_HEIGHT}
+                value={defaultWindowHeight}
+                onChange={(e) => setDefaultWindowHeight(Number(e.target.value))}
+              />
+            </label>
+          </div>
+          <button className="settings-reset-btn" onClick={resetWindow}>
+            Reset window to default size
+          </button>
         </div>
-      </div>
+
+        <div className="settings-group">
+          <div className="settings-label">FAB button size</div>
+          <select
+            className="hotbar-slot-select"
+            value={fabSize}
+            onChange={(e) => setFabSize(e.target.value)}
+          >
+            <option value="small">Small (44px)</option>
+            <option value="medium">Medium (54px)</option>
+            <option value="large">Large (64px)</option>
+            <option value="custom">Custom</option>
+          </select>
+          {fabSize === 'custom' && (
+            <div className="fab-custom-size-row">
+              <input
+                type="number"
+                min={32}
+                max={100}
+                value={fabCustomSize}
+                onChange={(e) => setFabCustomSize(Number(e.target.value))}
+              />
+              <span className="fab-custom-size-label">px</span>
+            </div>
+          )}
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Hotbar slots</div>
+          <div className="settings-hint">
+            6 slots flank the + button (3 left, 3 right). Choose an action or leave empty.
+          </div>
+          <div className="hotbar-slot-config">
+            {hotbarSlots.map((slotId, i) => (
+              <label key={i} className="hotbar-slot-row">
+                <span className="hotbar-slot-label">
+                  {i < 3 ? `Left ${i + 1}` : `Right ${i - 2}`}
+                </span>
+                <select
+                  className="hotbar-slot-select"
+                  value={slotId ?? ''}
+                  onChange={(e) => updateSlot(i, e.target.value)}
+                >
+                  <option value="">(empty)</option>
+                  {HOTBAR_ACTIONS.map((action) => (
+                    <option key={action.id} value={action.id}>
+                      {action.icon} {action.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </div>
+
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          Hotkeys
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="hotkeys" title="Hotkeys" openSet={openSet} toggleSection={toggleSection}>
+
+        <div className="settings-group">
+          <div className="settings-label">New entry hotkey</div>
+          <div className="settings-row settings-row--hotkey">
+            <span className="settings-hint">Alt +</span>
+            <input
+              type="text"
+              className="hotkey-input"
+              maxLength={1}
+              value={newEntryHotkey}
+              onChange={(e) => {
+                const v = e.target.value.toLowerCase();
+                if (v) setNewEntryHotkey(v);
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Undo hotkey</div>
+          <div className="settings-row settings-row--hotkey">
+            <span className="settings-hint">Ctrl +</span>
+            <input
+              type="text"
+              className="hotkey-input"
+              maxLength={1}
+              value={undoHotkey}
+              onChange={(e) => {
+                const v = e.target.value.toLowerCase();
+                if (v) setUndoHotkey(v);
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Redo hotkey</div>
+          <div className="settings-row settings-row--hotkey">
+            <span className="settings-hint">Ctrl +</span>
+            <input
+              type="text"
+              className="hotkey-input"
+              maxLength={1}
+              value={redoHotkey}
+              onChange={(e) => {
+                const v = e.target.value.toLowerCase();
+                if (v) setRedoHotkey(v);
+              }}
+            />
+          </div>
+          <div className="settings-hint">
+            <kbd>Alt+{newEntryHotkey.toUpperCase()}</kbd> New entry &nbsp;·&nbsp;
+            <kbd>Ctrl+{undoHotkey.toUpperCase()}</kbd> Undo &nbsp;·&nbsp;
+            <kbd>Ctrl+{redoHotkey.toUpperCase()}</kbd> Redo
+          </div>
+        </div>
+
+      </SettingsSection>
 
     </div>
   );

@@ -13,6 +13,7 @@ import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { usePickFromReference } from '../../hooks/use-pick-from-reference.js';
+import { useSettings }          from '../../hooks/use-settings.js';
 import { EntryList }            from './EntryList.jsx';
 import { LorebookRoleBar }      from './LorebookRoleBar.jsx';
 
@@ -22,8 +23,10 @@ export function BuildPanel() {
   const isMobile                                 = useMobile();
   const { activeLorebook }                       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
-  const { referenceLorebook, crosstalkEnabled }  = useReferenceLorebook();
+  const { referenceLorebook, crosstalkEnabled, swapReference } = useReferenceLorebook();
   const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
+  const { crosstalkSwapMode }                    = useSettings();
+  const fixedColumns = crosstalkSwapMode !== 'click-to-edit';
 
   // Mirror ReferencePanel: picker options exclude the opposite side so a
   // lorebook can't occupy both slots at once.
@@ -50,6 +53,16 @@ export function BuildPanel() {
               </option>
             ))}
           </select>
+          {fixedColumns && referenceLorebook && (
+            <button
+              className="pane-header-swap-btn"
+              onClick={swapReference}
+              title="Swap which book is active — columns stay put"
+              type="button"
+            >
+              ⇄ Swap
+            </button>
+          )}
         </div>
       )}
 

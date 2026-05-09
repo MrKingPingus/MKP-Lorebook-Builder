@@ -27,7 +27,7 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 
 ### Prerequisites
 
-- [ ] **`diff-service.js`** — compares two entry objects field by field and returns a structured delta. Used for rollback diff highlighting and (optional) cross-pane difference highlighting on same-named entries.
+- [x] **`diff-service.js`** — pure structural delta between two entry objects. Hand-rolled word-level LCS for descriptions (capped at 4000 combined tokens with graceful degrade), ordered set arithmetic for triggers, equality on other fields. Also exports `entriesShallowEqual` for cheap render-path checks. Tokenization splits punctuation runs from word runs (preserves apostrophes for contractions) so trailing punctuation drift no longer breaks shared words. Powers both rollback diff highlighting and the cross-pane compare mode.
 
 ### Features
 
@@ -38,12 +38,18 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 - [x] Swap-on-edit-click — single `onMouseDown` handler on edit-shaped reference surfaces that calls `swapReference()` before any edit UI can mount
 - [x] Global search/filter/sort bar promoted above the pane split in crosstalk mode; both panes consume the same filter state from `ui-store`
 - [x] Lateral find & replace — preview scans both active and reference entries; per-side Apply buttons (Apply to Active / Apply to Reference / Apply to Both) satisfy the per-lorebook confirmation requirement
-- [ ] Cross-pane diff highlighting (optional, uses `diff-service.js`) — when the same-named entry exists on both sides, highlight differing fields
+- [x] **Cross-pane diff indicators** — desktop entry cards show an "in both ↗" / "differs ⚖" / "comparing ✎" badge driven by `useNameMatch()` + `entriesShallowEqual`. Symmetric on active and reference cards; green badge on a matched pair scroll-jumps to the counterpart with a brief flash; yellow badge enters compare mode.
+- [x] **Side-by-side compare mode** — clicking a yellow "differs" badge expands both cards, scrolls them into view, force-expands the matched reference card's description, and renders the reference card with a full mirror of the active editor's layout (read-only inputs/select/chips). Active editor grows live diff annotations: yellow "● differs" dot per changed field, yellow left-border on the field, a single "← Copy…" menu (per-field) and "⇇ Copy All from Reference" button on the DESCRIPTION label row. Description gets a JS-computed outline overlay using `getClientRects()` per visual line — green boxes around 'add' segments on the active side, red boxes around 'del' segments on the reference side. Outlines re-measure on text change, font load, and width change. Active card's suggestions tray, rollback footer, and description footer are hidden while compare mode is engaged so both sides share a focused minimal layout. Copy actions auto-exit compare mode when the result matches; the badge flips to green "in both" without a second click.
+- [x] **Cross-match sort modes** — `'cross-match-first'` and `'cross-match-last'` partition entries by name overlap with the paired reference book; available in the sort dropdown only when crosstalk is active. Group-by-type is auto-suppressed in these modes so the partition isn't re-bucketed.
+- [x] **Crosstalk swap mode setting** — `crosstalkSwapMode`: `'click-to-edit'` (default; clicking the reference pane swaps roles AND visually swaps panes), `'fixed-active-left'`, `'fixed-active-right'` (panes pinned to columns; a `Swap` button next to the active picker trades books between roles).
 - [x] Menu toggle to show/hide the reference panel (Settings → "Show reference panel"; replaces the development-only `?crosstalk=1` query gate)
 - [ ] **Mobile crosstalk redesign** — replaces the broken side-by-side layout on mobile with an overlay/annotation model. Anchor never moves without explicit gesture; reference content surfaces as inline annotations on active entries and one-deep peek overlays. Multi-select pull uses a temporary "pose" against the existing Select mode. Full plan and phasing in `docs/mobile-crosstalk-plan.md`.
 
+**Settings Panel Reorganisation:**
+- [x] Settings panel grouped into four collapsible accordion sections — **Editing & Entries**, **Reference & Crosstalk**, **Window & Layout**, **Hotkeys** — to declutter the long flat list. Editing & Entries is open by default.
+
 **Rollback Diff Highlighting:**
-- [ ] Wires `diff-service.js` into the rollback preview pane; activates the previously inert "Highlight Differences" button; field-level delta highlighting renders between snapshot and current entry state
+- [x] `RollbackPanel` snapshot preview now has a "Highlight Differences" toggle wired to `diff-service.js`. When on, the preview shows a "● modified" dot beside each changed field label, the description renders inline `add`/`del` segments (green / red strikethrough), and triggers show common chips in neutral, added in green, removed in red strikethrough. A header chip reports the count of changed fields.
 
 **Entry Planner:**
 - [ ] Planner panel — dedicated panel for notes and planned entry stubs; separate from the build panel
@@ -156,6 +162,11 @@ User wants mockups before committing to any specific direction. Defer until afte
 ## Queued Adjustments
 
 Items are moved into phases as they are assigned. Add new items here when discovered.
+
+---
+
+**Compare-mode side-by-side card dimensions still drift slightly**
+The reference mirror in compare mode now matches the active card closely after suppressing the active card's suggestions tray, rollback footer, and description footer while comparing — but small dimensional differences remain (e.g. the active card has an "Allow all overlap" slot in the trigger header that the reference doesn't, and minor padding asymmetries between the editable inputs and their disabled mirror counterparts). The two columns read as paired but aren't pixel-identical row-for-row. Worth another pass to align the field rows precisely so corresponding sections sit at exactly matched y-coordinates across both panes.
 
 ---
 

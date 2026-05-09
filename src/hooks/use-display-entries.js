@@ -16,8 +16,13 @@ export function useDisplayEntries(entries) {
   const groupByType         = useUi((s) => s.groupByType);
   const sortMode            = useUi((s) => s.sortMode);
 
-  // last-modified sort overrides group-by-type (flat list, no grouping)
-  const effectiveGroupByType = groupByType && sortMode !== 'last-modified';
+  // last-modified and cross-match sorts override group-by-type (flat list,
+  // no grouping — group-by-type would re-bucket and destroy the cross-match
+  // partition or the recency order).
+  const effectiveGroupByType = groupByType
+    && sortMode !== 'last-modified'
+    && sortMode !== 'cross-match-first'
+    && sortMode !== 'cross-match-last';
 
   const displayEntries = effectiveGroupByType
     ? ENTRY_TYPES.flatMap((t) => sortedEntries.filter((e) => e.type === t.id))

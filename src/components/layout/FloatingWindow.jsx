@@ -3,6 +3,7 @@ import { useUi }                from '../../hooks/use-ui.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useMenuPanel }         from '../../hooks/use-menu-panel.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { useSettings }          from '../../hooks/use-settings.js';
 import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
@@ -25,6 +26,14 @@ export function FloatingWindow() {
   const showAppendImport = useUi((s) => s.showAppendImport);
   const activeSide       = useUi((s) => s.activeSide);
   const { crosstalkEnabled } = useReferenceLorebook();
+  const { crosstalkSwapMode } = useSettings();
+
+  // In fixed-column modes, the active pane is pinned regardless of the
+  // activeSide flag; in click-to-edit mode, panel order follows activeSide so
+  // a swap-on-click keeps the clicked panel in the same physical slot.
+  const buildOnRight = crosstalkSwapMode === 'click-to-edit'
+    ? activeSide === 'right'
+    : crosstalkSwapMode === 'fixed-active-right';
 
   // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
   useMenuPanel();
@@ -63,11 +72,11 @@ export function FloatingWindow() {
                   Mobile never renders the second slot — crosstalk on mobile
                   surfaces via inline annotations and overlays instead. */}
               <div className="pane-split-slot">
-                {!isMobile && crosstalkEnabled && activeSide === 'right' ? <ReferencePanel /> : <BuildPanel />}
+                {!isMobile && crosstalkEnabled && buildOnRight ? <ReferencePanel /> : <BuildPanel />}
               </div>
               {!isMobile && crosstalkEnabled && (
                 <div className="pane-split-slot">
-                  {activeSide === 'right' ? <BuildPanel /> : <ReferencePanel />}
+                  {buildOnRight ? <BuildPanel /> : <ReferencePanel />}
                 </div>
               )}
               <MenuPanel />

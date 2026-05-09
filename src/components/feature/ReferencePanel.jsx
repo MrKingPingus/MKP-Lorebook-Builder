@@ -8,15 +8,20 @@
 // In Select mode, the panel becomes a click-to-select source — swap is
 // suppressed and clicking a card toggles its membership in the shared
 // selection set (with side='reference').
-import { useState }              from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useCrosstalk }         from '../../hooks/use-crosstalk.js';
 import { useSelection }         from '../../hooks/use-selection.js';
+import { useNameMatch }         from '../../hooks/use-name-match.js';
+import { useUi }                from '../../hooks/use-ui.js';
+import { entriesShallowEqual, diffEntries } from '../../services/diff-service.js';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
+import { Chip }                 from '../ui/Chip.jsx';
+import { DescriptionArea }      from './DescriptionArea.jsx';
 import { ENTRY_TYPES }          from '../../constants/entry-types.js';
 
 export function ReferencePanel() {
@@ -25,6 +30,42 @@ export function ReferencePanel() {
   const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
+  const { refToActive, activeToRef, matchedActiveByRef }            = useNameMatch();
+  const { crosstalkSwapMode }                                       = useSettings();
+  const crossFlashId      = useUi((s) => s.crossFlashId);
+  const setCrossFlashId   = useUi((s) => s.setCrossFlashId);
+  const compareEntryId    = useUi((s) => s.compareEntryId);
+  const setCompareEntryId = useUi((s) => s.setCompareEntryId);
+  const swapOnClick       = crosstalkSwapMode === 'click-to-edit';
+
+  // While compare mode is engaged, force-expand the matched reference entry
+  // so the user can read it side by side with the editable active one.
+  // Remember the entry id we forced so we can collapse only that one when
+  // compare mode exits, leaving other manually-expanded entries alone.
+  const compareForcedRefId = compareEntryId ? activeToRef.get(compareEntryId) ?? null : null;
+  const lastForcedRefId    = useRef(null);
+  useEffect(() => {
+    if (compareForcedRefId && !expandedIds.has(compareForcedRefId)) {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        next.add(compareForcedRefId);
+        return next;
+      });
+      lastForcedRefId.current = compareForcedRefId;
+      requestAnimationFrame(() => {
+        document.getElementById(`ref-entry-${compareForcedRefId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    } else if (!compareForcedRefId && lastForcedRefId.current) {
+      const id = lastForcedRefId.current;
+      lastForcedRefId.current = null;
+      setExpandedIds((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }, [compareForcedRefId]);
 
   // Ephemeral expand state — resets on swap (panel unmounts) and on lorebook
   // switch. A Set of entry ids whose description is currently revealed.
@@ -64,6 +105,17 @@ export function ReferencePanel() {
     e.stopPropagation();
   }
 
+  // Cross-pane jump: flash the matching active card and scroll it into view.
+  function jumpToActive(activeId) {
+    setCrossFlashId(activeId);
+    requestAnimationFrame(() => {
+      document.getElementById(`entry-${activeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    setTimeout(() => {
+      if (useUi.getState().crossFlashId === activeId) setCrossFlashId(null);
+    }, 1400);
+  }
+
   return (
     <div className="reference-panel">
       <div className="pane-header">
@@ -94,7 +146,7 @@ export function ReferencePanel() {
         ) : (
           <div
             className="reference-panel-entries"
-            onMouseDown={isSelectMode ? undefined : onSwap}
+            onMouseDown={isSelectMode || !swapOnClick ? undefined : onSwap}
           >
             {displayEntries.map((entry, idx) => {
               const typeDef       = ENTRY_TYPES.find((t) => t.id === entry.type);
@@ -103,12 +155,132 @@ export function ReferencePanel() {
               const isExpanded    = expandedIds.has(entry.id);
               const hasDescription = (entry.description ?? '').length > 0;
               const isSelected    = selectedIds.has(entry.id);
+              const sameNameActiveId   = refToActive.get(entry.id) ?? null;
+              const matchedActiveEntry = matchedActiveByRef.get(entry.id) ?? null;
+              const matchedIsEqual     = matchedActiveEntry ? entriesShallowEqual(entry, matchedActiveEntry) : false;
+              const isCrossFlashing    = crossFlashId === entry.id;
+              const isComparePartner   = compareForcedRefId === entry.id;
               const cardClassName = `reference-entry-card${
                 isSelectMode ? ' reference-entry-card--selectable' : ''
-              }${isSelected ? ' reference-entry-card--selected' : ''}`;
+              }${isSelected ? ' reference-entry-card--selected' : ''}${
+                isCrossFlashing ? ' reference-entry-card--cross-flash' : ''
+              }${isComparePartner ? ' reference-entry-card--compare-partner' : ''}`;
+
+              // Compare partner: render a full mirror of the active editor's
+              // expanded layout — read-only inputs, read-only chips, and a
+              // description overlay that paints 'del' segments (text in
+              // reference but not in active) in red. Other reference cards
+              // keep the existing truncated chip-row layout.
+              if (isComparePartner && matchedActiveEntry) {
+                const refDelta = diffEntries(entry, matchedActiveEntry);
+                const isComparingHere = compareEntryId === sameNameActiveId;
+                return (
+                  <div
+                    key={entry.id}
+                    id={`ref-entry-${entry.id}`}
+                    className={`entry-card entry-card--reference-mirror${isCrossFlashing ? ' entry-card--cross-flash' : ''}${isComparePartner ? ' reference-entry-card--compare-partner' : ''}`}
+                    style={{ '--type-color': typeColor }}
+                    onMouseDown={stopSwap}
+                  >
+                    <div className="entry-card-header">
+                      <TypeColorDot type={entry.type} />
+                      <span className="entry-label" style={{ color: typeColor }}>
+                        #{idx + 1}: {entry.name || '(unnamed)'}
+                      </span>
+                      <button
+                        className={`entry-ref-badge entry-ref-badge--header entry-ref-badge--diff${isComparingHere ? ' entry-ref-badge--comparing' : ''}`}
+                        onMouseDown={stopSwap}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCompareEntryId(isComparingHere ? null : sameNameActiveId);
+                        }}
+                        title={isComparingHere ? 'Click to exit compare mode' : 'Click to compare side by side'}
+                        type="button"
+                      >
+                        {isComparingHere ? 'comparing ✎' : 'differs ⚖'}
+                      </button>
+                      <div className="entry-card-header-right">
+                        {!hideEntryStats && (
+                          <StatsBadge
+                            triggerCount={entry.triggers.length}
+                            charCount={entry.description.length}
+                            counterTiers={counterTiers}
+                            tieredEnabled={tieredCounterEnabled}
+                          />
+                        )}
+                        {snapshotCount > 0 && (
+                          <span
+                            className="reference-entry-rollback"
+                            title={`${snapshotCount} rollback snapshot${snapshotCount === 1 ? '' : 's'}`}
+                          >
+                            ↺ {snapshotCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="entry-card-body" onMouseDown={stopSwap}>
+                      <div className="entry-fields-row">
+                        <div className="entry-field entry-field--name">
+                          <div className="field-label">ENTRY NAME</div>
+                          <input
+                            className="entry-name-field"
+                            value={entry.name}
+                            readOnly
+                            tabIndex={-1}
+                          />
+                        </div>
+                        <div className="entry-field entry-field--type">
+                          <div className="field-label">ENTRY TYPE</div>
+                          <select className="type-selector" value={entry.type} disabled>
+                            {ENTRY_TYPES.map((t) => (
+                              <option key={t.id} value={t.id}>{t.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="trigger-section">
+                        <div className="trigger-section-header">
+                          <div className="field-label">TRIGGER KEYWORDS</div>
+                        </div>
+                        <div className="trigger-chips-wrapper">
+                          <div className="trigger-chips trigger-chips--readonly">
+                            {entry.triggers.map((t, i) => {
+                              const key            = t.toLowerCase();
+                              const isConflict     = conflictMap.has(key);
+                              const isAcknowledged = allowedOverlaps.includes(key);
+                              const ringColor = isConflict
+                                ? (isAcknowledged ? 'var(--blue)' : 'var(--yellow)')
+                                : null;
+                              return (
+                                <Chip
+                                  key={i}
+                                  label={t}
+                                  ringColor={ringColor}
+                                  acknowledged={isAcknowledged}
+                                  readOnly
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <DescriptionArea
+                        value={entry.description}
+                        onChange={() => {}}
+                        readOnly
+                        hideFooter
+                        diffSegments={refDelta.description?.segments ?? null}
+                        diffSide="reference"
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={entry.id}
+                  id={`ref-entry-${entry.id}`}
                   className={cardClassName}
                   style={{ '--type-color': typeColor }}
                   onClick={isSelectMode ? () => toggleSelected(entry.id, 'reference') : undefined}
@@ -118,6 +290,38 @@ export function ReferencePanel() {
                     <span className="reference-entry-label" style={{ color: typeColor }}>
                       #{idx + 1}: {entry.name || '(unnamed)'}
                     </span>
+                    {sameNameActiveId && (() => {
+                      const isComparing = compareEntryId === sameNameActiveId;
+                      return (
+                        <button
+                          className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
+                          onMouseDown={stopSwap}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (matchedIsEqual) {
+                              jumpToActive(sameNameActiveId);
+                            } else {
+                              setCompareEntryId(isComparing ? null : sameNameActiveId);
+                              if (!isComparing) {
+                                requestAnimationFrame(() => {
+                                  document.getElementById(`entry-${sameNameActiveId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                });
+                              }
+                            }
+                          }}
+                          title={
+                            matchedIsEqual
+                              ? 'Identical entry exists in the active book — click to jump to it'
+                              : isComparing
+                                ? 'Click to exit compare mode'
+                                : 'Same-named entry differs in the active book — click to compare side by side'
+                          }
+                          type="button"
+                        >
+                          {matchedIsEqual ? 'in both ↗' : (isComparing ? 'comparing ✎' : 'differs ⚖')}
+                        </button>
+                      );
+                    })()}
                     <div className="reference-entry-header-right">
                       {!hideEntryStats && (
                         <StatsBadge

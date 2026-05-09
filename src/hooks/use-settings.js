@@ -23,6 +23,7 @@ export function useSettings() {
   const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
   const keepMenuOpenAfterImport  = useSettingsStore((s) => s.keepMenuOpenAfterImport);
   const crosstalkEnabled         = useSettingsStore((s) => s.crosstalkEnabled);
+  const crosstalkSwapMode        = useSettingsStore((s) => s.crosstalkSwapMode);
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
@@ -47,6 +48,7 @@ export function useSettings() {
       rollbackDefaultEnabled,
       keepMenuOpenAfterImport,
       crosstalkEnabled,
+      crosstalkSwapMode,
       thesaurusEnabled,
       ...patch,
     };
@@ -80,6 +82,7 @@ export function useSettings() {
     rollbackDefaultEnabled,
     keepMenuOpenAfterImport,
     crosstalkEnabled,
+    crosstalkSwapMode,
     thesaurusEnabled,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
@@ -106,5 +109,6 @@ export function useSettings() {
       if (!v) useLorebookStore.getState().setReferenceLorebookId(null);
     },
     setThesaurusEnabled:         (v) => updateSetting('thesaurusEnabled', v),
+    setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
   };
 }

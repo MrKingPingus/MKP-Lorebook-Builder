@@ -2898,7 +2898,38 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .export-filename-input:focus { border-color: var(--border2); outline: none; }
 
 /* Settings */
-.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; height: 100%; }
+.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: 100%; }
+.settings-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  overflow: hidden;
+}
+.settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.settings-section-header:hover { background: var(--surface3); }
+.settings-section--open .settings-section-header { border-bottom: 1px solid var(--border); }
+.settings-section-chevron { width: 12px; font-size: 10px; color: var(--muted); }
+.settings-section-title { flex: 1; }
+.settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 14px 12px;
+}
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
 .settings-label { font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .settings-hint { font-size: 11px; color: var(--muted); line-height: 1.6; }
@@ -3807,6 +3838,23 @@ kbd {
   outline: none;
   border-color: var(--focus-border);
 }
+.pane-header-swap-btn {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pane-header-swap-btn:hover {
+  background: var(--blue);
+  color: var(--surface);
+  border-color: var(--blue);
+}
 
 /* ============================================================
    Reference Panel (crosstalk — read-only side)
@@ -3998,6 +4046,346 @@ kbd {
 .entry-ref-badge--header {
   margin-left: 8px;
   font-size: 11px;
+}
+
+/* Brief highlight applied to whichever card is the target of a cross-pane
+   "in both books" jump. The transient outline catches the eye after the
+   smooth scroll, then fades. */
+@keyframes cross-flash-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.0); }
+  20%  { box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.85); }
+  100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.0); }
+}
+.entry-card--cross-flash,
+.reference-entry-card--cross-flash {
+  animation: cross-flash-pulse 1.3s ease-out;
+}
+
+/* ============================================================
+   Diff visuals — shared between rollback preview and cross-pane popover
+   ============================================================ */
+/* Cross-pane "in both" badge variants — green when entries match exactly,
+   yellow when they differ. Sits on top of the base .entry-ref-badge styles. */
+.entry-ref-badge--match {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+}
+.entry-ref-badge--match:hover {
+  background: var(--green);
+  color: var(--surface);
+}
+.entry-ref-badge--diff {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.entry-ref-badge--diff:hover {
+  background: var(--yellow);
+  color: var(--surface);
+}
+
+/* Field-label modifier dot — small filled circle that flags a changed field
+   in either the rollback preview or the cross-pane diff popover. */
+.diff-modified-dot {
+  display: inline-block;
+  margin-left: 6px;
+  margin-right: 5px;
+  color: var(--yellow);
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+/* Inline word-level segments. 'same' renders as plain text; 'add'/'del' get
+   a tinted background + sign. Word boundaries already include their own
+   whitespace so segments concat cleanly. */
+.diff-seg--same { color: inherit; }
+.diff-seg--add {
+  background: rgba(52, 211, 153, 0.22);
+  color: var(--text);
+  border-radius: 2px;
+}
+.diff-seg--del {
+  background: rgba(239, 68, 68, 0.22);
+  color: var(--text);
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.7);
+  border-radius: 2px;
+}
+
+/* Trigger chips inside a diff row — common stays neutral, added is green,
+   removed is red-strikethrough. Tighter than the editor's chip styling so
+   a long trigger list doesn't blow out the row. */
+.diff-trigger-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.diff-trigger {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 3px;
+  font-size: 11px;
+  border: 1px solid transparent;
+}
+.diff-trigger--same {
+  background: var(--surface3);
+  border-color: var(--border);
+  color: var(--muted2);
+}
+.diff-trigger--added {
+  background: rgba(52, 211, 153, 0.18);
+  border-color: var(--green);
+  color: var(--green);
+}
+.diff-trigger--removed {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: var(--red);
+  color: var(--red);
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.7);
+}
+.diff-trigger--empty {
+  background: transparent;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* Rollback preview "Highlight Differences" toggle bar */
+.rollback-diff-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+}
+.rollback-diff-toggle {
+  padding: 3px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rollback-diff-toggle:hover {
+  background: var(--surface);
+}
+.rollback-diff-toggle--on {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--surface);
+}
+.rollback-diff-toggle--on:hover {
+  background: var(--blue);
+}
+.rollback-diff-count {
+  font-size: 11px;
+  color: var(--muted2);
+}
+.diff-after-hint {
+  color: var(--muted2);
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* ============================================================
+   Side-by-side compare mode — engaged from the yellow "differs"
+   badge. Active editor gets per-field annotations (modified dot,
+   copy button, yellow left-border, green outline boxes around
+   description words that aren't in the reference). Reference
+   counterpart gets a partner highlight and force-expands.
+   ============================================================ */
+.entry-ref-badge--comparing {
+  background: var(--yellow);
+  color: var(--surface);
+}
+.entry-ref-badge--comparing:hover {
+  background: var(--yellow);
+  color: var(--surface);
+  filter: brightness(1.1);
+}
+
+.field-copy-btn {
+  margin-left: 8px;
+  padding: 1px 7px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.field-copy-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--surface);
+}
+
+.entry-field--differs > input,
+.entry-field--differs > select,
+.entry-field--differs .type-selector {
+  border-left: 3px solid var(--yellow);
+}
+.trigger-section--differs {
+  border-left: 3px solid var(--yellow);
+  padding-left: 8px;
+}
+.description-area--differs .description-textarea,
+.description-area--differs .description-highlight {
+  border-left: 3px solid var(--yellow);
+}
+
+.description-area-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.description-area-label-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.description-area-label-right {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.copy-all-from-ref-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.copy-all-from-ref-btn:hover {
+  background: var(--yellow);
+  color: var(--surface);
+}
+
+/* Diff outline overlay inside the description. The .diff-overlay-* spans
+   are invisible markers used purely as querySelector targets — the actual
+   outlines are drawn as absolutely-positioned divs in .diff-outline-layer,
+   sized from each marker's getBoundingClientRect. A multi-line marker
+   reports a single bounding box covering both lines, so the outline reads
+   as one continuous shape instead of CSS-sliced fragments. */
+.diff-overlay-add,
+.diff-overlay-del {
+  /* No visual styling — the outline layer renders the boxes. */
+}
+.diff-outline-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.diff-outline {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.diff-outline--add { border: 1.5px solid var(--green); }
+.diff-outline--del { border: 1.5px solid var(--red);   }
+
+.reference-entry-card--compare-partner {
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55);
+}
+
+/* Reference mirror — when compare mode is engaged, the matched reference
+   card is rendered using the active editor's expanded layout so the user
+   can scan both sides at the same dimensions. The inputs/selects are
+   read-only; the description textarea is read-only with a 'reference'
+   diff overlay (red outlines on segments missing from the active side).
+   Trigger input is hidden. */
+.entry-card--reference-mirror {
+  cursor: default;
+}
+.entry-card--reference-mirror .entry-name-field[readonly],
+.entry-card--reference-mirror .type-selector[disabled],
+.entry-card--reference-mirror .description-textarea[readonly] {
+  opacity: 1;            /* keep readable; readOnly browser default dims it */
+  cursor: default;
+  background: var(--surface2);
+}
+.trigger-chips--readonly {
+  cursor: default;
+}
+.trigger-chips--readonly .trigger-input {
+  display: none;
+}
+
+/* Copy-menu trigger button + popover — sits in the DESCRIPTION label row
+   on the active card while compare mode is engaged, just left of the
+   "Copy All from Reference" button. One menu per active editor; the
+   backdrop closes it on outside click. */
+.copy-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  margin-right: 6px;
+}
+.copy-menu-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.copy-menu-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--surface);
+}
+.copy-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.copy-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 41;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.copy-menu-item {
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.copy-menu-item:hover {
+  background: var(--blue);
+  color: var(--surface);
 }
 
 /* ============================================================
