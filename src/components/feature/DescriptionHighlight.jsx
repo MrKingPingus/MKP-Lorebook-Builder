@@ -41,9 +41,24 @@ export function DescriptionHighlight({ text, query, diffSegments = null, diffSid
       let out = '';
       for (const seg of diffSegments) {
         if (seg.kind === skipKind) continue;
-        const inner = withSearchMarks(escapeHtml(seg.text));
-        if (seg.kind === markKind) out += `<span class="${markClass}">${inner}</span>`;
-        else                       out += inner;
+        if (seg.kind === markKind) {
+          // Strip leading/trailing whitespace from the marker span — emit
+          // it as plain text outside the <span> instead. Keeps the rendered
+          // text identical while preventing trailing whitespace that wraps
+          // onto the next visual line from extending the marker's measured
+          // rects into a region that contains no diff content.
+          const m     = seg.text.match(/^(\s*)([\s\S]*?)(\s*)$/);
+          const lead  = m ? m[1] : '';
+          const core  = m ? m[2] : seg.text;
+          const trail = m ? m[3] : '';
+          if (lead)  out += escapeHtml(lead);
+          if (core.length > 0) {
+            out += `<span class="${markClass}">${withSearchMarks(escapeHtml(core))}</span>`;
+          }
+          if (trail) out += escapeHtml(trail);
+        } else {
+          out += withSearchMarks(escapeHtml(seg.text));
+        }
       }
       return out;
     }
@@ -73,16 +88,24 @@ export function DescriptionHighlight({ text, query, diffSegments = null, diffSid
       const spans   = el.querySelectorAll(`.${className}`);
       const next    = [];
       spans.forEach((span) => {
-        const r = span.getBoundingClientRect();
-        if (r.width === 0 && r.height === 0) return;
-        next.push({
-          left:   r.left - wrapper.left,
-          top:    r.top  - wrapper.top,
-          width:  r.width,
-          height: r.height,
-        });
+        // getClientRects returns one rect per visual line a span wraps onto,
+        // so each rect is tight on the diff text for that line — avoids the
+        // bounding-box behaviour that would extend across non-diff content
+        // on partial first/last lines.
+        const rects = span.getClientRects();
+        for (let i = 0; i < rects.length; i++) {
+          const r = rects[i];
+          // Drop near-zero rects (browsers occasionally report a sliver at
+          // the wrap point even with whitespace stripped from the marker).
+          if (r.width < 4 || r.height < 4) continue;
+          next.push({
+            left:   r.left - wrapper.left,
+            top:    r.top  - wrapper.top,
+            width:  r.width,
+            height: r.height,
+          });
+        }
       });
-      // Avoid an unnecessary re-render when the rects are unchanged
       setRects((prev) => {
         if (prev.length !== next.length) return next;
         for (let i = 0; i < next.length; i++) {
