@@ -294,7 +294,7 @@ export function ReferencePanel() {
                       const isComparing = compareEntryId === sameNameActiveId;
                       return (
                         <button
-                          className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing ? ' entry-ref-badge--comparing' : ''}`}
+                          className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
                           onMouseDown={stopSwap}
                           onClick={(e) => {
                             e.stopPropagation();

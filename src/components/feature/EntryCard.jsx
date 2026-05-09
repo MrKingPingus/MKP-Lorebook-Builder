@@ -144,12 +144,18 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   // Per-field copy: pulls just the named field from the reference entry into
   // the active entry. discrete=true so each click lands as its own undo step.
+  // If the resulting entry matches the reference exactly, auto-exit compare
+  // mode — the user's gesture said "make this match", so the green "in both"
+  // state shouldn't require a second click on the badge to commit.
   function copyField(fieldName) {
     if (!matchedRefEntry) return;
-    if (fieldName === 'triggers') {
-      update({ triggers: [...matchedRefEntry.triggers] }, true);
-    } else {
-      update({ [fieldName]: matchedRefEntry[fieldName] }, true);
+    const patch = fieldName === 'triggers'
+      ? { triggers: [...matchedRefEntry.triggers] }
+      : { [fieldName]: matchedRefEntry[fieldName] };
+    const nextEntry = { ...entry, ...patch };
+    update(patch, true);
+    if (entriesShallowEqual(nextEntry, matchedRefEntry)) {
+      setCompareEntryId(null);
     }
   }
   function copyAllFromReference() {
@@ -160,6 +166,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       description: matchedRefEntry.description,
       triggers:    [...matchedRefEntry.triggers],
     }, true);
+    // Copy-All always results in a match, so always exit compare mode.
+    setCompareEntryId(null);
   }
 
   // Cross-pane "in both books" jump — flash the matching reference card and
@@ -335,7 +343,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         )}
         {sameNameRefId && (
           <button
-            className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing ? ' entry-ref-badge--comparing' : ''}`}
+            className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
             onClick={onBadgeClick}
             title={
               matchedIsEqual
