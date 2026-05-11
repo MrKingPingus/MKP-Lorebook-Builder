@@ -12,6 +12,7 @@
 ### Fixes
 
 - **First-run "New Lorebook" no longer lingers after an import** — the auto-created blank lorebook on first run is now marked as a placeholder. Choosing **Import as New Lorebook** from either the Import tab or the new whole-book mode in the popup silently discards the placeholder if it's still pristine (default name, zero entries). Users who land in the builder and immediately import are no longer left cleaning up an empty `New Lorebook` afterward.
+- **First import from fresh storage no longer requires a retry** — `deleteLorebook` and `switchLorebook` in `use-lorebook.js` now read `lorebookIndex` and `activeLorebookId` from `useLorebookStore.getState()` instead of the React hook closure. The placeholder-discard step at the tail of `importAsNewLorebook` runs synchronously after `createLorebook`, so the closure was stale by the time `deleteLorebook` fired — `removeFromIndex(staleClosure, placeholderId)` returned `[]`, wiping the newly-created lorebook from the index. Manual deletes of the active lorebook had the same latent stale-closure problem in `switchLorebook` and are fixed by the same change.
 
 ---
 
