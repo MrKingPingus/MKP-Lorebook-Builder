@@ -33,7 +33,7 @@ export function usePickFromReference() {
   // commit=false → cancel: just swap back and clean up.
   function exitPickFromReference(commit = false) {
     if (!pickFromReferenceMode) return;
-    if (commit) copyToOtherPanel(); // also clears selection + exits select mode
+    if (commit) copyToOtherPanel(); // clears selection; the explicit setSearchMode below exits select mode
     swapReference();                // swap back; clears selection again
     clearSelection();
     setSearchMode('search');

@@ -15,7 +15,8 @@ import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
 import { useNameMatch }   from '../../hooks/use-name-match.js';
 import { useRollback }    from '../../hooks/use-rollback.js';
 import { diffEntries, entriesShallowEqual } from '../../services/diff-service.js';
-import { useIsSelectMode, useIsSelected, useToggleSelected } from '../../hooks/use-selection.js';
+import { useIsSelectMode, useIsSelected, useToggleSelected,
+         useStagedType, useSetStagedType }              from '../../hooks/use-selection.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
@@ -56,6 +57,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const isSelectMode   = useIsSelectMode();
   const isSelected     = useIsSelected(entry.id);
   const toggleSelected = useToggleSelected();
+  const stagedType     = useStagedType(entry.id);
+  const setStagedType  = useSetStagedType();
+  const stagedDiffers  = stagedType !== null && stagedType !== entry.type;
 
   // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
   // In select mode, cards are always collapsed and not expandable.
@@ -299,7 +303,25 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             <span className="entry-card-mobile-chevron">›</span>
           </div>
         </div>
-        <div className="entry-card-mobile-type">{typeDef?.label ?? entry.type}</div>
+        {isSelectMode && isSelected ? (
+          <select
+            className={`entry-card-mobile-type entry-card-mobile-type--staged${stagedDiffers ? ' staged-type-select--pending' : ''}`}
+            value={stagedType ?? entry.type}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const v = e.target.value;
+              setStagedType(entry.id, v === entry.type ? null : v);
+            }}
+            title="Stage a per-entry type change — apply all staged changes from the bulk action bar"
+          >
+            {ENTRY_TYPES.map((t) => (
+              <option key={t.id} value={t.id}>{t.label}</option>
+            ))}
+          </select>
+        ) : (
+          <div className="entry-card-mobile-type">{typeDef?.label ?? entry.type}</div>
+        )}
       </div>
     );
   }
@@ -332,6 +354,25 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           <span className="entry-label" style={{ color: typeColor }}>
             #{index}: {entry.name || '(unnamed)'}
           </span>
+        )}
+        {isSelectMode && isSelected && (
+          <select
+            className={`staged-type-select${stagedDiffers ? ' staged-type-select--pending' : ''}`}
+            value={stagedType ?? entry.type}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const v = e.target.value;
+              setStagedType(entry.id, v === entry.type ? null : v);
+            }}
+            title={stagedDiffers
+              ? `Staged: change to ${ENTRY_TYPES.find((t) => t.id === stagedType)?.label ?? stagedType}. Apply via the bulk action bar.`
+              : 'Stage a per-entry type change — apply all staged changes from the bulk action bar'}
+          >
+            {ENTRY_TYPES.map((t) => (
+              <option key={t.id} value={t.id}>{t.label}</option>
+            ))}
+          </select>
         )}
         {entry.hiddenFromExport && (
           <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">

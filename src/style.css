@@ -1230,6 +1230,16 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   background: #1ea876;
 }
 
+/* Apply Staged Types — amber/yellow so per-row staged changes read as a
+   pending commit awaiting review, distinct from the red apply-to-all button. */
+.bulk-action-apply--staged {
+  background: var(--yellow);
+  color: var(--surface);
+}
+.bulk-action-apply--staged:hover:not(:disabled) {
+  background: #d69e2e;
+}
+
 /* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
 .bulk-action-chips {
   flex: 1 0 100%;
@@ -1534,6 +1544,24 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Per-entry staged-type dropdown rendered in the card header while in select
+   mode + selected. Compact so it fits inline next to the name. The
+   --pending variant uses a yellow border to flag an uncommitted change
+   waiting for Apply Staged. */
+.staged-type-select {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  flex-shrink: 0;
+}
+.staged-type-select--pending {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow);
 }
 
 .entry-card-header-right {
@@ -2035,6 +2063,21 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   font-size: 12px;
   color: var(--muted);
   margin-top: 1px;
+}
+
+/* Mobile staged-type dropdown — replaces the static type label while the row
+   is in select mode + selected. Visually matches the label baseline so the
+   row doesn't jump when staging starts. */
+.entry-card-mobile-type--staged {
+  font-size: 12px;
+  margin-top: 1px;
+  padding: 2px 6px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  width: auto;
+  align-self: flex-start;
 }
 
 /* ============================================================

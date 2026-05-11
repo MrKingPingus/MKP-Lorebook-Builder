@@ -2,6 +2,19 @@
 
 ---
 
+## Polish Pass 5 (Phase 2) — 2026-05-11
+
+### Adjustments
+
+- **Bulk-select toolbar swap** — `Change Type… ▴` and the new `Apply Staged` button now sit on the **left** of the bulk action bar (adjacent to the entry-type column where the chips row drops down), while `× Exit`, `Select All Visible`, and `Deselect All` cluster on the **right**. Reduces the diagonal travel between picking a type and clicking the chip.
+- **Select mode persists after Change Type** — applying a type to the selected entries no longer exits select mode or clears the selection. The same entries stay selected so further actions (re-applying a different type, copying, mixing in per-row stages) can be chained on the same set. `Copy to Other Panel` similarly stays in select mode (it still clears the selection since the originals were copied, not transformed).
+
+### Additions
+
+- **Per-row staged type changes** — while in select mode, each selected entry shows an inline type dropdown in its card header (desktop) or its type slot (mobile). Picking a type **stages** the change without committing; a yellow border + glow flag rows whose staged type differs from their current type. A new amber `Apply Staged (N)` button appears in the bulk action bar when stages exist and commits all of them in one history snapshot. Stages clear on exit, on deselect, or when the apply-to-all `Change Type…` path runs. This is the deliberate flow for "change these three to Character, those two to Location, and that one to Item" in a single pass.
+
+---
+
 ## Polish Pass 5 (Phase 1) — 2026-05-11
 
 ### Renames

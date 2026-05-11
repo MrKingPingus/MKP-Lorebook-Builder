@@ -75,10 +75,10 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 - [x] **Native spellcheck on description** — entry description textarea uses browser spellcheck; other inputs unchanged
 - [x] **CHANGELOG bootstrap** — moved `docs/changelog.md` → `CHANGELOG.md` (repo root), backfilled missing entries since 2026-04-08, and added a standing reminder in CLAUDE.md to keep it current
 
-### Phase 2 — Select Mode upgrades (planned)
-- [ ] Swap bulk-select toolbar layout — `Change Type… ▴` moves to the left side adjacent to the entry-type column; `× Exit / Select All Visible / Deselect All` cluster moves to the right
-- [ ] Select mode persists after Change Type runs (same entries stay selected)
-- [ ] Per-row staged type changes — each selected row gets its own type dropdown; single Apply commits the batch (existing apply-to-all stays as the fast path)
+### Phase 2 — Select Mode upgrades (shipped)
+- [x] Swapped bulk-select toolbar layout — `Change Type… ▴` and `Apply Staged` cluster on the left adjacent to the type-chips row; `× Exit / Select All Visible / Deselect All` cluster on the right via the existing `margin-left: auto` on the count chip
+- [x] Select mode + selection persist after `Change Type` runs. `Copy to Other Panel` keeps select mode active too (selection is cleared since the entries were copied, not transformed); `Pick from Reference` commit still ends the pose as before
+- [x] Per-row staged type changes — `stagedTypes: Map<entryId, typeId>` in ui-store, selected entries show an inline `<select>` in the card header (desktop) or type slot (mobile), yellow `--pending` border when the staged type differs from current, amber `Apply Staged (N)` button in the bulk action bar that commits all stages in one history snapshot. Stages clear on exit, deselect, side switch, or apply-to-all.
 
 ### Phase 3 — Import flow & first-run fix (planned)
 - [ ] Append-to-active import via popup AND Import tab — Import Entries popup gains paste / file / whole-book modes; Import tab gains an append-to-active toggle

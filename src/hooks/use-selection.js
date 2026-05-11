@@ -6,10 +6,12 @@ export function useSelection() {
   const searchMode       = useUiStore((s) => s.searchMode);
   const selectedIds      = useUiStore((s) => s.selectedIds);
   const selectionSide    = useUiStore((s) => s.selectionSide);
+  const stagedTypes      = useUiStore((s) => s.stagedTypes);
   const toggleSelected   = useUiStore((s) => s.toggleSelected);
   const clearSelection   = useUiStore((s) => s.clearSelection);
   const selectAllVisible = useUiStore((s) => s.selectAllVisible);
   const setSearchMode    = useUiStore((s) => s.setSearchMode);
+  const clearStagedTypes = useUiStore((s) => s.clearStagedTypes);
 
   return {
     isSelectMode: searchMode === 'select',
@@ -17,8 +19,12 @@ export function useSelection() {
     selectionSide,
     selectedCount: selectedIds.size,
     hasSelection:  selectedIds.size > 0,
+    stagedTypes,
+    stagedCount:   stagedTypes.size,
+    hasStaged:     stagedTypes.size > 0,
     toggleSelected,
     clearSelection,
+    clearStagedTypes,
     selectAllVisible,
     exitSelectMode: () => setSearchMode('search'),
   };
@@ -27,6 +33,17 @@ export function useSelection() {
 // Narrow per-card subscription — re-renders only when this card's selected state flips
 export function useIsSelected(id) {
   return useUiStore((s) => s.selectedIds.has(id));
+}
+
+// Narrow per-card subscription for the staged type — re-renders only when this card's
+// staged type changes. Returns the typeId or null if no staged change pending.
+export function useStagedType(id) {
+  return useUiStore((s) => s.stagedTypes.get(id) ?? null);
+}
+
+// Stable action reference for staging a type on a single entry
+export function useSetStagedType() {
+  return useUiStore((s) => s.setStagedType);
 }
 
 // Mode flag only — used by EntryCard to switch its click behaviour

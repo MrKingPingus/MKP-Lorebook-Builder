@@ -14,18 +14,41 @@ export function useBulkActions() {
   const pushSnapshot        = useHistoryStore((s) => s.pushSnapshot);
   const selectedIds         = useUiStore((s) => s.selectedIds);
   const selectionSide       = useUiStore((s) => s.selectionSide);
+  const stagedTypes         = useUiStore((s) => s.stagedTypes);
   const clearSelection      = useUiStore((s) => s.clearSelection);
-  const setSearchMode       = useUiStore((s) => s.setSearchMode);
+  const clearStagedTypes    = useUiStore((s) => s.clearStagedTypes);
 
   const entries = activeLorebookId ? lorebooks[activeLorebookId]?.entries ?? [] : [];
 
+  // Bulk apply-to-all path. Select mode and selection persist after apply so
+  // the user can chain further actions on the same set.
   function applyTypeChange(toType) {
     if (selectedIds.size === 0 || !toType) return;
     pushSnapshot({ entries: [...entries] });
     const updated = changeTypeForIds(entries, selectedIds, toType);
     updateActiveEntries(updated);
-    clearSelection();
-    setSearchMode('search');
+    // Any pending per-row stages get superseded by the apply-to-all result.
+    clearStagedTypes();
+  }
+
+  // Commits per-row staged types in one batch. Only entries that are still
+  // selected AND have a staged type that differs from their current type are
+  // updated. No-op (no history snapshot) if nothing would change.
+  function applyStagedTypes() {
+    if (stagedTypes.size === 0) return;
+    const hasWork = entries.some((e) =>
+      selectedIds.has(e.id) && stagedTypes.has(e.id) && stagedTypes.get(e.id) !== e.type
+    );
+    if (!hasWork) { clearStagedTypes(); return; }
+    pushSnapshot({ entries: [...entries] });
+    const now = Date.now();
+    const updated = entries.map((e) =>
+      selectedIds.has(e.id) && stagedTypes.has(e.id) && stagedTypes.get(e.id) !== e.type
+        ? { ...e, type: stagedTypes.get(e.id), lastModified: now }
+        : e
+    );
+    updateActiveEntries(updated);
+    clearStagedTypes();
   }
 
   // Copy the selected entries from the side they were clicked on to the other
@@ -60,8 +83,7 @@ export function useBulkActions() {
     setLorebook({ ...destLorebook, entries: [...destEntries, ...clones] });
 
     clearSelection();
-    setSearchMode('search');
   }
 
-  return { applyTypeChange, copyToOtherPanel };
+  return { applyTypeChange, applyStagedTypes, copyToOtherPanel };
 }
