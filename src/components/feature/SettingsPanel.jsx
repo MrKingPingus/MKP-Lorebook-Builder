@@ -106,7 +106,7 @@ export function SettingsPanel() {
         {/* Rollback (this lorebook) */}
         <div className="settings-group">
           <label className="settings-label">
-            <span>Entry rollback (this lorebook)</span>
+            <span>Entry history (this lorebook)</span>
             <input
               type="checkbox"
               checked={rollbackEnabled}
@@ -162,7 +162,7 @@ export function SettingsPanel() {
                 />
               </label>
               <div className="settings-hint">
-                When off, snapshots are only created manually via the entry's Rollback panel. The save prompt on close still appears.
+                When off, snapshots are only created manually via the entry's history panel. The save prompt on close still appears.
               </div>
             </>
           )}
@@ -170,7 +170,7 @@ export function SettingsPanel() {
 
         <div className="settings-group">
           <label className="settings-label">
-            <span>Enable rollback for new lorebooks by default</span>
+            <span>Enable entry history for new lorebooks by default</span>
             <input
               type="checkbox"
               checked={rollbackDefaultEnabled}
@@ -178,7 +178,7 @@ export function SettingsPanel() {
             />
           </label>
           <div className="settings-hint">
-            New lorebooks will start with rollback turned on automatically.
+            New lorebooks will start with entry history turned on automatically.
           </div>
         </div>
 

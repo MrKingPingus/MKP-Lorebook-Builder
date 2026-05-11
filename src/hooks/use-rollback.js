@@ -137,9 +137,8 @@ export function useRollback({ entry, onUpdate }) {
     _finishCollapse();
   }
 
-  function dismissPrompt() {
-    pendingCollapseRef.current = null;
-    setPromptVisible(false);
+  function promptSkip() {
+    _finishCollapse();
   }
 
   function reEnablePrompt() {
@@ -201,7 +200,7 @@ export function useRollback({ entry, onUpdate }) {
     handleCollapseIntent,
     promptSaveNew,
     promptReplace,
-    dismissPrompt,
+    promptSkip,
     reEnablePrompt,
     restoreSnapshot,
     updateSnapshotLabel,

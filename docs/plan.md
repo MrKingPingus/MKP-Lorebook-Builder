@@ -64,6 +64,44 @@ User can set a reference lorebook on the right side, see both active and referen
 
 ---
 
+## Polish Pass 5 — UI Refinements (in progress)
+
+A phased polishing sweep covering renames, select-mode upgrades, import-flow fixes, lander overhaul, FAB quick-add, and thesaurus on attached triggers. Each phase ships as its own batch so changes can be tested in isolation.
+
+### Phase 1 — Quick fixes & polish (shipped)
+- [x] **Rollback → Entry History** rename across user-facing strings; inactive button reads "Enable entry history?"
+- [x] **Skip really skips** — the save-prompt Skip button now closes the entry without committing a snapshot (previously dismissed the prompt but left the entry open)
+- [x] **Settings panel scroll** — Settings tab uses `flex: 1; min-height: 0` (was `height: 100%`) and `flex-shrink: 0` on each section so long sections no longer fall off the bottom
+- [x] **Native spellcheck on description** — entry description textarea uses browser spellcheck; other inputs unchanged
+- [x] **CHANGELOG bootstrap** — moved `docs/changelog.md` → `CHANGELOG.md` (repo root), backfilled missing entries since 2026-04-08, and added a standing reminder in CLAUDE.md to keep it current
+
+### Phase 2 — Select Mode upgrades (planned)
+- [ ] Swap bulk-select toolbar layout — `Change Type… ▴` moves to the left side adjacent to the entry-type column; `× Exit / Select All Visible / Deselect All` cluster moves to the right
+- [ ] Select mode persists after Change Type runs (same entries stay selected)
+- [ ] Per-row staged type changes — each selected row gets its own type dropdown; single Apply commits the batch (existing apply-to-all stays as the fast path)
+
+### Phase 3 — Import flow & first-run fix (planned)
+- [ ] Append-to-active import via popup AND Import tab — Import Entries popup gains paste / file / whole-book modes; Import tab gains an append-to-active toggle
+- [ ] First-run discard — auto-created blank `New Lorebook` is marked as a placeholder and silently discarded if the user imports while it's still untouched
+
+### Phase 4 — Lander overhaul (planned)
+- [ ] Recent books panel (last N from storage, last-edited timestamps, Open/Delete)
+- [ ] Start tiles (New / Import file / Import paste)
+- [ ] Learn panel (links + bundled markdown for tutorial and `docs/` references)
+- [ ] What's new panel (renders bundled `CHANGELOG.md`)
+- [ ] Report a Bug link (pre-filled GH issue template)
+
+### Phase 5 — FAB quick-add (planned)
+- [ ] Hover-over (desktop) + long-press (touch) on the FAB opens a mini-menu of hotbar actions
+
+### Phase 6 — Thesaurus on attached triggers (planned)
+- [ ] Tap/long-press existing trigger chip opens the suggestion popover with Replace / Add Similar actions
+
+### Future Features (parked from this pass)
+- **Lorebook self-reference** — intra-book entry-vs-entry consistency analysis. Adaptation of crosstalk against a single book. Scope (reuse crosstalk pipeline vs. new field-level diff) to be decided when picked up.
+
+---
+
 ## Future Features
 
 Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.

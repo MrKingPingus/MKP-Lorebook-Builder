@@ -108,7 +108,7 @@ export function DescriptionArea({
           onChange={readOnly ? undefined : (e) => onChange(e.target.value)}
           readOnly={readOnly}
           placeholder="Entry description…"
-          spellCheck={false}
+          spellCheck={true}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           style={tieredBorderStyle}

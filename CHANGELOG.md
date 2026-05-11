@@ -2,6 +2,106 @@
 
 ---
 
+## Polish Pass 5 (Phase 1) — 2026-05-11
+
+### Renames
+
+- **Rollback → Entry History** — the entry's snapshot button, tooltips, and Settings copy now use "Entry History" terminology throughout. The inactive state of the entry button reads "Enable entry history?" instead of the previously dimmed "↺ Rollback".
+
+### Fixes
+
+- **Skip really skips** — clicking Skip on the save-prompt dialog now closes the entry without saving a snapshot. Previously the prompt would dismiss but leave the entry open, forcing the user to commit to either Save New or Replace Latest.
+- **Settings panel scroll** — the Settings tab now reliably scrolls when its section content exceeds the viewport. The scroll container now uses `flex: 1; min-height: 0` and `flex-shrink: 0` on each section so long sections (e.g. Editing & Entries fully expanded) no longer fall off the bottom of the screen.
+
+### Adjustments
+
+- **Native spellcheck on entry descriptions** — the description textarea now uses the browser's built-in spellchecker. Names, triggers, filenames, and other short or stylized fields remain unchecked.
+
+---
+
+## Crosstalk Compare Mode — 2026-05-09
+
+### Additions
+
+- **Side-by-side compare mode** — opens two entry cards (active and reference) side-by-side with live word-level diff annotations on every field.
+- **Word-level diff service** — shared diff engine now powers both rollback snapshot comparisons and cross-pane comparisons.
+- **Per-line diff outline boxes** — multi-line description diffs draw outline boxes around each changed line for easier scanning.
+- **Desktop badges + cross-match sort** — crosstalk badges show on desktop; entries can be sorted by cross-book match count.
+- **Fixed-column swap mode** — option to pin active/reference panels to fixed left/right columns (vs. the default click-to-swap behavior).
+
+### Fixes
+
+- **Copy-from-reference exits compare mode** — completing a field copy now exits compare mode and flips the matched-field badge to green.
+- **Card height matching in compare mode** — both panels render at matched heights so the diff outline boxes line up.
+- **Double-click bug in compare mode** — second click no longer collapses the wrong card.
+
+---
+
+## Mobile Description Alignment — 2026-05-06
+
+### Fixes
+
+- **iOS textarea / highlight overlay alignment** — the search-highlight overlay behind the description textarea now matches the textarea's iOS font-metric bumps so highlights stay aligned with the text on iPhone Safari.
+
+---
+
+## Thesaurus — 2026-05-05
+
+### Additions
+
+- **Synonym popover on suggestion chips** — hover (desktop) or long-press (mobile) a suggestion chip to open a synonym popover with definition cycling (◀ ▶), per-synonym selection, and an Add button.
+- **Dictionaryapi.dev backend** — switched from Datamuse to dictionaryapi.dev for sense-disambiguated synonyms keyed off the meaning-level field.
+- **Lemma fallback** — inflected words (plurals, past tense) retry against lemma candidates so look-ups don't silently miss.
+
+### Fixes
+
+- **Mobile selection + sticky hover + Add jitter** — popover stays open after the first tap, synonyms are tappable, Add button no longer jumps on press. Pagination replaced with native scroll.
+- **Popover height stable** — height is locked across definition cycling so the popover doesn't reflow under the cursor.
+
+---
+
+## DOCX Import Recovery — 2026-05-05
+
+### Fixes
+
+- **DOCX heading/bold parsing** — entry boundaries are now recovered from heading and bold runs in the source document, so DOCX imports no longer collapse multiple entries into one block.
+
+---
+
+## Mobile Crosstalk — 2026-05-02 → 2026-05-03
+
+### Additions
+
+- **Overlay/annotation model** — mobile crosstalk surfaces shared triggers, same-named entries, and search hits in the paired book as inline annotations and overlays on the active book (no second panel).
+- **Single-entry push + role-swap** — segmented control to swap which book is active, plus a single-entry push action for sending one entry to the paired book.
+- **Pick from Reference pose** — multi-select pull pose with a pose-aware "in active" green pill while picking from the reference.
+- **Reference picker moved to Lorebooks tab** — reference selection lives alongside the active book picker, not buried in Settings.
+
+### Fixes
+
+- **iOS auto-zoom on inputs** — disabled the iOS Safari font-size-based zoom on focused inputs.
+- **z-index conflicts** — reference menu no longer renders under the backdrop; action buttons regained responsiveness; popovers raised above floating chrome.
+
+---
+
+## Crosstalk (Desktop Foundations) — 2026-04-25 → 2026-05-09
+
+### Additions
+
+- **Active + reference dual-book layout** — pairs a second lorebook as a read-only reference panel for browsing and cross-book operations.
+- **Trigger crosstalk** — chips on shared triggers show a yellow ring (unacknowledged) or blue ring (acknowledged); hover opens a conflict popover listing entries that share the trigger. Acknowledgment ("Allow") and revocation persist per-lorebook.
+- **Per-side find/replace** — match counters per book, scope toggles per book, Apply per book or Apply to Both.
+- **Select mode across both panels** — bulk-select extended across the active and reference panels with Copy-to-other for the selected entries.
+- **Crosstalk toggle surfaces** — added to LorebookPanel and as a hotbar action.
+- **I-beam cursor on reference description** — visual affordance that the description body is selectable (read-only).
+
+### Adjustments
+
+- **Symmetric pane headers** — both panels share the same header layout; the redundant reference-name bar was consolidated into the header.
+- **Hoisted filter bar** — search/filter/sort bar moved above the pane split so it spans both books in crosstalk mode.
+
+---
+
 ## Undo/Redo Fix — 2026-04-08
 
 ### Fixes

@@ -2898,12 +2898,13 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .export-filename-input:focus { border-color: var(--border2); outline: none; }
 
 /* Settings */
-.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: 100%; }
+.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; min-height: 0; }
 .settings-section {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface2);
   overflow: hidden;
+  flex-shrink: 0;
 }
 .settings-section-header {
   display: flex;
