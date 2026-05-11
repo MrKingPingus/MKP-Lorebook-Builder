@@ -1546,6 +1546,15 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   text-overflow: ellipsis;
 }
 
+/* When a card is selected in bulk-select mode, the staged-type dropdown is
+   rendered immediately after the entry name. The label shouldn't greedily
+   take the remaining row width — let it size to its content (shrink-only)
+   so the dropdown sits flush against the name. The .entry-card-header-right
+   cluster keeps its margin-left:auto and floats to the far right as before. */
+.entry-card--selected .entry-label {
+  flex: 0 1 auto;
+}
+
 /* Per-entry staged-type dropdown rendered in the card header while in select
    mode + selected. Compact so it fits inline next to the name. The
    --pending variant uses a yellow border to flag an uncommitted change

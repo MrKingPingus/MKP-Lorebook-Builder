@@ -78,7 +78,8 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 ### Phase 2 — Select Mode upgrades (shipped)
 - [x] Swapped bulk-select toolbar layout — `Change Type… ▴` and `Apply Staged` cluster on the left adjacent to the type-chips row; `× Exit / Select All Visible / Deselect All` cluster on the right via the existing `margin-left: auto` on the count chip
 - [x] Select mode + selection persist after `Change Type` runs. `Copy to Other Panel` keeps select mode active too (selection is cleared since the entries were copied, not transformed); `Pick from Reference` commit still ends the pose as before
-- [x] Per-row staged type changes — `stagedTypes: Map<entryId, typeId>` in ui-store, selected entries show an inline `<select>` in the card header (desktop) or type slot (mobile), yellow `--pending` border when the staged type differs from current, amber `Apply Staged (N)` button in the bulk action bar that commits all stages in one history snapshot. Stages clear on exit, deselect, side switch, or apply-to-all.
+- [x] Per-row staged type changes — `stagedTypes: Map<entryId, typeId>` in ui-store, selected entries show an inline `<select>` immediately next to the entry name (desktop — `.entry-card--selected .entry-label` drops `flex:1` so the dropdown sits flush against the label) or in the type slot (mobile). Yellow `--pending` border when the staged type differs from current. Amber `Apply Staged (N)` button in the bulk action bar commits all stages in one history snapshot. Stages clear on exit, deselect, side switch, or apply-to-all.
+- [x] **Escape exits select mode** — `useKeyboardShortcuts({ onEscape })` in `App.jsx` calls `setSearchMode('search')` when in select mode, or `exitPickFromReference(false)` if the pick-from-reference sub-pose is active. Skipped while a text input is focused so inline editors keep their local Escape semantics. Future targets (find/replace, compare mode, popovers) and the broader hotkey audit are catalogued in Future Features → "Hotkey & ESC Roadmap".
 
 ### Phase 3 — Import flow & first-run fix (planned)
 - [ ] Append-to-active import via popup AND Import tab — Import Entries popup gains paste / file / whole-book modes; Import tab gains an append-to-active toggle
@@ -125,6 +126,15 @@ A dedicated help section accessible from the UI (button or settings tab) contain
 
 **Shift+Scroll on All Dropdowns**
 `TypeSelector` already supports Shift+scroll to cycle through entry types without opening the dropdown. Extend this pattern to every other `<select>` in the app: the sort mode selector, the trigger delimiter selector (both in `EntryCard` and `EntryDetailPanel`), and any future dropdowns. The implementation is a self-contained `onWheel` handler on the `<select>` element — the existing `TypeSelector` code is the reference.
+
+---
+
+**Hotkey & ESC Roadmap**
+Polish Pass 5 Phase 2 wired `Escape` to exit bulk select mode (and cancel the pick-from-reference sub-pose) via `useKeyboardShortcuts({ onEscape })` in `App.jsx`. The `isTextInputFocused()` guard preserves local Escape semantics on inline editors and modal inputs. Open work, queued together for a future "hotkey pass":
+
+1. **Extend Escape to other state-dependent modes.** Candidates: exit Find & Replace mode (`searchMode === 'find-replace'`), exit compare mode (clear `compareEntryId`), close any open popovers/menus that don't already self-handle Escape, dismiss the lander, dismiss the snapshot navigate-away prompt without saving. Each new target needs its priority worked out — e.g., if the user is in select mode AND compare mode, which exits first? The current handler is a single-layer cascade; a stack/priority approach may be needed.
+2. **General appraisal of key configurations.** Audit every existing keyboard binding (the App-level `useKeyboardShortcuts`, plus all the local handlers found in `Chip.jsx`, `LorebookNameModal.jsx`, `TypeFilterBar.jsx`, `ThesaurusPopover.jsx`, `LorebookPanel.jsx`, `LorebookRoleBar.jsx`, `RollbackPanel.jsx`, `LorebookSwitcher.jsx`). Catalogue: where the binding lives, whether it's user-configurable, what guards it (focus checks, `e.stopPropagation`), and any collisions. Goal is a single source of truth and consistent guard rules.
+3. **Wider selection of hotkeys.** Currently only New Entry, Undo, and Redo are user-configurable (Settings → Hotkeys, with Alt/Ctrl modifiers). Likely additions: toggle bulk select, save snapshot, toggle compare mode, jump to next/prev cross-match, focus search, focus find/replace, toggle crosstalk, swap reference, expand/collapse all entries. Needs a settings-store schema extension (each new action gets its own configurable key + modifier) and a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals.
 
 **Lookup Table Trigger System**
 A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.

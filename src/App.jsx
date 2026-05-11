@@ -13,6 +13,7 @@ import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
 import { useViewportResize }     from './hooks/use-viewport-resize.js';
+import { usePickFromReference }  from './hooks/use-pick-from-reference.js';
 import {
   LOREBOOK_INDEX_KEY,
   LOREBOOK_KEY_PREFIX,
@@ -94,8 +95,23 @@ export default function App() {
   const newEntryHotkey = useSettingsStore((s) => s.newEntryHotkey);
   const undoHotkey     = useSettingsStore((s) => s.undoHotkey);
   const redoHotkey     = useSettingsStore((s) => s.redoHotkey);
+  const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
 
-  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, hotkey: newEntryHotkey, undoHotkey, redoHotkey });
+  // Escape exits the active state-dependent mode. Today that's bulk select
+  // (and its pick-from-reference sub-pose). Other modes that should yield to
+  // Escape — find/replace, compare mode, popovers — are flagged in plan.md
+  // under the "Hotkey & ESC roadmap" entry.
+  function handleEscape() {
+    if (pickFromReferenceMode) {
+      exitPickFromReference(false);
+      return;
+    }
+    if (useUiStore.getState().searchMode === 'select') {
+      useUiStore.getState().setSearchMode('search');
+    }
+  }
+
+  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, onEscape: handleEscape, hotkey: newEntryHotkey, undoHotkey, redoHotkey });
 
   return (
     <div className="app-root">
