@@ -2858,6 +2858,18 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .import-save-btn--cancel { color: var(--muted); }
 .import-save-divider { font-size: 11px; color: var(--muted); text-align: center; }
 
+/* Banner shown above the preview that names the disposition the user chose
+   in the save / disposition prompt. Plain text — the preview itself carries
+   the warning chip for the destructive 'replace' path. */
+.import-disposition-banner {
+  font-size: 12px;
+  color: var(--muted2);
+  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
 /* Append Import overlay (footer "Import Entries" button) */
 .append-import-overlay {
   position: absolute; inset: 0; z-index: 300;
@@ -2925,6 +2937,72 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 600; color: var(--accent);
   pointer-events: none; z-index: 10;
+}
+
+/* Mode segmented control at the top of the Import overlay — picks between
+   paste / entries-from-file / whole-book-from-file. */
+.append-import-mode-bar {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.append-import-mode-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 12px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.append-import-mode-btn:hover { color: var(--text); }
+.append-import-mode-btn--active {
+  background: var(--surface2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* File picker shown in file-entries and file-book modes — a labeled wrapper
+   around a hidden <input type=file> so the whole strip is clickable and the
+   surrounding panel's drop handler can still pick up dragged files. */
+.append-file-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: 14px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  cursor: pointer;
+  color: var(--muted2);
+  font-size: 12px;
+  text-align: center;
+  transition: background var(--transition), border-color var(--transition);
+}
+.append-file-picker:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+}
+.append-file-picker input[type="file"] {
+  display: none;
+}
+.append-file-picker-label { pointer-events: none; }
+
+/* Action row for the whole-book mode after preview — Replace / Import as New
+   / Cancel. Reuses the .import-save-btn family for visual consistency with
+   the tab's save-warning prompt. */
+.append-book-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .export-panel--empty { color: var(--muted); font-size: 13px; }

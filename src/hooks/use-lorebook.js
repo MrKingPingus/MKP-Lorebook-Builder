@@ -3,7 +3,7 @@ import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { readJson, writeJson, removeItem } from '../services/storage-service.js';
-import { createEmptyLorebook }             from '../services/entry-factory.js';
+import { createEmptyLorebook, isPlaceholderLorebook } from '../services/entry-factory.js';
 import { useSettingsStore }                from '../state/settings-store.js';
 import { addToIndex, removeFromIndex, promoteInIndex } from '../services/lorebook-index.js';
 import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY } from '../constants/storage-keys.js';
@@ -86,6 +86,33 @@ export function useLorebook() {
     updateActiveName(name);
   }
 
+  // Import-as-new: create a fresh lorebook, replace its (empty) entries with
+  // the parsed import, optionally rename to the source name, and discard the
+  // previously-active book if it was the bootstrap placeholder. Used by both
+  // the Import tab's "Import as New Lorebook" choice and the Import Entries
+  // popup's "Whole book from file" mode. Persists both the new lorebook and
+  // the index synchronously so a quick tab-close doesn't lose the import
+  // while autosave hasn't fired yet.
+  function importAsNewLorebook({ entries: importedEntries, name }) {
+    const oldActive    = activeLorebook;
+    const discardOldId = isPlaceholderLorebook(oldActive) ? oldActive.id : null;
+
+    createLorebook({ silent: name != null });
+    const newActiveId = useLorebookStore.getState().activeLorebookId;
+    if (newActiveId) {
+      useLorebookStore.getState().updateActiveEntries(importedEntries);
+      if (name != null) updateActiveName(name);
+      const finalLb    = useLorebookStore.getState().lorebooks[newActiveId];
+      const finalIndex = useLorebookStore.getState().lorebookIndex;
+      writeJson(LOREBOOK_KEY_PREFIX + newActiveId, finalLb);
+      writeJson(LOREBOOK_INDEX_KEY, finalIndex);
+    }
+
+    if (discardOldId && discardOldId !== newActiveId) {
+      deleteLorebook(discardOldId);
+    }
+  }
+
   function renameLorebookById(id, name) {
     renameLorebookByIdStore(id, name);
     // Persist the lorebook itself (read from memory or storage for non-active lorebooks)
@@ -107,5 +134,6 @@ export function useLorebook() {
     deleteLorebook,
     renameLorebook,
     renameLorebookById,
+    importAsNewLorebook,
   };
 }

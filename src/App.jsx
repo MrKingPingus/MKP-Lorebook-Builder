@@ -70,8 +70,10 @@ function useBootstrap() {
       setLorebooks(lorebooks);
       setActiveLorebookId(index[0].id);
     } else {
-      // First run — create a default lorebook and prompt user to name it
-      const lb     = createEmptyLorebook();
+      // First run — create a default lorebook marked as a placeholder so an
+      // immediate Import-as-New silently discards it instead of leaving a
+      // dangling "New Lorebook" alongside the imported book.
+      const lb     = createEmptyLorebook({ placeholder: true });
       const newIdx = addToIndex([], lb);
       setLorebook(lb);
       setLorebookIndex(newIdx ?? []);

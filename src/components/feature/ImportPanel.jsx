@@ -17,10 +17,14 @@ export function ImportPanel() {
   const [error, setError]               = useState('');
   const [loading, setLoading]           = useState(false);
   const [savePending, setSavePending]   = useState(false);
-  const [asNewLorebook, setAsNewLorebook] = useState(false);
+  // disposition determines what Confirm does once the preview is shown:
+  //   'replace' — replace active book's entries (default; matches old behavior)
+  //   'append'  — append the imported entries to the active book
+  //   'as-new'  — create a new lorebook slot and load the import there
+  const [disposition, setDisposition]   = useState('replace');
 
   const { entries, replaceEntries }     = useEntries();
-  const { activeLorebook, renameLorebook, createLorebook } = useLorebook();
+  const { activeLorebook, renameLorebook, importAsNewLorebook } = useLorebook();
   const { parseFile }                  = useImport();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
@@ -33,7 +37,7 @@ export function ImportPanel() {
     setWarnings([]);
     setError('');
     setSavePending(false);
-    setAsNewLorebook(false);
+    setDisposition('replace');
   }
 
   async function handleFile(file) {
@@ -42,7 +46,7 @@ export function ImportPanel() {
     setImportedName(null);
     setWarnings([]);
     setSavePending(false);
-    setAsNewLorebook(false);
+    setDisposition('replace');
     setLoading(true);
     try {
       const result = await parseFile(file);
@@ -57,27 +61,41 @@ export function ImportPanel() {
     }
   }
 
-  // Save current lorebook as JSON then proceed to preview
+  // Save current lorebook as JSON then proceed to preview (replace path)
   function saveAsJson() {
     if (activeLorebook) {
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
       doExportJson(activeLorebook, `${safe}.json`);
     }
+    setDisposition('replace');
     setSavePending(false);
   }
 
-  // Save current lorebook as TXT then proceed to preview
+  // Save current lorebook as TXT then proceed to preview (replace path)
   function saveAsTxt() {
     if (activeLorebook) {
       const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
       doExportTxt(activeLorebook, `${safe}.txt`);
     }
+    setDisposition('replace');
     setSavePending(false);
   }
 
-  // Import into a brand-new lorebook slot — current lorebook stays untouched
+  // Choose Replace without saving a backup
+  function chooseReplace() {
+    setDisposition('replace');
+    setSavePending(false);
+  }
+
+  // Choose Append — keeps the active book intact and adds the imported entries
+  function chooseAppend() {
+    setDisposition('append');
+    setSavePending(false);
+  }
+
+  // Choose As-New — create a new lorebook slot, current book stays untouched
   function chooseAsNew() {
-    setAsNewLorebook(true);
+    setDisposition('as-new');
     setSavePending(false);
   }
 
@@ -86,21 +104,17 @@ export function ImportPanel() {
     if (isMobile || !keepMenuOpenAfterImport) setActiveMenuPanel(null);
   }
 
-  // Confirm: replace active lorebook entries (and optionally name)
   function confirm() {
     if (!preview) return;
-    replaceEntries(preview);
-    if (importedName != null) renameLorebook(importedName);
-    resetAll();
-    closeMenuIfNeeded();
-  }
-
-  // Confirm: create a new lorebook slot and load the import into it
-  function confirmAsNew() {
-    if (!preview) return;
-    createLorebook({ silent: importedName != null });
-    replaceEntries(preview);
-    if (importedName != null) renameLorebook(importedName);
+    if (disposition === 'append') {
+      replaceEntries([...entries, ...preview]);
+    } else if (disposition === 'as-new') {
+      importAsNewLorebook({ entries: preview, name: importedName });
+    } else {
+      // 'replace'
+      replaceEntries(preview);
+      if (importedName != null) renameLorebook(importedName);
+    }
     resetAll();
     closeMenuIfNeeded();
   }
@@ -109,19 +123,26 @@ export function ImportPanel() {
 
   return (
     <div className="import-panel">
-      {/* Save-warning prompt — shown immediately after a file is parsed */}
+      {/* Save / disposition prompt — shown immediately after a file is parsed.
+          The Save buttons back up the active book before a replace; the lower
+          row offers non-replacing alternatives (Append / Import as New) that
+          skip the backup nudge. */}
       {savePending && preview?.length > 0 && (
         <div className="import-save-prompt">
           <div className="import-save-warning">
-            ⚠ You&rsquo;re about to replace &ldquo;{lorebookName}&rdquo;
+            Importing {preview.length} {preview.length === 1 ? 'entry' : 'entries'} from file
           </div>
-          <div className="import-save-label">Save a copy first?</div>
+          <div className="import-save-label">Save a backup of &ldquo;{lorebookName}&rdquo; first? (recommended before replacing)</div>
           <div className="import-save-actions">
             <button className="import-save-btn" onClick={saveAsJson}>⬇ JSON</button>
             <button className="import-save-btn" onClick={saveAsTxt}>⬇ TXT</button>
+            <button className="import-save-btn" onClick={chooseReplace}>Skip → Replace</button>
           </div>
-          <div className="import-save-divider">or</div>
+          <div className="import-save-divider">or skip backup and choose:</div>
           <div className="import-save-actions">
+            <button className="import-save-btn" onClick={chooseAppend}>
+              Append to active
+            </button>
             <button className="import-save-btn import-save-btn--new" onClick={chooseAsNew}>
               Import as New Lorebook
             </button>
@@ -167,14 +188,22 @@ export function ImportPanel() {
         </div>
       )}
 
-      {/* Entry preview — shown after save prompt is dismissed */}
+      {/* Entry preview — shown after the disposition is chosen. The preview's
+          replace-warning chip only appears for the destructive 'replace' path. */}
       {!savePending && preview?.length > 0 && (
-        <ImportPreview
-          entries={preview}
-          replaceMode={!asNewLorebook}
-          onConfirm={asNewLorebook ? confirmAsNew : confirm}
-          onCancel={resetAll}
-        />
+        <>
+          <div className="import-disposition-banner">
+            {disposition === 'replace' && <>Will <strong>replace</strong> &ldquo;{lorebookName}&rdquo; with these entries.</>}
+            {disposition === 'append'  && <>Will <strong>append</strong> these entries to &ldquo;{lorebookName}&rdquo;.</>}
+            {disposition === 'as-new'  && <>Will <strong>create a new lorebook</strong> with these entries.</>}
+          </div>
+          <ImportPreview
+            entries={preview}
+            replaceMode={disposition === 'replace'}
+            onConfirm={confirm}
+            onCancel={resetAll}
+          />
+        </>
       )}
     </div>
   );

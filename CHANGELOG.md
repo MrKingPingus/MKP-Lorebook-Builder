@@ -2,6 +2,19 @@
 
 ---
 
+## Polish Pass 5 (Phase 3) — 2026-05-11
+
+### Additions
+
+- **Import Entries popup now handles three input modes** — a segmented control at the top of the footer "Import Entries" overlay picks between **Paste entries**, **Entries from file**, and **Whole book from file**. The paste and entries-from-file modes append to the active book. The whole-book mode parses a file and then asks whether to **Replace the active book** or **Import as a New Lorebook**, so a full book import no longer requires switching to the Import / Export tab.
+- **Import tab gained an "Append to active" disposition** — after a file is parsed, the save / disposition prompt now offers `Append to active` alongside the existing `Replace` (with optional JSON / TXT backup) and `Import as New Lorebook` paths. Append skips the backup nudge since it doesn't replace data. The preview screen carries a one-line banner naming the chosen disposition so the user can see at a glance what `Confirm` will do.
+
+### Fixes
+
+- **First-run "New Lorebook" no longer lingers after an import** — the auto-created blank lorebook on first run is now marked as a placeholder. Choosing **Import as New Lorebook** from either the Import tab or the new whole-book mode in the popup silently discards the placeholder if it's still pristine (default name, zero entries). Users who land in the builder and immediately import are no longer left cleaning up an empty `New Lorebook` afterward.
+
+---
+
 ## Polish Pass 5 (Phase 2) — 2026-05-11
 
 ### Adjustments
