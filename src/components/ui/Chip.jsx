@@ -4,10 +4,19 @@ import { createPortal }     from 'react-dom';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useHtmlEscape }    from '../../hooks/use-html-escape.js';
 import { useUi }            from '../../hooks/use-ui.js';
+import { useSettings }      from '../../hooks/use-settings.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { TypeColorDot }     from './TypeColorDot.jsx';
+import { ThesaurusPopover } from '../feature/ThesaurusPopover.jsx';
+import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
 
-export function Chip({ label, onDelete, onRename, color, highlight, ringColor, conflictEntries, acknowledged, onAllow, onRevoke, readOnly = false }) {
+// Desktop hover delay before opening the thesaurus popover on an attached chip.
+// Intentionally longer than the suggestion-chip hover (140ms) so a casual mouse
+// pass over the trigger row doesn't unfurl synonyms repeatedly.
+const THESAURUS_HOVER_OPEN_MS  = 250;
+const THESAURUS_HOVER_CLOSE_MS = 200;
+
+export function Chip({ label, onDelete, onRename, color, highlight, ringColor, conflictEntries, acknowledged, onAllow, onRevoke, readOnly = false, onReplace, onAddTriggers, existingTriggers }) {
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const [editing,     setEditing]     = useState(false);
   const [draft,       setDraft]       = useState(label);
@@ -18,9 +27,19 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   const chipRef     = useRef(null);
   const hoverTimer  = useRef(null);
   const isMobile    = useMobile();
+  const { thesaurusEnabled }    = useSettings();
   const setSearchFocusedId      = useUi((s) => s.setSearchFocusedId);
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const { swapReference }       = useReferenceLorebook();
+
+  // Thesaurus on attached trigger — fires on desktop hover or touch long-press.
+  // Suppressed when the chip is read-only, when the user can't replace or add
+  // synonyms (callbacks missing), or when the setting is off.
+  const thesaurusAvailable = !readOnly && thesaurusEnabled && (onReplace || onAddTriggers);
+  const [thesaurusOpen, setThesaurusOpen] = useState(false);
+  const thesaurusHoverTimerRef       = useRef(null);
+  const thesaurusLongPressTimerRef   = useRef(null);
+  const thesaurusSuppressNextClickRef = useRef(false);
 
   function startEdit() {
     setDraft(label);
@@ -59,6 +78,54 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   }
   function keepPopover()  {
     clearTimeout(hoverTimer.current);
+  }
+
+  // Thesaurus popover handlers — separate from the conflict popover so they
+  // don't interfere with each other.
+  function openThesaurusPopover()  { setThesaurusOpen(true); }
+  function closeThesaurusPopover() { setThesaurusOpen(false); }
+
+  // Desktop hover. Skipped when a conflict popover is in play (the conflict UI
+  // wins on hover for chips that have one); long-press still works on touch.
+  function onChipMouseEnter() {
+    if (!thesaurusAvailable || isMobile || conflictEntries) return;
+    clearTimeout(thesaurusHoverTimerRef.current);
+    thesaurusHoverTimerRef.current = setTimeout(openThesaurusPopover, THESAURUS_HOVER_OPEN_MS);
+  }
+  function onChipMouseLeave() {
+    if (!thesaurusAvailable || isMobile || conflictEntries) return;
+    clearTimeout(thesaurusHoverTimerRef.current);
+    thesaurusHoverTimerRef.current = setTimeout(closeThesaurusPopover, THESAURUS_HOVER_CLOSE_MS);
+  }
+  function onThesaurusPopoverMouseEnter() {
+    clearTimeout(thesaurusHoverTimerRef.current);
+  }
+  function onThesaurusPopoverMouseLeave() {
+    if (isMobile) return;
+    thesaurusHoverTimerRef.current = setTimeout(closeThesaurusPopover, THESAURUS_HOVER_CLOSE_MS);
+  }
+
+  // Mobile long-press — works regardless of conflict state. Suppresses the
+  // synthetic click on release so the chip's tap-to-edit doesn't fire.
+  function onChipPointerDown() {
+    if (!thesaurusAvailable || !isMobile) return;
+    clearTimeout(thesaurusLongPressTimerRef.current);
+    thesaurusLongPressTimerRef.current = setTimeout(() => {
+      thesaurusSuppressNextClickRef.current = true;
+      openThesaurusPopover();
+      setTimeout(() => { thesaurusSuppressNextClickRef.current = false; }, 600);
+    }, THESAURUS_LONG_PRESS_MS);
+  }
+  function onChipPointerUp() {
+    if (!isMobile) return;
+    clearTimeout(thesaurusLongPressTimerRef.current);
+  }
+
+  function onThesaurusReplace(newWord) {
+    if (onReplace) onReplace(newWord);
+  }
+  function onThesaurusAdd(newWords) {
+    if (onAddTriggers) onAddTriggers(newWords);
   }
 
   // Mobile: hover events fire on the first tap but mouseleave never fires, so
@@ -102,13 +169,38 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
       ? { borderColor: color }
       : {};
 
+  // Suppress the synthetic click that follows a long-press release so the
+  // chip-label tap-to-edit doesn't fire after the user opened the thesaurus.
+  function maybeStartEdit() {
+    if (thesaurusSuppressNextClickRef.current) {
+      thesaurusSuppressNextClickRef.current = false;
+      return;
+    }
+    startEdit();
+  }
+
+  // Combined hover handlers so a chip with both conflict and thesaurus
+  // potential routes hover to the right popover (conflict wins).
+  const handleMouseEnter = (e) => {
+    if (conflictEntries) openPopover();
+    else                 onChipMouseEnter(e);
+  };
+  const handleMouseLeave = (e) => {
+    if (conflictEntries) closePopover();
+    else                 onChipMouseLeave(e);
+  };
+
   return (
     <span
       ref={chipRef}
       className="chip"
       style={borderStyle}
-      onMouseEnter={conflictEntries ? openPopover  : undefined}
-      onMouseLeave={conflictEntries ? closePopover : undefined}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onPointerDown={onChipPointerDown}
+      onPointerUp={onChipPointerUp}
+      onPointerCancel={onChipPointerUp}
+      onContextMenu={(e) => { if (isMobile && thesaurusAvailable) e.preventDefault(); }}
     >
       {editing ? (
         <input
@@ -122,7 +214,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
       ) : (
         <span
           className="chip-label"
-          onClick={readOnly ? undefined : (isMobile ? startEdit : undefined)}
+          onClick={readOnly ? undefined : (isMobile ? maybeStartEdit : undefined)}
           onDoubleClick={readOnly ? undefined : (isMobile ? undefined : startEdit)}
           {...(highlight
             ? {
@@ -196,6 +288,20 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           )}
         </div>,
         document.body
+      )}
+
+      {thesaurusAvailable && thesaurusOpen && (
+        <ThesaurusPopover
+          word={label}
+          anchorEl={chipRef.current}
+          existingTriggers={existingTriggers || []}
+          sourceWord={label}
+          onReplace={onReplace ? onThesaurusReplace : undefined}
+          onAddTriggers={onAddTriggers ? onThesaurusAdd : undefined}
+          onClose={closeThesaurusPopover}
+          onMouseEnter={onThesaurusPopoverMouseEnter}
+          onMouseLeave={onThesaurusPopoverMouseLeave}
+        />
       )}
     </span>
   );

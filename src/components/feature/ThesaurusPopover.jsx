@@ -16,6 +16,11 @@ export function ThesaurusPopover({
   onClose,
   onMouseEnter,
   onMouseLeave,
+  // When set, the popover renders a Replace button alongside Add Similar.
+  // Used by attached trigger chips so the user can swap a trigger for one of
+  // its synonyms instead of (or in addition to) adding more.
+  sourceWord,
+  onReplace,
 }) {
   const { senses, senseIndex, currentSense, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
   const [selected,   setSelected]   = useState(() => new Set());
@@ -76,6 +81,14 @@ export function ThesaurusPopover({
     onClose();
   }
 
+  function commitReplace() {
+    if (selected.size !== 1 || !onReplace) return;
+    onReplace([...selected][0]);
+    onClose();
+  }
+
+  const replaceMode = Boolean(sourceWord && onReplace);
+
   if (!pos) return null;
 
   const existingLower = new Set((existingTriggers || []).map((t) => t.toLowerCase()));
@@ -94,14 +107,30 @@ export function ThesaurusPopover({
         <div className="thesaurus-popover-title" title={`Synonyms for "${word}"`}>
           Synonyms for "{word}"
         </div>
-        <button
-          className="thesaurus-add-btn"
-          disabled={selected.size === 0}
-          onClick={commit}
-          title="Add selected synonyms as triggers"
-        >
-          Add{selected.size > 0 ? ` (${selected.size})` : ''}
-        </button>
+        <div className="thesaurus-popover-actions">
+          {replaceMode && (
+            <button
+              className="thesaurus-replace-btn"
+              disabled={selected.size !== 1}
+              onClick={commitReplace}
+              title={
+                selected.size === 0 ? 'Select one synonym to replace the trigger'
+                : selected.size > 1 ? 'Replace works with a single synonym'
+                : `Replace "${sourceWord}" with the selected synonym`
+              }
+            >
+              Replace
+            </button>
+          )}
+          <button
+            className="thesaurus-add-btn"
+            disabled={selected.size === 0}
+            onClick={commit}
+            title={replaceMode ? 'Add selected synonyms as additional triggers' : 'Add selected synonyms as triggers'}
+          >
+            {replaceMode ? 'Add Similar' : 'Add'}{selected.size > 0 ? ` (${selected.size})` : ''}
+          </button>
+        </div>
       </div>
 
       {currentSense && (

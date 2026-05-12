@@ -2425,6 +2425,36 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   cursor: default;
   pointer-events: none;
 }
+.thesaurus-popover-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.thesaurus-replace-btn {
+  min-width: 56px;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  transition: opacity var(--transition), background var(--transition), border-color var(--transition);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.thesaurus-replace-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface3);
+}
+.thesaurus-replace-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
 .thesaurus-sense-bar {
   display: flex;
   align-items: center;
