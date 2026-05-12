@@ -38,15 +38,15 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
 
   // Thesaurus on attached trigger — fires on desktop hover or touch long-press.
   // Suppressed when the chip is read-only, when the user can't replace or add
-  // synonyms (callbacks missing), or when the setting is off.
-  const thesaurusAvailable = !readOnly && thesaurusEnabled && (onReplace || onAddTriggers);
+  // synonyms (callbacks missing), or when the setting is off. Also suppressed
+  // on chips that already have a conflict popover — the conflict-popover/
+  // thesaurus-popover swap is logged as a known bug under "Known Bugs" in
+  // docs/plan.md; until that's fixed the thesaurus is unreachable on
+  // conflict chips.
+  const thesaurusAvailable = !readOnly && thesaurusEnabled && (onReplace || onAddTriggers) && !conflictEntries;
   const thesaurusHoverTimerRef       = useRef(null);
   const thesaurusLongPressTimerRef   = useRef(null);
   const thesaurusSuppressNextClickRef = useRef(false);
-  // True while the synonym popover was opened via the "Switch to synonyms" link
-  // inside the conflict popover. Lets the ThesaurusPopover render a back arrow
-  // that returns the user to the conflict view.
-  const [cameFromConflict, setCameFromConflict] = useState(false);
 
   const popoverOpen   = activePopover === 'conflict';
   const thesaurusOpen = activePopover === 'thesaurus';
@@ -97,7 +97,6 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   function openThesaurusPopover()  { setActivePopover('thesaurus'); }
   function closeThesaurusPopover() {
     setActivePopover((p) => (p === 'thesaurus' ? null : p));
-    setCameFromConflict(false);
   }
 
   // Desktop hover. Skipped when a conflict popover is in play (the conflict UI
@@ -141,32 +140,6 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   }
   function onThesaurusAdd(newWords) {
     if (onAddTriggers) onAddTriggers(newWords);
-  }
-
-  // Conflict ⇄ Synonyms switchers: lets a user on a conflict-bearing chip
-  // toggle between the two popovers without needing a separate gesture.
-  // Both switchers flip activePopover in a single state update so there's
-  // no in-between render where both are visible (which would race against
-  // the outside-click listeners and close the freshly-opened popover).
-  function switchConflictToThesaurus() {
-    clearTimeout(hoverTimer.current);
-    setCameFromConflict(true);
-    setActivePopover('thesaurus');
-  }
-  function switchThesaurusToConflict() {
-    clearTimeout(thesaurusHoverTimerRef.current);
-    setCameFromConflict(false);
-    // Re-measure position; the chip may have scrolled since the conflict
-    // popover last opened.
-    const el = chipRef.current;
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      setPopoverPos({
-        left:   Math.min(rect.left, window.innerWidth - 190),
-        bottom: window.innerHeight - rect.top + 6,
-      });
-    }
-    setActivePopover('conflict');
   }
 
   // Mobile: hover events fire on the first tap but mouseleave never fires, so
@@ -327,17 +300,6 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
               Revoke
             </button>
           )}
-          {thesaurusAvailable && (
-            <button
-              className="chip-conflict-switch"
-              onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); switchConflictToThesaurus(); }}
-              title={`See synonyms for "${label}"`}
-            >
-              ↻ Synonyms
-            </button>
-          )}
         </div>,
         document.body
       )}
@@ -351,9 +313,8 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           onReplace={onReplace ? onThesaurusReplace : undefined}
           onAddTriggers={onAddTriggers ? onThesaurusAdd : undefined}
           onClose={closeThesaurusPopover}
-          onMouseEnter={cameFromConflict ? undefined : onThesaurusPopoverMouseEnter}
-          onMouseLeave={cameFromConflict ? undefined : onThesaurusPopoverMouseLeave}
-          onSwitchBackToConflict={cameFromConflict && conflictEntries ? switchThesaurusToConflict : undefined}
+          onMouseEnter={onThesaurusPopoverMouseEnter}
+          onMouseLeave={onThesaurusPopoverMouseLeave}
         />
       )}
     </span>

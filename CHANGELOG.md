@@ -7,14 +7,11 @@
 ### Additions
 
 - **Thesaurus on attached triggers** — hovering an existing trigger chip on desktop (~250ms delay) or long-pressing it on touch (~450ms, same threshold as the suggestion-chip synonyms) now opens the synonym popover anchored to that chip. The popover has two action buttons: **Replace** swaps the chip's word for a single selected synonym; **Add Similar** appends any number of selected synonyms as new triggers (existing behaviour). Both paths respect duplicate triggers — synonyms already attached to the entry are disabled.
-- **Conflict-chip precedence on desktop** — chips that already have a trigger-conflict popover keep that popover on hover (the existing UI wins). Long-press still opens the thesaurus on touch regardless of conflict state. The thesaurus is also suppressed on read-only reference-panel chips.
-- **Conflict ⇄ Synonyms switchers** — the conflict popover now ends with a dashed `↻ Synonyms` button that swaps over to the synonym popover on the same chip; the synonym popover gets a small `↩` back button in the header that returns to the conflict view. So a desktop user on a conflict-bearing trigger can reach synonyms without leaving the conflict workflow, and vice-versa.
-
-### Fixes
-
-- **Switcher actually swaps the popovers** — the first wiring used two separate boolean states (`popoverOpen` for conflict, `thesaurusOpen` for thesaurus) which batched into one re-render but raced against the new popover's outside-click listener — the result was that the synonyms panel briefly showed *behind* the still-visible conflict panel and then promptly closed itself. Replaced with a single `activePopover` state (`null | 'conflict' | 'thesaurus'`) so the switch is one atomic state change with no in-between render. Switcher buttons also stop event propagation now so any incidental click bubble can't reach the document-level outside-click listener.
-- **Synonyms popover from switcher no longer evaporates on mouse move** — both popovers share the same `bottom` anchor (just above the chip), so after the swap the cursor landed right at the bottom edge of the thesaurus popover and any movement crossed that edge, firing `mouseleave` and starting the 200ms close timer. When the thesaurus is opened via the `↻ Synonyms` switcher, hover-driven dismissal is now disabled entirely — the popover only closes via outside-click, Escape, the back arrow, or an explicit commit. Regular hover-to-open on a non-conflict chip is unchanged.
 - **`thesaurusEnabled` setting gates the new affordance** — the existing Settings → Editing & Entries toggle now controls suggestion-chip synonyms AND attached-trigger synonyms together. Off keeps trigger chips strictly tap-to-edit.
+
+### Known limitations
+
+- **Synonyms popover currently disabled on conflict chips** — chips that already have a trigger-conflict popover (yellow or blue ring) do not open the synonyms popover on hover or long-press. An earlier attempt to wire a `↻ Synonyms ⇄ ↩ Conflict` switcher between the two popovers proved hard to land cleanly inside Polish Pass 5's scope; tracked as a Known Bug in `docs/plan.md`. Reaching synonyms for a conflicting trigger currently requires Allowing or Revoking the conflict first (which removes the ring), or editing the trigger inline.
 
 ---
 

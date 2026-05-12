@@ -64,7 +64,7 @@ User can set a reference lorebook on the right side, see both active and referen
 
 ---
 
-## Polish Pass 5 — UI Refinements (in progress)
+## Polish Pass 5 — UI Refinements (shipped)
 
 A phased polishing sweep covering renames, select-mode upgrades, import-flow fixes, lander overhaul, FAB quick-add, and thesaurus on attached triggers. Each phase ships as its own batch so changes can be tested in isolation.
 
@@ -102,7 +102,7 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 - [x] **Activation** — `Chip.jsx` now opens the synonym popover on desktop hover (250ms open / 200ms close, longer than the suggestion-chip hover so casual mouse passes don't unfurl) or touch long-press (`THESAURUS_LONG_PRESS_MS = 450`, same threshold as suggestion chips). A `thesaurusSuppressNextClickRef` blocks the synthetic mobile tap-to-edit that would otherwise fire on long-press release. Hover on chips with `conflictEntries` falls through to the existing conflict popover; long-press still works on touch regardless of conflict state. The affordance is also gated on the existing `thesaurusEnabled` setting and skipped for `readOnly` reference-panel chips.
 - [x] **Replace / Add Similar actions** — `ThesaurusPopover` accepts optional `sourceWord` + `onReplace` props. When set, the header renders a `.thesaurus-popover-actions` cluster with two buttons: **Replace** (enabled when exactly one synonym is selected; commits via `onReplace(selected[0])`) and **Add Similar** (existing multi-select Add behaviour, relabeled from "Add" when in replace mode). Existing-trigger disable logic continues to apply so neither path can introduce a dupe.
 - [x] **TriggerChips wiring** — each editable `Chip` receives `onReplace={(v) => renameTrigger(i, v)}`, `onAddTriggers={addTriggerList}` (a new helper extracted from `addTrigger` that accepts a pre-split array of words), and `existingTriggers={triggers}`. Read-only chips in `ReferencePanel` are unaffected because the new props default to undefined.
-- [x] **Conflict ⇄ Synonyms switchers** — `Chip.jsx` adds `switchConflictToThesaurus` + `switchThesaurusToConflict` handlers and a `cameFromConflict` state flag. The conflict popover gains a dashed `↻ Synonyms` button (rendered only when `thesaurusAvailable`); the `ThesaurusPopover` accepts an `onSwitchBackToConflict` prop and renders a `↩` back button in its header when set. Lets a desktop user on a conflict-bearing trigger reach synonyms without losing the conflict workflow. The two popovers share a single `activePopover` state (`null | 'conflict' | 'thesaurus'`) so a switch is one atomic state change — using two booleans caused the new popover to briefly render behind the still-mounted old popover and the outside-click listener then closed it. Switcher buttons also `stopPropagation()` on their pointerdown/mousedown/click so an incidental document-level listener can't catch the click.
+- [x] **Disabled on conflict chips (logged as Known Bug)** — `thesaurusAvailable` in `Chip.jsx` now requires `!conflictEntries`. A `Conflict ⇄ Synonyms` switcher was prototyped (dashed `↻ Synonyms` button inside the conflict popover, `↩` back button inside the thesaurus header, single `activePopover` state, pointer-event stopPropagation, and a `cameFromConflict` gate on the hover-leave handlers) but two stacking/positioning issues kept it from landing cleanly: (1) the new popover rendering behind the old one during the swap, (2) the cursor landing on the bottom edge of the swapped-in popover and dismissing it on first mouse movement. Switcher state, JSX, CSS, and the `onSwitchBackToConflict` prop on `ThesaurusPopover` have been stripped for now. Reaching synonyms on a conflicting trigger requires Allow/Revoke first or inline-edit. Re-enable when a sturdier swap pattern is designed.
 
 ### Future Features (parked from this pass)
 - **Lorebook self-reference** — intra-book entry-vs-entry consistency analysis. Adaptation of crosstalk against a single book. Scope (reuse crosstalk pipeline vs. new field-level diff) to be decided when picked up.
@@ -239,6 +239,12 @@ Status: **Open** — patches applied, awaiting confirmation from reporter
 **Full Type Button Grid Setting Has No Effect**
 The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
 Status: **Open** — deferred; setting now displays a "currently broken" hint in the UI
+
+---
+
+**Thesaurus Popover Unreachable on Conflict Chips**
+Trigger chips that already have a conflict-ring popover (yellow or blue) do not open the Phase 6 synonyms popover on hover or long-press. A two-way switcher (`↻ Synonyms` inside the conflict popover, `↩` back arrow inside the thesaurus header) was prototyped in Polish Pass 5 Phase 6 and rolled back: with two separate booleans the new popover rendered *behind* the still-mounted old popover and got dismissed by the outside-click listener; with a single `activePopover` state and stopPropagation on the switcher buttons that race was fixed, but the swap then put the cursor on the bottom edge of the newly-opened popover (both popovers share the same `bottom` anchor), and the first mouse move tripped `mouseleave` → 200ms close timer. Disabling hover-dismiss when opened via the switcher didn't help in user testing. Reaching synonyms on a conflicting trigger currently requires Allow/Revoke first or inline-edit. To pick this up again: design a swap pattern where the new popover anchors so the cursor lands well inside its body (e.g., position the second popover at cursor coordinates rather than the chip), or render the synonyms inline inside the conflict popover instead of swapping.
+Status: **Open** — switcher rolled back; thesaurus suppressed on conflict chips via `thesaurusAvailable && !conflictEntries` in `Chip.jsx`
 
 ---
 
