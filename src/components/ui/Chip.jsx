@@ -40,6 +40,10 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   const thesaurusHoverTimerRef       = useRef(null);
   const thesaurusLongPressTimerRef   = useRef(null);
   const thesaurusSuppressNextClickRef = useRef(false);
+  // True while the synonym popover was opened via the "Switch to synonyms" link
+  // inside the conflict popover. Lets the ThesaurusPopover render a back arrow
+  // that returns the user to the conflict view.
+  const [cameFromConflict, setCameFromConflict] = useState(false);
 
   function startEdit() {
     setDraft(label);
@@ -83,7 +87,10 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   // Thesaurus popover handlers — separate from the conflict popover so they
   // don't interfere with each other.
   function openThesaurusPopover()  { setThesaurusOpen(true); }
-  function closeThesaurusPopover() { setThesaurusOpen(false); }
+  function closeThesaurusPopover() {
+    setThesaurusOpen(false);
+    setCameFromConflict(false);
+  }
 
   // Desktop hover. Skipped when a conflict popover is in play (the conflict UI
   // wins on hover for chips that have one); long-press still works on touch.
@@ -126,6 +133,21 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   }
   function onThesaurusAdd(newWords) {
     if (onAddTriggers) onAddTriggers(newWords);
+  }
+
+  // Conflict ⇄ Synonyms switchers: lets a user on a conflict-bearing chip
+  // toggle between the two popovers without needing a separate gesture.
+  function switchConflictToThesaurus() {
+    clearTimeout(hoverTimer.current);
+    setPopoverOpen(false);
+    setCameFromConflict(true);
+    openThesaurusPopover();
+  }
+  function switchThesaurusToConflict() {
+    clearTimeout(thesaurusHoverTimerRef.current);
+    setThesaurusOpen(false);
+    setCameFromConflict(false);
+    openPopover();
   }
 
   // Mobile: hover events fire on the first tap but mouseleave never fires, so
@@ -286,6 +308,15 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
               Revoke
             </button>
           )}
+          {thesaurusAvailable && (
+            <button
+              className="chip-conflict-switch"
+              onClick={switchConflictToThesaurus}
+              title={`See synonyms for "${label}"`}
+            >
+              ↻ Synonyms
+            </button>
+          )}
         </div>,
         document.body
       )}
@@ -301,6 +332,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           onClose={closeThesaurusPopover}
           onMouseEnter={onThesaurusPopoverMouseEnter}
           onMouseLeave={onThesaurusPopoverMouseLeave}
+          onSwitchBackToConflict={cameFromConflict && conflictEntries ? switchThesaurusToConflict : undefined}
         />
       )}
     </span>

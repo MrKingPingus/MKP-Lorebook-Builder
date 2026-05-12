@@ -21,6 +21,10 @@ export function ThesaurusPopover({
   // its synonyms instead of (or in addition to) adding more.
   sourceWord,
   onReplace,
+  // When set, the popover renders a small "↩ Conflict" button in the header
+  // that swaps back to the conflict popover. Provided by Chip.jsx when the
+  // thesaurus was opened from a chip that also has a conflict popover.
+  onSwitchBackToConflict,
 }) {
   const { senses, senseIndex, currentSense, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
   const [selected,   setSelected]   = useState(() => new Set());
@@ -104,6 +108,15 @@ export function ThesaurusPopover({
       onMouseLeave={interacted ? undefined : onMouseLeave}
     >
       <div className="thesaurus-popover-header">
+        {onSwitchBackToConflict && (
+          <button
+            className="thesaurus-back-btn"
+            onClick={() => { onSwitchBackToConflict(); }}
+            title="Back to conflict info"
+          >
+            ↩
+          </button>
+        )}
         <div className="thesaurus-popover-title" title={`Synonyms for "${word}"`}>
           Synonyms for "{word}"
         </div>
