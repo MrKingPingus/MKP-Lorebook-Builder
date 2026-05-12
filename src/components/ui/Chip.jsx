@@ -351,8 +351,8 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           onReplace={onReplace ? onThesaurusReplace : undefined}
           onAddTriggers={onAddTriggers ? onThesaurusAdd : undefined}
           onClose={closeThesaurusPopover}
-          onMouseEnter={onThesaurusPopoverMouseEnter}
-          onMouseLeave={onThesaurusPopoverMouseLeave}
+          onMouseEnter={cameFromConflict ? undefined : onThesaurusPopoverMouseEnter}
+          onMouseLeave={cameFromConflict ? undefined : onThesaurusPopoverMouseLeave}
           onSwitchBackToConflict={cameFromConflict && conflictEntries ? switchThesaurusToConflict : undefined}
         />
       )}

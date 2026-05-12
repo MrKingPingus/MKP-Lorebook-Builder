@@ -13,6 +13,7 @@
 ### Fixes
 
 - **Switcher actually swaps the popovers** — the first wiring used two separate boolean states (`popoverOpen` for conflict, `thesaurusOpen` for thesaurus) which batched into one re-render but raced against the new popover's outside-click listener — the result was that the synonyms panel briefly showed *behind* the still-visible conflict panel and then promptly closed itself. Replaced with a single `activePopover` state (`null | 'conflict' | 'thesaurus'`) so the switch is one atomic state change with no in-between render. Switcher buttons also stop event propagation now so any incidental click bubble can't reach the document-level outside-click listener.
+- **Synonyms popover from switcher no longer evaporates on mouse move** — both popovers share the same `bottom` anchor (just above the chip), so after the swap the cursor landed right at the bottom edge of the thesaurus popover and any movement crossed that edge, firing `mouseleave` and starting the 200ms close timer. When the thesaurus is opened via the `↻ Synonyms` switcher, hover-driven dismissal is now disabled entirely — the popover only closes via outside-click, Escape, the back arrow, or an explicit commit. Regular hover-to-open on a non-conflict chip is unchanged.
 - **`thesaurusEnabled` setting gates the new affordance** — the existing Settings → Editing & Entries toggle now controls suggestion-chip synonyms AND attached-trigger synonyms together. Off keeps trigger chips strictly tap-to-edit.
 
 ---
