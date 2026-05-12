@@ -40,6 +40,7 @@ export function SettingsPanel() {
     entryTypeView,
     fabSize,
     fabCustomSize,
+    fabQuickMenuEnabled,
     resetWindow,
     setCounterTiers,
     setDefaultWindowWidth,
@@ -54,6 +55,7 @@ export function SettingsPanel() {
     setEntryTypeView,
     setFabSize,
     setFabCustomSize,
+    setFabQuickMenuEnabled,
     rollbackDefaultEnabled,
     setRollbackDefaultEnabled,
     keepMenuOpenAfterImport,
@@ -106,7 +108,7 @@ export function SettingsPanel() {
         {/* Rollback (this lorebook) */}
         <div className="settings-group">
           <label className="settings-label">
-            <span>Entry rollback (this lorebook)</span>
+            <span>Entry history (this lorebook)</span>
             <input
               type="checkbox"
               checked={rollbackEnabled}
@@ -162,7 +164,7 @@ export function SettingsPanel() {
                 />
               </label>
               <div className="settings-hint">
-                When off, snapshots are only created manually via the entry's Rollback panel. The save prompt on close still appears.
+                When off, snapshots are only created manually via the entry's history panel. The save prompt on close still appears.
               </div>
             </>
           )}
@@ -170,7 +172,7 @@ export function SettingsPanel() {
 
         <div className="settings-group">
           <label className="settings-label">
-            <span>Enable rollback for new lorebooks by default</span>
+            <span>Enable entry history for new lorebooks by default</span>
             <input
               type="checkbox"
               checked={rollbackDefaultEnabled}
@@ -178,7 +180,7 @@ export function SettingsPanel() {
             />
           </label>
           <div className="settings-hint">
-            New lorebooks will start with rollback turned on automatically.
+            New lorebooks will start with entry history turned on automatically.
           </div>
         </div>
 
@@ -402,6 +404,20 @@ export function SettingsPanel() {
               <span className="fab-custom-size-label">px</span>
             </div>
           )}
+        </div>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>FAB quick-action menu</span>
+            <input
+              type="checkbox"
+              checked={fabQuickMenuEnabled}
+              onChange={(e) => setFabQuickMenuEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Hover (desktop) or long-press (touch) the + button to open a popover with the hotbar actions. Tap the FAB itself to add an entry. Turn off to keep the FAB strictly Add-Entry.
+          </div>
         </div>
 
         <div className="settings-group">

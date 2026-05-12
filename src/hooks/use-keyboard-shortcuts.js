@@ -1,7 +1,7 @@
-// Bind global keydown handlers for Alt+<hotkey> (new entry), Ctrl+Z (undo), Ctrl+Y (redo)
+// Bind global keydown handlers for Alt+<hotkey> (new entry), Ctrl+Z (undo), Ctrl+Y (redo), Escape (state-mode exit)
 import { useEffect } from 'react';
 
-export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, hotkey = 'n', undoHotkey = 'z', redoHotkey = 'y' }) {
+export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, onEscape, hotkey = 'n', undoHotkey = 'z', redoHotkey = 'y' }) {
   useEffect(() => {
     function isTextInputFocused() {
       const el = document.activeElement;
@@ -11,6 +11,14 @@ export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, hotkey = 'n',
     }
 
     function handleKeyDown(e) {
+      // Escape — exit the current state-dependent mode (e.g. bulk select).
+      // Skipped when an input/textarea is focused so inline editors and modal
+      // inputs can keep their local Escape semantics.
+      if (e.key === 'Escape') {
+        if (isTextInputFocused()) return;
+        onEscape?.(e);
+        return;
+      }
       // Alt+<hotkey> — new entry (hotkey is a single lowercase letter)
       if (e.altKey && e.key === hotkey) {
         e.preventDefault();
@@ -34,5 +42,5 @@ export function useKeyboardShortcuts({ onNewEntry, onUndo, onRedo, hotkey = 'n',
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onNewEntry, onUndo, onRedo, hotkey, undoHotkey, redoHotkey]);
+  }, [onNewEntry, onUndo, onRedo, onEscape, hotkey, undoHotkey, redoHotkey]);
 }

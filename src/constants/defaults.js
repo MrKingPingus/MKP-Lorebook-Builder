@@ -24,6 +24,9 @@ export const DEFAULT_SETTINGS = {
   // FAB (+ button) size
   fabSize:                  'large',     // 'small' | 'medium' | 'large' | 'custom'
   fabCustomSize:            60,          // px, used only when fabSize === 'custom'
+  // Hover (desktop) / long-press (touch) on the FAB opens a popover listing the
+  // hotbar actions. Disable to keep the FAB strictly Add-Entry.
+  fabQuickMenuEnabled:      true,
   // Desktop: keep the menu panel open after importing a lorebook (mobile always closes)
   keepMenuOpenAfterImport:  false,
   // Show the read-only reference panel beside the active panel for cross-book search/find-replace

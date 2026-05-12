@@ -4,7 +4,7 @@ import { useUndoRedo }      from './use-undo-redo.js';
 import { useEntries }       from './use-entries.js';
 import { useUi }            from './use-ui.js';
 import { useSettings }      from './use-settings.js';
-import { HOTBAR_ACTION_MAP } from '../constants/hotbar-actions.js';
+import { HOTBAR_ACTIONS, HOTBAR_ACTION_MAP } from '../constants/hotbar-actions.js';
 
 // Each resolver receives shared hook outputs and returns { execute, disabled }
 // — plus an optional `active: boolean` for stateful toggles (e.g. crosstalk)
@@ -68,5 +68,16 @@ export function useHotbarActions() {
     return { descriptor, ...resolver(context) };
   });
 
-  return { slots, addEntry };
+  // Quick-menu surface: every known hotbar action resolved against the same
+  // context, regardless of the user's slot configuration. Lets the FAB hover /
+  // long-press menu act as an action-discovery affordance independent of the
+  // hotbar layout.
+  const allActions = HOTBAR_ACTIONS.map(({ id }) => {
+    const descriptor = HOTBAR_ACTION_MAP[id];
+    const resolver   = RESOLVERS[id];
+    if (!descriptor || !resolver) return null;
+    return { descriptor, ...resolver(context) };
+  }).filter(Boolean);
+
+  return { slots, addEntry, allActions };
 }

@@ -26,3 +26,15 @@ export function cloneEntry(entry) {
 export function createEmptyLorebook(overrides = {}) {
   return { ...DEFAULT_LOREBOOK, id: uid(), ...overrides };
 }
+
+// A lorebook is a placeholder when the App.jsx bootstrap marked it as such
+// AND it still looks pristine. Once the user touches the name, adds an entry,
+// or otherwise customizes the book, the marker stops applying — we don't
+// need to mutate the flag because all the checks are content-derived.
+export function isPlaceholderLorebook(lb) {
+  if (!lb) return false;
+  if (lb.placeholder !== true) return false;
+  if ((lb.entries ?? []).length > 0) return false;
+  if (lb.name && lb.name !== DEFAULT_LOREBOOK.name) return false;
+  return true;
+}

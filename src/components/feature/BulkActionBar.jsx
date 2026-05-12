@@ -12,11 +12,13 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     selectedCount,
     hasSelection,
     selectionSide,
+    stagedCount,
+    hasStaged,
     clearSelection,
     selectAllVisible,
     exitSelectMode,
   } = useSelection();
-  const { applyTypeChange, copyToOtherPanel }   = useBulkActions();
+  const { applyTypeChange, applyStagedTypes, copyToOtherPanel } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
@@ -70,6 +72,11 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     setChipsOpen(false);
   }
 
+  function onApplyStaged() {
+    applyStagedTypes();
+    setChipsOpen(false);
+  }
+
   function onCopyToOtherPanel() {
     copyToOtherPanel();
     setChipsOpen(false);
@@ -95,31 +102,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
 
   return (
     <div className="bulk-action-bar" ref={barRef}>
-      <button
-        className="bulk-action-btn bulk-action-btn--exit"
-        onClick={onExit}
-        title={pickFromReferenceMode ? 'Cancel pick — discard selections and swap back' : 'Exit select mode'}
-      >
-        × {pickFromReferenceMode ? 'Cancel' : 'Exit'}
-      </button>
-      <button
-        className="bulk-action-btn"
-        onClick={onSelectAllVisible}
-        disabled={selectAllDisabled}
-        title="Add all currently visible entries to the selection"
-      >
-        Select All Visible
-      </button>
-      <button
-        className="bulk-action-btn"
-        onClick={clearSelection}
-        disabled={!hasSelection}
-      >
-        Deselect All
-      </button>
-
-      <span className="bulk-action-count">{selectedCount} selected</span>
-
+      {/* ── Apply cluster — left, adjacent to the entry-type column ── */}
       <button
         className="bulk-action-apply"
         onClick={() => setChipsOpen((v) => !v)}
@@ -127,6 +110,16 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       >
         Change Type… {chipsOpen ? '▴' : '▾'}
       </button>
+
+      {hasStaged && (
+        <button
+          className="bulk-action-apply bulk-action-apply--staged"
+          onClick={onApplyStaged}
+          title={`Apply ${stagedCount} per-row staged type change${stagedCount === 1 ? '' : 's'}`}
+        >
+          Apply Staged ({stagedCount})
+        </button>
+      )}
 
       {showCopyBtn && (
         <button
@@ -163,6 +156,32 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
           Copy &amp; Done
         </button>
       )}
+
+      {/* ── Count + navigation cluster — right (margin-left:auto on count) ── */}
+      <span className="bulk-action-count">{selectedCount} selected</span>
+
+      <button
+        className="bulk-action-btn"
+        onClick={onSelectAllVisible}
+        disabled={selectAllDisabled}
+        title="Add all currently visible entries to the selection"
+      >
+        Select All Visible
+      </button>
+      <button
+        className="bulk-action-btn"
+        onClick={clearSelection}
+        disabled={!hasSelection}
+      >
+        Deselect All
+      </button>
+      <button
+        className="bulk-action-btn bulk-action-btn--exit"
+        onClick={onExit}
+        title={pickFromReferenceMode ? 'Cancel pick — discard selections and swap back' : 'Exit select mode'}
+      >
+        × {pickFromReferenceMode ? 'Cancel' : 'Exit'}
+      </button>
 
       {chipsOpen && (
         <div className="bulk-action-chips">

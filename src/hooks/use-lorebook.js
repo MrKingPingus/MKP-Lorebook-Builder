@@ -3,9 +3,9 @@ import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { readJson, writeJson, removeItem } from '../services/storage-service.js';
-import { createEmptyLorebook }             from '../services/entry-factory.js';
+import { createEmptyLorebook, isPlaceholderLorebook } from '../services/entry-factory.js';
 import { useSettingsStore }                from '../state/settings-store.js';
-import { addToIndex, removeFromIndex, promoteInIndex } from '../services/lorebook-index.js';
+import { addToIndex, promoteInIndex } from '../services/lorebook-index.js';
 import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY } from '../constants/storage-keys.js';
 
 export function useLorebook() {
@@ -46,13 +46,18 @@ export function useLorebook() {
   }
 
   function switchLorebook(id) {
-    if (id === activeLorebookId) return;
-    // Load from storage if not in memory
-    if (!lorebooks[id]) {
+    // Read from getState() rather than the hook closure so this works even
+    // when called as the tail of a chained mutation (e.g. deleteLorebook →
+    // switchLorebook on the next-in-line book) — the closure would still
+    // hold the pre-mutation index and re-add the just-deleted book via
+    // promoteInIndex.
+    const state = useLorebookStore.getState();
+    if (id === state.activeLorebookId) return;
+    if (!state.lorebooks[id]) {
       const lb = readJson(LOREBOOK_KEY_PREFIX + id);
       if (lb) setLorebook(lb);
     }
-    const newIndex = promoteInIndex(lorebookIndex, id);
+    const newIndex = promoteInIndex(state.lorebookIndex, id);
     setLorebookIndex(newIndex);
     setActiveLorebookId(id);
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
@@ -65,12 +70,18 @@ export function useLorebook() {
 
   function deleteLorebook(id) {
     removeItem(LOREBOOK_KEY_PREFIX + id);
+    // removeLorebook (store action) updates both lorebooks and lorebookIndex
+    // from the store's CURRENT state inside its set callback. We then read the
+    // post-mutation values back via getState() — never via the hook closure —
+    // because deleteLorebook can be called from a chain of synchronous store
+    // mutations (e.g. importAsNewLorebook → createLorebook → … → deleteLorebook)
+    // where the closure is captured pre-chain and is stale by this point.
     removeLorebook(id);
-    const newIndex = removeFromIndex(lorebookIndex, id);
-    setLorebookIndex(newIndex);
+    const newIndex      = useLorebookStore.getState().lorebookIndex;
+    const currentActive = useLorebookStore.getState().activeLorebookId;
     writeJson(LOREBOOK_INDEX_KEY, newIndex);
 
-    if (id === activeLorebookId) {
+    if (id === currentActive) {
       const next = newIndex[0];
       if (next) {
         switchLorebook(next.id);
@@ -84,6 +95,33 @@ export function useLorebook() {
 
   function renameLorebook(name) {
     updateActiveName(name);
+  }
+
+  // Import-as-new: create a fresh lorebook, replace its (empty) entries with
+  // the parsed import, optionally rename to the source name, and discard the
+  // previously-active book if it was the bootstrap placeholder. Used by both
+  // the Import tab's "Import as New Lorebook" choice and the Import Entries
+  // popup's "Whole book from file" mode. Persists both the new lorebook and
+  // the index synchronously so a quick tab-close doesn't lose the import
+  // while autosave hasn't fired yet.
+  function importAsNewLorebook({ entries: importedEntries, name }) {
+    const oldActive    = activeLorebook;
+    const discardOldId = isPlaceholderLorebook(oldActive) ? oldActive.id : null;
+
+    createLorebook({ silent: name != null });
+    const newActiveId = useLorebookStore.getState().activeLorebookId;
+    if (newActiveId) {
+      useLorebookStore.getState().updateActiveEntries(importedEntries);
+      if (name != null) updateActiveName(name);
+      const finalLb    = useLorebookStore.getState().lorebooks[newActiveId];
+      const finalIndex = useLorebookStore.getState().lorebookIndex;
+      writeJson(LOREBOOK_KEY_PREFIX + newActiveId, finalLb);
+      writeJson(LOREBOOK_INDEX_KEY, finalIndex);
+    }
+
+    if (discardOldId && discardOldId !== newActiveId) {
+      deleteLorebook(discardOldId);
+    }
   }
 
   function renameLorebookById(id, name) {
@@ -107,5 +145,6 @@ export function useLorebook() {
     deleteLorebook,
     renameLorebook,
     renameLorebookById,
+    importAsNewLorebook,
   };
 }

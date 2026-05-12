@@ -211,7 +211,7 @@ export function ReferencePanel() {
                         {snapshotCount > 0 && (
                           <span
                             className="reference-entry-rollback"
-                            title={`${snapshotCount} rollback snapshot${snapshotCount === 1 ? '' : 's'}`}
+                            title={`${snapshotCount} history snapshot${snapshotCount === 1 ? '' : 's'}`}
                           >
                             ↺ {snapshotCount}
                           </span>
@@ -334,7 +334,7 @@ export function ReferencePanel() {
                       {snapshotCount > 0 && (
                         <span
                           className="reference-entry-rollback"
-                          title={`${snapshotCount} rollback snapshot${snapshotCount === 1 ? '' : 's'}`}
+                          title={`${snapshotCount} history snapshot${snapshotCount === 1 ? '' : 's'}`}
                         >
                           ↺ {snapshotCount}
                         </span>

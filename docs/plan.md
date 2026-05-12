@@ -64,6 +64,51 @@ User can set a reference lorebook on the right side, see both active and referen
 
 ---
 
+## Polish Pass 5 — UI Refinements (shipped)
+
+A phased polishing sweep covering renames, select-mode upgrades, import-flow fixes, lander overhaul, FAB quick-add, and thesaurus on attached triggers. Each phase ships as its own batch so changes can be tested in isolation.
+
+### Phase 1 — Quick fixes & polish (shipped)
+- [x] **Rollback → Entry History** rename across user-facing strings; inactive button reads "Enable entry history?"
+- [x] **Skip really skips** — the save-prompt Skip button now closes the entry without committing a snapshot (previously dismissed the prompt but left the entry open)
+- [x] **Settings panel scroll** — Settings tab uses `flex: 1; min-height: 0` (was `height: 100%`) and `flex-shrink: 0` on each section so long sections no longer fall off the bottom
+- [x] **Native spellcheck on description** — entry description textarea uses browser spellcheck; other inputs unchanged
+- [x] **CHANGELOG bootstrap** — moved `docs/changelog.md` → `CHANGELOG.md` (repo root), backfilled missing entries since 2026-04-08, and added a standing reminder in CLAUDE.md to keep it current
+
+### Phase 2 — Select Mode upgrades (shipped)
+- [x] Swapped bulk-select toolbar layout — `Change Type… ▴` and `Apply Staged` cluster on the left adjacent to the type-chips row; `× Exit / Select All Visible / Deselect All` cluster on the right via the existing `margin-left: auto` on the count chip
+- [x] Select mode + selection persist after `Change Type` runs. `Copy to Other Panel` keeps select mode active too (selection is cleared since the entries were copied, not transformed); `Pick from Reference` commit still ends the pose as before
+- [x] Per-row staged type changes — `stagedTypes: Map<entryId, typeId>` in ui-store, selected entries show an inline `<select>` immediately next to the entry name (desktop — `.entry-card--selected .entry-label` drops `flex:1` so the dropdown sits flush against the label) or in the type slot (mobile). Yellow `--pending` border when the staged type differs from current. Amber `Apply Staged (N)` button in the bulk action bar commits all stages in one history snapshot. Stages clear on exit, deselect, side switch, or apply-to-all.
+- [x] **Escape exits select mode** — `useKeyboardShortcuts({ onEscape })` in `App.jsx` calls `setSearchMode('search')` when in select mode, or `exitPickFromReference(false)` if the pick-from-reference sub-pose is active. Skipped while a text input is focused so inline editors keep their local Escape semantics. Future targets (find/replace, compare mode, popovers) and the broader hotkey audit are catalogued in Future Features → "Hotkey & ESC Roadmap".
+
+### Phase 3 — Import flow & first-run fix (shipped)
+- [x] Import Entries popup gains a segmented mode bar: **Paste entries**, **Entries from file**, **Whole book from file**. Paste and file-entries append; whole-book parses and offers Replace / Import as New. `use-append-import.js` exposes `confirmAppend / confirmReplace / confirmAsNew / clearParseState` and the popup picks the commit function based on the active mode. `ImportPreview.jsx` gained a `hideActions` prop so the whole-book mode can render its own Replace / Import-as-New action row without duplicating buttons.
+- [x] Import tab save-warning prompt gained an **Append to active** button alongside the existing Replace (with optional JSON / TXT backup) and Import as New paths. State migrated from `asNewLorebook` boolean to a `disposition` enum (`'replace' | 'append' | 'as-new'`); the preview screen now shows a `.import-disposition-banner` so the user can see at a glance what `Confirm` will do.
+- [x] First-run discard — `App.jsx` bootstrap marks the auto-created lorebook with `placeholder: true`. New helper `isPlaceholderLorebook(lb)` in `entry-factory.js` returns true only while the marker is present AND the book still looks pristine (default name, zero entries). New `importAsNewLorebook({ entries, name })` action in `use-lorebook.js` creates the new book, replaces entries, optionally renames, persists the new book + index synchronously, then `deleteLorebook(discardOldId)` if the prior active was a placeholder. Both the Import tab and the popup route Import-as-New through this helper.
+
+### Phase 4 — Lander overhaul (shipped)
+- [x] **Recent lorebooks panel** — top 6 entries from the lorebook index, last-edited relative-time stamps, click-to-open (switches active and dismisses the lander in one go). The active lorebook gets a blue outline so users can see what "Continue to builder" would land them on.
+- [x] **Start tiles** — three large clickable tiles (New / Import file / Import paste) wired to `createLorebook`, `setActiveMenuPanel('import-export')`, and `setShowAppendImport(true)` respectively. The hero's Start Building button is replaced with a smaller "Continue to builder →" link in the lander footer for the no-action-needed case.
+- [x] **Learn panel** — folds the existing How It Works steps, Tips list, and Import Templates row into a single Learn section. Hotkey list updated to include `Esc` (exits bulk select per Phase 2). Readme link preserved at the bottom.
+- [x] **What's new panel** — bundles `CHANGELOG.md` via Vite's `?raw` import and renders it through a new hand-rolled markdown parser (`services/markdown-parse.js`) + a small inline renderer in `Lander.jsx`. No new dependencies. Capped at 320px height with a scroll for older entries.
+- [x] **Report a Bug link** — lander footer links to a pre-filled GitHub issue template (title prefix "Bug:", `bug` label, body sections for what-happened / expected / repro / browser / console errors).
+
+### Phase 5 — FAB quick-add (shipped)
+- [x] **FAB quick-add menu** — new `FabQuickMenu` popover anchored above the FAB inside a `.footer-fab-wrap` container. Opens on desktop hover (200ms open delay, 200ms close delay, mouse bridge between FAB and menu) or touch long-press (`THESAURUS_LONG_PRESS_MS = 450`). Tap-outside dismissal on mobile via a document-level `pointerdown` listener; `onContextMenu` is suppressed on mobile and a `suppressNextClickRef` blocks the synthetic Add-Entry click that follows a long-press release.
+- [x] **All-actions surface** — `useHotbarActions` now returns an `allActions` array (every registered hotbar action resolved against the same context) alongside the user's configured `slots`. The FAB menu consumes `allActions` so it acts as an action-discovery surface independent of hotbar layout.
+- [x] **`fabQuickMenuEnabled` setting** — Settings → Window & Layout adds a toggle that gates the hover, long-press, and contextmenu-suppression code paths in `Hotbar.jsx`. Defaults true. Persists alongside the existing FAB size settings. The FAB tooltip was also trimmed back to `Add entry (Alt+N)` since the hover/long-press behaviour is self-evident.
+
+### Phase 6 — Thesaurus on attached triggers (shipped)
+- [x] **Activation** — `Chip.jsx` now opens the synonym popover on desktop hover (250ms open / 200ms close, longer than the suggestion-chip hover so casual mouse passes don't unfurl) or touch long-press (`THESAURUS_LONG_PRESS_MS = 450`, same threshold as suggestion chips). A `thesaurusSuppressNextClickRef` blocks the synthetic mobile tap-to-edit that would otherwise fire on long-press release. Hover on chips with `conflictEntries` falls through to the existing conflict popover; long-press still works on touch regardless of conflict state. The affordance is also gated on the existing `thesaurusEnabled` setting and skipped for `readOnly` reference-panel chips.
+- [x] **Replace / Add Similar actions** — `ThesaurusPopover` accepts optional `sourceWord` + `onReplace` props. When set, the header renders a `.thesaurus-popover-actions` cluster with two buttons: **Replace** (enabled when exactly one synonym is selected; commits via `onReplace(selected[0])`) and **Add Similar** (existing multi-select Add behaviour, relabeled from "Add" when in replace mode). Existing-trigger disable logic continues to apply so neither path can introduce a dupe.
+- [x] **TriggerChips wiring** — each editable `Chip` receives `onReplace={(v) => renameTrigger(i, v)}`, `onAddTriggers={addTriggerList}` (a new helper extracted from `addTrigger` that accepts a pre-split array of words), and `existingTriggers={triggers}`. Read-only chips in `ReferencePanel` are unaffected because the new props default to undefined.
+- [x] **Disabled on conflict chips (logged as Known Bug)** — `thesaurusAvailable` in `Chip.jsx` now requires `!conflictEntries`. A `Conflict ⇄ Synonyms` switcher was prototyped (dashed `↻ Synonyms` button inside the conflict popover, `↩` back button inside the thesaurus header, single `activePopover` state, pointer-event stopPropagation, and a `cameFromConflict` gate on the hover-leave handlers) but two stacking/positioning issues kept it from landing cleanly: (1) the new popover rendering behind the old one during the swap, (2) the cursor landing on the bottom edge of the swapped-in popover and dismissing it on first mouse movement. Switcher state, JSX, CSS, and the `onSwitchBackToConflict` prop on `ThesaurusPopover` have been stripped for now. Reaching synonyms on a conflicting trigger requires Allow/Revoke first or inline-edit. Re-enable when a sturdier swap pattern is designed.
+
+### Future Features (parked from this pass)
+- **Lorebook self-reference** — intra-book entry-vs-entry consistency analysis. Adaptation of crosstalk against a single book. Scope (reuse crosstalk pipeline vs. new field-level diff) to be decided when picked up.
+
+---
+
 ## Future Features
 
 Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
@@ -87,6 +132,15 @@ A dedicated help section accessible from the UI (button or settings tab) contain
 
 **Shift+Scroll on All Dropdowns**
 `TypeSelector` already supports Shift+scroll to cycle through entry types without opening the dropdown. Extend this pattern to every other `<select>` in the app: the sort mode selector, the trigger delimiter selector (both in `EntryCard` and `EntryDetailPanel`), and any future dropdowns. The implementation is a self-contained `onWheel` handler on the `<select>` element — the existing `TypeSelector` code is the reference.
+
+---
+
+**Hotkey & ESC Roadmap**
+Polish Pass 5 Phase 2 wired `Escape` to exit bulk select mode (and cancel the pick-from-reference sub-pose) via `useKeyboardShortcuts({ onEscape })` in `App.jsx`. The `isTextInputFocused()` guard preserves local Escape semantics on inline editors and modal inputs. Open work, queued together for a future "hotkey pass":
+
+1. **Extend Escape to other state-dependent modes.** Candidates: exit Find & Replace mode (`searchMode === 'find-replace'`), exit compare mode (clear `compareEntryId`), close any open popovers/menus that don't already self-handle Escape, dismiss the lander, dismiss the snapshot navigate-away prompt without saving. Each new target needs its priority worked out — e.g., if the user is in select mode AND compare mode, which exits first? The current handler is a single-layer cascade; a stack/priority approach may be needed.
+2. **General appraisal of key configurations.** Audit every existing keyboard binding (the App-level `useKeyboardShortcuts`, plus all the local handlers found in `Chip.jsx`, `LorebookNameModal.jsx`, `TypeFilterBar.jsx`, `ThesaurusPopover.jsx`, `LorebookPanel.jsx`, `LorebookRoleBar.jsx`, `RollbackPanel.jsx`, `LorebookSwitcher.jsx`). Catalogue: where the binding lives, whether it's user-configurable, what guards it (focus checks, `e.stopPropagation`), and any collisions. Goal is a single source of truth and consistent guard rules.
+3. **Wider selection of hotkeys.** Currently only New Entry, Undo, and Redo are user-configurable (Settings → Hotkeys, with Alt/Ctrl modifiers). Likely additions: toggle bulk select, save snapshot, toggle compare mode, jump to next/prev cross-match, focus search, focus find/replace, toggle crosstalk, swap reference, expand/collapse all entries. Needs a settings-store schema extension (each new action gets its own configurable key + modifier) and a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals.
 
 **Lookup Table Trigger System**
 A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.
@@ -185,6 +239,12 @@ Status: **Open** — patches applied, awaiting confirmation from reporter
 **Full Type Button Grid Setting Has No Effect**
 The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
 Status: **Open** — deferred; setting now displays a "currently broken" hint in the UI
+
+---
+
+**Thesaurus Popover Unreachable on Conflict Chips**
+Trigger chips that already have a conflict-ring popover (yellow or blue) do not open the Phase 6 synonyms popover on hover or long-press. A two-way switcher (`↻ Synonyms` inside the conflict popover, `↩` back arrow inside the thesaurus header) was prototyped in Polish Pass 5 Phase 6 and rolled back: with two separate booleans the new popover rendered *behind* the still-mounted old popover and got dismissed by the outside-click listener; with a single `activePopover` state and stopPropagation on the switcher buttons that race was fixed, but the swap then put the cursor on the bottom edge of the newly-opened popover (both popovers share the same `bottom` anchor), and the first mouse move tripped `mouseleave` → 200ms close timer. Disabling hover-dismiss when opened via the switcher didn't help in user testing. Reaching synonyms on a conflicting trigger currently requires Allow/Revoke first or inline-edit. To pick this up again: design a swap pattern where the new popover anchors so the cursor lands well inside its body (e.g., position the second popover at cursor coordinates rather than the chip), or render the synonyms inline inside the conflict popover instead of swapping.
+Status: **Open** — switcher rolled back; thesaurus suppressed on conflict chips via `thesaurusAvailable && !conflictEntries` in `Chip.jsx`
 
 ---
 

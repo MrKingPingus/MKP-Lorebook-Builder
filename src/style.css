@@ -471,6 +471,76 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 }
 .footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 
+/* FAB quick-add menu — popover above the FAB, opened on hover (desktop) or
+   long-press (touch). Sits inside .footer-fab-wrap so it anchors to the FAB. */
+.footer-fab-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab-quick-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 24px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+  z-index: 200;
+  min-width: 160px;
+  animation: fab-quick-menu-fade-in 0.14s ease-out;
+}
+@keyframes fab-quick-menu-fade-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.fab-quick-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.fab-quick-menu-item:hover:not(:disabled) {
+  background: var(--surface3);
+  border-color: var(--border);
+}
+.fab-quick-menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.fab-quick-menu-item--active {
+  background: rgba(96, 165, 250, 0.16);
+  border-color: var(--passive-agree);
+}
+.fab-quick-menu-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted2);
+  flex-shrink: 0;
+}
+.fab-quick-menu-item:hover:not(:disabled) .fab-quick-menu-icon { color: var(--text); }
+.fab-quick-menu-item--active .fab-quick-menu-icon { color: var(--passive-agree); }
+.fab-quick-menu-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
 /* ============================================================
    Resize Handles
    ============================================================ */
@@ -1230,6 +1300,16 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   background: #1ea876;
 }
 
+/* Apply Staged Types — amber/yellow so per-row staged changes read as a
+   pending commit awaiting review, distinct from the red apply-to-all button. */
+.bulk-action-apply--staged {
+  background: var(--yellow);
+  color: var(--surface);
+}
+.bulk-action-apply--staged:hover:not(:disabled) {
+  background: #d69e2e;
+}
+
 /* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
 .bulk-action-chips {
   flex: 1 0 100%;
@@ -1534,6 +1614,33 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* When a card is selected in bulk-select mode, the staged-type dropdown is
+   rendered immediately after the entry name. The label shouldn't greedily
+   take the remaining row width — let it size to its content (shrink-only)
+   so the dropdown sits flush against the name. The .entry-card-header-right
+   cluster keeps its margin-left:auto and floats to the far right as before. */
+.entry-card--selected .entry-label {
+  flex: 0 1 auto;
+}
+
+/* Per-entry staged-type dropdown rendered in the card header while in select
+   mode + selected. Compact so it fits inline next to the name. The
+   --pending variant uses a yellow border to flag an uncommitted change
+   waiting for Apply Staged. */
+.staged-type-select {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  flex-shrink: 0;
+}
+.staged-type-select--pending {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow);
 }
 
 .entry-card-header-right {
@@ -2037,6 +2144,21 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   margin-top: 1px;
 }
 
+/* Mobile staged-type dropdown — replaces the static type label while the row
+   is in select mode + selected. Visually matches the label baseline so the
+   row doesn't jump when staging starts. */
+.entry-card-mobile-type--staged {
+  font-size: 12px;
+  margin-top: 1px;
+  padding: 2px 6px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  width: auto;
+  align-self: flex-start;
+}
+
 /* ============================================================
    Entry Detail Panel (mobile full-screen slide-in editor)
    ============================================================ */
@@ -2299,6 +2421,36 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   -webkit-tap-highlight-color: transparent;
 }
 .thesaurus-add-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.thesaurus-popover-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.thesaurus-replace-btn {
+  min-width: 56px;
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  transition: opacity var(--transition), background var(--transition), border-color var(--transition);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.thesaurus-replace-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface3);
+}
+.thesaurus-replace-btn:disabled {
   opacity: 0.4;
   cursor: default;
   pointer-events: none;
@@ -2806,6 +2958,18 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .import-save-btn--cancel { color: var(--muted); }
 .import-save-divider { font-size: 11px; color: var(--muted); text-align: center; }
 
+/* Banner shown above the preview that names the disposition the user chose
+   in the save / disposition prompt. Plain text — the preview itself carries
+   the warning chip for the destructive 'replace' path. */
+.import-disposition-banner {
+  font-size: 12px;
+  color: var(--muted2);
+  padding: 6px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
 /* Append Import overlay (footer "Import Entries" button) */
 .append-import-overlay {
   position: absolute; inset: 0; z-index: 300;
@@ -2875,6 +3039,72 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   pointer-events: none; z-index: 10;
 }
 
+/* Mode segmented control at the top of the Import overlay — picks between
+   paste / entries-from-file / whole-book-from-file. */
+.append-import-mode-bar {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.append-import-mode-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 12px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.append-import-mode-btn:hover { color: var(--text); }
+.append-import-mode-btn--active {
+  background: var(--surface2);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* File picker shown in file-entries and file-book modes — a labeled wrapper
+   around a hidden <input type=file> so the whole strip is clickable and the
+   surrounding panel's drop handler can still pick up dragged files. */
+.append-file-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: 14px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  background: var(--surface2);
+  cursor: pointer;
+  color: var(--muted2);
+  font-size: 12px;
+  text-align: center;
+  transition: background var(--transition), border-color var(--transition);
+}
+.append-file-picker:hover {
+  background: var(--surface3);
+  border-color: var(--accent);
+}
+.append-file-picker input[type="file"] {
+  display: none;
+}
+.append-file-picker-label { pointer-events: none; }
+
+/* Action row for the whole-book mode after preview — Replace / Import as New
+   / Cancel. Reuses the .import-save-btn family for visual consistency with
+   the tab's save-warning prompt. */
+.append-book-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
 .export-panel--empty { color: var(--muted); font-size: 13px; }
 .export-info { font-size: 12px; color: var(--muted2); text-align: center; }
 .export-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
@@ -2898,12 +3128,13 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 .export-filename-input:focus { border-color: var(--border2); outline: none; }
 
 /* Settings */
-.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: 100%; }
+.settings-panel { padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; min-height: 0; }
 .settings-section {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface2);
   overflow: hidden;
+  flex-shrink: 0;
 }
 .settings-section-header {
   display: flex;
@@ -3100,19 +3331,19 @@ kbd {
    ============================================================ */
 /* §LANDER */
 .lander {
-  padding: 40px 32px 48px;
-  max-width: 560px;
+  padding: 32px 32px 40px;
+  max-width: 640px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
 }
 
 .lander-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   text-align: center;
 }
 .lander-logo { font-size: 40px; line-height: 1; }
@@ -3124,24 +3355,153 @@ kbd {
 }
 .lander-tagline { font-size: 13px; color: var(--muted2); line-height: 1.7; max-width: 400px; }
 
-.lander-start-btn {
-  margin-top: 4px;
-  padding: 10px 28px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
+/* Start tiles ---------------------------------------------------------- */
+.lander-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.lander-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+.lander-tile:hover {
+  border-color: var(--accent);
+  background: var(--surface3);
+  transform: translateY(-1px);
+}
+.lander-tile--primary {
+  border-color: var(--accent);
+  background: rgba(239, 68, 68, 0.08);
+}
+.lander-tile--primary:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+.lander-tile-icon {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.lander-tile-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.lander-tile-sub {
+  font-size: 11px;
+  color: var(--muted2);
+  line-height: 1.4;
+}
+
+/* Section frame -------------------------------------------------------- */
+.lander-section { display: flex; flex-direction: column; gap: 10px; }
+.lander-section-title {
   font-size: 14px;
   font-weight: 700;
-  cursor: pointer;
-  transition: background var(--transition);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
 }
-.lander-start-btn:hover { background: #dc2626; }
-
-.lander-section { display: flex; flex-direction: column; gap: 10px; }
-.lander-section-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.lander-subsection-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+}
 .lander-section-text { font-size: 13px; color: var(--muted2); line-height: 1.6; }
 
+/* Recent lorebooks ----------------------------------------------------- */
+.lander-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lander-recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.lander-recent-item:hover {
+  border-color: var(--accent);
+  background: var(--surface3);
+}
+.lander-recent-item--active {
+  border-color: var(--passive-agree);
+}
+.lander-recent-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lander-recent-time {
+  font-size: 11px;
+  color: var(--muted2);
+  flex-shrink: 0;
+}
+
+/* What's new — bundled CHANGELOG --------------------------------------- */
+.lander-changelog {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+/* Markdown nodes used inside .lander-changelog and any future bundled md */
+.md-h1 { font-size: 16px; font-weight: 700; color: var(--text); margin: 10px 0 6px; }
+.md-h2 { font-size: 14px; font-weight: 700; color: var(--text); margin: 12px 0 6px; }
+.md-h2:first-child { margin-top: 0; }
+.md-h3 { font-size: 12px; font-weight: 700; color: var(--text); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.md-p  { margin: 4px 0; }
+.md-ul, .md-ol { padding-left: 18px; margin: 4px 0; display: flex; flex-direction: column; gap: 3px; }
+.md-ul li, .md-ol li { line-height: 1.6; }
+.md-ul strong, .md-ol strong, .md-p strong { color: var(--text); }
+.md-hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+.md-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--surface3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text);
+}
+.md-link { color: var(--accent); text-decoration: none; }
+.md-link:hover { text-decoration: underline; }
+
+/* Learn panel sub-content --------------------------------------------- */
 .lander-template-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .lander-template-btn {
   padding: 7px 16px;
@@ -3191,6 +3551,46 @@ kbd {
 .lander-readme-link { font-size: 13px; color: var(--muted2); margin-top: 4px; }
 .lander-link { color: var(--accent); text-decoration: none; }
 .lander-link:hover { text-decoration: underline; }
+
+/* Footer: report a bug + continue -------------------------------------- */
+.lander-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.lander-bug-link {
+  font-size: 12px;
+  color: var(--muted2);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.lander-bug-link:hover { color: var(--accent); }
+.lander-continue-btn {
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lander-continue-btn:hover { background: var(--destructive-hover); }
+
+/* Narrow viewports: stack tiles ---------------------------------------- */
+@media (max-width: 520px) {
+  .lander { padding: 24px 16px 32px; gap: 24px; }
+  .lander-tiles { grid-template-columns: 1fr; }
+  .lander-changelog { max-height: 280px; }
+  .lander-footer { flex-direction: column-reverse; align-items: stretch; }
+  .lander-continue-btn { width: 100%; }
+  .lander-bug-link { text-align: center; }
+}
 
 /* ============================================================
    Scrollbars (global)

@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Plan
 See `docs/plan.md`. Work phases in order. Do not build ahead.
 
+## Changelog
+Update `CHANGELOG.md` (repo root) when completing each phase or polish pass. Add a new dated section at the top with Additions / Fixes / Adjustments / Renames subheaders as appropriate. The changelog is the source the in-app lander will eventually render — keep entries plain-language and user-visible, not internal refactor notes.
+
 ## Commands
 ```bash
 npm install       # install dependencies

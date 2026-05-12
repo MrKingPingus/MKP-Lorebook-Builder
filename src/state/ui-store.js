@@ -9,6 +9,9 @@ export const useUiStore = create((set) => ({
   selectedIds: new Set(),   // Set<entryId> — entries selected while searchMode === 'select'
   selectionSide: null,      // 'active' | 'reference' | null — which side the current selection
                             //   was clicked from. Locks "Copy to other panel" semantics.
+  stagedTypes: new Map(),   // Map<entryId, typeId> — per-row staged type changes in select mode,
+                            //   committed in a batch via Apply Staged Types. Cleared on exit
+                            //   select mode, on deselect of an entry, and on apply.
   typeFilter:  [],          // empty = show all
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
@@ -35,27 +38,44 @@ export const useUiStore = create((set) => ({
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchMode:  (searchMode)  =>
     set((state) => {
-      // Leaving select mode clears any lingering selection (and its side).
-      if (state.searchMode === 'select' && searchMode !== 'select' && state.selectedIds.size > 0) {
-        return { searchMode, selectedIds: new Set(), selectionSide: null };
+      // Leaving select mode clears any lingering selection (and its side) and
+      // any pending staged type changes.
+      if (state.searchMode === 'select' && searchMode !== 'select') {
+        return { searchMode, selectedIds: new Set(), selectionSide: null, stagedTypes: new Map() };
       }
       return { searchMode };
     }),
   toggleSelected: (id, side) =>
     set((state) => {
       // Switching sides mid-selection: clear the existing selection and start
-      // a fresh one on the side the user just clicked.
+      // a fresh one on the side the user just clicked. Staged types reset too
+      // since they only make sense for the current selection.
       if (state.selectionSide && side && state.selectionSide !== side) {
-        return { selectedIds: new Set([id]), selectionSide: side };
+        return { selectedIds: new Set([id]), selectionSide: side, stagedTypes: new Map() };
       }
       const next = new Set(state.selectedIds);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      const stagedNext = new Map(state.stagedTypes);
+      if (next.has(id)) {
+        next.delete(id);
+        stagedNext.delete(id);
+      } else {
+        next.add(id);
+      }
       return {
         selectedIds: next,
         selectionSide: next.size === 0 ? null : (state.selectionSide ?? side ?? null),
+        stagedTypes: stagedNext,
       };
     }),
-  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null }),
+  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null, stagedTypes: new Map() }),
+  setStagedType:    (id, typeId) =>
+    set((state) => {
+      const next = new Map(state.stagedTypes);
+      if (typeId == null) next.delete(id);
+      else                next.set(id, typeId);
+      return { stagedTypes: next };
+    }),
+  clearStagedTypes: () => set({ stagedTypes: new Map() }),
   selectAllVisible: (ids, side) =>
     set((state) => {
       // If the user is on a different side than the existing selection, clear

@@ -95,7 +95,7 @@ Remaining work in Phase 8:
 
 When planning new features in a regular Claude chat, you can reference:
 - **The plan** — `docs/plan.md` has the full phase-by-phase roadmap
-- **The changelog** — `docs/changelog.md` has what's been done
+- **The changelog** — `CHANGELOG.md` (repo root) has what's been done
 - **Component map** — `docs/components-reference.md` maps UI elements to files
 - **Architecture rules** — see CLAUDE.md in the repo root
 

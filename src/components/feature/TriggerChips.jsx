@@ -36,9 +36,16 @@ export function TriggerChips({ entryId = null, triggers, onUpdate, delimiter = '
     // Always split on comma and semicolon; also split on the active delimiter
     const delimPattern = new RegExp(`[,;${escapeDelim(delimiter)}]`);
     const parts = raw.split(delimPattern).map((s) => s.trim()).filter(Boolean);
+    return addTriggerList(parts);
+  }
+
+  // Append a list of pre-split trigger words; flashes the dup indicator if
+  // any of them already exist. Returns nothing; callers don't need the result.
+  function addTriggerList(parts) {
     const next  = [...triggers];
     let dupFound = false;
     for (const p of parts) {
+      if (!p) continue;
       if (next.some((t) => t.toLowerCase() === p.toLowerCase())) {
         dupFound = true;
       } else {
@@ -107,6 +114,9 @@ export function TriggerChips({ entryId = null, triggers, onUpdate, delimiter = '
               acknowledged={isAcknowledged}
               onAllow={isConflict && !isAcknowledged ? () => onAllowOverlap?.(t.toLowerCase()) : null}
               onRevoke={isConflict && isAcknowledged  ? () => onRevokeOverlap?.(t.toLowerCase()) : null}
+              onReplace={(v) => renameTrigger(i, v)}
+              onAddTriggers={addTriggerList}
+              existingTriggers={triggers}
             />
           );
         })}

@@ -137,7 +137,7 @@ export function EntryDetailPanel() {
                 <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
                   Replace Latest
                 </button>
-                <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.dismissPrompt}>
+                <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.promptSkip}>
                   Skip
                 </button>
               </div>
@@ -257,9 +257,11 @@ export function EntryDetailPanel() {
                     setActiveMenuPanel('settings');
                   }
                 }}
-                title={rollback.enabled ? 'View and restore snapshots' : 'Open Settings to enable rollback for this lorebook'}
+                title={rollback.enabled ? 'View and restore entry history' : 'Open Settings to enable entry history for this lorebook'}
               >
-                ↺ Rollback{rollback.enabled && rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}
+                {rollback.enabled
+                  ? `↺ Entry History${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`
+                  : 'Enable entry history?'}
               </button>
               <button
                 className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
