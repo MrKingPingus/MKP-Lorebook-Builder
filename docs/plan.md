@@ -86,12 +86,12 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 - [x] Import tab save-warning prompt gained an **Append to active** button alongside the existing Replace (with optional JSON / TXT backup) and Import as New paths. State migrated from `asNewLorebook` boolean to a `disposition` enum (`'replace' | 'append' | 'as-new'`); the preview screen now shows a `.import-disposition-banner` so the user can see at a glance what `Confirm` will do.
 - [x] First-run discard — `App.jsx` bootstrap marks the auto-created lorebook with `placeholder: true`. New helper `isPlaceholderLorebook(lb)` in `entry-factory.js` returns true only while the marker is present AND the book still looks pristine (default name, zero entries). New `importAsNewLorebook({ entries, name })` action in `use-lorebook.js` creates the new book, replaces entries, optionally renames, persists the new book + index synchronously, then `deleteLorebook(discardOldId)` if the prior active was a placeholder. Both the Import tab and the popup route Import-as-New through this helper.
 
-### Phase 4 — Lander overhaul (planned)
-- [ ] Recent books panel (last N from storage, last-edited timestamps, Open/Delete)
-- [ ] Start tiles (New / Import file / Import paste)
-- [ ] Learn panel (links + bundled markdown for tutorial and `docs/` references)
-- [ ] What's new panel (renders bundled `CHANGELOG.md`)
-- [ ] Report a Bug link (pre-filled GH issue template)
+### Phase 4 — Lander overhaul (shipped)
+- [x] **Recent lorebooks panel** — top 6 entries from the lorebook index, last-edited relative-time stamps, click-to-open (switches active and dismisses the lander in one go). The active lorebook gets a blue outline so users can see what "Continue to builder" would land them on.
+- [x] **Start tiles** — three large clickable tiles (New / Import file / Import paste) wired to `createLorebook`, `setActiveMenuPanel('import-export')`, and `setShowAppendImport(true)` respectively. The hero's Start Building button is replaced with a smaller "Continue to builder →" link in the lander footer for the no-action-needed case.
+- [x] **Learn panel** — folds the existing How It Works steps, Tips list, and Import Templates row into a single Learn section. Hotkey list updated to include `Esc` (exits bulk select per Phase 2). Readme link preserved at the bottom.
+- [x] **What's new panel** — bundles `CHANGELOG.md` via Vite's `?raw` import and renders it through a new hand-rolled markdown parser (`services/markdown-parse.js`) + a small inline renderer in `Lander.jsx`. No new dependencies. Capped at 320px height with a scroll for older entries.
+- [x] **Report a Bug link** — lander footer links to a pre-filled GitHub issue template (title prefix "Bug:", `bug` label, body sections for what-happened / expected / repro / browser / console errors).
 
 ### Phase 5 — FAB quick-add (planned)
 - [ ] Hover-over (desktop) + long-press (touch) on the FAB opens a mini-menu of hotbar actions

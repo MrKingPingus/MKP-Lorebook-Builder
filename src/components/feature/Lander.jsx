@@ -1,15 +1,81 @@
-// Launch view — shown inside the floating window on page load; dismissed via "Start Building"
-import { useState, useRef, useEffect } from 'react';
-import { useUi }               from '../../hooks/use-ui.js';
-import { useExport }           from '../../hooks/use-export.js';
-import { DUPE_FLASH_MS }       from '../../constants/limits.js';
+// Launch view — shown inside the floating window on page load; dismissed via
+// any Start tile, a Recent lorebook, or the "Continue to builder" link.
+// Five panels: hero, Start tiles, Recent lorebooks, What's New (bundled
+// CHANGELOG), Learn (tutorial + tips + templates), Report a Bug.
+import { useState, useRef, useEffect, Fragment } from 'react';
+import { useUi }                from '../../hooks/use-ui.js';
+import { useExport }            from '../../hooks/use-export.js';
+import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
+import { useLorebook }          from '../../hooks/use-lorebook.js';
+import { parseMarkdown }        from '../../services/markdown-parse.js';
+import { DUPE_FLASH_MS }        from '../../constants/limits.js';
+import changelogRaw             from '../../../CHANGELOG.md?raw';
+
+// Render the inline-span AST emitted by markdown-parse into React nodes.
+function renderInline(spans, keyPrefix) {
+  return spans.map((s, idx) => {
+    const k = `${keyPrefix}-${idx}`;
+    if (s.type === 'text')   return <Fragment key={k}>{s.text}</Fragment>;
+    if (s.type === 'code')   return <code key={k} className="md-code">{s.text}</code>;
+    if (s.type === 'bold')   return <strong key={k}>{renderInline(s.children, k)}</strong>;
+    if (s.type === 'italic') return <em key={k}>{renderInline(s.children, k)}</em>;
+    if (s.type === 'link')   return (
+      <a key={k} href={s.url} target="_blank" rel="noreferrer" className="md-link">
+        {renderInline(s.children, k)}
+      </a>
+    );
+    return null;
+  });
+}
+
+// Render the block-level AST into React nodes.
+function renderMarkdown(src) {
+  const blocks = parseMarkdown(src);
+  return blocks.map((b, idx) => {
+    const k = `md-${idx}`;
+    if (b.type === 'hr') return <hr key={k} className="md-hr" />;
+    if (b.type === 'h1') return <h1 key={k} className="md-h1">{renderInline(b.inline, k)}</h1>;
+    if (b.type === 'h2') return <h2 key={k} className="md-h2">{renderInline(b.inline, k)}</h2>;
+    if (b.type === 'h3') return <h3 key={k} className="md-h3">{renderInline(b.inline, k)}</h3>;
+    if (b.type === 'p')  return <p  key={k} className="md-p">{renderInline(b.inline, k)}</p>;
+    if (b.type === 'ul' || b.type === 'ol') {
+      const Tag = b.type;
+      return (
+        <Tag key={k} className={`md-${b.type}`}>
+          {b.items.map((item, j) => (
+            <li key={`${k}-li${j}`}>{renderInline(item, `${k}-li${j}`)}</li>
+          ))}
+        </Tag>
+      );
+    }
+    return null;
+  });
+}
+
+const RECENT_LIMIT = 6;
+
+const BUG_REPORT_URL =
+  'https://github.com/mrkingpingus/mkp-lorebook-builder/issues/new'
+  + '?title=' + encodeURIComponent('Bug: ')
+  + '&labels=' + encodeURIComponent('bug')
+  + '&body='   + encodeURIComponent(
+      '**What happened?**\n\n\n'
+    + '**What did you expect?**\n\n\n'
+    + '**Steps to reproduce**\n1. \n2. \n3. \n\n'
+    + '**Browser / OS**\n\n\n'
+    + '**Console errors (if any)**\n\n'
+    );
 
 export function Lander() {
-  const setShowLander = useUi((s) => s.setShowLander);
+  const setShowLander       = useUi((s) => s.setShowLander);
+  const setActiveMenuPanel  = useUi((s) => s.setActiveMenuPanel);
+  const setShowAppendImport = useUi((s) => s.setShowAppendImport);
   const {
     downloadTxtTemplate, downloadDocxTemplate,
     copyTxtTemplate,
   } = useExport();
+  const { items, switchLorebook } = useLorebookSwitcher();
+  const { createLorebook }        = useLorebook();
   const [copiedFlash, setCopiedFlash] = useState(false);
   const flashTimer = useRef(null);
 
@@ -30,6 +96,28 @@ export function Lander() {
     setShowLander(false);
   }
 
+  function onNewLorebook() {
+    createLorebook();
+    setShowLander(false);
+  }
+
+  function onImportFile() {
+    setShowLander(false);
+    setActiveMenuPanel('import-export');
+  }
+
+  function onImportPaste() {
+    setShowLander(false);
+    setShowAppendImport(true);
+  }
+
+  function onOpenRecent(id) {
+    switchLorebook(id);
+    setShowLander(false);
+  }
+
+  const recents = items.slice(0, RECENT_LIMIT);
+
   return (
     <div className="lander">
       <div className="lander-hero">
@@ -38,13 +126,76 @@ export function Lander() {
         <p className="lander-tagline">
           Build rich AI lorebooks with triggers, descriptions, and type-aware suggestions — right in your browser.
         </p>
-        <button className="lander-start-btn" onClick={enterBuilder}>
-          Start Building →
+      </div>
+
+      <div className="lander-tiles">
+        <button className="lander-tile lander-tile--primary" onClick={onNewLorebook}>
+          <div className="lander-tile-icon">＋</div>
+          <div className="lander-tile-title">New Lorebook</div>
+          <div className="lander-tile-sub">Start with a blank book</div>
+        </button>
+        <button className="lander-tile" onClick={onImportFile}>
+          <div className="lander-tile-icon">📁</div>
+          <div className="lander-tile-title">Import File</div>
+          <div className="lander-tile-sub">JSON, TXT, DOCX, ODT</div>
+        </button>
+        <button className="lander-tile" onClick={onImportPaste}>
+          <div className="lander-tile-icon">⎘</div>
+          <div className="lander-tile-title">Import Paste</div>
+          <div className="lander-tile-sub">Paste entries from clipboard</div>
         </button>
       </div>
 
+      {recents.length > 0 && (
+        <div className="lander-section">
+          <h2 className="lander-section-title">Recent lorebooks</h2>
+          <div className="lander-recent-list">
+            {recents.map((item) => (
+              <button
+                key={item.id}
+                className={`lander-recent-item${item.isActive ? ' lander-recent-item--active' : ''}`}
+                onClick={() => onOpenRecent(item.id)}
+                title={item.isActive ? 'Currently active — click to enter the builder' : 'Open this lorebook'}
+              >
+                <span className="lander-recent-name">{item.name || '(unnamed)'}</span>
+                <span className="lander-recent-time">{item.relativeTime}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="lander-section">
-        <h2 className="lander-section-title">Import Templates</h2>
+        <h2 className="lander-section-title">What's new</h2>
+        <div className="lander-changelog">
+          {renderMarkdown(changelogRaw)}
+        </div>
+      </div>
+
+      <div className="lander-section">
+        <h2 className="lander-section-title">Learn</h2>
+
+        <h3 className="lander-subsection-title">How it works</h3>
+        <ol className="lander-steps">
+          <li>Click a Start tile above to create or import a lorebook.</li>
+          <li>Create entries with names, types, triggers, and descriptions.</li>
+          <li>Your lorebook is saved automatically — just leave the tab open.</li>
+          <li>When you're done, export as <strong>JSON</strong> (for AI tools), <strong>TXT</strong>, or <strong>DOCX</strong> from the <em>Import / Export</em> tab.</li>
+          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, <code>.docx</code>, or <code>.odt</code> file.</li>
+          <li>Use <kbd>Alt+N</kbd> to add a new entry, <kbd>Ctrl+Z</kbd> to undo, <kbd>Ctrl+Y</kbd> to redo, and <kbd>Esc</kbd> to exit bulk-select mode.</li>
+        </ol>
+
+        <h3 className="lander-subsection-title">Tips</h3>
+        <ul className="lander-tips">
+          <li>Hover over buttons and controls for help hints.</li>
+          <li>Double-click an entry header to expand or collapse it.</li>
+          <li>Paste a comma-separated list into the trigger field to add multiple triggers at once.</li>
+          <li>Drag the <strong>⠿</strong> handle on any entry to reorder it in the list.</li>
+          <li>Shift+scroll on the type selector inside an expanded entry to cycle through entry types.</li>
+          <li>Turn on Entry History in Settings to enable per-entry snapshots and rollback.</li>
+        </ul>
+
+        <h3 className="lander-subsection-title">Import templates</h3>
         <p className="lander-section-text">
           Download a blank template to fill out offline, then import it back into the app.
         </p>
@@ -55,29 +206,7 @@ export function Lander() {
           </button>
           <button className="lander-template-btn" onClick={downloadDocxTemplate}>⬇ DOCX template</button>
         </div>
-      </div>
 
-      <div className="lander-section">
-        <h2 className="lander-section-title">How It Works</h2>
-        <ol className="lander-steps">
-          <li>Click <strong>Start Building</strong> above to open the builder.</li>
-          <li>Create entries with names, types, triggers, and descriptions.</li>
-          <li>Your lorebook is saved automatically — just leave the tab open.</li>
-          <li>When you're done, export as <strong>JSON</strong> (for AI tools), <strong>TXT</strong>, or <strong>DOCX</strong> from the <em>Import / Export</em> tab.</li>
-          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, or <code>.docx</code> file.</li>
-          <li>Use <kbd>Alt+N</kbd> to add a new entry quickly, <kbd>Ctrl+Z</kbd> to undo, and <kbd>Ctrl+Y</kbd> to redo.</li>
-        </ol>
-      </div>
-
-      <div className="lander-section">
-        <h2 className="lander-section-title">Tips</h2>
-        <ul className="lander-tips">
-          <li>Hover over buttons and controls for help hints.</li>
-          <li>Double-click an entry header to expand or collapse it.</li>
-          <li>Paste a comma-separated list into the trigger field to add multiple triggers at once.</li>
-          <li>Drag the <strong>⠿</strong> handle on any entry to reorder it in the list.</li>
-          <li>Shift+scroll on the type selector inside an expanded entry to cycle through entry types.</li>
-        </ul>
         <p className="lander-readme-link">
           For more tips and information, check out the{' '}
           <a
@@ -87,8 +216,22 @@ export function Lander() {
             className="lander-link"
           >
             readme
-          </a>!
+          </a>.
         </p>
+      </div>
+
+      <div className="lander-footer">
+        <a
+          href={BUG_REPORT_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="lander-bug-link"
+        >
+          🐞 Report a bug
+        </a>
+        <button className="lander-continue-btn" onClick={enterBuilder}>
+          Continue to builder →
+        </button>
       </div>
     </div>
   );

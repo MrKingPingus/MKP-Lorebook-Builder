@@ -3231,19 +3231,19 @@ kbd {
    ============================================================ */
 /* §LANDER */
 .lander {
-  padding: 40px 32px 48px;
-  max-width: 560px;
+  padding: 32px 32px 40px;
+  max-width: 640px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
 }
 
 .lander-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   text-align: center;
 }
 .lander-logo { font-size: 40px; line-height: 1; }
@@ -3255,24 +3255,153 @@ kbd {
 }
 .lander-tagline { font-size: 13px; color: var(--muted2); line-height: 1.7; max-width: 400px; }
 
-.lander-start-btn {
-  margin-top: 4px;
-  padding: 10px 28px;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
+/* Start tiles ---------------------------------------------------------- */
+.lander-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.lander-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+.lander-tile:hover {
+  border-color: var(--accent);
+  background: var(--surface3);
+  transform: translateY(-1px);
+}
+.lander-tile--primary {
+  border-color: var(--accent);
+  background: rgba(239, 68, 68, 0.08);
+}
+.lander-tile--primary:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+.lander-tile-icon {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.lander-tile-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.lander-tile-sub {
+  font-size: 11px;
+  color: var(--muted2);
+  line-height: 1.4;
+}
+
+/* Section frame -------------------------------------------------------- */
+.lander-section { display: flex; flex-direction: column; gap: 10px; }
+.lander-section-title {
   font-size: 14px;
   font-weight: 700;
-  cursor: pointer;
-  transition: background var(--transition);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
 }
-.lander-start-btn:hover { background: #dc2626; }
-
-.lander-section { display: flex; flex-direction: column; gap: 10px; }
-.lander-section-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.lander-subsection-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+}
 .lander-section-text { font-size: 13px; color: var(--muted2); line-height: 1.6; }
 
+/* Recent lorebooks ----------------------------------------------------- */
+.lander-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lander-recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.lander-recent-item:hover {
+  border-color: var(--accent);
+  background: var(--surface3);
+}
+.lander-recent-item--active {
+  border-color: var(--passive-agree);
+}
+.lander-recent-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lander-recent-time {
+  font-size: 11px;
+  color: var(--muted2);
+  flex-shrink: 0;
+}
+
+/* What's new — bundled CHANGELOG --------------------------------------- */
+.lander-changelog {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--muted2);
+  line-height: 1.6;
+}
+
+/* Markdown nodes used inside .lander-changelog and any future bundled md */
+.md-h1 { font-size: 16px; font-weight: 700; color: var(--text); margin: 10px 0 6px; }
+.md-h2 { font-size: 14px; font-weight: 700; color: var(--text); margin: 12px 0 6px; }
+.md-h2:first-child { margin-top: 0; }
+.md-h3 { font-size: 12px; font-weight: 700; color: var(--text); margin: 8px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.md-p  { margin: 4px 0; }
+.md-ul, .md-ol { padding-left: 18px; margin: 4px 0; display: flex; flex-direction: column; gap: 3px; }
+.md-ul li, .md-ol li { line-height: 1.6; }
+.md-ul strong, .md-ol strong, .md-p strong { color: var(--text); }
+.md-hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+.md-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--surface3);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text);
+}
+.md-link { color: var(--accent); text-decoration: none; }
+.md-link:hover { text-decoration: underline; }
+
+/* Learn panel sub-content --------------------------------------------- */
 .lander-template-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .lander-template-btn {
   padding: 7px 16px;
@@ -3322,6 +3451,46 @@ kbd {
 .lander-readme-link { font-size: 13px; color: var(--muted2); margin-top: 4px; }
 .lander-link { color: var(--accent); text-decoration: none; }
 .lander-link:hover { text-decoration: underline; }
+
+/* Footer: report a bug + continue -------------------------------------- */
+.lander-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.lander-bug-link {
+  font-size: 12px;
+  color: var(--muted2);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.lander-bug-link:hover { color: var(--accent); }
+.lander-continue-btn {
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.lander-continue-btn:hover { background: var(--destructive-hover); }
+
+/* Narrow viewports: stack tiles ---------------------------------------- */
+@media (max-width: 520px) {
+  .lander { padding: 24px 16px 32px; gap: 24px; }
+  .lander-tiles { grid-template-columns: 1fr; }
+  .lander-changelog { max-height: 280px; }
+  .lander-footer { flex-direction: column-reverse; align-items: stretch; }
+  .lander-continue-btn { width: 100%; }
+  .lander-bug-link { text-align: center; }
+}
 
 /* ============================================================
    Scrollbars (global)

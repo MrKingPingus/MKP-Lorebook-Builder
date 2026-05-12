@@ -2,6 +2,19 @@
 
 ---
 
+## Polish Pass 5 (Phase 4) — 2026-05-12
+
+### Additions
+
+- **Lander overhaul — five panels** — the launch view is now organized into Start tiles, Recent lorebooks, What's New, Learn, and Report a Bug instead of a single hero button plus three static sections.
+- **Start tiles** — three large, clickable tiles for the most common first actions: **New Lorebook** (creates a fresh book and enters the builder), **Import File** (opens the Import / Export tab), **Import Paste** (opens the Import Entries popup in paste mode). The previous "Start Building →" button is replaced with a smaller "Continue to builder →" link in the footer for the I-just-want-to-keep-working case.
+- **Recent lorebooks panel** — the top 6 lorebooks from the index are listed on the lander with their relative-time stamp. Clicking one switches to it and enters the builder in a single click. The currently-active book is flagged with a blue outline.
+- **What's new panel** — bundles `CHANGELOG.md` at build time and renders it with a new hand-rolled markdown parser (no new dependencies). Scrollable container so the list stays compact; full history one scroll away.
+- **Learn panel** — folds the previous How It Works and Tips sections plus the Import Templates row into a single Learn panel. Step copy refreshed to match the new tiles and adds the `Esc` shortcut to the hotkey list.
+- **Report a Bug link** — lander footer now has a direct link to a pre-filled GitHub issue template (title prefix, `bug` label, sections for what happened / expected / repro / browser / console errors).
+
+---
+
 ## Polish Pass 5 (Phase 3) — 2026-05-11
 
 ### Additions
