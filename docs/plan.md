@@ -93,8 +93,9 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 - [x] **What's new panel** — bundles `CHANGELOG.md` via Vite's `?raw` import and renders it through a new hand-rolled markdown parser (`services/markdown-parse.js`) + a small inline renderer in `Lander.jsx`. No new dependencies. Capped at 320px height with a scroll for older entries.
 - [x] **Report a Bug link** — lander footer links to a pre-filled GitHub issue template (title prefix "Bug:", `bug` label, body sections for what-happened / expected / repro / browser / console errors).
 
-### Phase 5 — FAB quick-add (planned)
-- [ ] Hover-over (desktop) + long-press (touch) on the FAB opens a mini-menu of hotbar actions
+### Phase 5 — FAB quick-add (shipped)
+- [x] **FAB quick-add menu** — new `FabQuickMenu` popover anchored above the FAB inside a `.footer-fab-wrap` container. Opens on desktop hover (200ms open delay, 200ms close delay, mouse bridge between FAB and menu) or touch long-press (`THESAURUS_LONG_PRESS_MS = 450`). Tap-outside dismissal on mobile via a document-level `pointerdown` listener; `onContextMenu` is suppressed on mobile and a `suppressNextClickRef` blocks the synthetic Add-Entry click that follows a long-press release.
+- [x] **All-actions surface** — `useHotbarActions` now returns an `allActions` array (every registered hotbar action resolved against the same context) alongside the user's configured `slots`. The FAB menu consumes `allActions` so it acts as an action-discovery surface independent of hotbar layout.
 
 ### Phase 6 — Thesaurus on attached triggers (planned)
 - [ ] Tap/long-press existing trigger chip opens the suggestion popover with Replace / Add Similar actions

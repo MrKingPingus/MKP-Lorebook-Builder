@@ -2,6 +2,15 @@
 
 ---
 
+## Polish Pass 5 (Phase 5) — 2026-05-12
+
+### Additions
+
+- **FAB quick-add menu** — hovering the FAB on desktop or long-pressing it on touch now opens a small popover above the button with every available hotbar action (Undo, Redo, Clear All, Import Entries, Reference toggle). Tapping the FAB itself still adds an entry as before; the popover is purely additive. Hover delays favour intent: ~200ms to open, ~200ms to close, with a mouse bridge between the FAB and the menu so moving between them doesn't dismiss the popover. Touch long-press uses the same ~450ms threshold as the thesaurus chips and the synthetic click after release is suppressed so the FAB doesn't fire Add Entry on the way out. Tap outside the menu (or on another control) closes it on mobile.
+- **All hotbar actions surface from the FAB** — the popover lists every registered hotbar action regardless of the user's slot configuration. `useHotbarActions` now returns an `allActions` array alongside `slots`, giving the FAB menu a discovery affordance for actions the user may not have pinned to their hotbar.
+
+---
+
 ## Polish Pass 5 (Phase 4) — 2026-05-12
 
 ### Additions

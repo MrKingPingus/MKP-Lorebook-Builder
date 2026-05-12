@@ -471,6 +471,76 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 }
 .footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 
+/* FAB quick-add menu — popover above the FAB, opened on hover (desktop) or
+   long-press (touch). Sits inside .footer-fab-wrap so it anchors to the FAB. */
+.footer-fab-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab-quick-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 24px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+  z-index: 200;
+  min-width: 160px;
+  animation: fab-quick-menu-fade-in 0.14s ease-out;
+}
+@keyframes fab-quick-menu-fade-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.fab-quick-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.fab-quick-menu-item:hover:not(:disabled) {
+  background: var(--surface3);
+  border-color: var(--border);
+}
+.fab-quick-menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.fab-quick-menu-item--active {
+  background: rgba(96, 165, 250, 0.16);
+  border-color: var(--passive-agree);
+}
+.fab-quick-menu-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted2);
+  flex-shrink: 0;
+}
+.fab-quick-menu-item:hover:not(:disabled) .fab-quick-menu-icon { color: var(--text); }
+.fab-quick-menu-item--active .fab-quick-menu-icon { color: var(--passive-agree); }
+.fab-quick-menu-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
 /* ============================================================
    Resize Handles
    ============================================================ */
