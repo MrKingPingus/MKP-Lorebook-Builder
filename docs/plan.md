@@ -96,6 +96,7 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 ### Phase 5 — FAB quick-add (shipped)
 - [x] **FAB quick-add menu** — new `FabQuickMenu` popover anchored above the FAB inside a `.footer-fab-wrap` container. Opens on desktop hover (200ms open delay, 200ms close delay, mouse bridge between FAB and menu) or touch long-press (`THESAURUS_LONG_PRESS_MS = 450`). Tap-outside dismissal on mobile via a document-level `pointerdown` listener; `onContextMenu` is suppressed on mobile and a `suppressNextClickRef` blocks the synthetic Add-Entry click that follows a long-press release.
 - [x] **All-actions surface** — `useHotbarActions` now returns an `allActions` array (every registered hotbar action resolved against the same context) alongside the user's configured `slots`. The FAB menu consumes `allActions` so it acts as an action-discovery surface independent of hotbar layout.
+- [x] **`fabQuickMenuEnabled` setting** — Settings → Window & Layout adds a toggle that gates the hover, long-press, and contextmenu-suppression code paths in `Hotbar.jsx`. Defaults true. Persists alongside the existing FAB size settings. The FAB tooltip was also trimmed back to `Add entry (Alt+N)` since the hover/long-press behaviour is self-evident.
 
 ### Phase 6 — Thesaurus on attached triggers (planned)
 - [ ] Tap/long-press existing trigger chip opens the suggestion popover with Replace / Add Similar actions

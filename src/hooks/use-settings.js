@@ -20,6 +20,7 @@ export function useSettings() {
   const entryTypeView            = useSettingsStore((s) => s.entryTypeView);
   const fabSize                  = useSettingsStore((s) => s.fabSize);
   const fabCustomSize            = useSettingsStore((s) => s.fabCustomSize);
+  const fabQuickMenuEnabled      = useSettingsStore((s) => s.fabQuickMenuEnabled);
   const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
   const keepMenuOpenAfterImport  = useSettingsStore((s) => s.keepMenuOpenAfterImport);
   const crosstalkEnabled         = useSettingsStore((s) => s.crosstalkEnabled);
@@ -45,6 +46,7 @@ export function useSettings() {
       entryTypeView,
       fabSize,
       fabCustomSize,
+      fabQuickMenuEnabled,
       rollbackDefaultEnabled,
       keepMenuOpenAfterImport,
       crosstalkEnabled,
@@ -79,6 +81,7 @@ export function useSettings() {
     entryTypeView,
     fabSize,
     fabCustomSize,
+    fabQuickMenuEnabled,
     rollbackDefaultEnabled,
     keepMenuOpenAfterImport,
     crosstalkEnabled,
@@ -99,6 +102,7 @@ export function useSettings() {
     setEntryTypeView:            (v) => updateSetting('entryTypeView', v),
     setFabSize:                  (v) => updateSetting('fabSize', v),
     setFabCustomSize:            (v) => updateSetting('fabCustomSize', v),
+    setFabQuickMenuEnabled:      (v) => updateSetting('fabQuickMenuEnabled', v),
     setRollbackDefaultEnabled:   (v) => updateSetting('rollbackDefaultEnabled', v),
     setKeepMenuOpenAfterImport:  (v) => updateSetting('keepMenuOpenAfterImport', v),
     setCrosstalkEnabled: (v) => {

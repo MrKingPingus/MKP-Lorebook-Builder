@@ -40,6 +40,7 @@ export function SettingsPanel() {
     entryTypeView,
     fabSize,
     fabCustomSize,
+    fabQuickMenuEnabled,
     resetWindow,
     setCounterTiers,
     setDefaultWindowWidth,
@@ -54,6 +55,7 @@ export function SettingsPanel() {
     setEntryTypeView,
     setFabSize,
     setFabCustomSize,
+    setFabQuickMenuEnabled,
     rollbackDefaultEnabled,
     setRollbackDefaultEnabled,
     keepMenuOpenAfterImport,
@@ -402,6 +404,20 @@ export function SettingsPanel() {
               <span className="fab-custom-size-label">px</span>
             </div>
           )}
+        </div>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>FAB quick-action menu</span>
+            <input
+              type="checkbox"
+              checked={fabQuickMenuEnabled}
+              onChange={(e) => setFabQuickMenuEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Hover (desktop) or long-press (touch) the + button to open a popover with the hotbar actions. Tap the FAB itself to add an entry. Turn off to keep the FAB strictly Add-Entry.
+          </div>
         </div>
 
         <div className="settings-group">

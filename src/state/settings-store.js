@@ -19,6 +19,7 @@ export const useSettingsStore = create((set) => ({
   setEntryTypeView:            (entryTypeView)            => set({ entryTypeView }),
   setFabSize:                  (fabSize)                  => set({ fabSize }),
   setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
+  setFabQuickMenuEnabled:      (fabQuickMenuEnabled)      => set({ fabQuickMenuEnabled }),
   setRollbackDefaultEnabled:   (rollbackDefaultEnabled)   => set({ rollbackDefaultEnabled }),
   setKeepMenuOpenAfterImport:  (keepMenuOpenAfterImport)  => set({ keepMenuOpenAfterImport }),
   setThesaurusEnabled:         (thesaurusEnabled)         => set({ thesaurusEnabled }),

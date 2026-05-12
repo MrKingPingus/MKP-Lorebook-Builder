@@ -51,7 +51,7 @@ export function Hotbar() {
   const { slots, addEntry, allActions } = useHotbarActions();
   const isMobile                        = useMobile();
   const activeMenuPanel                 = useUi((s) => s.activeMenuPanel);
-  const { fabSize, fabCustomSize }      = useSettings();
+  const { fabSize, fabCustomSize, fabQuickMenuEnabled } = useSettings();
 
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const openTimerRef         = useRef(null);
@@ -81,13 +81,13 @@ export function Hotbar() {
 
   // Desktop hover
   function onFabMouseEnter() {
-    if (isMobile) return;
+    if (isMobile || !fabQuickMenuEnabled) return;
     clearTimeout(closeTimerRef.current);
     clearTimeout(openTimerRef.current);
     openTimerRef.current = setTimeout(() => setQuickMenuOpen(true), HOVER_OPEN_MS);
   }
   function onFabMouseLeave() {
-    if (isMobile) return;
+    if (isMobile || !fabQuickMenuEnabled) return;
     clearTimeout(openTimerRef.current);
     closeTimerRef.current = setTimeout(() => setQuickMenuOpen(false), HOVER_CLOSE_MS);
   }
@@ -103,7 +103,7 @@ export function Hotbar() {
   // Mobile long-press: opens the menu and suppresses the click that fires on
   // touch release (which would otherwise add an entry).
   function onFabPointerDown() {
-    if (!isMobile) return;
+    if (!isMobile || !fabQuickMenuEnabled) return;
     clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = setTimeout(() => {
       suppressNextClickRef.current = true;
@@ -148,14 +148,14 @@ export function Hotbar() {
           onPointerDown={onFabPointerDown}
           onPointerUp={onFabPointerUp}
           onPointerCancel={onFabPointerUp}
-          onContextMenu={(e) => { if (isMobile) e.preventDefault(); }}
-          title="Add entry (Alt+N) — hover or long-press for more actions"
+          onContextMenu={(e) => { if (isMobile && fabQuickMenuEnabled) e.preventDefault(); }}
+          title="Add entry (Alt+N)"
           style={fabStyle}
         >
           +
         </button>
 
-        {quickMenuOpen && !fabHidden && (
+        {quickMenuOpen && !fabHidden && fabQuickMenuEnabled && (
           <FabQuickMenu
             actions={allActions}
             onAction={closeMenu}
