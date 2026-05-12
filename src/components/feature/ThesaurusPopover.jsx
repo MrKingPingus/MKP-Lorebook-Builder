@@ -111,7 +111,9 @@ export function ThesaurusPopover({
         {onSwitchBackToConflict && (
           <button
             className="thesaurus-back-btn"
-            onClick={() => { onSwitchBackToConflict(); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onSwitchBackToConflict(); }}
             title="Back to conflict info"
           >
             ↩

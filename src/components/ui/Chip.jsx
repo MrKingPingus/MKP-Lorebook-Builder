@@ -20,7 +20,11 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const [editing,     setEditing]     = useState(false);
   const [draft,       setDraft]       = useState(label);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  // Single state for which popover is currently shown on this chip. Using one
+  // state instead of two booleans makes conflict ⇄ thesaurus switches atomic —
+  // there's no in-between render where both could be visible or both could be
+  // gone, which would otherwise race against the outside-click listeners.
+  const [activePopover, setActivePopover] = useState(null); // null | 'conflict' | 'thesaurus'
   const [popoverPos,  setPopoverPos]  = useState({ left: 0, bottom: 0 });
   const inputRef    = useRef(null);
   const popoverRef  = useRef(null);
@@ -36,7 +40,6 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   // Suppressed when the chip is read-only, when the user can't replace or add
   // synonyms (callbacks missing), or when the setting is off.
   const thesaurusAvailable = !readOnly && thesaurusEnabled && (onReplace || onAddTriggers);
-  const [thesaurusOpen, setThesaurusOpen] = useState(false);
   const thesaurusHoverTimerRef       = useRef(null);
   const thesaurusLongPressTimerRef   = useRef(null);
   const thesaurusSuppressNextClickRef = useRef(false);
@@ -44,6 +47,9 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   // inside the conflict popover. Lets the ThesaurusPopover render a back arrow
   // that returns the user to the conflict view.
   const [cameFromConflict, setCameFromConflict] = useState(false);
+
+  const popoverOpen   = activePopover === 'conflict';
+  const thesaurusOpen = activePopover === 'thesaurus';
 
   function startEdit() {
     setDraft(label);
@@ -75,20 +81,22 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
         bottom: window.innerHeight - rect.top + 6,
       });
     }
-    setPopoverOpen(true);
+    setActivePopover('conflict');
   }
   function closePopover() {
-    hoverTimer.current = setTimeout(() => setPopoverOpen(false), 120);
+    hoverTimer.current = setTimeout(() => {
+      setActivePopover((p) => (p === 'conflict' ? null : p));
+    }, 120);
   }
   function keepPopover()  {
     clearTimeout(hoverTimer.current);
   }
 
-  // Thesaurus popover handlers — separate from the conflict popover so they
-  // don't interfere with each other.
-  function openThesaurusPopover()  { setThesaurusOpen(true); }
+  // Thesaurus popover handlers — share the activePopover state so a switch
+  // from one to the other is a single atomic state change with no in-between.
+  function openThesaurusPopover()  { setActivePopover('thesaurus'); }
   function closeThesaurusPopover() {
-    setThesaurusOpen(false);
+    setActivePopover((p) => (p === 'thesaurus' ? null : p));
     setCameFromConflict(false);
   }
 
@@ -137,17 +145,28 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
 
   // Conflict ⇄ Synonyms switchers: lets a user on a conflict-bearing chip
   // toggle between the two popovers without needing a separate gesture.
+  // Both switchers flip activePopover in a single state update so there's
+  // no in-between render where both are visible (which would race against
+  // the outside-click listeners and close the freshly-opened popover).
   function switchConflictToThesaurus() {
     clearTimeout(hoverTimer.current);
-    setPopoverOpen(false);
     setCameFromConflict(true);
-    openThesaurusPopover();
+    setActivePopover('thesaurus');
   }
   function switchThesaurusToConflict() {
     clearTimeout(thesaurusHoverTimerRef.current);
-    setThesaurusOpen(false);
     setCameFromConflict(false);
-    openPopover();
+    // Re-measure position; the chip may have scrolled since the conflict
+    // popover last opened.
+    const el = chipRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setPopoverPos({
+        left:   Math.min(rect.left, window.innerWidth - 190),
+        bottom: window.innerHeight - rect.top + 6,
+      });
+    }
+    setActivePopover('conflict');
   }
 
   // Mobile: hover events fire on the first tap but mouseleave never fires, so
@@ -158,14 +177,14 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
     function onPointer(e) {
       if (chipRef.current?.contains(e.target))    return;
       if (popoverRef.current?.contains(e.target)) return;
-      setPopoverOpen(false);
+      setActivePopover((p) => (p === 'conflict' ? null : p));
     }
     document.addEventListener('pointerdown', onPointer);
     return () => document.removeEventListener('pointerdown', onPointer);
   }, [popoverOpen, isMobile]);
 
   function navigateToEntry(entry) {
-    setPopoverOpen(false);
+    setActivePopover(null);
     // Mobile cross-book: open the peek overlay instead of swapping. Keeps the
     // user anchored in the active book — they can copy or explicitly visit
     // from inside the overlay.
@@ -311,7 +330,9 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           {thesaurusAvailable && (
             <button
               className="chip-conflict-switch"
-              onClick={switchConflictToThesaurus}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); switchConflictToThesaurus(); }}
               title={`See synonyms for "${label}"`}
             >
               ↻ Synonyms
