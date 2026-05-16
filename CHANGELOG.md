@@ -2,6 +2,14 @@
 
 ---
 
+## 2026-05-16
+
+### Fixes
+
+- **Crosstalk diff badges stay legible in select mode** — the desktop "in both ↗" / "differs ⚖" badge on entry and reference cards no longer collapses or wraps onto multiple lines when the row gets cramped (e.g. in select mode with a selected card whose staged-type dropdown eats header width, or in narrower windows). The badge is now flex-pinned with `nowrap`, so the entry name ellipsizes first instead of the badge.
+
+---
+
 ## Polish Pass 5 (Phase 6) — 2026-05-12
 
 ### Additions
