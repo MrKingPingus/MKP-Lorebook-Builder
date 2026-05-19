@@ -2,6 +2,25 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { formatBytes } from '../../services/format-bytes.js';
+import { useSettings } from '../../hooks/use-settings.js';
+import {
+  STORAGE_QUOTA_PROFILE_WEBKIT,
+  STORAGE_QUOTA_PROFILE_OTHER,
+} from '../../constants/limits.js';
+
+function ProfileSelect() {
+  const { storageQuotaProfile, setStorageQuotaProfile } = useSettings();
+  return (
+    <select
+      className="storage-usage-detail-profile-select"
+      value={storageQuotaProfile ?? STORAGE_QUOTA_PROFILE_WEBKIT}
+      onChange={(e) => setStorageQuotaProfile(e.target.value)}
+    >
+      <option value={STORAGE_QUOTA_PROFILE_WEBKIT}>Safari / iPhone / iPad (5 MB)</option>
+      <option value={STORAGE_QUOTA_PROFILE_OTHER}>Chrome / Firefox / Edge / etc. (10 MB)</option>
+    </select>
+  );
+}
 
 const CATEGORY_LABELS = {
   snapshots:    'Snapshots',
@@ -77,6 +96,10 @@ export function StorageUsageDetailPopover({
           );
         })}
       </ul>
+      <div className="storage-usage-detail-profile">
+        <label className="storage-usage-detail-profile-label">Browser</label>
+        <ProfileSelect />
+      </div>
       <div className="storage-usage-detail-footer">
         <button type="button" className="storage-usage-refresh-btn" onClick={onRefresh}>
           Refresh

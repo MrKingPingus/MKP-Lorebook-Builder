@@ -1,9 +1,16 @@
 // Isolated read/write interface to localStorage — the only file that touches it directly
+import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY, SETTINGS_KEY, WINDOW_STATE_KEY } from '../constants/storage-keys.js';
-import { STORAGE_QUOTA_FALLBACK_BYTES } from '../constants/limits.js';
+import {
+  STORAGE_QUOTA_BYTES,
+  STORAGE_QUOTA_BYTES_BY_PROFILE,
+  STORAGE_QUOTA_PROFILE_WEBKIT,
+  STORAGE_QUOTA_PROFILE_OTHER,
+} from '../constants/limits.js';
 
 const KEY_PREFIX = 'mkp_';
 const UTF16_BYTES_PER_CHAR = 2; // localStorage strings are stored as UTF-16
+const COMPRESSION_PREFIX = 'LZ1:'; // marker for lz-string UTF-16 compressed blobs; absent on legacy plain-JSON values
 
 const listeners = new Set();
 function notify() {
@@ -15,18 +22,33 @@ export function subscribeToWrites(listener) {
   return () => listeners.delete(listener);
 }
 
-export function readJson(key, fallback = null) {
+// Decode a stored string in either compressed (LZ1:…) or legacy plain-JSON form.
+// Returns null on any failure so callers can decide how to recover.
+function decodeStored(raw) {
+  if (typeof raw !== 'string') return null;
   try {
-    const raw = localStorage.getItem(key);
-    return raw === null ? fallback : JSON.parse(raw);
+    if (raw.startsWith(COMPRESSION_PREFIX)) {
+      const json = decompressFromUTF16(raw.slice(COMPRESSION_PREFIX.length));
+      return json === null ? null : JSON.parse(json);
+    }
+    return JSON.parse(raw);
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+export function readJson(key, fallback = null) {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return fallback;
+  const decoded = decodeStored(raw);
+  return decoded === null ? fallback : decoded;
 }
 
 export function writeJson(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    const json = JSON.stringify(value);
+    const encoded = COMPRESSION_PREFIX + compressToUTF16(json);
+    localStorage.setItem(key, encoded);
     notify();
     return true;
   } catch {
@@ -50,7 +72,9 @@ function utf16Bytes(str) {
 /**
  * Walk every mkp_* localStorage key and sum bytes per category. The caller supplies
  * `measureLorebook(parsedLorebook)` so this service stays schema-agnostic — it returns
- * `{ snapshots }` representing the snapshot-attributable bytes within the parsed value.
+ * `{ snapshots, total }` where both are character counts of the *uncompressed* lorebook;
+ * the ratio is applied to the actual (possibly compressed) localStorage cost so the
+ * breakdown reflects real on-disk usage.
  *
  * Returns: { totalBytes, breakdown: { snapshots, entryContent, index, settings, windowState } }
  */
@@ -76,16 +100,13 @@ export function getStorageBreakdown({ measureLorebook }) {
     } else if (key.startsWith(LOREBOOK_KEY_PREFIX)) {
       let snapshotBytes = 0;
       if (measureLorebook) {
-        try {
-          const parsed = JSON.parse(value);
-          const result = measureLorebook(parsed);
-          snapshotBytes = (result?.snapshots ?? 0) * UTF16_BYTES_PER_CHAR;
-        } catch {
-          snapshotBytes = 0;
+        const parsed = decodeStored(value);
+        if (parsed) {
+          const { snapshots: snapChars = 0, total: totalChars = 0 } = measureLorebook(parsed) ?? {};
+          const ratio = totalChars > 0 ? Math.min(1, snapChars / totalChars) : 0;
+          snapshotBytes = Math.round(bytes * ratio);
         }
       }
-      // Cap at bytes to guard against measurement drift
-      snapshotBytes = Math.min(snapshotBytes, bytes);
       snapshots    += snapshotBytes;
       entryContent += bytes - snapshotBytes;
     }
@@ -97,15 +118,24 @@ export function getStorageBreakdown({ measureLorebook }) {
   };
 }
 
-/** Resolve the browser's reported per-origin quota, or the Safari-floor fallback. */
-export async function getStorageQuota() {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
-      const { quota } = await navigator.storage.estimate();
-      if (typeof quota === 'number' && quota > 0) return quota;
-    }
-  } catch {
-    // fall through
-  }
-  return STORAGE_QUOTA_FALLBACK_BYTES;
+// The localStorage cap is a per-API limit (~5 MB on Safari, ~10 MB on Chrome/Firefox/etc.)
+// and is NOT the same as `navigator.storage.estimate().quota`, which reports the entire
+// origin storage budget (IndexedDB + Cache + localStorage + …) and is typically gigabytes.
+// The user picks their profile in Settings; this returns the per-profile cap, falling back
+// to the conservative Safari floor if no profile is set yet.
+export function getStorageQuota(profile) {
+  return STORAGE_QUOTA_BYTES_BY_PROFILE[profile] ?? STORAGE_QUOTA_BYTES;
+}
+
+// Best-effort UA sniff used ONLY to pick a sensible default profile on first boot.
+// The user can override via Settings. The WebKit-on-iOS rule is Apple-enforced, so
+// every browser on iPhone / iPad reports a UA that includes iPad / iPhone / iPod and
+// is correctly bucketed as WebKit even if the user thinks they're "running Chrome".
+export function detectQuotaProfile() {
+  if (typeof navigator === 'undefined') return STORAGE_QUOTA_PROFILE_OTHER;
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || /iPad|iPhone/.test(platform);
+  const isSafariDesktop = /Safari\//.test(ua) && !/Chrome|Chromium|Edg|OPR|Brave/.test(ua);
+  return (isIOS || isSafariDesktop) ? STORAGE_QUOTA_PROFILE_WEBKIT : STORAGE_QUOTA_PROFILE_OTHER;
 }

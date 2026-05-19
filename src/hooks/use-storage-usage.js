@@ -6,12 +6,15 @@ import {
   getStorageQuota,
   subscribeToWrites,
 } from '../services/storage-service.js';
+import { useSettingsStore } from '../state/settings-store.js';
 import {
-  STORAGE_QUOTA_FALLBACK_BYTES,
   STORAGE_WARN_THRESHOLD,
   STORAGE_DANGER_THRESHOLD,
 } from '../constants/limits.js';
 
+// Returns the uncompressed character count of the snapshot arrays and of the whole lorebook.
+// storage-service applies the snapshots/total ratio to actual (post-compression) bytes so
+// the breakdown reflects real on-disk usage.
 function measureLorebook(parsed) {
   let snapshots = 0;
   if (parsed && Array.isArray(parsed.entries)) {
@@ -21,7 +24,8 @@ function measureLorebook(parsed) {
       }
     }
   }
-  return { snapshots };
+  const total = parsed ? JSON.stringify(parsed).length : 0;
+  return { snapshots, total };
 }
 
 function tierFor(percent) {
@@ -32,15 +36,14 @@ function tierFor(percent) {
 
 export function useStorageUsage() {
   const [usage, setUsage] = useState(() => getStorageBreakdown({ measureLorebook }));
-  const [quotaBytes, setQuotaBytes] = useState(STORAGE_QUOTA_FALLBACK_BYTES);
+  const profile = useSettingsStore((s) => s.storageQuotaProfile);
+  const quotaBytes = getStorageQuota(profile);
 
   useEffect(() => {
-    let mounted = true;
-    getStorageQuota().then((q) => { if (mounted) setQuotaBytes(q); });
     const unsubscribe = subscribeToWrites(() => {
       setUsage(getStorageBreakdown({ measureLorebook }));
     });
-    return () => { mounted = false; unsubscribe(); };
+    return () => { unsubscribe(); };
   }, []);
 
   const refresh = useCallback(() => {
