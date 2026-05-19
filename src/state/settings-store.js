@@ -24,6 +24,7 @@ export const useSettingsStore = create((set) => ({
   setKeepMenuOpenAfterImport:  (keepMenuOpenAfterImport)  => set({ keepMenuOpenAfterImport }),
   setThesaurusEnabled:         (thesaurusEnabled)         => set({ thesaurusEnabled }),
   setCrosstalkSwapMode:        (crosstalkSwapMode)        => set({ crosstalkSwapMode }),
+  setFunnyFishEnabled:         (funnyFishEnabled)         => set({ funnyFishEnabled }),
 
   applySettings: (settings) => set(settings),
 }));

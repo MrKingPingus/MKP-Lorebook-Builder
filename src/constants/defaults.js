@@ -36,6 +36,9 @@ export const DEFAULT_SETTINGS = {
   //   'fixed-active-left'    — active pinned to the left column; a Swap button trades books between roles
   //   'fixed-active-right'   — active pinned to the right column; same behaviour, mirrored
   crosstalkSwapMode:        'click-to-edit',
+  // When on, the title-bar logo is the circular Sacabambaspis portrait at 45px.
+  // When off, the original 📖 book emoji renders at its original 16px size.
+  funnyFishEnabled:         true,
   // When on, hovering a suggestion chip (or long-pressing on mobile) opens a synonym popover
   // sourced from the Datamuse API (rel_syn, strict synonyms only). In-memory cache only.
   thesaurusEnabled:         true,

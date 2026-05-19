@@ -5,6 +5,7 @@ import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { useSettings }          from '../../hooks/use-settings.js';
 import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
@@ -16,6 +17,7 @@ export function WindowHeader() {
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
   const { crosstalkEnabled }               = useReferenceLorebook();
+  const { funnyFishEnabled }               = useSettings();
   const setShowLander                      = useUi((s) => s.setShowLander);
   const hiddenBtnRef                       = useRef(null);
   const [hiddenOpen, setHiddenOpen]        = useState(false);
@@ -54,7 +56,10 @@ export function WindowHeader() {
     >
       {/* Logo */}
       <div className="header-logo" onPointerDown={(e) => e.stopPropagation()}>
-        <img className="logo-icon" src={logoUrl} alt="" />
+        {funnyFishEnabled
+          ? <img className="logo-icon" src={logoUrl} alt="" />
+          : <span className="logo-icon">📖</span>
+        }
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 

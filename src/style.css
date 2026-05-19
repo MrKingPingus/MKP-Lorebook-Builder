@@ -182,9 +182,12 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   gap: 7px;
   flex-shrink: 0;
 }
-.logo-icon {
-  width: 16px;
-  height: 16px;
+/* Emoji fallback keeps the original 16px compact sizing */
+span.logo-icon { font-size: 16px; flex-shrink: 0; }
+/* Image variant scales up to a readable 45px circular crop */
+img.logo-icon {
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   object-fit: cover;
   display: block;
