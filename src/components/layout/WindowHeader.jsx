@@ -6,6 +6,7 @@ import { useMobile }     from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { MenuButton }           from './MenuButton.jsx';
+import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
 import { LorebookSwitchPopover }  from '../feature/LorebookSwitchPopover.jsx';
 
@@ -111,6 +112,9 @@ export function WindowHeader() {
           )}
         </div>
       )}
+
+      {/* Storage usage ring — sits to the left of the menu button */}
+      <StorageUsageRing />
 
       {/* Menu button — opens slide tray on both desktop and mobile */}
       <MenuButton />
