@@ -25,6 +25,7 @@ export const useSettingsStore = create((set) => ({
   setThesaurusEnabled:         (thesaurusEnabled)         => set({ thesaurusEnabled }),
   setCrosstalkSwapMode:        (crosstalkSwapMode)        => set({ crosstalkSwapMode }),
   setFunnyFishEnabled:         (funnyFishEnabled)         => set({ funnyFishEnabled }),
+  setStorageQuotaProfile:      (storageQuotaProfile)      => set({ storageQuotaProfile }),
 
   applySettings: (settings) => set(settings),
 }));

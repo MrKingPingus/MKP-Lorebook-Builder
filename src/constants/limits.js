@@ -16,6 +16,12 @@ export const DUPE_FLASH_MS            = 1500;
 export const MENU_PANEL_WIDTH         = 320;
 export const ROLLBACK_SNAPSHOT_WARN   = 5;   // storage warning threshold in settings UI
 export const ROLLBACK_MAX_CUSTOM      = 10;  // upper bound for custom snapshot count input
-export const STORAGE_QUOTA_BYTES          = 5 * 1024 * 1024; // localStorage per-origin cap — Safari floor; ~10 MB on Chrome/Firefox
+export const STORAGE_QUOTA_BYTES          = 5 * 1024 * 1024; // safe default (Safari floor); used when no profile is set
+export const STORAGE_QUOTA_PROFILE_WEBKIT  = 'webkit';          // Safari + every iOS/iPadOS browser (WebKit-forced)
+export const STORAGE_QUOTA_PROFILE_OTHER   = 'chromium-gecko';  // Chrome, Edge, Firefox, Brave, Opera, Samsung, Android WebView, …
+export const STORAGE_QUOTA_BYTES_BY_PROFILE = {
+  [STORAGE_QUOTA_PROFILE_WEBKIT]: 5  * 1024 * 1024,
+  [STORAGE_QUOTA_PROFILE_OTHER]:  10 * 1024 * 1024,
+};
 export const STORAGE_WARN_THRESHOLD       = 0.60;
 export const STORAGE_DANGER_THRESHOLD     = 0.85;

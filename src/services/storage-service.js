@@ -1,7 +1,12 @@
 // Isolated read/write interface to localStorage — the only file that touches it directly
 import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
 import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY, SETTINGS_KEY, WINDOW_STATE_KEY } from '../constants/storage-keys.js';
-import { STORAGE_QUOTA_BYTES } from '../constants/limits.js';
+import {
+  STORAGE_QUOTA_BYTES,
+  STORAGE_QUOTA_BYTES_BY_PROFILE,
+  STORAGE_QUOTA_PROFILE_WEBKIT,
+  STORAGE_QUOTA_PROFILE_OTHER,
+} from '../constants/limits.js';
 
 const KEY_PREFIX = 'mkp_';
 const UTF16_BYTES_PER_CHAR = 2; // localStorage strings are stored as UTF-16
@@ -113,10 +118,24 @@ export function getStorageBreakdown({ measureLorebook }) {
   };
 }
 
-// The localStorage cap is a per-API limit (~5 MB on Safari, ~10 MB on Chrome/Firefox)
+// The localStorage cap is a per-API limit (~5 MB on Safari, ~10 MB on Chrome/Firefox/etc.)
 // and is NOT the same as `navigator.storage.estimate().quota`, which reports the entire
 // origin storage budget (IndexedDB + Cache + localStorage + …) and is typically gigabytes.
-// We report against the conservative Safari floor so warnings fire on the tightest browser.
-export function getStorageQuota() {
-  return STORAGE_QUOTA_BYTES;
+// The user picks their profile in Settings; this returns the per-profile cap, falling back
+// to the conservative Safari floor if no profile is set yet.
+export function getStorageQuota(profile) {
+  return STORAGE_QUOTA_BYTES_BY_PROFILE[profile] ?? STORAGE_QUOTA_BYTES;
+}
+
+// Best-effort UA sniff used ONLY to pick a sensible default profile on first boot.
+// The user can override via Settings. The WebKit-on-iOS rule is Apple-enforced, so
+// every browser on iPhone / iPad reports a UA that includes iPad / iPhone / iPod and
+// is correctly bucketed as WebKit even if the user thinks they're "running Chrome".
+export function detectQuotaProfile() {
+  if (typeof navigator === 'undefined') return STORAGE_QUOTA_PROFILE_OTHER;
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || /iPad|iPhone/.test(platform);
+  const isSafariDesktop = /Safari\//.test(ua) && !/Chrome|Chromium|Edg|OPR|Brave/.test(ua);
+  return (isIOS || isSafariDesktop) ? STORAGE_QUOTA_PROFILE_WEBKIT : STORAGE_QUOTA_PROFILE_OTHER;
 }

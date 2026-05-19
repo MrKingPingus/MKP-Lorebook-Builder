@@ -5,7 +5,14 @@ import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
-import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, ROLLBACK_SNAPSHOT_WARN, ROLLBACK_MAX_CUSTOM } from '../../constants/limits.js';
+import {
+  MIN_WINDOW_WIDTH,
+  MIN_WINDOW_HEIGHT,
+  ROLLBACK_SNAPSHOT_WARN,
+  ROLLBACK_MAX_CUSTOM,
+  STORAGE_QUOTA_PROFILE_WEBKIT,
+  STORAGE_QUOTA_PROFILE_OTHER,
+} from '../../constants/limits.js';
 
 function SettingsSection({ id, title, openSet, toggleSection, children }) {
   const isOpen = openSet.has(id);
@@ -68,6 +75,8 @@ export function SettingsPanel() {
     setThesaurusEnabled,
     funnyFishEnabled,
     setFunnyFishEnabled,
+    storageQuotaProfile,
+    setStorageQuotaProfile,
   } = useSettings();
 
   const {
@@ -447,6 +456,25 @@ export function SettingsPanel() {
                 </select>
               </label>
             ))}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Browser storage limit</div>
+          <select
+            className="hotbar-slot-select"
+            value={storageQuotaProfile ?? STORAGE_QUOTA_PROFILE_WEBKIT}
+            onChange={(e) => setStorageQuotaProfile(e.target.value)}
+          >
+            <option value={STORAGE_QUOTA_PROFILE_WEBKIT}>
+              Safari, or any browser on iPhone / iPad (5 MB)
+            </option>
+            <option value={STORAGE_QUOTA_PROFILE_OTHER}>
+              Chrome, Firefox, Edge, Brave, etc. on Mac / Windows / Linux / Android (10 MB)
+            </option>
+          </select>
+          <div className="settings-hint">
+            Sizes the storage usage ring against the browser's actual `localStorage` cap. Auto-detected on first launch from your browser; change here if the detection was off.
           </div>
         </div>
 

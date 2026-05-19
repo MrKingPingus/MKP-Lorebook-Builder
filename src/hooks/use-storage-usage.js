@@ -6,6 +6,7 @@ import {
   getStorageQuota,
   subscribeToWrites,
 } from '../services/storage-service.js';
+import { useSettingsStore } from '../state/settings-store.js';
 import {
   STORAGE_WARN_THRESHOLD,
   STORAGE_DANGER_THRESHOLD,
@@ -35,7 +36,8 @@ function tierFor(percent) {
 
 export function useStorageUsage() {
   const [usage, setUsage] = useState(() => getStorageBreakdown({ measureLorebook }));
-  const quotaBytes = getStorageQuota();
+  const profile = useSettingsStore((s) => s.storageQuotaProfile);
+  const quotaBytes = getStorageQuota(profile);
 
   useEffect(() => {
     const unsubscribe = subscribeToWrites(() => {

@@ -6,7 +6,7 @@ import { useAutosave }           from './hooks/use-autosave.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
 import { useEntries }            from './hooks/use-entries.js';
 import { useUndoRedo }           from './hooks/use-undo-redo.js';
-import { readJson, writeJson }   from './services/storage-service.js';
+import { readJson, writeJson, detectQuotaProfile } from './services/storage-service.js';
 import { createEmptyLorebook }   from './services/entry-factory.js';
 import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
@@ -38,6 +38,16 @@ function useBootstrap() {
     const settings = readJson(SETTINGS_KEY);
     if (settings) {
       applySettings(settings);
+    }
+
+    // First-boot UA detect for the storage quota profile. Also fills in the
+    // field for existing users upgrading from a build before this setting
+    // existed. Once set, the user's chosen value is respected on every later
+    // boot — we never silently re-detect on top of an explicit choice.
+    if (!useSettingsStore.getState().storageQuotaProfile) {
+      const detected = detectQuotaProfile();
+      applySettings({ storageQuotaProfile: detected });
+      writeJson(SETTINGS_KEY, { ...(settings ?? {}), storageQuotaProfile: detected });
     }
 
     // Restore persisted window state, or fall back to default centre-two-thirds layout

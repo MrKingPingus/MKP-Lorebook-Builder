@@ -42,6 +42,10 @@ export const DEFAULT_SETTINGS = {
   // When on, hovering a suggestion chip (or long-pressing on mobile) opens a synonym popover
   // sourced from the Datamuse API (rel_syn, strict synonyms only). In-memory cache only.
   thesaurusEnabled:         true,
+  // 'webkit' (5 MB) | 'chromium-gecko' (10 MB) — sizes the storage usage ring against the
+  // documented per-engine localStorage cap. null on first boot; bootstrap UA-detects and
+  // persists, then the user can override via Settings → Window & Layout.
+  storageQuotaProfile:      null,
 };
 
 export const DEFAULT_ENTRY = {

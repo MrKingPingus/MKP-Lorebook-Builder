@@ -5118,11 +5118,32 @@ kbd {
 .storage-usage-detail-label { color: var(--text); }
 .storage-usage-detail-bytes { color: var(--muted2); font-variant-numeric: tabular-nums; }
 .storage-usage-detail-share { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
+.storage-usage-detail-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+.storage-usage-detail-profile-label {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+.storage-usage-detail-profile-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 6px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
 .storage-usage-detail-footer {
   display: flex;
   justify-content: flex-end;
   padding-top: 4px;
-  border-top: 1px solid var(--border);
 }
 .storage-usage-refresh-btn {
   padding: 4px 10px;
