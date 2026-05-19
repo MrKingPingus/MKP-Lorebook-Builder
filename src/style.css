@@ -4420,6 +4420,12 @@ kbd {
   letter-spacing: 0.06em;
   cursor: pointer;
   vertical-align: middle;
+  /* Never shrink or wrap — the badge is the primary crosstalk affordance.
+     Narrow rows (e.g. select mode + selected, where the staged-type dropdown
+     eats header width) must ellipsize the entry name before squeezing the
+     badge into a multi-line blob or hiding it entirely. */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .entry-ref-badge:hover {
   background: var(--blue);
