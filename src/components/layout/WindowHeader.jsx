@@ -9,6 +9,7 @@ import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
 import { LorebookSwitchPopover }  from '../feature/LorebookSwitchPopover.jsx';
+import logoUrl from '../../assets/Sacabambaspis2.png';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
@@ -53,7 +54,7 @@ export function WindowHeader() {
     >
       {/* Logo */}
       <div className="header-logo" onPointerDown={(e) => e.stopPropagation()}>
-        <span className="logo-icon">📖</span>
+        <img className="logo-icon" src={logoUrl} alt="" />
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
