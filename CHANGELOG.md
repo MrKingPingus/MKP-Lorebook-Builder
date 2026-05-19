@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-05-19
+
+### Additions
+
+- **Storage usage ring** — a small circular indicator now sits in the window title bar, just to the left of the menu button. The outer ring stays neutral; the fill arc shows how much of the browser's `localStorage` quota the app is currently using, turning yellow at 60% and red at 85% so the warning is glanceable. Hovering on desktop pops a one-line summary (`1.2 MB / 5.0 MB used (24%)`); clicking (or tapping on mobile) opens a fuller breakdown across Snapshots, Entry content, Lorebook index, Settings, and Window state, with a Refresh button. The quota number prefers what the browser reports via `navigator.storage.estimate()` and falls back to a conservative 5 MB on browsers that don't expose it. The number updates automatically whenever the app writes to storage — no polling — and the breakdown is intentionally global, not per-lorebook, since the meaningful question is how close the whole app is to the quota cliff.
+- **App logo refresh** — the book emoji that sat next to the "LOREBOOK BUILDER" wordmark in the title bar has been replaced with a circular Sacabambaspis portrait at 45px so the artwork is readable.
+- **Toggle Funny Fish** — a new toggle at the bottom of Settings → Window & Layout swaps the title-bar logo between the new Sacabambaspis portrait and the original 📖 book emoji. The emoji variant renders at its original 16px size, so turning the toggle off restores the compact header exactly as it was before.
+
+---
+
 ## 2026-05-16
 
 ### Fixes

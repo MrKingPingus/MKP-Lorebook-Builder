@@ -182,7 +182,16 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   gap: 7px;
   flex-shrink: 0;
 }
-.logo-icon { font-size: 16px; }
+/* Sized so the header height stays identical when toggling between the two */
+span.logo-icon { font-size: 24px; flex-shrink: 0; }
+img.logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
 .logo-text {
   font-size: 14px;
   font-weight: 800;
@@ -5015,3 +5024,112 @@ kbd {
 .lorebook-browse-btn:hover {
   border-color: var(--focus-border);
 }
+
+/* ─── Storage usage ring (WindowHeader) ─────────────────────────────────── */
+.storage-usage-ring-wrap { position: relative; flex-shrink: 0; }
+.storage-usage-ring {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: background var(--transition);
+}
+.storage-usage-ring:hover { background: var(--surface3); }
+.storage-usage-ring-track { stroke: var(--border2); }
+.storage-usage-ring-fill  { stroke: var(--muted2); transition: stroke 200ms, stroke-dashoffset 300ms ease-out; }
+.storage-usage-ring.tier-warn   .storage-usage-ring-fill { stroke: var(--yellow); }
+.storage-usage-ring.tier-danger .storage-usage-ring-fill { stroke: var(--red); }
+
+.storage-usage-hover-popover {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.storage-usage-hover-popover.tier-warn   { color: var(--yellow); }
+.storage-usage-hover-popover.tier-danger { color: var(--red); }
+
+.storage-usage-detail-popover {
+  min-width: 280px;
+  max-width: 320px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.storage-usage-detail-title {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.storage-usage-detail-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+.storage-usage-detail-percent { color: var(--muted2); }
+.storage-usage-detail-popover.tier-warn   .storage-usage-detail-percent { color: var(--yellow); }
+.storage-usage-detail-popover.tier-danger .storage-usage-detail-percent { color: var(--red); }
+.storage-usage-bar {
+  height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.storage-usage-bar-fill {
+  height: 100%;
+  background: var(--muted2);
+  transition: width 300ms ease-out, background 200ms;
+}
+.storage-usage-bar-fill.tier-warn   { background: var(--yellow); }
+.storage-usage-bar-fill.tier-danger { background: var(--red); }
+.storage-usage-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.storage-usage-detail-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+}
+.storage-usage-detail-label { color: var(--text); }
+.storage-usage-detail-bytes { color: var(--muted2); font-variant-numeric: tabular-nums; }
+.storage-usage-detail-share { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
+.storage-usage-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.storage-usage-refresh-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--muted2);
+  background: var(--surface3);
+  transition: color var(--transition), background var(--transition);
+}
+.storage-usage-refresh-btn:hover { color: var(--text); background: var(--border); }

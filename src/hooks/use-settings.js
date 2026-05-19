@@ -26,6 +26,7 @@ export function useSettings() {
   const crosstalkEnabled         = useSettingsStore((s) => s.crosstalkEnabled);
   const crosstalkSwapMode        = useSettingsStore((s) => s.crosstalkSwapMode);
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
+  const funnyFishEnabled         = useSettingsStore((s) => s.funnyFishEnabled);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -52,6 +53,7 @@ export function useSettings() {
       crosstalkEnabled,
       crosstalkSwapMode,
       thesaurusEnabled,
+      funnyFishEnabled,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -87,6 +89,7 @@ export function useSettings() {
     crosstalkEnabled,
     crosstalkSwapMode,
     thesaurusEnabled,
+    funnyFishEnabled,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -114,5 +117,6 @@ export function useSettings() {
     },
     setThesaurusEnabled:         (v) => updateSetting('thesaurusEnabled', v),
     setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
+    setFunnyFishEnabled:         (v) => updateSetting('funnyFishEnabled', v),
   };
 }

@@ -66,6 +66,8 @@ export function SettingsPanel() {
     setCrosstalkSwapMode,
     thesaurusEnabled,
     setThesaurusEnabled,
+    funnyFishEnabled,
+    setFunnyFishEnabled,
   } = useSettings();
 
   const {
@@ -445,6 +447,20 @@ export function SettingsPanel() {
                 </select>
               </label>
             ))}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Toggle Funny Fish</span>
+            <input
+              type="checkbox"
+              checked={funnyFishEnabled}
+              onChange={(e) => setFunnyFishEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Swap the title-bar logo between the Sacabambaspis portrait and the original 📖 book emoji.
           </div>
         </div>
 

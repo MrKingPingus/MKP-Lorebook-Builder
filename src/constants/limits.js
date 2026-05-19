@@ -16,3 +16,6 @@ export const DUPE_FLASH_MS            = 1500;
 export const MENU_PANEL_WIDTH         = 320;
 export const ROLLBACK_SNAPSHOT_WARN   = 5;   // storage warning threshold in settings UI
 export const ROLLBACK_MAX_CUSTOM      = 10;  // upper bound for custom snapshot count input
+export const STORAGE_QUOTA_FALLBACK_BYTES = 5 * 1024 * 1024; // Safari per-origin floor; used when navigator.storage.estimate() is unavailable
+export const STORAGE_WARN_THRESHOLD       = 0.60;
+export const STORAGE_DANGER_THRESHOLD     = 0.85;
