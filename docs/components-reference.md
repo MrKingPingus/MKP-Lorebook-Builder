@@ -24,6 +24,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | The hamburger menu button (top-left of header) | `src/components/layout/MenuButton.jsx` |
 | The slide-out menu panel (import, export, settings, etc.) | `src/components/layout/MenuPanel.jsx` |
 | The resize handles on window edges/corners | `src/components/layout/ResizeHandles.jsx` |
+| The storage-usage ring indicator (left of the menu button in the header) | `src/components/layout/StorageUsageRing.jsx` |
 
 ### Feature (the main content)
 
@@ -54,6 +55,17 @@ Use this to identify which file to look at based on what's visible on screen.
 | The build panel (main entry editing view) | `src/components/feature/BuildPanel.jsx` |
 | Mobile entry detail view (tapping an entry on mobile) | `src/components/feature/EntryDetailPanel.jsx` |
 | The landing page (shown before opening a lorebook) | `src/components/feature/Lander.jsx` |
+| The FAB quick-add menu (action-discovery popover above the FAB) | `src/components/feature/FabQuickMenu.jsx` |
+| The global search/filter/sort bar above the pane split (crosstalk) | `src/components/feature/GlobalFilterBar.jsx` |
+| The synonym/thesaurus popover (PoS cycle, multi-select add/replace) | `src/components/feature/ThesaurusPopover.jsx` |
+| The read-only reference lorebook pane (desktop crosstalk) | `src/components/feature/ReferencePanel.jsx` |
+| Popover listing entries hidden from export (navigate / unhide) | `src/components/feature/HiddenEntriesPopover.jsx` |
+| Popover to switch the active lorebook (anchored by the header name input) | `src/components/feature/LorebookSwitchPopover.jsx` |
+| Mobile consolidated lorebook role bar (active/reference slots, crosstalk) | `src/components/feature/LorebookRoleBar.jsx` |
+| Mobile full-screen browser for the reference lorebook | `src/components/feature/ReferenceBrowseSheet.jsx` |
+| Mobile one-deep read-only peek of a reference entry | `src/components/feature/ReferenceEntryOverlay.jsx` |
+| Storage-usage summary popover (one-line, on hover) | `src/components/feature/StorageUsageHoverPopover.jsx` |
+| Storage-usage detail popover (breakdown bar + refresh) | `src/components/feature/StorageUsageDetailPopover.jsx` |
 
 ### UI Primitives
 
