@@ -1,0 +1,48 @@
+name: 🐞 Bug report
+description: Report something in the Lorebook Builder that isn't working as expected.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! The more detail you can give, the faster it can be tracked down.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What did you think would happen instead?
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: false
+  - type: input
+    id: browser-os
+    attributes:
+      label: Browser / OS
+      placeholder: e.g. Chrome 126 on Windows 11, Safari on iPhone
+    validations:
+      required: false
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors (if any)
+      description: Anything red in the browser's developer console.
+      render: text
+    validations:
+      required: false

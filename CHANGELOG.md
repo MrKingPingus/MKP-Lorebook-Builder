@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-07-17
+
+### Additions
+
+- **Request a feature from the launch screen** — the launch screen footer now has a **💡 Request a feature** link sitting next to **🐞 Report a bug**. Both links open a short, guided form on GitHub (feature requests are filed under the `enhancement` label, bugs under `bug`), so suggestions land in one place and are easy to track. Filing an issue requires a free GitHub account.
+
+### Adjustments
+
+- **Bug report link now uses the guided form too** — the existing "Report a bug" link previously opened a pre-filled blank issue; it now opens the same structured form as feature requests, so both entry points behave consistently whether you start from the app or from GitHub directly.
+
+---
+
 ## 2026-05-19
 
 ### Additions

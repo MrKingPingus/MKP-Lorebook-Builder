@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Open the Lorebook Builder
+    url: https://mkp-lorebook-builder.vercel.app
+    about: Launch the app.
+  - name: 📚 Readme & tips
+    url: https://github.com/mrkingpingus/mkp-lorebook-builder
+    about: Usage tips and project info before filing an issue.
