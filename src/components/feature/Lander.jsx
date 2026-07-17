@@ -1,7 +1,7 @@
 // Launch view — shown inside the floating window on page load; dismissed via
 // any Start tile, a Recent lorebook, or the "Continue to builder" link.
 // Five panels: hero, Start tiles, Recent lorebooks, What's New (bundled
-// CHANGELOG), Learn (tutorial + tips + templates), Report a Bug.
+// CHANGELOG), Learn (tutorial + tips + templates), Report a Bug / Request a Feature.
 import { useState, useRef, useEffect, Fragment } from 'react';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useExport }            from '../../hooks/use-export.js';
@@ -54,17 +54,9 @@ function renderMarkdown(src) {
 
 const RECENT_LIMIT = 6;
 
-const BUG_REPORT_URL =
-  'https://github.com/mrkingpingus/mkp-lorebook-builder/issues/new'
-  + '?title=' + encodeURIComponent('Bug: ')
-  + '&labels=' + encodeURIComponent('bug')
-  + '&body='   + encodeURIComponent(
-      '**What happened?**\n\n\n'
-    + '**What did you expect?**\n\n\n'
-    + '**Steps to reproduce**\n1. \n2. \n3. \n\n'
-    + '**Browser / OS**\n\n\n'
-    + '**Console errors (if any)**\n\n'
-    );
+const ISSUE_NEW_BASE = 'https://github.com/mrkingpingus/mkp-lorebook-builder/issues/new';
+const BUG_REPORT_URL      = ISSUE_NEW_BASE + '?template=bug_report.yml';
+const FEATURE_REQUEST_URL = ISSUE_NEW_BASE + '?template=feature_request.yml';
 
 export function Lander() {
   const setShowLander       = useUi((s) => s.setShowLander);
@@ -221,14 +213,24 @@ export function Lander() {
       </div>
 
       <div className="lander-footer">
-        <a
-          href={BUG_REPORT_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="lander-bug-link"
-        >
-          🐞 Report a bug
-        </a>
+        <div className="lander-footer-links">
+          <a
+            href={BUG_REPORT_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="lander-bug-link"
+          >
+            🐞 Report a bug
+          </a>
+          <a
+            href={FEATURE_REQUEST_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="lander-bug-link"
+          >
+            💡 Request a feature
+          </a>
+        </div>
         <button className="lander-continue-btn" onClick={enterBuilder}>
           Continue to builder →
         </button>

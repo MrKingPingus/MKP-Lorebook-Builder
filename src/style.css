@@ -3571,6 +3571,11 @@ kbd {
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+.lander-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .lander-bug-link {
   font-size: 12px;
   color: var(--muted2);
@@ -3598,6 +3603,7 @@ kbd {
   .lander-changelog { max-height: 280px; }
   .lander-footer { flex-direction: column-reverse; align-items: stretch; }
   .lander-continue-btn { width: 100%; }
+  .lander-footer-links { justify-content: center; }
   .lander-bug-link { text-align: center; }
 }
 

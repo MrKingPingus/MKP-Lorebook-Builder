@@ -1,0 +1,39 @@
+name: 💡 Feature request
+description: Suggest a new feature or improvement for the Lorebook Builder.
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape the builder! Fill out what you can — none of the fields have to be perfect.
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to see?
+      description: Describe the feature or change you'd like.
+      placeholder: I'd like to be able to…
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What problem does it solve?
+      description: What are you trying to do today, and where does the current builder get in the way?
+      placeholder: Right now I have to…
+    validations:
+      required: false
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples or references
+      description: Screenshots, mockups, or examples from other tools that show the idea.
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Any other context worth knowing.
+    validations:
+      required: false
