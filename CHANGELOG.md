@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-07-19
+
+### Fixes
+
+- **Imported entry types are preserved again** — importing a JSON lorebook now reads the `entryType` field used by CharSnap (and the current template), so entries keep their real types instead of all arriving as "Character." Older books saved with the previous `type` field still import correctly, so nothing you exported before breaks.
+
+### Additions
+
+- **Export matches the CharSnap format** — exported JSON now uses CharSnap's exact shape (numbered entries, `entryType`, and an `isPublic` flag). A book you export drops straight back into CharSnap and re-imports here without losing types or visibility. Downloaded and copied templates use the same format.
+- **Public / Private per entry** — each entry has a new Public/Private toggle (next to "Hide from Export") that sets its `isPublic` state for CharSnap. New entries default to Public.
+- **"All Public" one-click action** — a new hotbar action (also in the ＋ button's quick menu) flips every entry in the book to Public in a single, undoable step — handy right before an export.
+
+---
+
 ## 2026-07-17
 
 ### Additions

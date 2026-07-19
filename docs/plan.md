@@ -18,14 +18,14 @@ MKP Lorebook Builder is a browser-only SPA for authoring AI lorebooks — struct
 
 Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; CharSnap's format and the current template use **`entryType`**, so every entry fell through to `DEFAULT_TYPE` ('character'). The *values* already normalize correctly — only the field name was missed.
 
-- [ ] **Import reads `entryType`** — add `entryType` to the type alias chain in `normalizeEntry` (`json-import.js`), matching the existing lenient-alias handling for triggers/name/description. Keep `type` as a fallback so older app-exported books still import. (Clears #102.)
-- [ ] **Export emits the CharSnap shape** — `json-export.js` writes `entryType` (not the internal `type`) and serialises `entries` as a **keyed object** (`{"1": {...}, "2": {...}}`) instead of an array, so app output is byte-compatible with the CharSnap template. The internal store shape is unchanged; mapping happens only at the export boundary.
-- [ ] **`isPublic` round-trips** — add `isPublic` to the entry schema (`DEFAULT_ENTRY`; tentative default `true`, pending confirmation of CharSnap's convention), read on import, write on export. Nothing is silently dropped.
-- [ ] **Preserve unknown CharSnap fields** — carry through any fields we don't model so round-trips don't strip them (stash on the entry, re-emit on export). Confirm the full CharSnap field list before finalising.
-- [ ] **Per-entry "Public" toggle** — editable per-entry control for `isPublic`, placed alongside the Hide-from-Export button in the entry footer (and the mobile equivalent).
-- [ ] **"Make All Entries Public"** — master action near the top of the builder that sets `isPublic: true` on every entry in one history snapshot (mirrors CharSnap).
-- [ ] **Update the template** — `TEMPLATE_LOREBOOK` (`defaults.js`) and any TXT/DOCX template generators updated to the new shape. Ship `Sample_Lorebook_2.json` as the canonical JSON template.
-- [ ] **Verify hand-made JSON import** — the #102 reporter noted hand-made JSONs "wouldn't import." Reproduce; fix or document any second parser-strictness issue.
+- [x] **Import reads `entryType`** — added `entryType` (+ PascalCase variants) to the type alias chain in `normalizeEntry` (`json-import.js`), with `type` kept as a fallback so older app-exported books still import. Clears #102. _(commit 5c0109c)_
+- [x] **Export emits the CharSnap shape** — `json-export.js` writes `entryType` labels (not the internal `type` id) and serialises `entries` as a **keyed object** (`{"1": {...}}`); only CharSnap fields are emitted. Verified byte-shape-identical to the sample template.
+- [x] **`isPublic` round-trips** — `isPublic` added to `DEFAULT_ENTRY` (default `true`, confirmed 2026-07-19), read on import, written on export.
+- [x] **Field set is fully modeled** — CharSnap confirmed the sample's fields (`name`, `triggers`, `description`, `entryType`, `isPublic`) are the complete set, so every field is modeled explicitly; no unknown-field passthrough needed.
+- [x] **Per-entry "Public" toggle** — Public/Private button beside Hide-from-Export in the desktop `EntryCard` and mobile `EntryDetailPanel` footers; discrete and individually undoable. _(commit 244a932)_
+- [x] **"Make All Entries Public"** — shipped as the `make_all_public` hotbar action (one history snapshot; appears in the FAB quick-menu, pinnable). Can also be surfaced in the top bar / 10B Export Visibility mode later if a more prominent placement is wanted.
+- [x] **Update the template** — the JSON template download and copy-to-clipboard now flow through the CharSnap-shaped exporter, so both emit the new shape. (TXT/DOCX templates are a separate human-readable format, unaffected by the CharSnap JSON fields.)
+- [ ] **Verify hand-made JSON import** — the #102 reporter noted hand-made JSONs "wouldn't import." Most likely malformed JSON rejected by `JSON.parse` (trailing commas / comments / smart quotes) rather than a schema issue, since the importer is otherwise lenient. Needs the reporter's actual file to reproduce; left open pending that.
 
 **Stop condition:** The attached sample imports with every entry's type and `isPublic` intact; export produces CharSnap-shaped JSON that re-imports identically; per-entry Public toggle and Make-All-Public both work and snapshot to history.
 
