@@ -70,6 +70,32 @@ Foundation is solid: the whole palette is ~15 CSS custom properties in one `:roo
 
 ---
 
+## Workflow Overhaul (initiative)
+
+An ongoing pass to find and sand down points of friction, rather than a single feature. Goal: make the common authoring loops — especially import/export and hotbar customization — fast and obvious. Kicked off 2026-07-19. New friction points get logged below as they surface; concrete fixes graduate into a phase when picked up.
+
+### Candidate features
+
+**Export action on the hotbar (with a floating format menu)**
+A hotbar-registrable **Export** action that opens a small floating menu anchored above wherever the button sits on the hotbar (same pattern as `FabQuickMenu`). The menu asks two things and exports in one step:
+- **Format** — JSON / TXT / DOCX / ZIP (the existing export formats)
+- **Title** — the export filename (defaults to the lorebook name; filename-override plumbing already exists in `use-export.js` / the Export panel)
+
+Today export lives only inside the Import/Export menu panel; this surfaces it as a one-click hotbar action so exporting doesn't require opening the menu. Reuses `useExport()` and the existing format/filename logic. New: a hotbar descriptor + resolver (`hotbar-actions.js`, `use-hotbar-actions.js`) and a small anchored menu component modeled on `FabQuickMenu`.
+
+**Add-to-hotbar quick action (from the FAB menu)**
+An **"Add action to hotbar"** entry at the bottom of the FAB hover/long-press menu that lets the user pin any action to a hotbar slot in place, instead of walking through Settings. Interaction TBD — likely: pick the action, then pick a target slot (or drop into the first empty slot). Builds on the existing `hotbarSlots` schema in `settings-store`; the FAB menu already enumerates every action via `allActions`, so it's the natural host.
+
+### Friction Log
+
+Running list of rough edges to evaluate for the overhaul. Add items as they surface; listing implies no commitment.
+
+- Export is buried in the Import/Export menu panel — no quick surface. _(→ Export hotbar action above)_
+- Customizing the hotbar requires a trip through Settings. _(→ add-to-hotbar quick action above)_
+- _(add more as they surface)_
+
+---
+
 ## Phase 9 — Global Features
 
 **Goal:** The app can show two lorebooks side by side for congruency-checking, lateral search, and lateral find & replace. Users have a dedicated planner for drafting future entries.
