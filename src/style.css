@@ -3903,6 +3903,40 @@ kbd {
   border-color: var(--yellow);
 }
 
+/* Per-entry CharSnap visibility (isPublic). Neutral when public (the default
+   state); blue when the entry is held back as private, mirroring the
+   hide-from-export button's "exception is highlighted" idiom. */
+.entry-public-btn {
+  margin-left: auto;
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.entry-public-btn:hover {
+  background: var(--border);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.entry-public-btn--private {
+  border-color: var(--passive-agree);
+  color: var(--passive-agree);
+}
+.entry-public-btn--private:hover {
+  background: var(--passive-agree);
+  color: #fff;
+  border-color: var(--passive-agree);
+}
+/* Public + Hide cluster at the right; Public consumes the auto gap and Hide
+   follows it at the row's 6px gap (Hide's own auto margin is neutralized). */
+.entry-public-btn + .hide-from-export-btn {
+  margin-left: 0;
+}
+
 /* Push entry → reference copy button (mobile entry detail footer). Visually
    subordinate to Rollback and Hide-from-Export — the rare-case path. */
 .copy-to-reference-btn {

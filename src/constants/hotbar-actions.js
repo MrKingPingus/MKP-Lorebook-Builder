@@ -22,6 +22,12 @@ export const HOTBAR_ACTIONS = [
     confirm: 'Clear all entries? This can be undone.',
   },
   {
+    id:      'make_all_public',
+    label:   'All Public',
+    icon:    '◉',
+    title:   'Make all entries public on CharSnap (undoable)',
+  },
+  {
     id:      'append_import',
     label:   'Import Entries',
     icon:    '↓',

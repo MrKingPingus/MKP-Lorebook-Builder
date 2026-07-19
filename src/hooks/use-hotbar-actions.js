@@ -22,6 +22,10 @@ const RESOLVERS = {
     execute:  clearAllEntries,
     disabled: false,
   }),
+  make_all_public: ({ makeAllPublic }) => ({
+    execute:  makeAllPublic,
+    disabled: false,
+  }),
   append_import: ({ setShowAppendImport }) => ({
     execute:  () => setShowAppendImport(true),
     disabled: false,
@@ -35,13 +39,13 @@ const RESOLVERS = {
 
 export function useHotbarActions() {
   const { undo, redo, canUndo, canRedo }            = useUndoRedo();
-  const { addEntry, clearAllEntries }               = useEntries();
+  const { addEntry, clearAllEntries, makeAllPublic } = useEntries();
   const setShowAppendImport                         = useUi((s) => s.setShowAppendImport);
   const { hotbarSlots, crosstalkEnabled, setCrosstalkEnabled } = useSettings();
 
   const context = {
     undo, redo, canUndo, canRedo,
-    clearAllEntries,
+    clearAllEntries, makeAllPublic,
     setShowAppendImport,
     crosstalkEnabled, setCrosstalkEnabled,
   };

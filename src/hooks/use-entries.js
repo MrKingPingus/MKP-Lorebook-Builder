@@ -53,5 +53,13 @@ export function useEntries() {
     updateActiveEntries([]);
   }
 
-  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, replaceEntries, clearAllEntries };
+  // Bulk CharSnap visibility: flip every private entry to public in one
+  // snapshot. No-op (no snapshot) when everything is already public.
+  function makeAllPublic() {
+    if (!entries.some((e) => e.isPublic === false)) return;
+    snapshot();
+    updateActiveEntries(entries.map((e) => (e.isPublic === false ? { ...e, isPublic: true } : e)));
+  }
+
+  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, replaceEntries, clearAllEntries, makeAllPublic };
 }
