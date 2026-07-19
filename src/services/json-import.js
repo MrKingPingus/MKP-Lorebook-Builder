@@ -83,13 +83,21 @@ function normalizeEntry(raw, index) {
   if (!name) blanked.push('name');
   if (!description) blanked.push('description');
 
+  // Type — CharSnap uses `entryType`; older app exports used `type`. Accept both
+  // (plus PascalCase variants) so books authored for either format import correctly.
+  const rawType = src.entryType ?? src.type ?? src.EntryType ?? src.Type;
+
+  // Public flag — CharSnap `isPublic`. Default true when absent or non-boolean.
+  const isPublic = typeof src.isPublic === 'boolean' ? src.isPublic : true;
+
   return {
     entry: {
       ...createEmptyEntry(),
       name,
-      type: normalizeType(src.type),
+      type: normalizeType(rawType),
       triggers,
       description,
+      isPublic,
     },
     warning: blanked.length > 0 ? { index, fields: blanked } : null,
   };
