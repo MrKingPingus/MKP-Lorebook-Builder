@@ -550,6 +550,89 @@ img.logo-icon {
   white-space: nowrap;
 }
 
+/* Floating Export menu — anchored above the hotbar button that opened it
+   (position/left/bottom set inline from the anchor rect). Shares the FAB
+   quick-menu surface treatment; buttons stay neutral like the Export panel. */
+.export-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 24px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+  z-index: 200;
+}
+.export-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.export-menu-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.export-menu-close {
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.export-menu-close:hover { color: var(--text); }
+.export-menu-field-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: -4px;
+}
+.export-menu-input {
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+}
+.export-menu-input:focus {
+  outline: none;
+  border-color: var(--focus-border);
+}
+.export-menu-formats {
+  display: flex;
+  gap: 6px;
+}
+.export-menu-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.export-menu-btn:hover {
+  background: var(--border);
+  border-color: var(--border2);
+}
+.export-menu-btn--outline {
+  background: transparent;
+  color: var(--muted2);
+}
+.export-menu-btn--outline:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+
 /* ============================================================
    Resize Handles
    ============================================================ */

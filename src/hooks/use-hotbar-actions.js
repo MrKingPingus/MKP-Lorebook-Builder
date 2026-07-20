@@ -26,6 +26,19 @@ const RESOLVERS = {
     execute:  makeAllPublic,
     disabled: false,
   }),
+  make_all_private: ({ makeAllPrivate }) => ({
+    execute:  makeAllPrivate,
+    disabled: false,
+  }),
+  make_export: ({ openExportMenu }) => ({
+    // Anchor the floating export menu above whichever button was clicked.
+    execute: (e) => {
+      const el = e && e.currentTarget;
+      const r  = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      openExportMenu(r ? { top: r.top, left: r.left, right: r.right, bottom: r.bottom, width: r.width } : null);
+    },
+    disabled: false,
+  }),
   append_import: ({ setShowAppendImport }) => ({
     execute:  () => setShowAppendImport(true),
     disabled: false,
@@ -39,14 +52,15 @@ const RESOLVERS = {
 
 export function useHotbarActions() {
   const { undo, redo, canUndo, canRedo }            = useUndoRedo();
-  const { addEntry, clearAllEntries, makeAllPublic } = useEntries();
+  const { addEntry, clearAllEntries, makeAllPublic, makeAllPrivate } = useEntries();
   const setShowAppendImport                         = useUi((s) => s.setShowAppendImport);
+  const openExportMenu                              = useUi((s) => s.openExportMenu);
   const { hotbarSlots, crosstalkEnabled, setCrosstalkEnabled } = useSettings();
 
   const context = {
     undo, redo, canUndo, canRedo,
-    clearAllEntries, makeAllPublic,
-    setShowAppendImport,
+    clearAllEntries, makeAllPublic, makeAllPrivate,
+    setShowAppendImport, openExportMenu,
     crosstalkEnabled, setCrosstalkEnabled,
   };
 

@@ -5,6 +5,7 @@ import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useSettings }      from '../../hooks/use-settings.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
+import { ExportMenu }       from '../feature/ExportMenu.jsx';
 import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
 
 const FAB_SIZES = { small: 44, medium: 54, large: 64 };
@@ -22,11 +23,11 @@ function HotbarSlot({ action }) {
 
   const { descriptor, execute, disabled, active } = action;
 
-  function handleClick() {
+  function handleClick(e) {
     if (descriptor.confirm) {
       if (!window.confirm(descriptor.confirm)) return;
     }
-    execute();
+    execute(e);
   }
 
   // A boolean `active` (true OR false) marks this as a stateful toggle, so it
@@ -171,6 +172,8 @@ export function Hotbar() {
           <HotbarSlot key={`right-${i}`} action={action} />
         ))}
       </div>
+
+      <ExportMenu />
     </div>
   );
 }

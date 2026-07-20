@@ -64,5 +64,13 @@ export function useEntries() {
     updateActiveEntries(entries.map((e) => (e.isPublic === true ? e : { ...e, isPublic: true })));
   }
 
-  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, replaceEntries, clearAllEntries, makeAllPublic };
+  // Mirror of makeAllPublic: force every entry private in one snapshot. Skips
+  // only when every entry is already explicitly false.
+  function makeAllPrivate() {
+    if (entries.every((e) => e.isPublic === false)) return;
+    snapshot();
+    updateActiveEntries(entries.map((e) => (e.isPublic === false ? e : { ...e, isPublic: false })));
+  }
+
+  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, replaceEntries, clearAllEntries, makeAllPublic, makeAllPrivate };
 }

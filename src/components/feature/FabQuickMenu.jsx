@@ -38,9 +38,9 @@ export function FabQuickMenu({
       {actions.map((action) => {
         if (!action) return null;
         const { descriptor, execute, disabled, active } = action;
-        function handleClick() {
+        function handleClick(e) {
           if (descriptor.confirm && !window.confirm(descriptor.confirm)) return;
-          execute();
+          execute(e);
           onAction();
         }
         return (
