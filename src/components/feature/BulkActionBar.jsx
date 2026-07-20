@@ -18,28 +18,33 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     selectAllVisible,
     exitSelectMode,
   } = useSelection();
-  const { applyTypeChange, applyStagedTypes, copyToOtherPanel } = useBulkActions();
+  const { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
   const [chipsOpen, setChipsOpen] = useState(false);
+  // Visibility (Hide-from-Export) expander — mutually exclusive with the
+  // Change-Type chips so only one picker row is open at a time.
+  const [visOpen, setVisOpen] = useState(false);
   const barRef = useRef(null);
 
-  // Close chips row on outside click (clicks inside the bar — including on buttons — keep it open)
+  // Close either chips row on outside click (clicks inside the bar — including on buttons — keep it open)
   useEffect(() => {
-    if (!chipsOpen) return;
+    if (!chipsOpen && !visOpen) return;
     function onMouseDown(e) {
       if (barRef.current && !barRef.current.contains(e.target)) {
         setChipsOpen(false);
+        setVisOpen(false);
       }
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [chipsOpen]);
+  }, [chipsOpen, visOpen]);
 
   function onExit() {
     setChipsOpen(false);
+    setVisOpen(false);
     if (pickFromReferenceMode) {
       // In pose, "× Exit" reads as Cancel — swap back, abandon picks.
       exitPickFromReference(false);
@@ -70,6 +75,11 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   function onApply(typeId) {
     applyTypeChange(typeId);
     setChipsOpen(false);
+  }
+
+  function onApplyVisibility(hidden) {
+    setHiddenForSelected(hidden);
+    setVisOpen(false);
   }
 
   function onApplyStaged() {
@@ -105,10 +115,19 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       {/* ── Apply cluster — left, adjacent to the entry-type column ── */}
       <button
         className="bulk-action-apply"
-        onClick={() => setChipsOpen((v) => !v)}
+        onClick={() => { setVisOpen(false); setChipsOpen((v) => !v); }}
         disabled={!hasSelection}
       >
         Change Type… {chipsOpen ? '▴' : '▾'}
+      </button>
+
+      <button
+        className="bulk-action-apply bulk-action-apply--visibility"
+        onClick={() => { setChipsOpen(false); setVisOpen((v) => !v); }}
+        disabled={!hasSelection}
+        title="Hide the selected entries from export, or show them again"
+      >
+        Set Visibility… {visOpen ? '▴' : '▾'}
       </button>
 
       {hasStaged && (
@@ -195,6 +214,27 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
               {t.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {visOpen && (
+        <div className="bulk-action-chips">
+          <button
+            className="bulk-type-chip"
+            style={{ '--type-color': 'var(--red)' }}
+            onClick={() => onApplyVisibility(true)}
+            title="Exclude the selected entries from every export"
+          >
+            Hidden
+          </button>
+          <button
+            className="bulk-type-chip"
+            style={{ '--type-color': 'var(--green)' }}
+            onClick={() => onApplyVisibility(false)}
+            title="Include the selected entries in exports again"
+          >
+            Shown
+          </button>
         </div>
       )}
     </div>

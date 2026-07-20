@@ -4,6 +4,10 @@
 
 ## 2026-07-20
 
+### Additions
+
+- **Bulk Hide / Show from Export in Select mode** — Select mode now has a **Set Visibility ▾** button next to Change Type. Tick a group of entries (or use Select All Visible), then choose **Hidden** or **Shown** to flip their Hide-from-Export state all at once, in a single undoable step. It sits right alongside the existing per-entry Hide button, which still works for one-off changes.
+
 ### Fixes
 
 - **The ＋ button and its menu are centered on mobile again** — on phones the floating ＋ button was drifting off-center (and landing on different sides in different browsers), which also threw its press-and-hold quick menu off-center. The button now sits a consistent gap from the right edge above the hotbar, and its quick menu opens neatly above it and stays fully on-screen instead of spilling off the side.

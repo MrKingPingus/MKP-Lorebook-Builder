@@ -36,12 +36,12 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 **Direction (2026-07-20):** Folded into the existing **Select** mode rather than a bespoke 4th search-bar mode. Select is already the generic "tick entries, do a bulk thing to them" surface, so visibility is just another bulk verb beside Change Type. This avoids a new `searchMode` enum value, a 4th dropdown option, generalizing the card select-predicate, and the store's mode-clear branch — all to re-implement machinery Select already has.
 
-- [ ] **`Set Visibility ▾` in the bulk bar** — a new expander in `BulkActionBar`, parallel to `Change Type… ▾`, opening a two-chip row (**Hidden / Shown**). Mirrors the Change-Type interaction exactly; keeps the bar compact on mobile (an expander, not two always-visible buttons).
-- [ ] **Bulk apply** — `setHiddenForSelected(bool)` in `use-bulk-actions.js`, a near-copy of `applyTypeChange`: one history snapshot, set `hiddenFromExport` on `selectedIds`, keep the selection so actions chain.
-- [ ] **Three scopes reuse Select's affordances** — group (multi-select → apply), global (Select All Visible → apply), individual (the existing per-card Hide button; no per-row staging, since it's a boolean and the button already covers the single-entry path).
-- [ ] **Additive** — the in-card Hide-from-Export button and the header hidden-entries popover stay untouched.
+- [x] **`Set Visibility ▾` in the bulk bar** — a new expander in `BulkActionBar`, parallel to `Change Type… ▾`, opening a two-chip row (**Hidden / Shown**). Mutually exclusive with the Change-Type chips (only one row open at a time). Neutral styling since hiding is reversible, vs. Change Type's red apply-to-all.
+- [x] **Bulk apply** — `setHiddenForSelected(bool)` in `use-bulk-actions.js`, a near-copy of `applyTypeChange`: one history snapshot, only entries that actually flip are touched (no-op = no snapshot), selection persists so actions chain.
+- [x] **Three scopes reuse Select's affordances** — group (multi-select → apply), global (Select All Visible → apply), individual (the existing per-card Hide button; no per-row staging, since it's a boolean and the button already covers the single-entry path).
+- [x] **Additive** — the in-card Hide-from-Export button and the header hidden-entries popover stay untouched.
 
-**Stop condition:** In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; the per-card Hide button still works.
+**Stop condition:** ✅ (verified 2026-07-20, browser-driven against the Reika fixture) In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; undo restores; the per-card Hide button still works.
 
 ### 10C — Color themes
 

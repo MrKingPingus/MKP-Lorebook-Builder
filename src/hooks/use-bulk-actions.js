@@ -51,6 +51,24 @@ export function useBulkActions() {
     clearStagedTypes();
   }
 
+  // Bulk set hiddenFromExport across the selection. Mirrors applyTypeChange:
+  // one history snapshot, only entries that actually flip are touched (so a
+  // no-op change is a true no-op with no snapshot), and the selection persists
+  // so the user can chain further bulk actions on the same set.
+  function setHiddenForSelected(hidden) {
+    if (selectedIds.size === 0) return;
+    const hasWork = entries.some((e) => selectedIds.has(e.id) && !!e.hiddenFromExport !== hidden);
+    if (!hasWork) return;
+    pushSnapshot({ entries: [...entries] });
+    const now = Date.now();
+    const updated = entries.map((e) =>
+      selectedIds.has(e.id) && !!e.hiddenFromExport !== hidden
+        ? { ...e, hiddenFromExport: hidden, lastModified: now }
+        : e
+    );
+    updateActiveEntries(updated);
+  }
+
   // Copy the selected entries from the side they were clicked on to the other
   // panel's lorebook. Clones get fresh ids and zeroed snapshots. We only push
   // a history snapshot when the destination is the active book, since the
@@ -85,5 +103,5 @@ export function useBulkActions() {
     clearSelection();
   }
 
-  return { applyTypeChange, applyStagedTypes, copyToOtherPanel };
+  return { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected };
 }

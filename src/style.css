@@ -1472,6 +1472,18 @@ img.logo-icon {
   background: #d69e2e;
 }
 
+/* Set Visibility — neutral treatment (not the red apply-to-all look of Change
+   Type) since hiding from export is a reversible, non-destructive toggle. */
+.bulk-action-apply--visibility {
+  background: var(--surface3);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+.bulk-action-apply--visibility:hover:not(:disabled) {
+  background: var(--border);
+  border-color: var(--border2);
+}
+
 /* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
 .bulk-action-chips {
   flex: 1 0 100%;
