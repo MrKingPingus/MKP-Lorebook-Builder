@@ -25,6 +25,7 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 - [x] **Per-entry "Public" toggle** — Public/Private button beside Hide-from-Export in the desktop `EntryCard` and mobile `EntryDetailPanel` footers; discrete and individually undoable. _(commit 244a932)_
 - [x] **"Make All Entries Public"** — shipped as the `make_all_public` hotbar action (one history snapshot; appears in the FAB quick-menu, pinnable). Can also be surfaced in the top bar / 10B Export Visibility mode later if a more prominent placement is wanted.
 - [x] **Update the template** — the JSON template download and copy-to-clipboard now flow through the CharSnap-shaped exporter, so both emit the new shape. (TXT/DOCX templates are a separate human-readable format, unaffected by the CharSnap JSON fields.)
+- [x] **"All Private" companion** — `make_all_private` hotbar action added 2026-07-19; mirrors All Public in the opposite direction, per user request.
 - [ ] **Verify hand-made JSON import** — the #102 reporter noted hand-made JSONs "wouldn't import." Most likely malformed JSON rejected by `JSON.parse` (trailing commas / comments / smart quotes) rather than a schema issue, since the importer is otherwise lenient. Needs the reporter's actual file to reproduce; left open pending that.
 
 **Stop condition:** The attached sample imports with every entry's type and `isPublic` intact; export produces CharSnap-shaped JSON that re-imports identically; per-entry Public toggle and Make-All-Public both work and snapshot to history.
@@ -76,7 +77,8 @@ An ongoing pass to find and sand down points of friction, rather than a single f
 
 ### Candidate features
 
-**Export action on the hotbar (with a floating format menu)**
+**✅ Export action on the hotbar (with a floating format menu) — shipped 2026-07-19**
+Implemented as the `make_export` hotbar action: a floating `ExportMenu.jsx` anchored above whichever button triggered it (a hotbar slot or the FAB-menu item), with a filename field (pre-filled from the book name) and JSON / TXT / DOCX / Copy-JSON. The click event is threaded through `execute()` so the resolver can anchor to the button rect; open/close lives in `exportMenuAnchor` on `ui-store`. ZIP was omitted (not a single-book export path). Original design note:
 A hotbar-registrable **Export** action that opens a small floating menu anchored above wherever the button sits on the hotbar (same pattern as `FabQuickMenu`). The menu asks two things and exports in one step:
 - **Format** — JSON / TXT / DOCX / ZIP (the existing export formats)
 - **Title** — the export filename (defaults to the lorebook name; filename-override plumbing already exists in `use-export.js` / the Export panel)
