@@ -22,6 +22,7 @@ export const useUiStore = create((set) => ({
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
   showLander:       true,        // true on every page load; dismissed when user enters the builder
   showAppendImport: false,       // true when footer "Import Entries" overlay is open
+  exportMenuAnchor: null,        // {top,left,right,bottom,width} rect of the hotbar button that opened the floating Export menu; null = closed
   activeEntryId:        null,  // mobile entry detail panel — id of the entry being edited, or null
   searchFocusedId:      null,  // entry id forced-expanded by search navigation; null = no override
   pendingFocusEntryId:       null,   // id of newly-created entry that should receive auto-focus; cleared once consumed
@@ -100,6 +101,8 @@ export const useUiStore = create((set) => ({
   setSavedAt:          (savedAt)          => set({ savedAt }),
   setShowLander:       (showLander)       => set({ showLander }),
   setShowAppendImport: (showAppendImport) => set({ showAppendImport }),
+  openExportMenu:  (rect) => set({ exportMenuAnchor: rect }),
+  closeExportMenu: ()     => set({ exportMenuAnchor: null }),
   setActiveEntryId:        (activeEntryId)        => set({ activeEntryId }),
   setPendingFocusEntryId:       (pendingFocusEntryId)       => set({ pendingFocusEntryId }),
   setPendingFocusLorebookName:  (pendingFocusLorebookName)  => set({ pendingFocusLorebookName }),

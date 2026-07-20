@@ -47,7 +47,10 @@ export function useExport() {
   }
 
   async function copyJsonTemplate() {
-    await navigator.clipboard.writeText(JSON.stringify(TEMPLATE_LOREBOOK, null, 2));
+    // Route through exportToJsonBlob so the copied template matches the downloaded
+    // template's CharSnap shape (entryType labels, isPublic, keyed-object entries).
+    const text = await exportToJsonBlob(TEMPLATE_LOREBOOK).text();
+    await navigator.clipboard.writeText(text);
   }
 
   async function copyTxtTemplate() {

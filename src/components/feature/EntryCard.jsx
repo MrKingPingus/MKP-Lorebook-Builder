@@ -649,6 +649,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 : 'Enable entry history?'}
             </button>
             <button
+              className={`entry-public-btn${entry.isPublic === false ? ' entry-public-btn--private' : ''}`}
+              onClick={() => update({ isPublic: entry.isPublic === false }, true)}
+              title={entry.isPublic === false ? 'Private on CharSnap — click to make public' : 'Public on CharSnap — click to make private'}
+            >
+              {entry.isPublic === false ? 'Private' : 'Public'}
+            </button>
+            <button
               className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
               onClick={() => update({ hiddenFromExport: !entry.hiddenFromExport }, true)}
               title="Exclude entry from JSON export"

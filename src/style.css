@@ -502,52 +502,199 @@ img.logo-icon {
   border-radius: var(--radius-lg);
   box-shadow: 0 6px 24px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
   z-index: 200;
-  min-width: 160px;
+  align-items: center;
+  /* Size to content (one row) but cap to the window width (set inline from the
+     measured hotbar width; the vw value is a fallback) so chips wrap to 2–3
+     rows on narrow windows instead of overflowing. */
+  width: max-content;
+  max-width: 92vw;
   animation: fab-quick-menu-fade-in 0.14s ease-out;
 }
 @keyframes fab-quick-menu-fade-in {
   from { opacity: 0; transform: translate(-50%, 6px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
-.fab-quick-menu-item {
+.fab-quick-menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+.fab-quick-menu-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius);
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  text-align: left;
+  white-space: nowrap;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
 }
-.fab-quick-menu-item:hover:not(:disabled) {
+.fab-quick-menu-chip:hover:not(:disabled) {
   background: var(--surface3);
   border-color: var(--border);
 }
-.fab-quick-menu-item:disabled {
-  opacity: 0.4;
+.fab-quick-menu-chip:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
-.fab-quick-menu-item--active {
+.fab-quick-menu-chip--active {
   background: rgba(96, 165, 250, 0.16);
   border-color: var(--passive-agree);
 }
-.fab-quick-menu-icon {
-  width: 18px;
+/* While pinning (a slot is armed), chips read as assignable. */
+.fab-quick-menu-chip--assign:not(:disabled):hover {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: var(--passive-agree);
+}
+.fab-quick-menu-chip-icon {
+  width: 16px;
   text-align: center;
-  font-size: 14px;
   color: var(--muted2);
   flex-shrink: 0;
 }
-.fab-quick-menu-item:hover:not(:disabled) .fab-quick-menu-icon { color: var(--text); }
-.fab-quick-menu-item--active .fab-quick-menu-icon { color: var(--passive-agree); }
-.fab-quick-menu-label {
+.fab-quick-menu-chip:hover:not(:disabled) .fab-quick-menu-chip-icon { color: var(--text); }
+.fab-quick-menu-chip--active .fab-quick-menu-chip-icon { color: var(--passive-agree); }
+
+/* "Add to hotbar" pin flow — centered footer (over the FAB) + the real hotbar
+   slots act as drop targets. */
+.fab-quick-menu-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+.fab-quick-menu-hint {
+  font-size: 11px;
+  color: var(--muted2);
+}
+.fab-quick-menu-add,
+.fab-quick-menu-done {
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.fab-quick-menu-add {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--muted2);
+}
+.fab-quick-menu-add:hover { color: var(--text); border-color: var(--border2); }
+.fab-quick-menu-done {
+  background: var(--passive-agree);
+  border: 1px solid var(--passive-agree);
+  color: #fff;
+}
+.fab-quick-menu-done:hover {
+  background: var(--passive-agree-hover);
+  border-color: var(--passive-agree-hover);
+}
+/* Real hotbar slots become armable drop targets while pinning. */
+.footer-btn.hotbar-slot--target {
+  border-style: dashed;
+  border-color: var(--passive-agree);
+}
+.footer-btn.hotbar-slot--armed {
+  border-style: solid;
+  border-color: var(--passive-agree);
+  background: rgba(96, 165, 250, 0.18);
+  color: var(--text);
+}
+.footer-btn.hotbar-slot--empty-target {
+  color: var(--muted2);
+  opacity: 0.92;
+}
+
+/* Floating Export menu — anchored above the hotbar button that opened it
+   (position/left/bottom set inline from the anchor rect). Shares the FAB
+   quick-menu surface treatment; buttons stay neutral like the Export panel. */
+.export-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 24px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+  z-index: 200;
+}
+.export-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.export-menu-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.export-menu-close {
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.export-menu-close:hover { color: var(--text); }
+.export-menu-field-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: -4px;
+}
+.export-menu-input {
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+}
+.export-menu-input:focus {
+  outline: none;
+  border-color: var(--focus-border);
+}
+.export-menu-formats {
+  display: flex;
+  gap: 6px;
+}
+.export-menu-btn {
   flex: 1;
+  padding: 6px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
   white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.export-menu-btn:hover {
+  background: var(--border);
+  border-color: var(--border2);
+}
+.export-menu-btn--outline {
+  background: transparent;
+  color: var(--muted2);
+}
+.export-menu-btn--outline:hover {
+  background: var(--surface3);
+  color: var(--text);
 }
 
 /* ============================================================
@@ -3901,6 +4048,40 @@ kbd {
   background: var(--yellow);
   color: #000;
   border-color: var(--yellow);
+}
+
+/* Per-entry CharSnap visibility (isPublic). Neutral when public (the default
+   state); blue when the entry is held back as private, mirroring the
+   hide-from-export button's "exception is highlighted" idiom. */
+.entry-public-btn {
+  margin-left: auto;
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.entry-public-btn:hover {
+  background: var(--border);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.entry-public-btn--private {
+  border-color: var(--passive-agree);
+  color: var(--passive-agree);
+}
+.entry-public-btn--private:hover {
+  background: var(--passive-agree);
+  color: #fff;
+  border-color: var(--passive-agree);
+}
+/* Public + Hide cluster at the right; Public consumes the auto gap and Hide
+   follows it at the row's 6px gap (Hide's own auto margin is neutralized). */
+.entry-public-btn + .hide-from-export-btn {
+  margin-left: 0;
 }
 
 /* Push entry → reference copy button (mobile entry detail footer). Visually

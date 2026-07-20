@@ -1,10 +1,11 @@
 // Unified hotbar — 3 configurable slots, pinned + FAB, 3 configurable slots; renders on both platforms
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useHotbarActions } from '../../hooks/use-hotbar-actions.js';
 import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useSettings }      from '../../hooks/use-settings.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
+import { ExportMenu }       from '../feature/ExportMenu.jsx';
 import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
 
 const FAB_SIZES = { small: 44, medium: 54, large: 64 };
@@ -15,18 +16,35 @@ const FAB_SIZES = { small: 44, medium: 54, large: 64 };
 const HOVER_OPEN_MS  = 200;
 const HOVER_CLOSE_MS = 200;
 
-function HotbarSlot({ action }) {
+function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, onArm }) {
+  // While the "Add to hotbar" pin flow is active, every slot (filled or empty)
+  // is an armable drop target — clicking arms it rather than running its action.
+  if (pinMode) {
+    const label = action ? action.descriptor.label : 'Empty';
+    const icon  = action ? action.descriptor.icon : '+';
+    return (
+      <button
+        className={`footer-btn hotbar-slot--target${armed ? ' hotbar-slot--armed' : ''}${action ? '' : ' hotbar-slot--empty-target'}`}
+        onClick={() => onArm?.(slotIndex)}
+        title={action ? `${label} — click to arm, then pick an action to replace it` : 'Empty slot — click to arm, then pick an action'}
+      >
+        <span className="hotbar-slot-icon">{icon} </span>
+        <span className="hotbar-slot-text">{label}</span>
+      </button>
+    );
+  }
+
   if (!action) {
     return <div className="hotbar-slot hotbar-slot--empty" aria-hidden="true" />;
   }
 
   const { descriptor, execute, disabled, active } = action;
 
-  function handleClick() {
+  function handleClick(e) {
     if (descriptor.confirm) {
       if (!window.confirm(descriptor.confirm)) return;
     }
-    execute();
+    execute(e);
   }
 
   // A boolean `active` (true OR false) marks this as a stateful toggle, so it
@@ -51,13 +69,31 @@ export function Hotbar() {
   const { slots, addEntry, allActions } = useHotbarActions();
   const isMobile                        = useMobile();
   const activeMenuPanel                 = useUi((s) => s.activeMenuPanel);
-  const { fabSize, fabCustomSize, fabQuickMenuEnabled } = useSettings();
+  const { fabSize, fabCustomSize, fabQuickMenuEnabled, hotbarSlots, setHotbarSlots } = useSettings();
 
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+  // "Add to hotbar" pin flow: while active, the real hotbar slots become
+  // armable drop targets and the menu stays open regardless of hover.
+  const [pinMode,   setPinMode]   = useState(false);
+  const [armedSlot, setArmedSlot] = useState(null);
+  const [barWidth,  setBarWidth]  = useState(0);
+  const hotbarRef            = useRef(null);
   const openTimerRef         = useRef(null);
   const closeTimerRef        = useRef(null);
   const longPressTimerRef    = useRef(null);
   const suppressNextClickRef = useRef(false);
+
+  // Track the hotbar's width so the quick-menu caps itself to the window (not
+  // the viewport) and wraps its chips to 2–3 rows on narrow windows.
+  useEffect(() => {
+    const el = hotbarRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const update = () => setBarWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const leftSlots  = slots.slice(0, 3);
   const rightSlots = slots.slice(3, 6);
@@ -89,6 +125,7 @@ export function Hotbar() {
   function onFabMouseLeave() {
     if (isMobile || !fabQuickMenuEnabled) return;
     clearTimeout(openTimerRef.current);
+    if (pinMode) return;
     closeTimerRef.current = setTimeout(() => setQuickMenuOpen(false), HOVER_CLOSE_MS);
   }
   function onMenuMouseEnter() {
@@ -97,6 +134,7 @@ export function Hotbar() {
   }
   function onMenuMouseLeave() {
     if (isMobile) return;
+    if (pinMode) return;
     closeTimerRef.current = setTimeout(() => setQuickMenuOpen(false), HOVER_CLOSE_MS);
   }
 
@@ -126,16 +164,29 @@ export function Hotbar() {
     addEntry();
   }
 
+  function enterPin() { setPinMode(true); setArmedSlot(null); }
+  function exitPin()  { setPinMode(false); setArmedSlot(null); }
+
+  function assignToArmed(actionId) {
+    if (armedSlot == null) return;
+    const next = [...hotbarSlots];
+    next[armedSlot] = actionId;
+    setHotbarSlots(next);
+    setArmedSlot(null); // ready to arm the next slot
+  }
+
   function closeMenu() {
     clearTimers();
     setQuickMenuOpen(false);
+    setPinMode(false);
+    setArmedSlot(null);
   }
 
   return (
-    <div className="hotbar">
+    <div className="hotbar" ref={hotbarRef}>
       <div className="hotbar-group">
         {leftSlots.map((action, i) => (
-          <HotbarSlot key={`left-${i}`} action={action} />
+          <HotbarSlot key={`left-${i}`} action={action} slotIndex={i} pinMode={pinMode} armed={armedSlot === i} onArm={setArmedSlot} />
         ))}
       </div>
 
@@ -162,15 +213,23 @@ export function Hotbar() {
             onClose={closeMenu}
             onMouseEnter={onMenuMouseEnter}
             onMouseLeave={onMenuMouseLeave}
+            menuMaxWidth={barWidth ? Math.max(180, barWidth - 24) : undefined}
+            pinMode={pinMode}
+            armedSlot={armedSlot}
+            onEnterPin={enterPin}
+            onExitPin={exitPin}
+            onAssign={assignToArmed}
           />
         )}
       </div>
 
       <div className="hotbar-group hotbar-group--right">
         {rightSlots.map((action, i) => (
-          <HotbarSlot key={`right-${i}`} action={action} />
+          <HotbarSlot key={`right-${i}`} action={action} slotIndex={i + 3} pinMode={pinMode} armed={armedSlot === i + 3} onArm={setArmedSlot} />
         ))}
       </div>
+
+      <ExportMenu />
     </div>
   );
 }

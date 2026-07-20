@@ -8,9 +8,101 @@ MKP Lorebook Builder is a browser-only SPA for authoring AI lorebooks — struct
 
 ---
 
+## Phase 10 — CharSnap Parity, Export Control, Themes & Accessibility
+
+**Context:** First batch after a development pause (planned 2026-07-19). Four independently-shippable sub-phases, worked in order **A → B → C → D**. 10A is a live-bug fix and the natural re-entry point; each later sub-phase ships as its own batch so it can be tested in isolation (same philosophy as Polish Pass 5). The builder targets **CharSnap (CS)** specifically, so JSON parity with the CharSnap format is a first-class goal.
+
+### 10A — CharSnap JSON Parity (fixes #102)
+
+**Goal:** JSON round-trips losslessly against the CharSnap format. Clears the reported "all entries import as Character" bug (#102).
+
+Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; CharSnap's format and the current template use **`entryType`**, so every entry fell through to `DEFAULT_TYPE` ('character'). The *values* already normalize correctly — only the field name was missed.
+
+- [x] **Import reads `entryType`** — added `entryType` (+ PascalCase variants) to the type alias chain in `normalizeEntry` (`json-import.js`), with `type` kept as a fallback so older app-exported books still import. Clears #102. _(commit 5c0109c)_
+- [x] **Export emits the CharSnap shape** — `json-export.js` writes `entryType` labels (not the internal `type` id) and serialises `entries` as a **keyed object** (`{"1": {...}}`); only CharSnap fields are emitted. Verified byte-shape-identical to the sample template.
+- [x] **`isPublic` round-trips** — `isPublic` added to `DEFAULT_ENTRY` (default `true`, confirmed 2026-07-19), read on import, written on export.
+- [x] **Field set is fully modeled** — CharSnap confirmed the sample's fields (`name`, `triggers`, `description`, `entryType`, `isPublic`) are the complete set, so every field is modeled explicitly; no unknown-field passthrough needed.
+- [x] **Per-entry "Public" toggle** — Public/Private button beside Hide-from-Export in the desktop `EntryCard` and mobile `EntryDetailPanel` footers; discrete and individually undoable. _(commit 244a932)_
+- [x] **"Make All Entries Public"** — shipped as the `make_all_public` hotbar action (one history snapshot; appears in the FAB quick-menu, pinnable). Can also be surfaced in the top bar / 10B Export Visibility mode later if a more prominent placement is wanted.
+- [x] **Update the template** — the JSON template download and copy-to-clipboard now flow through the CharSnap-shaped exporter, so both emit the new shape. (TXT/DOCX templates are a separate human-readable format, unaffected by the CharSnap JSON fields.)
+- [x] **"All Private" companion** — `make_all_private` hotbar action added 2026-07-19; mirrors All Public in the opposite direction, per user request.
+- [ ] **Verify hand-made JSON import** — the #102 reporter noted hand-made JSONs "wouldn't import." Most likely malformed JSON rejected by `JSON.parse` (trailing commas / comments / smart quotes) rather than a schema issue, since the importer is otherwise lenient. Needs the reporter's actual file to reproduce; left open pending that.
+
+**Stop condition:** The attached sample imports with every entry's type and `isPublic` intact; export produces CharSnap-shaped JSON that re-imports identically; per-entry Public toggle and Make-All-Public both work and snapshot to history.
+
+### 10B — Export Visibility mode (Hide from Export)
+
+**Goal:** Hide-from-Export is discoverable and works in bulk.
+
+- [ ] **Fourth bar mode** — "Export Visibility" added below "Select" in the search-mode dropdown (`SearchBar.jsx`), behaving like Select (enters a bulk toolbar).
+- [ ] **Bulk hide/show** — reuse the `BulkActionBar` / selection pattern to toggle `hiddenFromExport` across selected entries (Hide Selected / Show Selected), with Select-All-Visible / Deselect.
+- [ ] **Additive, not a replacement** — the in-card Hide-from-Export button and the header hidden-entries popover stay.
+- [ ] Optional: an in-mode filter to show only currently-hidden entries.
+
+**Stop condition:** User can enter Export Visibility mode from the dropdown, multi-select entries, and bulk hide/show them.
+
+### 10C — Color themes
+
+**Goal:** Switch among stock themes and build a custom one.
+
+Foundation is solid: the whole palette is ~15 CSS custom properties in one `:root` block (`style.css:21–51`). Stock themes = alternate token sets; custom = user values persisted to `settings-store`, injected as inline vars. Decision (2026-07-19): **do all three tiers in one pass.**
+
+- [ ] **Theme mechanism** — a `data-theme` attribute/class on the app root selects a stock palette; `settings-store` gains a `theme` field, applied on boot.
+- [ ] **Stock dark themes** — a handful of curated dark palettes (low risk).
+- [ ] **Light / high-contrast theme** — needs an audit for hardcoded dark-assumption colors (shadows, inline hex bypassing tokens). High-contrast doubles as the accessibility theme (feeds 10D).
+- [ ] **Custom theme editor** — settings UI to set core tokens, validate contrast, persist as inline `:root` overrides.
+- [ ] **Entry-type dot colors stay in `entry-types.js`** and are untouched, *except* an opt-in override available only in custom mode (default: dots unchanged).
+
+**Stop condition:** User can pick a stock dark theme, switch to light/high-contrast, and define + persist a custom theme (optionally overriding entry-type dot colors).
+
+### 10D — Accessibility section
+
+**Goal:** A dedicated Accessibility section in Settings covering scale, motion, contrast, and hotkeys.
+
+- [ ] **New Settings → Accessibility accordion section.**
+- [ ] **Font / UI scale** — the CSS is ~274 px-based font-sizes vs. 1 rem, so scaling can't be a root-size toggle. Robust path: mechanical px→rem conversion + a root scale multiplier (3–4 steps, e.g. 90 / 100 / 110 / 125 %). Avoid `zoom` / `transform: scale` wrappers — they break this app's fixed-position portals, draggable/resizable window, and `getClientRects` diff overlays. Budget as a real pass, not a toggle.
+- [ ] **Reduced motion** — a toggle (and honouring `prefers-reduced-motion`) that disables smooth-scroll and CSS transitions.
+- [ ] **High-contrast** — surfaced here, backed by the 10C high-contrast theme.
+- [ ] **Move Hotkeys under Accessibility** — relocate the existing Hotkeys accordion into this section and fold in the "Hotkey & ESC Roadmap" work (wider set of configurable actions + a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals).
+
+**Stop condition:** Settings has an Accessibility section; font/UI scale visibly resizes the app; reduced-motion and high-contrast toggles work; hotkeys are configured from within this section.
+
+**Estimated Complexity:** 10A Low · 10B Low–Medium · 10C Medium · 10D Medium–High
+
+---
+
+## Workflow Overhaul (initiative)
+
+An ongoing pass to find and sand down points of friction, rather than a single feature. Goal: make the common authoring loops — especially import/export and hotbar customization — fast and obvious. Kicked off 2026-07-19. New friction points get logged below as they surface; concrete fixes graduate into a phase when picked up.
+
+### Candidate features
+
+**✅ Export action on the hotbar (with a floating format menu) — shipped 2026-07-19**
+Implemented as the `make_export` hotbar action: a floating `ExportMenu.jsx` anchored above whichever button triggered it (a hotbar slot or the FAB-menu item), with a filename field (pre-filled from the book name) and JSON / TXT / DOCX / Copy-JSON. The click event is threaded through `execute()` so the resolver can anchor to the button rect; open/close lives in `exportMenuAnchor` on `ui-store`. ZIP was omitted (not a single-book export path). Original design note:
+A hotbar-registrable **Export** action that opens a small floating menu anchored above wherever the button sits on the hotbar (same pattern as `FabQuickMenu`). The menu asks two things and exports in one step:
+- **Format** — JSON / TXT / DOCX / ZIP (the existing export formats)
+- **Title** — the export filename (defaults to the lorebook name; filename-override plumbing already exists in `use-export.js` / the Export panel)
+
+Today export lives only inside the Import/Export menu panel; this surfaces it as a one-click hotbar action so exporting doesn't require opening the menu. Reuses `useExport()` and the existing format/filename logic. New: a hotbar descriptor + resolver (`hotbar-actions.js`, `use-hotbar-actions.js`) and a small anchored menu component modeled on `FabQuickMenu`.
+
+**✅ Add-to-hotbar quick action (from the FAB menu) — shipped 2026-07-19**
+The FAB quick-menu is a compact **horizontal** row of action chips with a centered **"Add to hotbar"** button above the FAB (redesigned 2026-07-19 from an earlier tall vertical menu + L1–R3 sub-grid). Pressing Add to hotbar starts the pin flow: the **real hotbar slots** become armable drop targets — click a slot to arm it (filled or empty), then click an action chip to drop it in. Writes via `setHotbarSlots`; the menu stays open ("sticky") while pinning. The menu sizes to content and caps to the measured hotbar width (ResizeObserver), wrapping to 2–3 rows on narrow windows instead of overflowing. **Also changed the default hotbar layout** to Import · (empty) · Undo | Redo · (empty) · Export — Clear All dropped from the default as too niche. Existing saved layouts are untouched.
+
+### Friction Log
+
+Running list of rough edges to evaluate for the overhaul. Add items as they surface; listing implies no commitment.
+
+- Export is buried in the Import/Export menu panel — no quick surface. _(→ Export hotbar action above)_
+- Customizing the hotbar requires a trip through Settings. _(→ add-to-hotbar quick action above)_
+- _(add more as they surface)_
+
+---
+
 ## Phase 9 — Global Features
 
 **Goal:** The app can show two lorebooks side by side for congruency-checking, lateral search, and lateral find & replace. Users have a dedicated planner for drafting future entries.
+
+> **Update (2026-07-19):** Phase 9's two remaining open items — the **Entry Planner** and the **Mobile crosstalk redesign** — are parked and moved to Future Features (see below). The planner is intentionally deprioritized. Everything else in Phase 9 shipped.
 
 ### Design: Active + Reference
 
@@ -43,7 +135,7 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 - [x] **Cross-match sort modes** — `'cross-match-first'` and `'cross-match-last'` partition entries by name overlap with the paired reference book; available in the sort dropdown only when crosstalk is active. Group-by-type is auto-suppressed in these modes so the partition isn't re-bucketed.
 - [x] **Crosstalk swap mode setting** — `crosstalkSwapMode`: `'click-to-edit'` (default; clicking the reference pane swaps roles AND visually swaps panes), `'fixed-active-left'`, `'fixed-active-right'` (panes pinned to columns; a `Swap` button next to the active picker trades books between roles).
 - [x] Menu toggle to show/hide the reference panel (Settings → "Show reference panel"; replaces the development-only `?crosstalk=1` query gate)
-- [ ] **Mobile crosstalk redesign** — replaces the broken side-by-side layout on mobile with an overlay/annotation model. Anchor never moves without explicit gesture; reference content surfaces as inline annotations on active entries and one-deep peek overlays. Multi-select pull uses a temporary "pose" against the existing Select mode. Full plan and phasing in `docs/mobile-crosstalk-plan.md`.
+- [ ] **Mobile crosstalk redesign** _(parked → Future Features)_ — replaces the broken side-by-side layout on mobile with an overlay/annotation model. Anchor never moves without explicit gesture; reference content surfaces as inline annotations on active entries and one-deep peek overlays. Multi-select pull uses a temporary "pose" against the existing Select mode. Full plan and phasing in `docs/mobile-crosstalk-plan.md`.
 
 **Settings Panel Reorganisation:**
 - [x] Settings panel grouped into four collapsible accordion sections — **Editing & Entries**, **Reference & Crosstalk**, **Window & Layout**, **Hotkeys** — to declutter the long flat list. Editing & Entries is open by default.
@@ -51,7 +143,7 @@ Store impact is one new field on `lorebook-store` (`referenceLorebookId`). Every
 **Rollback Diff Highlighting:**
 - [x] `RollbackPanel` snapshot preview now has a "Highlight Differences" toggle wired to `diff-service.js`. When on, the preview shows a "● modified" dot beside each changed field label, the description renders inline `add`/`del` segments (green / red strikethrough), and triggers show common chips in neutral, added in green, removed in red strikethrough. A header chip reports the count of changed fields.
 
-**Entry Planner:**
+**Entry Planner — parked (deprioritized → Future Features):**
 - [ ] Planner panel — dedicated panel for notes and planned entry stubs; separate from the build panel
 - [ ] Entry stub creation — converts a planner note into a blank entry shell in the active lorebook
 - [ ] Stub filter on build page — filter toggle to show only entries created from stubs that have not been fully authored yet
@@ -112,6 +204,16 @@ A phased polishing sweep covering renames, select-mode upgrades, import-flow fix
 ## Future Features
 
 Features noted here are not assigned to a phase. They are documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
+
+---
+
+**Entry Planner (parked from Phase 9)**
+Dedicated panel for notes and planned entry stubs, separate from the build panel; convert a planner note into a blank entry shell; a build-page filter to show only unfilled stubs. Deprioritized 2026-07-19 — a fun feature, but it keeps sliding down the list behind core functionality. The smart-assistance extension (proper-noun scanning via `scan-service.js`) remains catalogued separately below. Revisit once the Phase 10 parity/themes/accessibility work is done.
+
+---
+
+**Mobile crosstalk redesign (parked from Phase 9)**
+Replaces the broken side-by-side layout on mobile with an overlay/annotation model. Anchor never moves without explicit gesture; reference content surfaces as inline annotations on active entries and one-deep peek overlays. Multi-select pull uses a temporary "pose" against the existing Select mode. Full plan and phasing in `docs/mobile-crosstalk-plan.md`. Parked 2026-07-19 pending renewed focus on crosstalk.
 
 ---
 

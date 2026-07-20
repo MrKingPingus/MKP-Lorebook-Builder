@@ -2,6 +2,24 @@
 
 ---
 
+## 2026-07-19
+
+### Fixes
+
+- **Imported entry types are preserved again** — importing a JSON lorebook now reads the `entryType` field used by CharSnap (and the current template), so entries keep their real types instead of all arriving as "Character." Older books saved with the previous `type` field still import correctly, so nothing you exported before breaks.
+
+### Additions
+
+- **Export matches the CharSnap format** — exported JSON now uses CharSnap's exact shape (numbered entries, `entryType`, and an `isPublic` flag). A book you export drops straight back into CharSnap and re-imports here without losing types or visibility. Downloaded and copied templates use the same format.
+- **Public / Private per entry** — each entry has a new Public/Private toggle (next to "Hide from Export") that sets its `isPublic` state for CharSnap. New entries default to Public.
+- **"All Public" one-click action** — a new hotbar action (also in the ＋ button's quick menu) flips every entry in the book to Public in a single, undoable step — handy right before an export.
+- **"All Private" companion** — a matching hotbar action that flips every entry to Private in one undoable step, for when you want to pull a whole book back from public.
+- **Export from the hotbar** — a new **Export** action can be pinned to the hotbar (or used from the ＋ quick menu). It opens a small floating menu right above the button where you set the filename and pick a format (JSON / TXT / DOCX) or copy JSON — so exporting no longer means opening the Import/Export panel.
+- **Redesigned ＋ quick menu + add actions to the hotbar** — the ＋ button's pop-up menu is now a compact **horizontal** bar of actions (it wraps to a couple of rows on a narrow window) instead of a tall list. It also has an **"Add to hotbar"** button in the middle: press it, click the hotbar slot you want to fill, then click an action — perfect for dropping Export, Undo, or anything else exactly where you want it, without opening Settings.
+- **New default hotbar layout** — a fresh setup now shows Import · (empty) · Undo on the left and Redo · (empty) · Export on the right. Clear All is no longer on the hotbar by default (it's niche — you can still pin it anytime). If you've already customized your hotbar, your layout is left as-is.
+
+---
+
 ## 2026-07-17
 
 ### Additions

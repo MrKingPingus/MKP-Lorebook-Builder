@@ -18,7 +18,9 @@ export const DEFAULT_SETTINGS = {
   redoHotkey:               'y',
   triggerDelimiter:         ',',
   // 6 hotbar slots: 3 left of FAB, 3 right. null = empty slot.
-  hotbarSlots:              ['undo', 'redo', 'clear_entries', 'append_import', null, null],
+  // Layout: [Left1, Left2, Left3, Right1, Right2, Right3]
+  //   Left:  Import · (empty) · Undo   |   Right: Redo · (empty) · Export
+  hotbarSlots:              ['append_import', null, 'undo', 'redo', null, 'make_export'],
   // Entry type selector style in the mobile detail panel
   entryTypeView:            'dropdown',  // 'dropdown' | 'buttons'
   // FAB (+ button) size
@@ -56,6 +58,7 @@ export const DEFAULT_ENTRY = {
   description:         '',
   lastModified:        null,
   ignoreLimitWarnings: { description: false, triggers: false },
+  isPublic:            true,   // CharSnap visibility flag; round-trips through JSON import/export
   hiddenFromExport:    false,  // when true, entry remains in builder but is excluded from all export formats
   snapshots:           [], // [{ name, type, description, triggers, timestamp, label }]
 };

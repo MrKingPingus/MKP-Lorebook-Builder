@@ -22,6 +22,24 @@ export const HOTBAR_ACTIONS = [
     confirm: 'Clear all entries? This can be undone.',
   },
   {
+    id:      'make_all_public',
+    label:   'All Public',
+    icon:    '◉',
+    title:   'Make all entries public on CharSnap (undoable)',
+  },
+  {
+    id:      'make_all_private',
+    label:   'All Private',
+    icon:    '○',
+    title:   'Make all entries private on CharSnap (undoable)',
+  },
+  {
+    id:      'make_export',
+    label:   'Export',
+    icon:    '⬆',
+    title:   'Export the book (pick format + filename)',
+  },
+  {
     id:      'append_import',
     label:   'Import Entries',
     icon:    '↓',
