@@ -85,8 +85,8 @@ A hotbar-registrable **Export** action that opens a small floating menu anchored
 
 Today export lives only inside the Import/Export menu panel; this surfaces it as a one-click hotbar action so exporting doesn't require opening the menu. Reuses `useExport()` and the existing format/filename logic. New: a hotbar descriptor + resolver (`hotbar-actions.js`, `use-hotbar-actions.js`) and a small anchored menu component modeled on `FabQuickMenu`.
 
-**Add-to-hotbar quick action (from the FAB menu)**
-An **"Add action to hotbar"** entry at the bottom of the FAB hover/long-press menu that lets the user pin any action to a hotbar slot in place, instead of walking through Settings. Interaction TBD — likely: pick the action, then pick a target slot (or drop into the first empty slot). Builds on the existing `hotbarSlots` schema in `settings-store`; the FAB menu already enumerates every action via `allActions`, so it's the natural host.
+**✅ Add-to-hotbar quick action (from the FAB menu) — shipped 2026-07-19**
+An **"Add to hotbar…"** entry at the bottom of the FAB quick-menu opens a pin flow: pick an action, then pick a slot from a 2-row L1–R3 grid (each slot shows its current action's icon). Writes via `setHotbarSlots`. The menu goes "sticky" (stays open through hover) while pinning so a mouse-leave doesn't abort the multi-step flow; reuses the click event already threaded through `execute()`. **Also changed the default hotbar layout** to Import · (empty) · Undo | Redo · (empty) · Export — Clear All dropped from the default as too niche. Existing saved layouts are untouched.
 
 ### Friction Log
 

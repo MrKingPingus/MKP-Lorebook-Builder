@@ -15,6 +15,8 @@
 - **"All Public" one-click action** — a new hotbar action (also in the ＋ button's quick menu) flips every entry in the book to Public in a single, undoable step — handy right before an export.
 - **"All Private" companion** — a matching hotbar action that flips every entry to Private in one undoable step, for when you want to pull a whole book back from public.
 - **Export from the hotbar** — a new **Export** action can be pinned to the hotbar (or used from the ＋ quick menu). It opens a small floating menu right above the button where you set the filename and pick a format (JSON / TXT / DOCX) or copy JSON — so exporting no longer means opening the Import/Export panel.
+- **Add actions to the hotbar without opening Settings** — the ＋ button's quick menu now has an **"Add to hotbar…"** option at the bottom. Tap it, pick an action, then tap a slot (Left 1–3 / Right 1–3) to pin it — perfect for dropping Export, Undo, or any other action exactly where you want it.
+- **New default hotbar layout** — a fresh setup now shows Import · (empty) · Undo on the left and Redo · (empty) · Export on the right. Clear All is no longer on the hotbar by default (it's niche — you can still pin it anytime). If you've already customized your hotbar, your layout is left as-is.
 
 ---
 
