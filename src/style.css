@@ -3803,12 +3803,30 @@ kbd {
     background: var(--surface);
   }
 
-  /* ── Hotbar: FAB floats above-right; equidistant 20px gap from right and above hotbar ── */
-  .footer-fab {
+  /* ── Hotbar: FAB floats above-right; equidistant 20px gap from right and above
+     hotbar. Float the WRAP (not the FAB) so the FAB stays in the wrap's flow and
+     the quick-menu — which anchors to the wrap — tracks with it. Anchoring the FAB
+     itself pulls it out of flow, collapsing the wrap to zero width mid-hotbar and
+     pushing both the FAB and its menu off-center. ── */
+  .footer-fab-wrap {
     position: absolute;
     right: 20px;
     bottom: calc(100% + 20px);
     z-index: 10;
+  }
+  /* The FAB floats at the right edge, so a menu centered on it would spill off
+     the right of the screen. Right-align it to the FAB and let it grow leftward
+     so it always stays on-screen. Own keyframe drops the translateX(-50%) the
+     centered desktop animation uses. */
+  .fab-quick-menu {
+    left: auto;
+    right: 0;
+    transform: none;
+    animation: fab-quick-menu-fade-in-mobile 0.14s ease-out;
+  }
+  @keyframes fab-quick-menu-fade-in-mobile {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .hotbar { justify-content: flex-start; gap: 0; }
   .hotbar-group,
