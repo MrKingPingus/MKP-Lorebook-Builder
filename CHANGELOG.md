@@ -7,6 +7,7 @@
 ### Additions
 
 - **Bulk Hide / Show from Export in Select mode** — Select mode now has a **Set Visibility ▾** button next to Change Type. Tick a group of entries (or use Select All Visible), then choose **Hidden** or **Shown** to flip their Hide-from-Export state all at once, in a single undoable step. It sits right alongside the existing per-entry Hide button, which still works for one-off changes.
+- **Bulk Public / Private in Select mode** — a matching **Set Public/Private ▾** button lets you flip the CharSnap Public/Private state of a whole selection at once (or all entries via Select All Visible), the same way — one undoable step. Complements the existing All Public / All Private hotbar actions and the per-entry toggle.
 
 ### Fixes
 

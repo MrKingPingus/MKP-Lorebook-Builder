@@ -40,6 +40,7 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 - [x] **Bulk apply** — `setHiddenForSelected(bool)` in `use-bulk-actions.js`, a near-copy of `applyTypeChange`: one history snapshot, only entries that actually flip are touched (no-op = no snapshot), selection persists so actions chain.
 - [x] **Three scopes reuse Select's affordances** — group (multi-select → apply), global (Select All Visible → apply), individual (the existing per-card Hide button; no per-row staging, since it's a boolean and the button already covers the single-entry path).
 - [x] **Additive** — the in-card Hide-from-Export button and the header hidden-entries popover stay untouched.
+- [x] **Bulk Public/Private companion** — the same Select-mode pattern drives a `Set Public/Private… ▾` expander (Public / Private chips) backed by `setPublicForSelected(bool)`, added 2026-07-20 per user request. Realises the "surface in Select mode" idea noted under 10A's Make-All-Public item; complements the global `make_all_public` / `make_all_private` hotbar actions with a selection-scoped path. The bar's three expanders share one `openPicker` state (mutually exclusive). Verified through real JSON export (isPublic round-trips: 5 → 7 → undo 5 → Public 5).
 
 **Stop condition:** ✅ (verified 2026-07-20, browser-driven against the Reika fixture) In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; undo restores; the per-card Hide button still works.
 

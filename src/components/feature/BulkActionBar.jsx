@@ -18,33 +18,31 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     selectAllVisible,
     exitSelectMode,
   } = useSelection();
-  const { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected } = useBulkActions();
+  const { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected, setPublicForSelected } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
-  const [chipsOpen, setChipsOpen] = useState(false);
-  // Visibility (Hide-from-Export) expander — mutually exclusive with the
-  // Change-Type chips so only one picker row is open at a time.
-  const [visOpen, setVisOpen] = useState(false);
+  // Which picker row (if any) is expanded: 'type' | 'visibility' | 'public'.
+  // Only one is ever open at a time — opening one closes the others.
+  const [openPicker, setOpenPicker] = useState(null);
+  const togglePicker = (name) => setOpenPicker((cur) => (cur === name ? null : name));
   const barRef = useRef(null);
 
-  // Close either chips row on outside click (clicks inside the bar — including on buttons — keep it open)
+  // Close the open chips row on outside click (clicks inside the bar — including on buttons — keep it open)
   useEffect(() => {
-    if (!chipsOpen && !visOpen) return;
+    if (!openPicker) return undefined;
     function onMouseDown(e) {
       if (barRef.current && !barRef.current.contains(e.target)) {
-        setChipsOpen(false);
-        setVisOpen(false);
+        setOpenPicker(null);
       }
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [chipsOpen, visOpen]);
+  }, [openPicker]);
 
   function onExit() {
-    setChipsOpen(false);
-    setVisOpen(false);
+    setOpenPicker(null);
     if (pickFromReferenceMode) {
       // In pose, "× Exit" reads as Cancel — swap back, abandon picks.
       exitPickFromReference(false);
@@ -54,12 +52,12 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   }
 
   function onEnterPick() {
-    setChipsOpen(false);
+    setOpenPicker(null);
     enterPickFromReference();
   }
 
   function onCommitPick() {
-    setChipsOpen(false);
+    setOpenPicker(null);
     exitPickFromReference(true);
   }
 
@@ -74,22 +72,27 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
 
   function onApply(typeId) {
     applyTypeChange(typeId);
-    setChipsOpen(false);
+    setOpenPicker(null);
   }
 
   function onApplyVisibility(hidden) {
     setHiddenForSelected(hidden);
-    setVisOpen(false);
+    setOpenPicker(null);
+  }
+
+  function onApplyPublic(makePublic) {
+    setPublicForSelected(makePublic);
+    setOpenPicker(null);
   }
 
   function onApplyStaged() {
     applyStagedTypes();
-    setChipsOpen(false);
+    setOpenPicker(null);
   }
 
   function onCopyToOtherPanel() {
     copyToOtherPanel();
-    setChipsOpen(false);
+    setOpenPicker(null);
   }
 
   // Existing cross-pane copy button. Desktop: shows when crosstalk paired.
@@ -115,19 +118,28 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       {/* ── Apply cluster — left, adjacent to the entry-type column ── */}
       <button
         className="bulk-action-apply"
-        onClick={() => { setVisOpen(false); setChipsOpen((v) => !v); }}
+        onClick={() => togglePicker('type')}
         disabled={!hasSelection}
       >
-        Change Type… {chipsOpen ? '▴' : '▾'}
+        Change Type… {openPicker === 'type' ? '▴' : '▾'}
       </button>
 
       <button
-        className="bulk-action-apply bulk-action-apply--visibility"
-        onClick={() => { setChipsOpen(false); setVisOpen((v) => !v); }}
+        className="bulk-action-apply bulk-action-apply--secondary"
+        onClick={() => togglePicker('public')}
+        disabled={!hasSelection}
+        title="Make the selected entries Public or Private on CharSnap"
+      >
+        Set Public/Private… {openPicker === 'public' ? '▴' : '▾'}
+      </button>
+
+      <button
+        className="bulk-action-apply bulk-action-apply--secondary"
+        onClick={() => togglePicker('visibility')}
         disabled={!hasSelection}
         title="Hide the selected entries from export, or show them again"
       >
-        Set Visibility… {visOpen ? '▴' : '▾'}
+        Set Visibility… {openPicker === 'visibility' ? '▴' : '▾'}
       </button>
 
       {hasStaged && (
@@ -202,7 +214,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
         × {pickFromReferenceMode ? 'Cancel' : 'Exit'}
       </button>
 
-      {chipsOpen && (
+      {openPicker === 'type' && (
         <div className="bulk-action-chips">
           {ENTRY_TYPES.map((t) => (
             <button
@@ -217,7 +229,28 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
         </div>
       )}
 
-      {visOpen && (
+      {openPicker === 'public' && (
+        <div className="bulk-action-chips">
+          <button
+            className="bulk-type-chip"
+            style={{ '--type-color': 'var(--muted2)' }}
+            onClick={() => onApplyPublic(true)}
+            title="Mark the selected entries Public on CharSnap"
+          >
+            Public
+          </button>
+          <button
+            className="bulk-type-chip"
+            style={{ '--type-color': 'var(--passive-agree)' }}
+            onClick={() => onApplyPublic(false)}
+            title="Mark the selected entries Private on CharSnap"
+          >
+            Private
+          </button>
+        </div>
+      )}
+
+      {openPicker === 'visibility' && (
         <div className="bulk-action-chips">
           <button
             className="bulk-type-chip"

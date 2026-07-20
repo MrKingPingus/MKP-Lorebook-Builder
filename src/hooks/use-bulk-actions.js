@@ -69,6 +69,24 @@ export function useBulkActions() {
     updateActiveEntries(updated);
   }
 
+  // Bulk set isPublic (CharSnap Public/Private) across the selection. Same
+  // shape as setHiddenForSelected. isPublic defaults to public, so an entry
+  // counts as public unless it's explicitly false.
+  function setPublicForSelected(makePublic) {
+    if (selectedIds.size === 0) return;
+    const isPub = (e) => e.isPublic !== false;
+    const hasWork = entries.some((e) => selectedIds.has(e.id) && isPub(e) !== makePublic);
+    if (!hasWork) return;
+    pushSnapshot({ entries: [...entries] });
+    const now = Date.now();
+    const updated = entries.map((e) =>
+      selectedIds.has(e.id) && isPub(e) !== makePublic
+        ? { ...e, isPublic: makePublic, lastModified: now }
+        : e
+    );
+    updateActiveEntries(updated);
+  }
+
   // Copy the selected entries from the side they were clicked on to the other
   // panel's lorebook. Clones get fresh ids and zeroed snapshots. We only push
   // a history snapshot when the destination is the active book, since the
@@ -103,5 +121,5 @@ export function useBulkActions() {
     clearSelection();
   }
 
-  return { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected };
+  return { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected, setPublicForSelected };
 }

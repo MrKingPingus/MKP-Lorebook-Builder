@@ -1472,14 +1472,15 @@ img.logo-icon {
   background: #d69e2e;
 }
 
-/* Set Visibility — neutral treatment (not the red apply-to-all look of Change
-   Type) since hiding from export is a reversible, non-destructive toggle. */
-.bulk-action-apply--visibility {
+/* Secondary bulk expanders (Set Public/Private, Set Visibility) — neutral
+   treatment (not the red apply-to-all look of Change Type) since both are
+   reversible, non-destructive toggles. */
+.bulk-action-apply--secondary {
   background: var(--surface3);
   color: var(--text);
   border: 1px solid var(--border2);
 }
-.bulk-action-apply--visibility:hover:not(:disabled) {
+.bulk-action-apply--secondary:hover:not(:disabled) {
   background: var(--border);
   border-color: var(--border2);
 }
