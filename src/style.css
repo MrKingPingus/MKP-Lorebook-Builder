@@ -502,123 +502,116 @@ img.logo-icon {
   border-radius: var(--radius-lg);
   box-shadow: 0 6px 24px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
   z-index: 200;
-  min-width: 160px;
+  align-items: center;
+  /* Size to content (one row) but cap to the window width (set inline from the
+     measured hotbar width; the vw value is a fallback) so chips wrap to 2–3
+     rows on narrow windows instead of overflowing. */
+  width: max-content;
+  max-width: 92vw;
   animation: fab-quick-menu-fade-in 0.14s ease-out;
 }
 @keyframes fab-quick-menu-fade-in {
   from { opacity: 0; transform: translate(-50%, 6px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
-.fab-quick-menu-item {
+.fab-quick-menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+.fab-quick-menu-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius);
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  text-align: left;
+  white-space: nowrap;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
 }
-.fab-quick-menu-item:hover:not(:disabled) {
+.fab-quick-menu-chip:hover:not(:disabled) {
   background: var(--surface3);
   border-color: var(--border);
 }
-.fab-quick-menu-item:disabled {
-  opacity: 0.4;
+.fab-quick-menu-chip:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
-.fab-quick-menu-item--active {
+.fab-quick-menu-chip--active {
   background: rgba(96, 165, 250, 0.16);
   border-color: var(--passive-agree);
 }
-.fab-quick-menu-icon {
-  width: 18px;
+/* While pinning (a slot is armed), chips read as assignable. */
+.fab-quick-menu-chip--assign:not(:disabled):hover {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: var(--passive-agree);
+}
+.fab-quick-menu-chip-icon {
+  width: 16px;
   text-align: center;
-  font-size: 14px;
   color: var(--muted2);
   flex-shrink: 0;
 }
-.fab-quick-menu-item:hover:not(:disabled) .fab-quick-menu-icon { color: var(--text); }
-.fab-quick-menu-item--active .fab-quick-menu-icon { color: var(--passive-agree); }
-.fab-quick-menu-label {
-  flex: 1;
-  white-space: nowrap;
-}
+.fab-quick-menu-chip:hover:not(:disabled) .fab-quick-menu-chip-icon { color: var(--text); }
+.fab-quick-menu-chip--active .fab-quick-menu-chip-icon { color: var(--passive-agree); }
 
-/* "Add to hotbar" pin flow inside the FAB quick menu */
-.fab-quick-menu-divider {
-  height: 1px;
-  background: var(--border);
-  margin: 4px 2px;
-}
-.fab-quick-menu-item--pinning {
-  background: rgba(96, 165, 250, 0.16);
-  border-color: var(--passive-agree);
-}
-.fab-quick-menu-pin-toggle .fab-quick-menu-label { color: var(--muted2); }
-.fab-quick-menu-pin {
+/* "Add to hotbar" pin flow — centered footer (over the FAB) + the real hotbar
+   slots act as drop targets. */
+.fab-quick-menu-footer {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 2px 4px 4px;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
 }
-.fab-quick-menu-pin-hint {
+.fab-quick-menu-hint {
   font-size: 11px;
   color: var(--muted2);
-  padding: 0 2px;
 }
-.fab-quick-menu-pin-hint strong { color: var(--text); }
-.fab-quick-menu-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.fab-quick-menu-slot-row {
-  display: flex;
-  gap: 4px;
-}
-.fab-quick-menu-slot {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 4px 2px;
-  min-width: 42px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
+.fab-quick-menu-add,
+.fab-quick-menu-done {
+  padding: 4px 12px;
   border-radius: var(--radius);
-  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition), color var(--transition);
 }
-.fab-quick-menu-slot:hover:not(:disabled) {
-  background: var(--border);
-  border-color: var(--passive-agree);
-  color: var(--text);
+.fab-quick-menu-add {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  color: var(--muted2);
 }
-.fab-quick-menu-slot:disabled { opacity: 0.5; cursor: not-allowed; }
-.fab-quick-menu-slot--filled { color: var(--text); border-color: var(--border2); }
-.fab-quick-menu-slot-label { font-size: 9px; letter-spacing: 0.03em; opacity: 0.8; }
-.fab-quick-menu-slot-icon { font-size: 13px; line-height: 1; }
-.fab-quick-menu-pin-done {
-  align-self: flex-end;
-  padding: 3px 12px;
+.fab-quick-menu-add:hover { color: var(--text); border-color: var(--border2); }
+.fab-quick-menu-done {
   background: var(--passive-agree);
   border: 1px solid var(--passive-agree);
-  border-radius: var(--radius);
   color: #fff;
-  font-size: 12px;
-  cursor: pointer;
 }
-.fab-quick-menu-pin-done:hover {
+.fab-quick-menu-done:hover {
   background: var(--passive-agree-hover);
   border-color: var(--passive-agree-hover);
+}
+/* Real hotbar slots become armable drop targets while pinning. */
+.footer-btn.hotbar-slot--target {
+  border-style: dashed;
+  border-color: var(--passive-agree);
+}
+.footer-btn.hotbar-slot--armed {
+  border-style: solid;
+  border-color: var(--passive-agree);
+  background: rgba(96, 165, 250, 0.18);
+  color: var(--text);
+}
+.footer-btn.hotbar-slot--empty-target {
+  color: var(--muted2);
+  opacity: 0.92;
 }
 
 /* Floating Export menu — anchored above the hotbar button that opened it
