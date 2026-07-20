@@ -217,6 +217,11 @@ Replaces the broken side-by-side layout on mobile with an overlay/annotation mod
 
 ---
 
+**Icon / Symbol Library (replace emoji + text glyphs)**
+Adopt a proper icon set (e.g. an inline SVG sprite or a lightweight icon package that respects the "no external CDN, browser-only" constraints) for UI affordances currently drawn with emoji or bare text characters — the FAB `+`, hotbar action icons, the 📌/⬇/⎘/↕ glyphs, etc. Motivations: consistent rendering across platforms (emoji look different per-OS and don't inherit `currentColor`), crisper scaling, and cleaner theming once color themes land (Phase 10C). Scope to decide when picked up: which library/approach fits the layer rules and bundle budget, how icons are referenced from constants, and a migration order. Noted 2026-07-20 while fixing the mobile FAB long-press selection bug — not urgent, revisit after the Phase 10 parity/themes/accessibility work.
+
+---
+
 **Lorebook JSON Metadata Portability (`_meta`)**
 Add `createdAt` and `lastModified` timestamps to lorebook objects. Export: optional checkbox "Include metadata" appends a `_meta` block (timestamps + settings snapshot) to the JSON. Import: detect `_meta` block and prompt user to apply or skip the saved settings. Requires updates to `json-export.js`, `json-import.js`, lorebook creation, and `autosave.js`. Deferred from Polish Pass 2 — good idea but not yet worth the resource investment.
 

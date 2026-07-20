@@ -477,6 +477,12 @@ img.logo-icon {
   line-height: 1;
   padding: 0;
   border: none;
+  /* The app's own long-press opens the quick-menu; without this the OS treats
+     the "+" glyph as selectable text and hijacks the gesture with its own
+     selection handles + Copy/Look Up/Translate callout. Suppress both. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 

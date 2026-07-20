@@ -7,6 +7,7 @@
 ### Fixes
 
 - **The ＋ button and its menu are centered on mobile again** — on phones the floating ＋ button was drifting off-center (and landing on different sides in different browsers), which also threw its press-and-hold quick menu off-center. The button now sits a consistent gap from the right edge above the hotbar, and its quick menu opens neatly above it and stays fully on-screen instead of spilling off the side.
+- **Long-pressing the ＋ button no longer pops up your phone's text-selection menu** — press-and-hold on the ＋ used to make the phone try to *select the "+" character* (blue selection handles, plus the Copy / Look Up / Translate bar) instead of opening the quick menu. The button's symbol is now non-selectable, so long-press reliably opens the quick menu.
 
 ---
 
