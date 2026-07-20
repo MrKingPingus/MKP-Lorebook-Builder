@@ -52,9 +52,12 @@ export function Hotbar() {
   const { slots, addEntry, allActions } = useHotbarActions();
   const isMobile                        = useMobile();
   const activeMenuPanel                 = useUi((s) => s.activeMenuPanel);
-  const { fabSize, fabCustomSize, fabQuickMenuEnabled } = useSettings();
+  const { fabSize, fabCustomSize, fabQuickMenuEnabled, hotbarSlots, setHotbarSlots } = useSettings();
 
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+  // While the "Add to hotbar" pin flow is active, keep the menu open regardless
+  // of hover so the multi-step interaction isn't dismissed by a mouse leave.
+  const [menuSticky, setMenuSticky] = useState(false);
   const openTimerRef         = useRef(null);
   const closeTimerRef        = useRef(null);
   const longPressTimerRef    = useRef(null);
@@ -90,6 +93,7 @@ export function Hotbar() {
   function onFabMouseLeave() {
     if (isMobile || !fabQuickMenuEnabled) return;
     clearTimeout(openTimerRef.current);
+    if (menuSticky) return;
     closeTimerRef.current = setTimeout(() => setQuickMenuOpen(false), HOVER_CLOSE_MS);
   }
   function onMenuMouseEnter() {
@@ -98,6 +102,7 @@ export function Hotbar() {
   }
   function onMenuMouseLeave() {
     if (isMobile) return;
+    if (menuSticky) return;
     closeTimerRef.current = setTimeout(() => setQuickMenuOpen(false), HOVER_CLOSE_MS);
   }
 
@@ -127,9 +132,16 @@ export function Hotbar() {
     addEntry();
   }
 
+  function handlePin(actionId, slotIndex) {
+    const next = [...hotbarSlots];
+    next[slotIndex] = actionId;
+    setHotbarSlots(next);
+  }
+
   function closeMenu() {
     clearTimers();
     setQuickMenuOpen(false);
+    setMenuSticky(false);
   }
 
   return (
@@ -163,6 +175,9 @@ export function Hotbar() {
             onClose={closeMenu}
             onMouseEnter={onMenuMouseEnter}
             onMouseLeave={onMenuMouseLeave}
+            hotbarSlots={hotbarSlots}
+            onPin={handlePin}
+            onStickyChange={setMenuSticky}
           />
         )}
       </div>

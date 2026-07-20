@@ -550,6 +550,77 @@ img.logo-icon {
   white-space: nowrap;
 }
 
+/* "Add to hotbar" pin flow inside the FAB quick menu */
+.fab-quick-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 2px;
+}
+.fab-quick-menu-item--pinning {
+  background: rgba(96, 165, 250, 0.16);
+  border-color: var(--passive-agree);
+}
+.fab-quick-menu-pin-toggle .fab-quick-menu-label { color: var(--muted2); }
+.fab-quick-menu-pin {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 4px 4px;
+}
+.fab-quick-menu-pin-hint {
+  font-size: 11px;
+  color: var(--muted2);
+  padding: 0 2px;
+}
+.fab-quick-menu-pin-hint strong { color: var(--text); }
+.fab-quick-menu-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fab-quick-menu-slot-row {
+  display: flex;
+  gap: 4px;
+}
+.fab-quick-menu-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  min-width: 42px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.fab-quick-menu-slot:hover:not(:disabled) {
+  background: var(--border);
+  border-color: var(--passive-agree);
+  color: var(--text);
+}
+.fab-quick-menu-slot:disabled { opacity: 0.5; cursor: not-allowed; }
+.fab-quick-menu-slot--filled { color: var(--text); border-color: var(--border2); }
+.fab-quick-menu-slot-label { font-size: 9px; letter-spacing: 0.03em; opacity: 0.8; }
+.fab-quick-menu-slot-icon { font-size: 13px; line-height: 1; }
+.fab-quick-menu-pin-done {
+  align-self: flex-end;
+  padding: 3px 12px;
+  background: var(--passive-agree);
+  border: 1px solid var(--passive-agree);
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.fab-quick-menu-pin-done:hover {
+  background: var(--passive-agree-hover);
+  border-color: var(--passive-agree-hover);
+}
+
 /* Floating Export menu — anchored above the hotbar button that opened it
    (position/left/bottom set inline from the anchor rect). Shares the FAB
    quick-menu surface treatment; buttons stay neutral like the Export panel. */
