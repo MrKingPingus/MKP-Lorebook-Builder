@@ -12,6 +12,7 @@ export function useSettings() {
   const tieredCounterEnabled     = useSettingsStore((s) => s.tieredCounterEnabled);
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
+  const markPrivateEntries       = useSettingsStore((s) => s.markPrivateEntries);
   const newEntryHotkey           = useSettingsStore((s) => s.newEntryHotkey);
   const undoHotkey               = useSettingsStore((s) => s.undoHotkey);
   const redoHotkey               = useSettingsStore((s) => s.redoHotkey);
@@ -40,6 +41,7 @@ export function useSettings() {
       tieredCounterEnabled,
       hideSuggestionsByDefault,
       hideEntryStats,
+      markPrivateEntries,
       newEntryHotkey,
       undoHotkey,
       redoHotkey,
@@ -77,6 +79,7 @@ export function useSettings() {
     tieredCounterEnabled,
     hideSuggestionsByDefault,
     hideEntryStats,
+    markPrivateEntries,
     newEntryHotkey,
     undoHotkey,
     redoHotkey,
@@ -100,6 +103,7 @@ export function useSettings() {
     setTieredCounterEnabled:     (v) => updateSetting('tieredCounterEnabled', v),
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
+    setMarkPrivateEntries:       (v) => updateSetting('markPrivateEntries', v),
     setNewEntryHotkey:           (v) => updateSetting('newEntryHotkey', v),
     setUndoHotkey:               (v) => updateSetting('undoHotkey', v),
     setRedoHotkey:               (v) => updateSetting('redoHotkey', v),

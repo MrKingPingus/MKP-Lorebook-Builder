@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS = {
   tieredCounterEnabled:     true,
   hideSuggestionsByDefault: false,
   hideEntryStats:           false,
+  markPrivateEntries:       false, // when true, show an eye-off badge on private entries (public entries always show the eye badge)
   newEntryHotkey:           'n',
   undoHotkey:               'z',
   redoHotkey:               'y',

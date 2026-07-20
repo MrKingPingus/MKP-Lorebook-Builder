@@ -40,6 +40,7 @@ export function SettingsPanel() {
     tieredCounterEnabled,
     hideSuggestionsByDefault,
     hideEntryStats,
+    markPrivateEntries,
     newEntryHotkey,
     undoHotkey,
     redoHotkey,
@@ -55,6 +56,7 @@ export function SettingsPanel() {
     setTieredCounterEnabled,
     setHideSuggestionsByDefault,
     setHideEntryStats,
+    setMarkPrivateEntries,
     setNewEntryHotkey,
     setUndoHotkey,
     setRedoHotkey,
@@ -239,6 +241,21 @@ export function SettingsPanel() {
           </label>
           <div className="settings-hint">
             Hides the trigger count and character count badges in entry headers.
+          </div>
+        </div>
+
+        {/* Private-entry marker */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Mark private entries</span>
+            <input
+              type="checkbox"
+              checked={markPrivateEntries}
+              onChange={(e) => setMarkPrivateEntries(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Shows a crossed-out eye on entries that are Private on CharSnap. Public entries always show an eye; since entries default to Private, this off-by-default marker is for when you want private entries flagged too.
           </div>
         </div>
 

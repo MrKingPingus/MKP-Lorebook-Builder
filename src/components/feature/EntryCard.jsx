@@ -65,7 +65,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
-  const { hideEntryStats, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
+  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -321,6 +321,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </span>
           <div className="entry-card-mobile-right">
             {entry.isPublic === true && <PublicEyeIcon />}
+            {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
             {entry.hiddenFromExport && <ExportOffIcon />}
             {!hideEntryStats && (
               <div className="entry-card-mobile-stats">
@@ -407,6 +408,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </select>
         )}
         {entry.isPublic === true && <PublicEyeIcon />}
+        {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
         {entry.hiddenFromExport && <ExportOffIcon />}
         {sameNameRefId && (
           <button

@@ -11,6 +11,7 @@ export const useSettingsStore = create((set) => ({
   setTieredCounterEnabled:     (tieredCounterEnabled)     => set({ tieredCounterEnabled }),
   setHideSuggestionsByDefault: (hideSuggestionsByDefault) => set({ hideSuggestionsByDefault }),
   setHideEntryStats:           (hideEntryStats)           => set({ hideEntryStats }),
+  setMarkPrivateEntries:       (markPrivateEntries)       => set({ markPrivateEntries }),
   setNewEntryHotkey:           (newEntryHotkey)           => set({ newEntryHotkey }),
   setUndoHotkey:               (undoHotkey)               => set({ undoHotkey }),
   setRedoHotkey:               (redoHotkey)               => set({ redoHotkey }),
