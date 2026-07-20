@@ -20,7 +20,7 @@ export function exportToJsonBlob(lorebook) {
         triggers:    [...(e.triggers ?? [])],
         description: e.description ?? '',
         entryType:   TYPE_LABEL[e.type] ?? e.type,
-        isPublic:    e.isPublic !== false,
+        isPublic:    e.isPublic === true,
       };
     });
 

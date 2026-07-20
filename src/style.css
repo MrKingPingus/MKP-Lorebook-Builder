@@ -4087,9 +4087,9 @@ kbd {
   border-color: var(--yellow);
 }
 
-/* Per-entry CharSnap visibility (isPublic). Neutral when public (the default
-   state); blue when the entry is held back as private, mirroring the
-   hide-from-export button's "exception is highlighted" idiom. */
+/* Per-entry CharSnap visibility (isPublic). Entries default to private, so the
+   button is neutral when private (the default) and blue when the entry has been
+   made public — the exception is highlighted. */
 .entry-public-btn {
   margin-left: auto;
   padding: 3px 10px;
@@ -4106,11 +4106,11 @@ kbd {
   color: var(--text);
   border-color: var(--border2);
 }
-.entry-public-btn--private {
+.entry-public-btn--public {
   border-color: var(--passive-agree);
   color: var(--passive-agree);
 }
-.entry-public-btn--private:hover {
+.entry-public-btn--public:hover {
   background: var(--passive-agree);
   color: #fff;
   border-color: var(--passive-agree);
@@ -4147,6 +4147,24 @@ kbd {
   display: inline-flex;
   align-items: center;
   color: var(--yellow);
+  margin-left: 6px;
+}
+
+/* Public badge — open eye, passive-agree blue. Public is the CharSnap exception
+   (entries default to private), so this flags entries the user made public. */
+.entry-public-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--passive-agree);
+  margin-left: 6px;
+}
+
+/* Private badge — eye-off, opt-in via the "mark private entries" setting.
+   Muted since private is the default/expected state. */
+.entry-private-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted2);
   margin-left: 6px;
 }
 

@@ -74,7 +74,7 @@ export function useBulkActions() {
   // counts as public unless it's explicitly false.
   function setPublicForSelected(makePublic) {
     if (selectedIds.size === 0) return;
-    const isPub = (e) => e.isPublic !== false;
+    const isPub = (e) => e.isPublic === true;
     const hasWork = entries.some((e) => selectedIds.has(e.id) && isPub(e) !== makePublic);
     if (!hasWork) return;
     pushSnapshot({ entries: [...entries] });

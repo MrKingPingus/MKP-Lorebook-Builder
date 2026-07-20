@@ -22,6 +22,44 @@ import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
 import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
 
+// Header status badges. CharSnap entries default to private, so Public is the
+// exception worth flagging — an open eye = "made Public". Hidden-from-Export
+// gets an export/upload glyph crossed out, a distinct metaphor from the eye.
+function PublicEyeIcon() {
+  return (
+    <span className="entry-public-icon" title="Public on CharSnap" aria-label="Public">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </span>
+  );
+}
+
+function PrivateEyeOffIcon() {
+  return (
+    <span className="entry-private-icon" title="Private on CharSnap" aria-label="Private">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+    </span>
+  );
+}
+
+function ExportOffIcon() {
+  return (
+    <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" y1="2" x2="12" y2="15"/>
+        <line x1="3" y1="3" x2="21" y2="21"/>
+      </svg>
+    </span>
+  );
+}
+
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
@@ -282,14 +320,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             )}
           </span>
           <div className="entry-card-mobile-right">
-            {entry.hiddenFromExport && (
-              <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              </span>
-            )}
+            {entry.isPublic === true && <PublicEyeIcon />}
+            {entry.hiddenFromExport && <ExportOffIcon />}
             {!hideEntryStats && (
               <div className="entry-card-mobile-stats">
                 <span style={{ color: entry.triggers.length >= MAX_TRIGGERS ? 'var(--red)' : entry.triggers.length >= TRIGGER_WARN_YELLOW ? 'var(--yellow)' : 'var(--green)' }}>
@@ -374,14 +406,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             ))}
           </select>
         )}
-        {entry.hiddenFromExport && (
-          <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-          </span>
-        )}
+        {entry.isPublic === true && <PublicEyeIcon />}
+        {entry.hiddenFromExport && <ExportOffIcon />}
         {sameNameRefId && (
           <button
             className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
@@ -649,11 +675,11 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 : 'Enable entry history?'}
             </button>
             <button
-              className={`entry-public-btn${entry.isPublic === false ? ' entry-public-btn--private' : ''}`}
-              onClick={() => update({ isPublic: entry.isPublic === false }, true)}
-              title={entry.isPublic === false ? 'Private on CharSnap — click to make public' : 'Public on CharSnap — click to make private'}
+              className={`entry-public-btn${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
+              onClick={() => update({ isPublic: entry.isPublic !== true }, true)}
+              title={entry.isPublic === true ? 'Public on CharSnap — click to make private' : 'Private on CharSnap — click to make public'}
             >
-              {entry.isPublic === false ? 'Private' : 'Public'}
+              {entry.isPublic === true ? 'Public' : 'Private'}
             </button>
             <button
               className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}

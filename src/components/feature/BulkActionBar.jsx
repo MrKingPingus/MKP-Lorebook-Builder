@@ -23,7 +23,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
-  // Which picker row (if any) is expanded: 'type' | 'visibility' | 'public'.
+  // Which picker row (if any) is expanded: 'type' | 'public' | 'hide'.
   // Only one is ever open at a time — opening one closes the others.
   const [openPicker, setOpenPicker] = useState(null);
   const togglePicker = (name) => setOpenPicker((cur) => (cur === name ? null : name));
@@ -135,11 +135,11 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
 
       <button
         className="bulk-action-apply bulk-action-apply--secondary"
-        onClick={() => togglePicker('visibility')}
+        onClick={() => togglePicker('hide')}
         disabled={!hasSelection}
         title="Hide the selected entries from export, or show them again"
       >
-        Set Visibility… {openPicker === 'visibility' ? '▴' : '▾'}
+        Hide from Export… {openPicker === 'hide' ? '▴' : '▾'}
       </button>
 
       {hasStaged && (
@@ -250,7 +250,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
         </div>
       )}
 
-      {openPicker === 'visibility' && (
+      {openPicker === 'hide' && (
         <div className="bulk-action-chips">
           <button
             className="bulk-type-chip"

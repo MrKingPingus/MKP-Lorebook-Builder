@@ -6,8 +6,14 @@
 
 ### Additions
 
-- **Bulk Hide / Show from Export in Select mode** — Select mode now has a **Set Visibility ▾** button next to Change Type. Tick a group of entries (or use Select All Visible), then choose **Hidden** or **Shown** to flip their Hide-from-Export state all at once, in a single undoable step. It sits right alongside the existing per-entry Hide button, which still works for one-off changes.
+- **Bulk Hide / Show from Export in Select mode** — Select mode now has a **Hide from Export ▾** button next to Change Type. Tick a group of entries (or use Select All Visible), then choose **Hidden** or **Shown** to flip their state all at once, in a single undoable step. It sits right alongside the existing per-entry Hide button, which still works for one-off changes.
 - **Bulk Public / Private in Select mode** — a matching **Set Public/Private ▾** button lets you flip the CharSnap Public/Private state of a whole selection at once (or all entries via Select All Visible), the same way — one undoable step. Complements the existing All Public / All Private hotbar actions and the per-entry toggle.
+- **Public entries are marked at a glance** — a small eye icon now appears on any entry you've made Public, so you can see a book's public surface without opening each entry. (Private entries are unmarked by default, since that's the standard state.)
+
+### Adjustments
+
+- **New entries default to Private** — matching CharSnap, where a book is private until you choose to make entries public. New entries now start Private; use the per-entry toggle, the bulk Set Public/Private, or All Public to open them up. Entries you already made Public keep their setting.
+- **Hide-from-Export has its own icon** — the "hidden from export" marker is now a crossed-out export arrow instead of a crossed-out eye. The eye now means Public/Private, so the two features no longer share a symbol.
 
 ### Fixes
 
