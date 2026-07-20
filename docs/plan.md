@@ -30,16 +30,18 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 **Stop condition:** The attached sample imports with every entry's type and `isPublic` intact; export produces CharSnap-shaped JSON that re-imports identically; per-entry Public toggle and Make-All-Public both work and snapshot to history.
 
-### 10B — Export Visibility mode (Hide from Export)
+### 10B — Bulk Export Visibility (Hide from Export)
 
 **Goal:** Hide-from-Export is discoverable and works in bulk.
 
-- [ ] **Fourth bar mode** — "Export Visibility" added below "Select" in the search-mode dropdown (`SearchBar.jsx`), behaving like Select (enters a bulk toolbar).
-- [ ] **Bulk hide/show** — reuse the `BulkActionBar` / selection pattern to toggle `hiddenFromExport` across selected entries (Hide Selected / Show Selected), with Select-All-Visible / Deselect.
-- [ ] **Additive, not a replacement** — the in-card Hide-from-Export button and the header hidden-entries popover stay.
-- [ ] Optional: an in-mode filter to show only currently-hidden entries.
+**Direction (2026-07-20):** Folded into the existing **Select** mode rather than a bespoke 4th search-bar mode. Select is already the generic "tick entries, do a bulk thing to them" surface, so visibility is just another bulk verb beside Change Type. This avoids a new `searchMode` enum value, a 4th dropdown option, generalizing the card select-predicate, and the store's mode-clear branch — all to re-implement machinery Select already has.
 
-**Stop condition:** User can enter Export Visibility mode from the dropdown, multi-select entries, and bulk hide/show them.
+- [ ] **`Set Visibility ▾` in the bulk bar** — a new expander in `BulkActionBar`, parallel to `Change Type… ▾`, opening a two-chip row (**Hidden / Shown**). Mirrors the Change-Type interaction exactly; keeps the bar compact on mobile (an expander, not two always-visible buttons).
+- [ ] **Bulk apply** — `setHiddenForSelected(bool)` in `use-bulk-actions.js`, a near-copy of `applyTypeChange`: one history snapshot, set `hiddenFromExport` on `selectedIds`, keep the selection so actions chain.
+- [ ] **Three scopes reuse Select's affordances** — group (multi-select → apply), global (Select All Visible → apply), individual (the existing per-card Hide button; no per-row staging, since it's a boolean and the button already covers the single-entry path).
+- [ ] **Additive** — the in-card Hide-from-Export button and the header hidden-entries popover stay untouched.
+
+**Stop condition:** In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; the per-card Hide button still works.
 
 ### 10C — Color themes
 
