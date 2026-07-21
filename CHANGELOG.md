@@ -15,6 +15,10 @@
 
 - **Shortcut hints stay in sync everywhere** — the hints shown on the hotbar buttons, the launch screen, the empty-entry message, and the restore note now show your *actual* keys, so they update the moment you rebind something instead of showing the old default.
 
+### Fixes
+
+- **Option-key shortcuts now work on Mac** — the Alt/Option shortcuts (e.g. Option+N for a new entry) were dead on macOS, because holding Option makes the keyboard emit a special character instead of the plain letter. Shortcuts are now matched by physical key, so Option combos fire correctly on Mac while Shift-based symbols (like `?` vs `/`) still stay distinct.
+
 ### Additions
 
 - **Bulk Hide / Show from Export in Select mode** — Select mode now has a **Hide from Export ▾** button next to Change Type. Tick a group of entries (or use Select All Visible), then choose **Hidden** or **Shown** to flip their state all at once, in a single undoable step. It sits right alongside the existing per-entry Hide button, which still works for one-off changes.

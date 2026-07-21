@@ -27,6 +27,20 @@ function normalizeKey(key) {
   return key;
 }
 
+// Layout/modifier-stable key for an event. Letters and digits are read from
+// e.code (physical position) so they survive modifiers that rewrite e.key —
+// notably macOS Option, where Option+N reports e.key "˜"/"Dead" but e.code
+// stays "KeyN". Everything else (symbols, named keys) falls back to e.key so
+// Shift-produced symbols like "?" vs "/" stay distinct.
+function logicalKey(e) {
+  const code = e.code || '';
+  const letter = /^Key([A-Z])$/.exec(code);
+  if (letter) return letter[1];
+  const digit = /^(?:Digit|Numpad)([0-9])$/.exec(code);
+  if (digit) return digit[1];
+  return normalizeKey(e.key);
+}
+
 // Reduce a keyboard event to the canonical logical-modifier set. This is the
 // same vocabulary stored chords use, so event↔chord comparison is set equality.
 function eventMods(e) {
@@ -59,13 +73,14 @@ export function matchesChord(e, chord) {
 
   // Bare symbol keys (/, ?, etc.) — Shift is allowed to vary because Shift is
   // often what produces the symbol; only the primary/alt/meta must be absent.
+  // Compared against e.key (not e.code) so the Shift-produced character wins.
   if (isBareSymbol(mods, key)) {
     const evMods = eventMods(e);
     if (evMods.has('Mod') || evMods.has('Ctrl') || evMods.has('Alt') || evMods.has('Meta')) return false;
     return e.key === key || normalizeKey(e.key) === key;
   }
 
-  if (normalizeKey(e.key).toUpperCase() !== key.toUpperCase()) return false;
+  if (logicalKey(e).toUpperCase() !== key.toUpperCase()) return false;
   const evMods = eventMods(e);
   if (evMods.size !== mods.size) return false;
   for (const m of mods) if (!evMods.has(m)) return false;
@@ -77,7 +92,7 @@ export function matchesChord(e, chord) {
 export function chordFromEvent(e) {
   if (LONE_MODIFIER_KEYS.includes(e.key)) return null;
   const ordered = MOD_ORDER.filter((m) => eventMods(e).has(m));
-  return [...ordered, normalizeKey(e.key)].join('+');
+  return [...ordered, logicalKey(e)].join('+');
 }
 
 /** Platform-aware display string, e.g. "Alt+N" or "⌘⇧Z". */
