@@ -1,6 +1,7 @@
 // Unified hotbar — 3 configurable slots, pinned + FAB, 3 configurable slots; renders on both platforms
 import { useState, useRef, useEffect } from 'react';
 import { useHotbarActions } from '../../hooks/use-hotbar-actions.js';
+import { useKeybindings }   from '../../hooks/use-keybindings.js';
 import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useSettings }      from '../../hooks/use-settings.js';
@@ -16,7 +17,7 @@ const FAB_SIZES = { small: 44, medium: 54, large: 64 };
 const HOVER_OPEN_MS  = 200;
 const HOVER_CLOSE_MS = 200;
 
-function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, onArm }) {
+function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, onArm, chord = null }) {
   // While the "Add to hotbar" pin flow is active, every slot (filled or empty)
   // is an armable drop target — clicking arms it rather than running its action.
   if (pinMode) {
@@ -57,7 +58,7 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
       className={`footer-btn${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
       onClick={handleClick}
       disabled={disabled}
-      title={descriptor.title}
+      title={chord ? `${descriptor.title} (${chord})` : descriptor.title}
     >
       <span className="hotbar-slot-icon">{descriptor.icon} </span>
       <span className="hotbar-slot-text">{descriptor.label}</span>
@@ -67,8 +68,12 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
 export function Hotbar() {
   const { slots, addEntry, allActions } = useHotbarActions();
+  const { displayChord }                = useKeybindings();
   const isMobile                        = useMobile();
   const activeMenuPanel                 = useUi((s) => s.activeMenuPanel);
+
+  // Live chord hint for the two hotbar actions that have a keyboard binding.
+  const slotChord = (id) => (id === 'undo' || id === 'redo') ? displayChord(id) : null;
   const { fabSize, fabCustomSize, fabQuickMenuEnabled, hotbarSlots, setHotbarSlots } = useSettings();
 
   const [quickMenuOpen, setQuickMenuOpen] = useState(false);
@@ -186,7 +191,7 @@ export function Hotbar() {
     <div className="hotbar" ref={hotbarRef}>
       <div className="hotbar-group">
         {leftSlots.map((action, i) => (
-          <HotbarSlot key={`left-${i}`} action={action} slotIndex={i} pinMode={pinMode} armed={armedSlot === i} onArm={setArmedSlot} />
+          <HotbarSlot key={`left-${i}`} action={action} slotIndex={i} pinMode={pinMode} armed={armedSlot === i} onArm={setArmedSlot} chord={action ? slotChord(action.descriptor.id) : null} />
         ))}
       </div>
 
@@ -200,7 +205,7 @@ export function Hotbar() {
           onPointerUp={onFabPointerUp}
           onPointerCancel={onFabPointerUp}
           onContextMenu={(e) => { if (isMobile && fabQuickMenuEnabled) e.preventDefault(); }}
-          title="Add entry (Alt+N)"
+          title={`Add entry (${displayChord('new_entry')})`}
           style={fabStyle}
         >
           +
@@ -225,7 +230,7 @@ export function Hotbar() {
 
       <div className="hotbar-group hotbar-group--right">
         {rightSlots.map((action, i) => (
-          <HotbarSlot key={`right-${i}`} action={action} slotIndex={i + 3} pinMode={pinMode} armed={armedSlot === i + 3} onArm={setArmedSlot} />
+          <HotbarSlot key={`right-${i}`} action={action} slotIndex={i + 3} pinMode={pinMode} armed={armedSlot === i + 3} onArm={setArmedSlot} chord={action ? slotChord(action.descriptor.id) : null} />
         ))}
       </div>
 

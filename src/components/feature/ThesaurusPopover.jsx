@@ -55,7 +55,9 @@ export function ThesaurusPopover({
       if (anchorEl?.contains(e.target))           return;
       onClose();
     }
-    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    // Consume Escape before the window dispatcher so it closes this popover only
+    // (works even while a text field is focused, unlike the global handler).
+    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }
     document.addEventListener('pointerdown', onPointer);
     document.addEventListener('keydown',     onKey);
     return () => {

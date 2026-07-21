@@ -13,9 +13,7 @@ export function useSettings() {
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
   const markPrivateEntries       = useSettingsStore((s) => s.markPrivateEntries);
-  const newEntryHotkey           = useSettingsStore((s) => s.newEntryHotkey);
-  const undoHotkey               = useSettingsStore((s) => s.undoHotkey);
-  const redoHotkey               = useSettingsStore((s) => s.redoHotkey);
+  const keybindings              = useSettingsStore((s) => s.keybindings);
   const triggerDelimiter         = useSettingsStore((s) => s.triggerDelimiter);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
   const entryTypeView            = useSettingsStore((s) => s.entryTypeView);
@@ -42,9 +40,7 @@ export function useSettings() {
       hideSuggestionsByDefault,
       hideEntryStats,
       markPrivateEntries,
-      newEntryHotkey,
-      undoHotkey,
-      redoHotkey,
+      keybindings,
       triggerDelimiter,
       hotbarSlots,
       entryTypeView,
@@ -80,9 +76,7 @@ export function useSettings() {
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
-    newEntryHotkey,
-    undoHotkey,
-    redoHotkey,
+    keybindings,
     triggerDelimiter,
     hotbarSlots,
     entryTypeView,
@@ -104,9 +98,7 @@ export function useSettings() {
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
     setMarkPrivateEntries:       (v) => updateSetting('markPrivateEntries', v),
-    setNewEntryHotkey:           (v) => updateSetting('newEntryHotkey', v),
-    setUndoHotkey:               (v) => updateSetting('undoHotkey', v),
-    setRedoHotkey:               (v) => updateSetting('redoHotkey', v),
+    setKeybindings:              (v) => updateSetting('keybindings', v),
     setTriggerDelimiter:         (v) => updateSetting('triggerDelimiter', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
     setEntryTypeView:            (v) => updateSetting('entryTypeView', v),

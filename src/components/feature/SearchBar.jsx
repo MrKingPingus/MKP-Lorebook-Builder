@@ -46,6 +46,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const searchFocusNonce   = useUi((s) => s.searchFocusNonce);
 
   const [sortOpen,      setSortOpen]      = useState(false);
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
@@ -56,6 +57,15 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const searchInputRef = useRef(null);
   // Track query at last navigation press to reset index when query changes
   const lastNavQuery   = useRef('');
+
+  // Focus-search hotkey — switch to search mode and focus the input. Guarded
+  // by the nonce so it only runs on an actual hotkey press, not first mount.
+  useEffect(() => {
+    if (searchFocusNonce === 0) return;
+    if (searchMode !== 'search') setSearchMode('search');
+    const el = searchInputRef.current;
+    if (el) { el.focus(); el.select?.(); }
+  }, [searchFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close sort dropdown on outside click
   useEffect(() => {

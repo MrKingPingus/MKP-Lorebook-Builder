@@ -31,7 +31,8 @@ export function ExportMenu() {
     function onDown(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) closeExportMenu();
     }
-    function onKey(e) { if (e.key === 'Escape') closeExportMenu(); }
+    // Consume Escape before the window dispatcher so it closes this menu only.
+    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); closeExportMenu(); } }
     const id = setTimeout(() => document.addEventListener('pointerdown', onDown), 0);
     document.addEventListener('keydown', onKey);
     return () => {

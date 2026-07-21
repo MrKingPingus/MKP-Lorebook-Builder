@@ -14,9 +14,11 @@ export const DEFAULT_SETTINGS = {
   hideSuggestionsByDefault: false,
   hideEntryStats:           false,
   markPrivateEntries:       false, // when true, show an eye-off badge on private entries (public entries always show the eye badge)
-  newEntryHotkey:           'n',
-  undoHotkey:               'z',
-  redoHotkey:               'y',
+  // Keyboard shortcut overrides: { [actionId]: canonicalChord }. Stores only
+  // deltas from the registry defaults (src/constants/keybindings.js); an empty
+  // map means every action is on its default chord. Legacy single-letter
+  // newEntry/undo/redo fields are migrated into this map on boot.
+  keybindings:              {},
   triggerDelimiter:         ',',
   // 6 hotbar slots: 3 left of FAB, 3 right. null = empty slot.
   // Layout: [Left1, Left2, Left3, Right1, Right2, Right3]

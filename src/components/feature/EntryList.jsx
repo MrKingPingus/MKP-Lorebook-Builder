@@ -2,12 +2,14 @@
 import { useRef, useEffect } from 'react';
 import { EntryCard }   from './EntryCard.jsx';
 import { useEntries }  from '../../hooks/use-entries.js';
+import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { useUi }       from '../../hooks/use-ui.js';
 import { useMobile }   from '../../hooks/use-mobile.js';
 import { ENTRY_TYPES } from '../../constants/entry-types.js';
 
 export function EntryList({ entries, groupByType }) {
   const { updateEntry, removeEntry, reorderEntries } = useEntries();
+  const { displayChord } = useKeybindings();
   const isMobile  = useMobile();
   const sortMode  = useUi((s) => s.sortMode);
   const dragIdx          = useRef(null);
@@ -23,7 +25,7 @@ export function EntryList({ entries, groupByType }) {
   if (!entries || entries.length === 0) {
     return (
       <div className="entry-list-empty">
-        No entries yet. Press Alt+N or click + to add one.
+        No entries yet. Press {displayChord('new_entry')} or click + to add one.
       </div>
     );
   }

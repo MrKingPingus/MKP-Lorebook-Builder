@@ -113,6 +113,77 @@ const SCENARIOS = [
     check('private badges after enabling', await page.locator('.entry-private-icon').count(), 5);
     check('public badges unchanged', await page.locator('.entry-public-icon').count(), 29);
   }),
+
+  scenario('Default hotkeys + help overlay + Escape dismiss', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const cards = page.locator('.entry-card');
+    const before = await cards.count();
+    // ? opens the cheat sheet; Escape closes it (top-priority dismiss layer).
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('?');
+    await page.waitForTimeout(200);
+    check('? opens keyboard help', await page.locator('.kbd-help-panel').count(), 1);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    check('Escape closes help', await page.locator('.kbd-help-panel').count(), 0);
+    // Alt+S toggles select mode; Escape exits it.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+s');
+    await page.waitForTimeout(200);
+    check('Alt+S enters select mode', await page.locator('.bulk-action-bar').count(), 1);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    check('Escape exits select mode', await page.locator('.bulk-action-bar').count(), 0);
+    // New-entry hotkey last — it auto-focuses the new entry, which (correctly)
+    // suppresses further bare/Alt hotkeys until the field is blurred.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+n');
+    await page.waitForTimeout(300);
+    check('Alt+N adds an entry', await cards.count(), before + 1);
+  }),
+
+  scenario('Escape stack pops the top layer first', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+s');
+    await page.waitForTimeout(150);
+    check('select mode active', await page.locator('.bulk-action-bar').count(), 1);
+    await page.keyboard.press('?');
+    await page.waitForTimeout(150);
+    check('help overlay open over select', await page.locator('.kbd-help-panel').count(), 1);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+    check('Escape closes help first', await page.locator('.kbd-help-panel').count(), 0);
+    check('select mode still active beneath', await page.locator('.bulk-action-bar').count(), 1);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+    check('Escape then exits select', await page.locator('.bulk-action-bar').count(), 0);
+  }),
+
+  scenario('Rebind new-entry hotkey + live display', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const cards = page.locator('.entry-card');
+    const before = await cards.count();
+    await openSettings(page);
+    await page.locator('.settings-section-header', { hasText: 'Hotkeys' }).click();
+    await page.waitForTimeout(150);
+    const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
+    const captureBtn = row.locator('.kbd-capture-btn');
+    await captureBtn.click();
+    await page.waitForTimeout(120);
+    await page.keyboard.press('Alt+j');                 // capture the new chord
+    await page.waitForTimeout(200);
+    const label = (await captureBtn.innerText()).replace(/\s+/g, '');
+    check('capture button shows new chord', /Alt\+?J/i.test(label), true);
+    // Fire the new binding (the global window listener works with the tray open).
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+j');
+    await page.waitForTimeout(300);
+    check('new chord adds an entry', await cards.count(), before + 1);
+    await page.keyboard.press('Alt+n');                 // old default no longer bound
+    await page.waitForTimeout(200);
+    check('old Alt+N no longer adds', await cards.count(), before + 1);
+  }),
 ];
 
 export async function runAllChecks() {

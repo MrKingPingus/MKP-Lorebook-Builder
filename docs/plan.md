@@ -44,6 +44,19 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 **Stop condition:** ✅ (verified 2026-07-20, browser-driven against the Reika fixture) In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; undo restores; the per-card Hide button still works.
 
+### 10C-pre — Hotkey Engine Overhaul (shipped)
+
+**Context:** Pulled out of 10D and done first as its own standalone pass (decision 2026-07-21). The old system was a fixed if-cascade in `useKeyboardShortcuts` with only three single-letter, fixed-modifier hotkeys. Replaced with a registry-driven engine so shortcuts are data, not conditionals.
+
+- [x] **Keybinding registry** — `constants/keybindings.js`: pure action descriptors (`id`, `label`, `category`, `defaultChord`, `wired`, `context`, `fixed`). `services/keychord.js` owns the canonical chord grammar (cross-platform `Mod` = ⌘/Ctrl), event matching, capture, platform-aware display, reserved-chord checks, and the legacy-hotkey migration.
+- [x] **Dispatch table** — `useKeyboardShortcuts` is now a thin dispatcher over the resolved binding list + a handler map from `App.jsx`; adding an action is a registry line, not a new conditional. `use-keybindings.js` merges registry defaults with `settings-store.keybindings` overrides (deltas only) and is the single source of truth for chord display.
+- [x] **Full capture-based rebinding** — Settings → Hotkeys is a per-action table with a "press the keys" capture control, reserved-chord refusal, duplicate-clash warnings, per-row + reset-all. Legacy `newEntry/undo/redo` single-letter fields migrate into the override map on boot.
+- [x] **Escape priority stack** — `services/dismiss-stack.js` + `use-dismiss-layer.js`; Escape pops the single highest-priority active layer (popover → modal → find-replace → compare → pick-from-reference → select). The four menu popovers consume Escape before the global dispatcher; the old single-layer cascade is gone.
+- [x] **Cheat-sheet overlay** — `?` opens a registry-generated shortcut list (`KeyboardHelpOverlay`); it updates live with custom bindings and has an "Edit shortcuts" deep-link into Settings → Hotkeys. All six previously-hardcoded chord displays (hotbar tooltips, lander, empty-state, rollback hint) now read from the registry.
+- [x] **Curated shipping set** — new entry, undo, redo, toggle select, focus search, toggle reference, export, open settings, keyboard help. The rest of the roadmap list (save snapshot, expand/collapse all, compare, find-replace focus, next/prev cross-match, swap reference, import) are collision-checked reserved defaults, unwired until their batch.
+
+**Stop condition:** ✅ (verified 2026-07-21, browser-driven) Users rebind any action via capture; custom chords fire and display everywhere live; `?` shows the sheet; Escape pops layers in priority order. See `verify/checks.mjs` (default-fire, Escape-stack ordering, rebind + live display).
+
 ### 10C — Color themes
 
 **Goal:** Switch among stock themes and build a custom one.
@@ -66,7 +79,7 @@ Foundation is solid: the whole palette is ~15 CSS custom properties in one `:roo
 - [ ] **Font / UI scale** — the CSS is ~274 px-based font-sizes vs. 1 rem, so scaling can't be a root-size toggle. Robust path: mechanical px→rem conversion + a root scale multiplier (3–4 steps, e.g. 90 / 100 / 110 / 125 %). Avoid `zoom` / `transform: scale` wrappers — they break this app's fixed-position portals, draggable/resizable window, and `getClientRects` diff overlays. Budget as a real pass, not a toggle.
 - [ ] **Reduced motion** — a toggle (and honouring `prefers-reduced-motion`) that disables smooth-scroll and CSS transitions.
 - [ ] **High-contrast** — surfaced here, backed by the 10C high-contrast theme.
-- [ ] **Move Hotkeys under Accessibility** — relocate the existing Hotkeys accordion into this section and fold in the "Hotkey & ESC Roadmap" work (wider set of configurable actions + a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals).
+- [ ] **Move Hotkeys under Accessibility** — the hotkey engine itself (dispatch table, wider configurable set, Escape stack) shipped in **10C-pre**; the remaining 10D task is just relocating the rebuilt Hotkeys accordion into this section.
 
 **Stop condition:** Settings has an Accessibility section; font/UI scale visibly resizes the app; reduced-motion and high-contrast toggles work; hotkeys are configured from within this section.
 
@@ -241,11 +254,13 @@ A dedicated help section accessible from the UI (button or settings tab) contain
 ---
 
 **Hotkey & ESC Roadmap**
-Polish Pass 5 Phase 2 wired `Escape` to exit bulk select mode (and cancel the pick-from-reference sub-pose) via `useKeyboardShortcuts({ onEscape })` in `App.jsx`. The `isTextInputFocused()` guard preserves local Escape semantics on inline editors and modal inputs. Open work, queued together for a future "hotkey pass":
+The engine overhaul shipped in **10C-pre** (2026-07-21). Status of the original open items:
 
-1. **Extend Escape to other state-dependent modes.** Candidates: exit Find & Replace mode (`searchMode === 'find-replace'`), exit compare mode (clear `compareEntryId`), close any open popovers/menus that don't already self-handle Escape, dismiss the lander, dismiss the snapshot navigate-away prompt without saving. Each new target needs its priority worked out — e.g., if the user is in select mode AND compare mode, which exits first? The current handler is a single-layer cascade; a stack/priority approach may be needed.
-2. **General appraisal of key configurations.** Audit every existing keyboard binding (the App-level `useKeyboardShortcuts`, plus all the local handlers found in `Chip.jsx`, `LorebookNameModal.jsx`, `TypeFilterBar.jsx`, `ThesaurusPopover.jsx`, `LorebookPanel.jsx`, `LorebookRoleBar.jsx`, `RollbackPanel.jsx`, `LorebookSwitcher.jsx`). Catalogue: where the binding lives, whether it's user-configurable, what guards it (focus checks, `e.stopPropagation`), and any collisions. Goal is a single source of truth and consistent guard rules.
-3. **Wider selection of hotkeys.** Currently only New Entry, Undo, and Redo are user-configurable (Settings → Hotkeys, with Alt/Ctrl modifiers). Likely additions: toggle bulk select, save snapshot, toggle compare mode, jump to next/prev cross-match, focus search, focus find/replace, toggle crosstalk, swap reference, expand/collapse all entries. Needs a settings-store schema extension (each new action gets its own configurable key + modifier) and a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals.
+1. ✅ **Escape priority stack** — `services/dismiss-stack.js` pops the highest-priority active layer (popover → modal → find-replace → compare → pick-from-reference → select); the four menu popovers consume Escape before the global dispatcher. The old single-layer cascade is gone. Not yet in the stack: the lander and the snapshot navigate-away prompt (intentionally left — low value / surprise risk).
+2. ◑ **Key-config audit** — the App-level bindings and the four menu popovers (`TypeFilterBar`, `ExportMenu`, `ThesaurusPopover`, `LorebookRoleBar`) were catalogued and normalised into the registry / dismiss stack. The remaining inline-editor handlers (`Chip.jsx`, `LorebookNameModal.jsx`, `LorebookPanel.jsx`, `LorebookSwitcher.jsx`, `RollbackPanel.jsx` label edit) stay local by design — focus-guarded, no collision — and were left untouched (decision 5b).
+3. ✅ **Wider configurable set + dispatch table** — done. Actions are registry entries; nine are wired, the rest (save snapshot, expand/collapse all, compare, find-replace focus, next/prev cross-match, swap reference, import) are collision-checked reserved defaults awaiting their batch.
+
+**Deferred gap — keyboard entry navigation.** There is no "focused entry" concept (no roving-tabindex cursor over entry cards), so per-entry keyboard ops (duplicate / delete / toggle *this* entry) aren't yet possible. This is a real accessibility item for **10D-proper** or later — building it is a feature in its own right, out of scope for the engine pass.
 
 **Lookup Table Trigger System**
 A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.

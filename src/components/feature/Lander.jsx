@@ -4,6 +4,7 @@
 // CHANGELOG), Learn (tutorial + tips + templates), Report a Bug / Request a Feature.
 import { useState, useRef, useEffect, Fragment } from 'react';
 import { useUi }                from '../../hooks/use-ui.js';
+import { useKeybindings }       from '../../hooks/use-keybindings.js';
 import { useExport }            from '../../hooks/use-export.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
@@ -62,6 +63,7 @@ export function Lander() {
   const setShowLander       = useUi((s) => s.setShowLander);
   const setActiveMenuPanel  = useUi((s) => s.setActiveMenuPanel);
   const setShowAppendImport = useUi((s) => s.setShowAppendImport);
+  const { displayChord }    = useKeybindings();
   const {
     downloadTxtTemplate, downloadDocxTemplate,
     copyTxtTemplate,
@@ -174,7 +176,7 @@ export function Lander() {
           <li>Your lorebook is saved automatically — just leave the tab open.</li>
           <li>When you're done, export as <strong>JSON</strong> (for AI tools), <strong>TXT</strong>, or <strong>DOCX</strong> from the <em>Import / Export</em> tab.</li>
           <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, <code>.docx</code>, or <code>.odt</code> file.</li>
-          <li>Use <kbd>Alt+N</kbd> to add a new entry, <kbd>Ctrl+Z</kbd> to undo, <kbd>Ctrl+Y</kbd> to redo, and <kbd>Esc</kbd> to exit bulk-select mode.</li>
+          <li>Use <kbd>{displayChord('new_entry')}</kbd> to add a new entry, <kbd>{displayChord('undo')}</kbd> to undo, <kbd>{displayChord('redo')}</kbd> to redo, and <kbd>Esc</kbd> to exit bulk-select mode. Press <kbd>?</kbd> anytime for the full shortcut list.</li>
         </ol>
 
         <h3 className="lander-subsection-title">Tips</h3>

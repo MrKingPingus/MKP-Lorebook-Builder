@@ -1,12 +1,18 @@
 // Root component — composes <FloatingWindow>, mounts autosave effect and keyboard shortcuts
-import { useEffect } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
+import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
+import { useKeybindings }        from './hooks/use-keybindings.js';
+import { useDismissLayer }       from './hooks/use-dismiss-layer.js';
+import { useSettings }           from './hooks/use-settings.js';
 import { useEntries }            from './hooks/use-entries.js';
 import { useUndoRedo }           from './hooks/use-undo-redo.js';
 import { readJson, writeJson, detectQuotaProfile } from './services/storage-service.js';
+import { migrateLegacyHotkeys }  from './services/keychord.js';
+import { DISMISS_PRIORITY }      from './services/dismiss-stack.js';
 import { createEmptyLorebook }   from './services/entry-factory.js';
 import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
@@ -34,10 +40,13 @@ function useBootstrap() {
   const setWindowPos        = useUiStore((s) => s.setWindowPos);
 
   useEffect(() => {
-    // Load settings
-    const settings = readJson(SETTINGS_KEY);
+    // Load settings, folding legacy single-letter hotkey fields into the
+    // keybindings override map (one-time; persisted back if anything changed).
+    const rawSettings = readJson(SETTINGS_KEY);
+    const settings = migrateLegacyHotkeys(rawSettings);
     if (settings) {
       applySettings(settings);
+      if (settings !== rawSettings) writeJson(SETTINGS_KEY, settings);
     }
 
     // First-boot UA detect for the storage quota profile. Also fills in the
@@ -104,30 +113,53 @@ export default function App() {
 
   const { addEntry }   = useEntries();
   const { undo, redo } = useUndoRedo();
-  const newEntryHotkey = useSettingsStore((s) => s.newEntryHotkey);
-  const undoHotkey     = useSettingsStore((s) => s.undoHotkey);
-  const redoHotkey     = useSettingsStore((s) => s.redoHotkey);
+  const { bindings }   = useKeybindings();
+  const { crosstalkEnabled, setCrosstalkEnabled } = useSettings();
   const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
 
-  // Escape exits the active state-dependent mode. Today that's bulk select
-  // (and its pick-from-reference sub-pose). Other modes that should yield to
-  // Escape — find/replace, compare mode, popovers — are flagged in plan.md
-  // under the "Hotkey & ESC roadmap" entry.
-  function handleEscape() {
-    if (pickFromReferenceMode) {
-      exitPickFromReference(false);
-      return;
-    }
-    if (useUiStore.getState().searchMode === 'select') {
-      useUiStore.getState().setSearchMode('search');
-    }
-  }
+  // ui-store setters used by the wired hotkey handlers + the Escape stack.
+  const searchMode        = useUiStore((s) => s.searchMode);
+  const compareEntryId    = useUiStore((s) => s.compareEntryId);
+  const setSearchMode     = useUiStore((s) => s.setSearchMode);
+  const setCompareEntryId = useUiStore((s) => s.setCompareEntryId);
+  const setActiveMenuPanel = useUiStore((s) => s.setActiveMenuPanel);
+  const requestSearchFocus = useUiStore((s) => s.requestSearchFocus);
+  const toggleKeyboardHelp = useUiStore((s) => s.toggleKeyboardHelp);
 
-  useKeyboardShortcuts({ onNewEntry: addEntry, onUndo: undo, onRedo: redo, onEscape: handleEscape, hotkey: newEntryHotkey, undoHotkey, redoHotkey });
+  // Handler map keyed by registry action id. Actions without a handler here are
+  // reserved defaults (collision-checked) that stay unwired until their batch.
+  const handlers = useMemo(() => ({
+    new_entry:        () => addEntry(),
+    undo:             () => undo(),
+    redo:             () => redo(),
+    toggle_select:    () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
+    focus_search:     () => requestSearchFocus(),
+    toggle_reference: () => setCrosstalkEnabled(!useSettingsStore.getState().crosstalkEnabled),
+    export:           () => setActiveMenuPanel('import-export'),
+    open_settings:    () => setActiveMenuPanel('settings'),
+    keyboard_help:    () => toggleKeyboardHelp(),
+  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, setCrosstalkEnabled, setActiveMenuPanel, toggleKeyboardHelp]);
+
+  // Context gate for context-scoped bindings (e.g. crosstalk-only actions).
+  const isEnabled = useCallback(
+    (ctx) => (ctx === 'crosstalk' ? crosstalkEnabled : true),
+    [crosstalkEnabled],
+  );
+
+  useKeyboardShortcuts({ bindings, handlers, isEnabled });
+
+  // Escape priority stack — app-level dismissable modes. Popovers register
+  // themselves (higher priority) from their own components. Order here is set
+  // by DISMISS_PRIORITY, not registration order.
+  useDismissLayer('app:find-replace', searchMode === 'find-replace', DISMISS_PRIORITY.findReplace, () => setSearchMode('search'));
+  useDismissLayer('app:compare',      compareEntryId != null,         DISMISS_PRIORITY.compare,      () => setCompareEntryId(null));
+  useDismissLayer('app:pick-from-ref', pickFromReferenceMode,         DISMISS_PRIORITY.pickFromReference, () => exitPickFromReference(false));
+  useDismissLayer('app:select',       searchMode === 'select',        DISMISS_PRIORITY.select,       () => setSearchMode('search'));
 
   return (
     <div className="app-root">
       <FloatingWindow />
+      <KeyboardHelpOverlay />
       <Analytics />
     </div>
   );

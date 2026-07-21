@@ -2,7 +2,18 @@
 
 ---
 
-## 2026-07-20
+## 2026-07-21
+
+### Additions
+
+- **Customisable keyboard shortcuts** — Settings → Hotkeys is now a full shortcut editor. Click any action, press the keys you want, and it’s bound — modifiers and all, not just a single letter. Browser-reserved combos (Ctrl+T, Ctrl+W…) and bare letters are refused, and if a combo is already used elsewhere you get a heads-up. Each shortcut has a reset, plus a “Reset all to defaults”. Your existing New Entry / Undo / Redo letters carry over automatically.
+- **More things you can bind** — alongside New Entry, Undo, and Redo, you can now set shortcuts for toggling Select mode, focusing search, toggling the reference panel, exporting, opening Settings, and opening the shortcut list. More actions are on the way and already reserved sensible defaults.
+- **Press `?` for the shortcut cheat sheet** — a tidy, always-current list of every shortcut, grouped by area. It reflects any custom keys you’ve set, and has an “Edit shortcuts…” button that jumps straight to the Hotkeys settings.
+- **Escape is smarter about what it closes** — with several things open at once (say a menu on top of Select mode), Escape now closes just the top-most one, then the next, in a sensible order — instead of dismissing everything or the wrong thing.
+
+### Adjustments
+
+- **Shortcut hints stay in sync everywhere** — the hints shown on the hotbar buttons, the launch screen, the empty-entry message, and the restore note now show your *actual* keys, so they update the moment you rebind something instead of showing the old default.
 
 ### Additions
 

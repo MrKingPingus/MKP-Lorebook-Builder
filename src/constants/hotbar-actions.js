@@ -6,13 +6,13 @@ export const HOTBAR_ACTIONS = [
     id:      'undo',
     label:   'Undo',
     icon:    '↩',
-    title:   'Undo (Ctrl+Z)',
+    title:   'Undo',
   },
   {
     id:      'redo',
     label:   'Redo',
     icon:    '↪',
-    title:   'Redo (Ctrl+Y)',
+    title:   'Redo',
   },
   {
     id:      'clear_entries',
