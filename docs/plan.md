@@ -20,7 +20,7 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 - [x] **Import reads `entryType`** — added `entryType` (+ PascalCase variants) to the type alias chain in `normalizeEntry` (`json-import.js`), with `type` kept as a fallback so older app-exported books still import. Clears #102. _(commit 5c0109c)_
 - [x] **Export emits the CharSnap shape** — `json-export.js` writes `entryType` labels (not the internal `type` id) and serialises `entries` as a **keyed object** (`{"1": {...}}`); only CharSnap fields are emitted. Verified byte-shape-identical to the sample template.
-- [x] **`isPublic` round-trips** — `isPublic` added to `DEFAULT_ENTRY` (default `true`, confirmed 2026-07-19), read on import, written on export.
+- [x] **`isPublic` round-trips** — `isPublic` added to `DEFAULT_ENTRY`, read on import, written on export. **Default changed to `false` (private) 2026-07-20** to mirror CharSnap's private-by-default model; import treats an absent flag as private, export emits `isPublic === true`. Entries with an explicit value are untouched.
 - [x] **Field set is fully modeled** — CharSnap confirmed the sample's fields (`name`, `triggers`, `description`, `entryType`, `isPublic`) are the complete set, so every field is modeled explicitly; no unknown-field passthrough needed.
 - [x] **Per-entry "Public" toggle** — Public/Private button beside Hide-from-Export in the desktop `EntryCard` and mobile `EntryDetailPanel` footers; discrete and individually undoable. _(commit 244a932)_
 - [x] **"Make All Entries Public"** — shipped as the `make_all_public` hotbar action (one history snapshot; appears in the FAB quick-menu, pinnable). Can also be surfaced in the top bar / 10B Export Visibility mode later if a more prominent placement is wanted.
@@ -30,16 +30,19 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 **Stop condition:** The attached sample imports with every entry's type and `isPublic` intact; export produces CharSnap-shaped JSON that re-imports identically; per-entry Public toggle and Make-All-Public both work and snapshot to history.
 
-### 10B — Export Visibility mode (Hide from Export)
+### 10B — Bulk Export Visibility (Hide from Export)
 
 **Goal:** Hide-from-Export is discoverable and works in bulk.
 
-- [ ] **Fourth bar mode** — "Export Visibility" added below "Select" in the search-mode dropdown (`SearchBar.jsx`), behaving like Select (enters a bulk toolbar).
-- [ ] **Bulk hide/show** — reuse the `BulkActionBar` / selection pattern to toggle `hiddenFromExport` across selected entries (Hide Selected / Show Selected), with Select-All-Visible / Deselect.
-- [ ] **Additive, not a replacement** — the in-card Hide-from-Export button and the header hidden-entries popover stay.
-- [ ] Optional: an in-mode filter to show only currently-hidden entries.
+**Direction (2026-07-20):** Folded into the existing **Select** mode rather than a bespoke 4th search-bar mode. Select is already the generic "tick entries, do a bulk thing to them" surface, so visibility is just another bulk verb beside Change Type. This avoids a new `searchMode` enum value, a 4th dropdown option, generalizing the card select-predicate, and the store's mode-clear branch — all to re-implement machinery Select already has.
 
-**Stop condition:** User can enter Export Visibility mode from the dropdown, multi-select entries, and bulk hide/show them.
+- [x] **`Set Visibility ▾` in the bulk bar** — a new expander in `BulkActionBar`, parallel to `Change Type… ▾`, opening a two-chip row (**Hidden / Shown**). Mutually exclusive with the Change-Type chips (only one row open at a time). Neutral styling since hiding is reversible, vs. Change Type's red apply-to-all.
+- [x] **Bulk apply** — `setHiddenForSelected(bool)` in `use-bulk-actions.js`, a near-copy of `applyTypeChange`: one history snapshot, only entries that actually flip are touched (no-op = no snapshot), selection persists so actions chain.
+- [x] **Three scopes reuse Select's affordances** — group (multi-select → apply), global (Select All Visible → apply), individual (the existing per-card Hide button; no per-row staging, since it's a boolean and the button already covers the single-entry path).
+- [x] **Additive** — the in-card Hide-from-Export button and the header hidden-entries popover stay untouched.
+- [x] **Bulk Public/Private companion** — the same Select-mode pattern drives a `Set Public/Private… ▾` expander (Public / Private chips) backed by `setPublicForSelected(bool)`, added 2026-07-20 per user request. Realises the "surface in Select mode" idea noted under 10A's Make-All-Public item; complements the global `make_all_public` / `make_all_private` hotbar actions with a selection-scoped path. The bar's three expanders share one `openPicker` state (mutually exclusive). Verified through real JSON export (isPublic round-trips: 5 → 7 → undo 5 → Public 5).
+
+**Stop condition:** ✅ (verified 2026-07-20, browser-driven against the Reika fixture) In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; undo restores; the per-card Hide button still works.
 
 ### 10C — Color themes
 
@@ -214,6 +217,11 @@ Dedicated panel for notes and planned entry stubs, separate from the build panel
 
 **Mobile crosstalk redesign (parked from Phase 9)**
 Replaces the broken side-by-side layout on mobile with an overlay/annotation model. Anchor never moves without explicit gesture; reference content surfaces as inline annotations on active entries and one-deep peek overlays. Multi-select pull uses a temporary "pose" against the existing Select mode. Full plan and phasing in `docs/mobile-crosstalk-plan.md`. Parked 2026-07-19 pending renewed focus on crosstalk.
+
+---
+
+**Icon / Symbol Library (replace emoji + text glyphs)**
+Adopt a proper icon set (e.g. an inline SVG sprite or a lightweight icon package that respects the "no external CDN, browser-only" constraints) for UI affordances currently drawn with emoji or bare text characters — the FAB `+`, hotbar action icons, the 📌/⬇/⎘/↕ glyphs, etc. Motivations: consistent rendering across platforms (emoji look different per-OS and don't inherit `currentColor`), crisper scaling, and cleaner theming once color themes land (Phase 10C). Scope to decide when picked up: which library/approach fits the layer rules and bundle budget, how icons are referenced from constants, and a migration order. Noted 2026-07-20 while fixing the mobile FAB long-press selection bug — not urgent, revisit after the Phase 10 parity/themes/accessibility work.
 
 ---
 

@@ -264,11 +264,11 @@ export function EntryDetailPanel() {
                   : 'Enable entry history?'}
               </button>
               <button
-                className={`entry-public-btn${entry.isPublic === false ? ' entry-public-btn--private' : ''}`}
-                onClick={() => update({ isPublic: entry.isPublic === false }, true)}
-                title={entry.isPublic === false ? 'Private on CharSnap — click to make public' : 'Public on CharSnap — click to make private'}
+                className={`entry-public-btn${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
+                onClick={() => update({ isPublic: entry.isPublic !== true }, true)}
+                title={entry.isPublic === true ? 'Public on CharSnap — click to make private' : 'Private on CharSnap — click to make public'}
               >
-                {entry.isPublic === false ? 'Private' : 'Public'}
+                {entry.isPublic === true ? 'Public' : 'Private'}
               </button>
               <button
                 className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}

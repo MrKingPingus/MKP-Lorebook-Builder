@@ -87,8 +87,9 @@ function normalizeEntry(raw, index) {
   // (plus PascalCase variants) so books authored for either format import correctly.
   const rawType = src.entryType ?? src.type ?? src.EntryType ?? src.Type;
 
-  // Public flag — CharSnap `isPublic`. Default true when absent or non-boolean.
-  const isPublic = typeof src.isPublic === 'boolean' ? src.isPublic : true;
+  // Public flag — CharSnap `isPublic`. CharSnap defaults entries to private, so
+  // treat an absent/non-boolean value as private (false).
+  const isPublic = typeof src.isPublic === 'boolean' ? src.isPublic : false;
 
   return {
     entry: {

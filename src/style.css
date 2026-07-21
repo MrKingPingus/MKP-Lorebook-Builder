@@ -477,6 +477,12 @@ img.logo-icon {
   line-height: 1;
   padding: 0;
   border: none;
+  /* The app's own long-press opens the quick-menu; without this the OS treats
+     the "+" glyph as selectable text and hijacks the gesture with its own
+     selection handles + Copy/Look Up/Translate callout. Suppress both. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .footer-fab:hover { background: #dc2626; transform: scale(1.07); }
 
@@ -1464,6 +1470,19 @@ img.logo-icon {
 }
 .bulk-action-apply--staged:hover:not(:disabled) {
   background: #d69e2e;
+}
+
+/* Secondary bulk expanders (Set Public/Private, Set Visibility) — neutral
+   treatment (not the red apply-to-all look of Change Type) since both are
+   reversible, non-destructive toggles. */
+.bulk-action-apply--secondary {
+  background: var(--surface3);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+.bulk-action-apply--secondary:hover:not(:disabled) {
+  background: var(--border);
+  border-color: var(--border2);
 }
 
 /* Chips row — forced onto its own full-width line via flex-basis inside the wrapping bar */
@@ -3803,12 +3822,30 @@ kbd {
     background: var(--surface);
   }
 
-  /* ── Hotbar: FAB floats above-right; equidistant 20px gap from right and above hotbar ── */
-  .footer-fab {
+  /* ── Hotbar: FAB floats above-right; equidistant 20px gap from right and above
+     hotbar. Float the WRAP (not the FAB) so the FAB stays in the wrap's flow and
+     the quick-menu — which anchors to the wrap — tracks with it. Anchoring the FAB
+     itself pulls it out of flow, collapsing the wrap to zero width mid-hotbar and
+     pushing both the FAB and its menu off-center. ── */
+  .footer-fab-wrap {
     position: absolute;
     right: 20px;
     bottom: calc(100% + 20px);
     z-index: 10;
+  }
+  /* The FAB floats at the right edge, so a menu centered on it would spill off
+     the right of the screen. Right-align it to the FAB and let it grow leftward
+     so it always stays on-screen. Own keyframe drops the translateX(-50%) the
+     centered desktop animation uses. */
+  .fab-quick-menu {
+    left: auto;
+    right: 0;
+    transform: none;
+    animation: fab-quick-menu-fade-in-mobile 0.14s ease-out;
+  }
+  @keyframes fab-quick-menu-fade-in-mobile {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   .hotbar { justify-content: flex-start; gap: 0; }
   .hotbar-group,
@@ -4050,9 +4087,9 @@ kbd {
   border-color: var(--yellow);
 }
 
-/* Per-entry CharSnap visibility (isPublic). Neutral when public (the default
-   state); blue when the entry is held back as private, mirroring the
-   hide-from-export button's "exception is highlighted" idiom. */
+/* Per-entry CharSnap visibility (isPublic). Entries default to private, so the
+   button is neutral when private (the default) and blue when the entry has been
+   made public — the exception is highlighted. */
 .entry-public-btn {
   margin-left: auto;
   padding: 3px 10px;
@@ -4069,11 +4106,11 @@ kbd {
   color: var(--text);
   border-color: var(--border2);
 }
-.entry-public-btn--private {
+.entry-public-btn--public {
   border-color: var(--passive-agree);
   color: var(--passive-agree);
 }
-.entry-public-btn--private:hover {
+.entry-public-btn--public:hover {
   background: var(--passive-agree);
   color: #fff;
   border-color: var(--passive-agree);
@@ -4110,6 +4147,24 @@ kbd {
   display: inline-flex;
   align-items: center;
   color: var(--yellow);
+  margin-left: 6px;
+}
+
+/* Public badge — open eye, passive-agree blue. Public is the CharSnap exception
+   (entries default to private), so this flags entries the user made public. */
+.entry-public-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--passive-agree);
+  margin-left: 6px;
+}
+
+/* Private badge — eye-off, opt-in via the "mark private entries" setting.
+   Muted since private is the default/expected state. */
+.entry-private-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted2);
   margin-left: 6px;
 }
 

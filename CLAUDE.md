@@ -13,8 +13,9 @@ npm install       # install dependencies
 npm run dev       # start Vite dev server (hot reload)
 npm run build     # production build → dist/
 npm run preview   # serve the production build locally
+npm run verify    # browser-driven behavioural checks (Playwright) — see verify/README.md
 ```
-There are no tests or linters configured.
+No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`.
 
 ## Architecture
 Browser-only SPA (React 18 + Vite 7). No backend, no database, no authentication. All persistence is `localStorage` via `storage-service.js`.
