@@ -140,6 +140,11 @@ const SCENARIOS = [
     await page.keyboard.press('Alt+n');
     await page.waitForTimeout(300);
     check('Alt+N adds an entry', await cards.count(), before + 1);
+    // A newly-wired action: Alt+I opens the append-import overlay; Escape closes.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+i');
+    await page.waitForTimeout(200);
+    check('Alt+I opens import overlay', await page.locator('.append-import-overlay').count(), 1);
   }),
 
   scenario('Escape stack pops the top layer first', async (page, check) => {

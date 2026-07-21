@@ -8,6 +8,7 @@ import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
 import { useKeybindings }        from './hooks/use-keybindings.js';
 import { useDismissLayer }       from './hooks/use-dismiss-layer.js';
 import { useSettings }           from './hooks/use-settings.js';
+import { useReferenceLorebook }  from './hooks/use-reference-lorebook.js';
 import { useEntries }            from './hooks/use-entries.js';
 import { useUndoRedo }           from './hooks/use-undo-redo.js';
 import { readJson, writeJson, detectQuotaProfile } from './services/storage-service.js';
@@ -115,6 +116,7 @@ export default function App() {
   const { undo, redo } = useUndoRedo();
   const { bindings }   = useKeybindings();
   const { crosstalkEnabled, setCrosstalkEnabled } = useSettings();
+  const { referenceLorebook, swapReference } = useReferenceLorebook();
   const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
 
   // ui-store setters used by the wired hotkey handlers + the Escape stack.
@@ -125,20 +127,33 @@ export default function App() {
   const setActiveMenuPanel = useUiStore((s) => s.setActiveMenuPanel);
   const requestSearchFocus = useUiStore((s) => s.requestSearchFocus);
   const toggleKeyboardHelp = useUiStore((s) => s.toggleKeyboardHelp);
+  const setShowAppendImport = useUiStore((s) => s.setShowAppendImport);
+
+  // Expand / collapse all — mirror the Filter bar toggle: flip whichever flag
+  // is active. The two flags are mutually exclusive triggers consumed by cards.
+  function toggleExpandCollapseAll() {
+    const ui = useUiStore.getState();
+    if (ui.expandAll) { ui.setExpandAll(false); ui.setCollapseAll(true); }
+    else              { ui.setExpandAll(true);  ui.setCollapseAll(false); }
+  }
 
   // Handler map keyed by registry action id. Actions without a handler here are
   // reserved defaults (collision-checked) that stay unwired until their batch.
   const handlers = useMemo(() => ({
-    new_entry:        () => addEntry(),
-    undo:             () => undo(),
-    redo:             () => redo(),
-    toggle_select:    () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
-    focus_search:     () => requestSearchFocus(),
-    toggle_reference: () => setCrosstalkEnabled(!useSettingsStore.getState().crosstalkEnabled),
-    export:           () => setActiveMenuPanel('import-export'),
-    open_settings:    () => setActiveMenuPanel('settings'),
-    keyboard_help:    () => toggleKeyboardHelp(),
-  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, setCrosstalkEnabled, setActiveMenuPanel, toggleKeyboardHelp]);
+    new_entry:           () => addEntry(),
+    undo:                () => undo(),
+    redo:                () => redo(),
+    toggle_select:       () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
+    expand_collapse_all: () => toggleExpandCollapseAll(),
+    focus_search:        () => requestSearchFocus(),
+    focus_find_replace:  () => setSearchMode(useUiStore.getState().searchMode === 'find-replace' ? 'search' : 'find-replace'),
+    toggle_reference:    () => setCrosstalkEnabled(!useSettingsStore.getState().crosstalkEnabled),
+    swap_reference:      () => { if (referenceLorebook) swapReference(); },
+    export:              () => setActiveMenuPanel('import-export'),
+    import_entries:      () => setShowAppendImport(true),
+    open_settings:       () => setActiveMenuPanel('settings'),
+    keyboard_help:       () => toggleKeyboardHelp(),
+  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, setCrosstalkEnabled, referenceLorebook, swapReference, setActiveMenuPanel, setShowAppendImport, toggleKeyboardHelp]);
 
   // Context gate for context-scoped bindings (e.g. crosstalk-only actions).
   const isEnabled = useCallback(

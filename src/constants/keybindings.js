@@ -34,22 +34,22 @@ export const KEYBINDINGS = [
 
   // Entries & selection
   { id: 'toggle_select',       label: 'Toggle select mode',       category: 'selection', defaultChord: 'Alt+S', wired: true },
-  { id: 'expand_collapse_all', label: 'Expand / collapse all',    category: 'selection', defaultChord: 'Alt+A', wired: false },
+  { id: 'expand_collapse_all', label: 'Expand / collapse all',    category: 'selection', defaultChord: 'Alt+A', wired: true },
   { id: 'toggle_compare',      label: 'Toggle compare mode',      category: 'selection', defaultChord: 'Alt+C', wired: false, context: 'crosstalk' },
 
   // Find & navigate
   { id: 'focus_search',        label: 'Focus search',             category: 'navigate',  defaultChord: '/',     wired: true },
-  { id: 'focus_find_replace',  label: 'Focus find & replace',     category: 'navigate',  defaultChord: 'Alt+H', wired: false },
+  { id: 'focus_find_replace',  label: 'Focus find & replace',     category: 'navigate',  defaultChord: 'Alt+H', wired: true },
   { id: 'next_cross_match',    label: 'Next cross-match',         category: 'navigate',  defaultChord: 'Alt+]', wired: false, context: 'crosstalk' },
   { id: 'prev_cross_match',    label: 'Previous cross-match',     category: 'navigate',  defaultChord: 'Alt+[', wired: false, context: 'crosstalk' },
 
   // Reference & crosstalk
   { id: 'toggle_reference',    label: 'Toggle reference panel',   category: 'reference', defaultChord: 'Alt+R', wired: true },
-  { id: 'swap_reference',      label: 'Swap reference ↔ active',  category: 'reference', defaultChord: 'Alt+W', wired: false, context: 'crosstalk' },
+  { id: 'swap_reference',      label: 'Swap reference ↔ active',  category: 'reference', defaultChord: 'Alt+W', wired: true, context: 'crosstalk' },
 
   // Import & export
   { id: 'export',              label: 'Export',                   category: 'io',        defaultChord: 'Alt+E', wired: true },
-  { id: 'import_entries',      label: 'Import entries',           category: 'io',        defaultChord: 'Alt+I', wired: false },
+  { id: 'import_entries',      label: 'Import entries',           category: 'io',        defaultChord: 'Alt+I', wired: true },
 
   // App
   { id: 'open_settings',       label: 'Open settings',            category: 'app',       defaultChord: 'Mod+,', wired: true },
