@@ -140,11 +140,58 @@ const SCENARIOS = [
     await page.keyboard.press('Alt+n');
     await page.waitForTimeout(300);
     check('Alt+N adds an entry', await cards.count(), before + 1);
-    // A newly-wired action: Alt+I opens the append-import overlay; Escape closes.
+    // Alt+I opens the append-import overlay straight into file mode.
     await page.evaluate(() => document.activeElement?.blur());
+    page.on('filechooser', () => {}); // swallow the auto-opened OS picker in headless
     await page.keyboard.press('Alt+i');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(250);
     check('Alt+I opens import overlay', await page.locator('.append-import-overlay').count(), 1);
+    check('Alt+I lands in file mode', await page.locator('.append-file-picker').count(), 1);
+  }),
+
+  scenario('Hotkeys in fields + find focus + export + help-close', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const cards = page.locator('.entry-card');
+    const before = await cards.count();
+
+    // Note 1: "/" focuses search; a modified chord still fires while focused there.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('/');
+    await page.waitForTimeout(150);
+    check('/ focuses the search input', await page.evaluate(() => (document.activeElement?.className || '').includes('search-input')), true);
+    await page.keyboard.press('Alt+n');
+    await page.waitForTimeout(250);
+    check('Alt+N fires from inside the search field', await cards.count(), before + 1);
+
+    // Note 3: undo works even though focus is now in the new entry's field.
+    check('focus moved into a text field', await page.evaluate(() => ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)), true);
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(250);
+    check('Ctrl+Z undoes from within a field', await cards.count(), before);
+
+    // Note 2: Alt+H opens find/replace AND focuses the Find field.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+h');
+    await page.waitForTimeout(250);
+    check('Alt+H focuses the Find field', await page.evaluate(() => (document.activeElement?.className || '').includes('find-input')), true);
+
+    // Note 5: Alt+E surfaces the centered export menu (same menu as the button).
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Alt+e');
+    await page.waitForTimeout(250);
+    check('Alt+E opens the export menu', await page.locator('.export-menu').count(), 1);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+
+    // Note 4: a hotkey pressed while the guide is open closes it and still runs.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('?');
+    await page.waitForTimeout(150);
+    check('help overlay open', await page.locator('.kbd-help-panel').count(), 1);
+    await page.keyboard.press('Alt+s');
+    await page.waitForTimeout(200);
+    check('a hotkey closes the guide', await page.locator('.kbd-help-panel').count(), 0);
+    check('...and still runs (select on)', await page.locator('.bulk-action-bar').count(), 1);
   }),
 
   scenario('Escape stack pops the top layer first', async (page, check) => {

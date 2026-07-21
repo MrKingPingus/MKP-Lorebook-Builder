@@ -60,13 +60,17 @@ export function ExportMenu() {
     closeExportMenu();
   }
 
-  // Grow upward from just above the anchor; clamp to the viewport horizontally.
-  const style = {
-    position: 'fixed',
-    bottom: Math.max(8, window.innerHeight - anchor.top + 8),
-    left:   Math.max(8, Math.min(anchor.left, window.innerWidth - MENU_WIDTH - 8)),
-    width:  MENU_WIDTH,
-  };
+  // 'center' (opened by the Export hotkey, no hotbar button to anchor to) sits
+  // in the middle of the screen; otherwise grow upward from just above the
+  // anchor rect, clamped to the viewport horizontally.
+  const style = anchor === 'center'
+    ? { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: MENU_WIDTH }
+    : {
+        position: 'fixed',
+        bottom: Math.max(8, window.innerHeight - anchor.top + 8),
+        left:   Math.max(8, Math.min(anchor.left, window.innerWidth - MENU_WIDTH - 8)),
+        width:  MENU_WIDTH,
+      };
 
   return createPortal(
     <div

@@ -112,6 +112,15 @@ export function formatChord(chord) {
   return parts.join(mac ? '' : '+');
 }
 
+/** True if the chord carries a non-Shift modifier (Mod/Ctrl/Alt/Meta). Such
+ *  chords are safe to fire while a text field is focused — they can't be part
+ *  of ordinary typing — whereas bare / Shift-only chords must reach the field. */
+export function chordHasHardModifier(chord) {
+  if (!chord) return false;
+  const { mods } = parseChord(chord);
+  return mods.has('Mod') || mods.has('Ctrl') || mods.has('Alt') || mods.has('Meta');
+}
+
 /** True if a chord must not be user-assigned (browser/OS reserved, or a bare
  *  alphanumeric key that would break typing). */
 export function isReservedChord(chord) {

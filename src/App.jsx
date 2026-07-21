@@ -126,8 +126,10 @@ export default function App() {
   const setCompareEntryId = useUiStore((s) => s.setCompareEntryId);
   const setActiveMenuPanel = useUiStore((s) => s.setActiveMenuPanel);
   const requestSearchFocus = useUiStore((s) => s.requestSearchFocus);
+  const requestFindFocus   = useUiStore((s) => s.requestFindFocus);
+  const requestImportPick  = useUiStore((s) => s.requestImportPick);
+  const openExportMenuCentered = useUiStore((s) => s.openExportMenuCentered);
   const toggleKeyboardHelp = useUiStore((s) => s.toggleKeyboardHelp);
-  const setShowAppendImport = useUiStore((s) => s.setShowAppendImport);
 
   // Expand / collapse all — mirror the Filter bar toggle: flip whichever flag
   // is active. The two flags are mutually exclusive triggers consumed by cards.
@@ -146,14 +148,30 @@ export default function App() {
     toggle_select:       () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
     expand_collapse_all: () => toggleExpandCollapseAll(),
     focus_search:        () => requestSearchFocus(),
-    focus_find_replace:  () => setSearchMode(useUiStore.getState().searchMode === 'find-replace' ? 'search' : 'find-replace'),
+    focus_find_replace:  () => requestFindFocus(),
     toggle_reference:    () => setCrosstalkEnabled(!useSettingsStore.getState().crosstalkEnabled),
     swap_reference:      () => { if (referenceLorebook) swapReference(); },
-    export:              () => setActiveMenuPanel('import-export'),
-    import_entries:      () => setShowAppendImport(true),
+    export:              () => openExportMenuCentered(),
+    import_entries:      () => requestImportPick(),
     open_settings:       () => setActiveMenuPanel('settings'),
     keyboard_help:       () => toggleKeyboardHelp(),
-  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, setCrosstalkEnabled, referenceLorebook, swapReference, setActiveMenuPanel, setShowAppendImport, toggleKeyboardHelp]);
+  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, requestFindFocus, setCrosstalkEnabled, referenceLorebook, swapReference, openExportMenuCentered, requestImportPick, setActiveMenuPanel, toggleKeyboardHelp]);
+
+  // Any hotkey (other than the help toggle itself) also dismisses the open
+  // cheat sheet — you press the shortcut you just looked up and the guide gets
+  // out of the way.
+  const wrappedHandlers = useMemo(() => {
+    const out = {};
+    for (const [id, fn] of Object.entries(handlers)) {
+      out[id] = (e) => {
+        if (id !== 'keyboard_help' && useUiStore.getState().keyboardHelpOpen) {
+          useUiStore.getState().setKeyboardHelpOpen(false);
+        }
+        fn(e);
+      };
+    }
+    return out;
+  }, [handlers]);
 
   // Context gate for context-scoped bindings (e.g. crosstalk-only actions).
   const isEnabled = useCallback(
@@ -161,7 +179,7 @@ export default function App() {
     [crosstalkEnabled],
   );
 
-  useKeyboardShortcuts({ bindings, handlers, isEnabled });
+  useKeyboardShortcuts({ bindings, handlers: wrappedHandlers, isEnabled });
 
   // Escape priority stack — app-level dismissable modes. Popovers register
   // themselves (higher priority) from their own components. Order here is set

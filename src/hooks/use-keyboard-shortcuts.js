@@ -3,7 +3,7 @@
 // to the dismiss stack (highest-priority active layer pops first). Replaces the
 // old fixed if-cascade — new actions are added via the registry, not here.
 import { useEffect } from 'react';
-import { matchesChord } from '../services/keychord.js';
+import { matchesChord, chordHasHardModifier } from '../services/keychord.js';
 import { dismissTopLayer } from '../services/dismiss-stack.js';
 
 function isTextInputFocused() {
@@ -26,15 +26,18 @@ export function useKeyboardShortcuts({ bindings, handlers, isEnabled }) {
 
       const inInput = isTextInputFocused();
       for (const b of bindings) {
-        if (inInput && !b.allowInInput) continue;
         if (b.context && isEnabled && !isEnabled(b.context)) continue;
         const handler = handlers[b.id];
         if (!handler) continue; // unwired action — reserved default only
-        if (b.chords.some((c) => matchesChord(e, c))) {
-          e.preventDefault();
-          handler(e);
-          return;
-        }
+        const matched = b.chords.find((c) => matchesChord(e, c));
+        if (!matched) continue;
+        // While a text field is focused, only modified chords fire — bare keys
+        // ("/", "?") must reach the field so they can be typed. allowInInput
+        // forces the exception if ever needed.
+        if (inInput && !b.allowInInput && !chordHasHardModifier(matched)) continue;
+        e.preventDefault();
+        handler(e);
+        return;
       }
     }
 

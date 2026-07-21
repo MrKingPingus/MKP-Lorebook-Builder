@@ -47,6 +47,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const searchFocusNonce   = useUi((s) => s.searchFocusNonce);
+  const findFocusNonce     = useUi((s) => s.findFocusNonce);
 
   const [sortOpen,      setSortOpen]      = useState(false);
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
@@ -66,6 +67,19 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
     const el = searchInputRef.current;
     if (el) { el.focus(); el.select?.(); }
   }, [searchFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Find/Replace hotkey — enter find-replace mode (mirroring the mode-dropdown
+  // sync of carrying the current query into the Find field) and focus the Find
+  // input once it renders.
+  useEffect(() => {
+    if (findFocusNonce === 0) return;
+    if (searchMode !== 'find-replace') {
+      setFindText(searchQuery);
+      setSearchQuery('');
+      setSearchMode('find-replace');
+    }
+    requestAnimationFrame(() => document.querySelector('.find-input')?.focus());
+  }, [findFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close sort dropdown on outside click
   useEffect(() => {
