@@ -15,8 +15,7 @@ export function KeybindingSettings() {
     <div className="kbd-settings">
       <div className="settings-hint">
         Click a shortcut, then press the keys you want. Browser-reserved combos
-        (Ctrl+T, Ctrl+W…) and bare letters can’t be assigned. Actions marked
-        <span className="kbd-soon-tag">soon</span> are reserved for a future update.
+        (Ctrl+T, Ctrl+W…) and bare letters can’t be assigned.
       </div>
 
       {rowsByCategory.map((cat) => (

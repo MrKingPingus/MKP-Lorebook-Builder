@@ -30,18 +30,13 @@ export const KEYBINDINGS = [
   { id: 'new_entry',           label: 'New entry',                category: 'editing',   defaultChord: 'Alt+N', wired: true },
   { id: 'undo',                label: 'Undo',                     category: 'editing',   defaultChord: 'Mod+Z', wired: true },
   { id: 'redo',                label: 'Redo',                     category: 'editing',   defaultChord: 'Mod+Y', altChords: ['Mod+Shift+Z'], wired: true },
-  { id: 'save_snapshot',       label: 'Save snapshot',            category: 'editing',   defaultChord: 'Mod+S', wired: false },
-
   // Entries & selection
   { id: 'toggle_select',       label: 'Toggle select mode',       category: 'selection', defaultChord: 'Alt+S', wired: true },
   { id: 'expand_collapse_all', label: 'Expand / collapse all',    category: 'selection', defaultChord: 'Alt+A', wired: true },
-  { id: 'toggle_compare',      label: 'Toggle compare mode',      category: 'selection', defaultChord: 'Alt+C', wired: false, context: 'crosstalk' },
 
   // Find & navigate
   { id: 'focus_search',        label: 'Focus search',             category: 'navigate',  defaultChord: '/',     wired: true },
   { id: 'focus_find_replace',  label: 'Focus find & replace',     category: 'navigate',  defaultChord: 'Alt+H', wired: true },
-  { id: 'next_cross_match',    label: 'Next cross-match',         category: 'navigate',  defaultChord: 'Alt+]', wired: false, context: 'crosstalk' },
-  { id: 'prev_cross_match',    label: 'Previous cross-match',     category: 'navigate',  defaultChord: 'Alt+[', wired: false, context: 'crosstalk' },
 
   // Reference & crosstalk
   { id: 'toggle_reference',    label: 'Toggle reference panel',   category: 'reference', defaultChord: 'Alt+R', wired: true },
