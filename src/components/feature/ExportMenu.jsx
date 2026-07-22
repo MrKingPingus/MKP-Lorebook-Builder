@@ -31,7 +31,8 @@ export function ExportMenu() {
     function onDown(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) closeExportMenu();
     }
-    function onKey(e) { if (e.key === 'Escape') closeExportMenu(); }
+    // Consume Escape before the window dispatcher so it closes this menu only.
+    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); closeExportMenu(); } }
     const id = setTimeout(() => document.addEventListener('pointerdown', onDown), 0);
     document.addEventListener('keydown', onKey);
     return () => {
@@ -59,13 +60,17 @@ export function ExportMenu() {
     closeExportMenu();
   }
 
-  // Grow upward from just above the anchor; clamp to the viewport horizontally.
-  const style = {
-    position: 'fixed',
-    bottom: Math.max(8, window.innerHeight - anchor.top + 8),
-    left:   Math.max(8, Math.min(anchor.left, window.innerWidth - MENU_WIDTH - 8)),
-    width:  MENU_WIDTH,
-  };
+  // 'center' (opened by the Export hotkey, no hotbar button to anchor to) sits
+  // in the middle of the screen; otherwise grow upward from just above the
+  // anchor rect, clamped to the viewport horizontally.
+  const style = anchor === 'center'
+    ? { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: MENU_WIDTH }
+    : {
+        position: 'fixed',
+        bottom: Math.max(8, window.innerHeight - anchor.top + 8),
+        left:   Math.max(8, Math.min(anchor.left, window.innerWidth - MENU_WIDTH - 8)),
+        width:  MENU_WIDTH,
+      };
 
   return createPortal(
     <div

@@ -44,31 +44,52 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 **Stop condition:** ✅ (verified 2026-07-20, browser-driven against the Reika fixture) In Select mode, the user can multi-select (or Select-All-Visible) entries and bulk Hide/Show them via `Set Visibility ▾` in one undoable step; undo restores; the per-card Hide button still works.
 
+### 10C-pre — Hotkey Engine Overhaul (shipped)
+
+**Context:** Pulled out of 10D and done first as its own standalone pass (decision 2026-07-21). The old system was a fixed if-cascade in `useKeyboardShortcuts` with only three single-letter, fixed-modifier hotkeys. Replaced with a registry-driven engine so shortcuts are data, not conditionals.
+
+- [x] **Keybinding registry** — `constants/keybindings.js`: pure action descriptors (`id`, `label`, `category`, `defaultChord`, `wired`, `context`, `fixed`). `services/keychord.js` owns the canonical chord grammar (cross-platform `Mod` = ⌘/Ctrl), event matching, capture, platform-aware display, reserved-chord checks, and the legacy-hotkey migration.
+- [x] **Dispatch table** — `useKeyboardShortcuts` is now a thin dispatcher over the resolved binding list + a handler map from `App.jsx`; adding an action is a registry line, not a new conditional. `use-keybindings.js` merges registry defaults with `settings-store.keybindings` overrides (deltas only) and is the single source of truth for chord display.
+- [x] **Full capture-based rebinding** — Settings → Hotkeys is a per-action table with a "press the keys" capture control, reserved-chord refusal, duplicate-clash warnings, per-row + reset-all. Legacy `newEntry/undo/redo` single-letter fields migrate into the override map on boot.
+- [x] **Escape priority stack** — `services/dismiss-stack.js` + `use-dismiss-layer.js`; Escape pops the single highest-priority active layer (popover → modal → find-replace → compare → pick-from-reference → select). The four menu popovers consume Escape before the global dispatcher; the old single-layer cascade is gone.
+- [x] **Cheat-sheet overlay** — `?` opens a registry-generated shortcut list (`KeyboardHelpOverlay`); it updates live with custom bindings and has an "Edit shortcuts" deep-link into Settings → Hotkeys. All six previously-hardcoded chord displays (hotbar tooltips, lander, empty-state, rollback hint) now read from the registry.
+- [x] **Wired actions (13)** — new entry, undo, redo, toggle select, expand/collapse all, focus search, focus find & replace, toggle reference, swap reference (crosstalk), export, import entries, open settings, keyboard help. Every registry action is wired; there are no "soon" placeholders. Save-snapshot, toggle-compare, and next/prev cross-match were considered and **dropped** (2026-07-21): snapshot already fires on edit/close, and compare/cross-match are niche crosstalk-only actions with fine mouse affordances. Per-entry keyboard actions (and the focused-entry cursor they'd need) belong to 10D accessibility.
+
+**Stop condition:** ✅ (verified 2026-07-21, browser-driven) Users rebind any action via capture; custom chords fire and display everywhere live; `?` shows the sheet; Escape pops layers in priority order. See `verify/checks.mjs` (default-fire, Escape-stack ordering, rebind + live display).
+
 ### 10C — Color themes
 
 **Goal:** Switch among stock themes and build a custom one.
 
 Foundation is solid: the whole palette is ~15 CSS custom properties in one `:root` block (`style.css:21–51`). Stock themes = alternate token sets; custom = user values persisted to `settings-store`, injected as inline vars. Decision (2026-07-19): **do all three tiers in one pass.**
 
-- [ ] **Theme mechanism** — a `data-theme` attribute/class on the app root selects a stock palette; `settings-store` gains a `theme` field, applied on boot.
-- [ ] **Stock dark themes** — a handful of curated dark palettes (low risk).
-- [ ] **Light / high-contrast theme** — needs an audit for hardcoded dark-assumption colors (shadows, inline hex bypassing tokens). High-contrast doubles as the accessibility theme (feeds 10D).
-- [ ] **Custom theme editor** — settings UI to set core tokens, validate contrast, persist as inline `:root` overrides.
-- [ ] **Entry-type dot colors stay in `entry-types.js`** and are untouched, *except* an opt-in override available only in custom mode (default: dots unchanged).
+**Scope trim (2026-07-21):** keep it lean — no curated preset palettes. Ship **light**, **high-contrast**, and **custom** only; dark stays the default. The feared audit was unfounded: the app has **zero** structural colors bypassing tokens (verified by grep), so light/high-contrast are just token-override blocks.
 
-**Stop condition:** User can pick a stock dark theme, switch to light/high-contrast, and define + persist a custom theme (optionally overriding entry-type dot colors).
+- [x] **Theme mechanism** — `data-theme` on `<html>` (cascades to portals); `settings-store.theme` (`dark`/`light`/`high-contrast`/`custom`), applied pre-render in `main.jsx` (no flash) and kept in sync by `use-theme`. `services/theme-service.js` is the applier.
+- [x] ~~Stock dark themes~~ — **descoped** (no curation, per the trim above).
+- [x] **Light + high-contrast themes** — full token-override blocks (`:root[data-theme="light"|"high-contrast"]`), verified in the real app (light + HC screenshots). High-contrast doubles as 10D's accessibility theme.
+- [x] **Custom theme editor** — Settings → Appearance: seven core color pickers (`constants/themes.js`), the rest derived via `color-mix` in the `[data-theme="custom"]` block; live WCAG contrast readout; persisted to `settings-store` and injected inline.
+- [x] **Entry-type dot colors stay fixed** — untouched in all themes, including custom (the opt-in override was dropped, decision 3a 2026-07-21).
+
+**Stop condition:** ✅ (verified 2026-07-21, browser-driven + screenshots) User can switch dark/light/high-contrast, define + persist a custom theme, and it survives reload without a flash. See `verify/checks.mjs` (Themes scenario, 9/9).
 
 ### 10D — Accessibility section
 
 **Goal:** A dedicated Accessibility section in Settings covering scale, motion, contrast, and hotkeys.
 
-- [ ] **New Settings → Accessibility accordion section.**
-- [ ] **Font / UI scale** — the CSS is ~274 px-based font-sizes vs. 1 rem, so scaling can't be a root-size toggle. Robust path: mechanical px→rem conversion + a root scale multiplier (3–4 steps, e.g. 90 / 100 / 110 / 125 %). Avoid `zoom` / `transform: scale` wrappers — they break this app's fixed-position portals, draggable/resizable window, and `getClientRects` diff overlays. Budget as a real pass, not a toggle.
-- [ ] **Reduced motion** — a toggle (and honouring `prefers-reduced-motion`) that disables smooth-scroll and CSS transitions.
-- [ ] **High-contrast** — surfaced here, backed by the 10C high-contrast theme.
-- [ ] **Move Hotkeys under Accessibility** — relocate the existing Hotkeys accordion into this section and fold in the "Hotkey & ESC Roadmap" work (wider set of configurable actions + a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals).
+**Scope (2026-07-22):** lean-but-real — decisions `1a text-only scale, 2a focus-visible, 3a targeted ARIA, 4b defer entry-list keyboard nav, 5 System theme`.
 
-**Stop condition:** Settings has an Accessibility section; font/UI scale visibly resizes the app; reduced-motion and high-contrast toggles work; hotkeys are configured from within this section.
+- [x] **New Settings → Accessibility accordion section** — text size, reduced motion, high-contrast, and the relocated keyboard shortcuts (`AccessibilitySettings.jsx`).
+- [x] **Font / UI scale (text-only)** — the 302 `font-size` px were converted to `rem` (scripted) with a root `--ui-scale` multiplier on `html` (90/100/110/125%). Layout px untouched, so only text scales — no `zoom`/`transform` wrappers. Applied pre-render (no resize flash) + persisted. The feared audit was smaller than budgeted: **zero** structural colors/sizes bypass tokens.
+- [x] **Reduced motion** — a toggle **and** `@media (prefers-reduced-motion)`; kills CSS transitions/animations and routes the 9 JS `scrollIntoView` smooth-scrolls through a `reducedMotionScrollBehavior()` helper so they jump too.
+- [x] **High-contrast** — surfaced as a toggle here, backed by the 10C high-contrast theme (no rework).
+- [x] **Keyboard focus visibility** *(added, decision 2a)* — a global `:focus-visible` ring overriding the 8 `outline:none` resets. The app had **zero** focus styling before.
+- [x] **Targeted ARIA labels** *(added, decision 3a)* — primary icon-only controls (menu, FAB, window close, import close); entry badges already had labels.
+- [x] **System theme** *(added, decision 5)* — follows the OS light/dark preference and re-resolves live on OS change (`resolveTheme`, in Appearance).
+- [x] **Move Hotkeys under Accessibility** — the rebuilt Hotkeys editor now lives inside the Accessibility section (the standalone Hotkeys accordion is gone; the help-overlay deep-link points here).
+- [ ] **Entry-list keyboard navigation** — *deferred (decision 4b)* to its own pass: a roving focus cursor + list `aria` so keyboard/screen-reader users can move through and act on entries. Also unblocks per-entry hotkeys if ever wanted.
+
+**Stop condition:** ✅ (verified 2026-07-22, browser-driven + screenshot) Settings has an Accessibility section; text scale visibly resizes the app and persists; reduced-motion, high-contrast, and System theme work; hotkeys are configured from within this section. See `verify/checks.mjs` (Accessibility + Themes scenarios, 10/10).
 
 **Estimated Complexity:** 10A Low · 10B Low–Medium · 10C Medium · 10D Medium–High
 
@@ -241,11 +262,13 @@ A dedicated help section accessible from the UI (button or settings tab) contain
 ---
 
 **Hotkey & ESC Roadmap**
-Polish Pass 5 Phase 2 wired `Escape` to exit bulk select mode (and cancel the pick-from-reference sub-pose) via `useKeyboardShortcuts({ onEscape })` in `App.jsx`. The `isTextInputFocused()` guard preserves local Escape semantics on inline editors and modal inputs. Open work, queued together for a future "hotkey pass":
+The engine overhaul shipped in **10C-pre** (2026-07-21). Status of the original open items:
 
-1. **Extend Escape to other state-dependent modes.** Candidates: exit Find & Replace mode (`searchMode === 'find-replace'`), exit compare mode (clear `compareEntryId`), close any open popovers/menus that don't already self-handle Escape, dismiss the lander, dismiss the snapshot navigate-away prompt without saving. Each new target needs its priority worked out — e.g., if the user is in select mode AND compare mode, which exits first? The current handler is a single-layer cascade; a stack/priority approach may be needed.
-2. **General appraisal of key configurations.** Audit every existing keyboard binding (the App-level `useKeyboardShortcuts`, plus all the local handlers found in `Chip.jsx`, `LorebookNameModal.jsx`, `TypeFilterBar.jsx`, `ThesaurusPopover.jsx`, `LorebookPanel.jsx`, `LorebookRoleBar.jsx`, `RollbackPanel.jsx`, `LorebookSwitcher.jsx`). Catalogue: where the binding lives, whether it's user-configurable, what guards it (focus checks, `e.stopPropagation`), and any collisions. Goal is a single source of truth and consistent guard rules.
-3. **Wider selection of hotkeys.** Currently only New Entry, Undo, and Redo are user-configurable (Settings → Hotkeys, with Alt/Ctrl modifiers). Likely additions: toggle bulk select, save snapshot, toggle compare mode, jump to next/prev cross-match, focus search, focus find/replace, toggle crosstalk, swap reference, expand/collapse all entries. Needs a settings-store schema extension (each new action gets its own configurable key + modifier) and a dispatch table so `useKeyboardShortcuts` doesn't grow a wall of conditionals.
+1. ✅ **Escape priority stack** — `services/dismiss-stack.js` pops the highest-priority active layer (popover → modal → find-replace → compare → pick-from-reference → select); the four menu popovers consume Escape before the global dispatcher. The old single-layer cascade is gone. Not yet in the stack: the lander and the snapshot navigate-away prompt (intentionally left — low value / surprise risk).
+2. ◑ **Key-config audit** — the App-level bindings and the four menu popovers (`TypeFilterBar`, `ExportMenu`, `ThesaurusPopover`, `LorebookRoleBar`) were catalogued and normalised into the registry / dismiss stack. The remaining inline-editor handlers (`Chip.jsx`, `LorebookNameModal.jsx`, `LorebookPanel.jsx`, `LorebookSwitcher.jsx`, `RollbackPanel.jsx` label edit) stay local by design — focus-guarded, no collision — and were left untouched (decision 5b).
+3. ✅ **Wider configurable set + dispatch table** — done. All 13 registry actions are wired (no reserved placeholders). Save-snapshot / toggle-compare / next-prev-cross-match were dropped as low-value (see 10C-pre). Per-entry keyboard actions + the focused-entry cursor move to 10D accessibility.
+
+**Deferred gap — keyboard entry navigation.** There is no "focused entry" concept (no roving-tabindex cursor over entry cards), so per-entry keyboard ops (duplicate / delete / toggle *this* entry) aren't yet possible. This is a real accessibility item for **10D-proper** or later — building it is a feature in its own right, out of scope for the engine pass.
 
 **Lookup Table Trigger System**
 A categorised, genre-separated reference table for trigger suggestions — separate from the live suggestion engine. Users would browse or filter a curated list of triggers by type or genre and add them directly. Depends on: nothing currently built blocks it, but it is a substantial standalone feature. Would benefit from the suggestion engine architecture being stable first.

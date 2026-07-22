@@ -1,5 +1,6 @@
 // Search input with mode select, sort button, match counter, Enter-key navigation, and results dropdown
 import { useState, useRef, useEffect } from 'react';
+import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { useSearch }            from '../../hooks/use-search.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useFindReplace }       from '../../hooks/use-find-replace.js';
@@ -46,6 +47,8 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const setSortMode        = useUi((s) => s.setSortMode);
   const setSearchFocusedId = useUi((s) => s.setSearchFocusedId);
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
+  const searchFocusNonce   = useUi((s) => s.searchFocusNonce);
+  const findFocusNonce     = useUi((s) => s.findFocusNonce);
 
   const [sortOpen,      setSortOpen]      = useState(false);
   const [dropdownOpen,  setDropdownOpen]  = useState(false);
@@ -56,6 +59,31 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const searchInputRef = useRef(null);
   // Track query at last navigation press to reset index when query changes
   const lastNavQuery   = useRef('');
+
+  // Focus-search hotkey — switch to search mode and focus the input. Guarded
+  // by the nonce so it only runs on an actual hotkey press, not first mount.
+  useEffect(() => {
+    if (searchFocusNonce === 0) return;
+    if (searchMode !== 'search') setSearchMode('search');
+    const el = searchInputRef.current;
+    if (el) { el.focus(); el.select?.(); }
+  }, [searchFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Find/Replace hotkey — toggles. Already in find-replace? revert to search
+  // (carrying the Find text back into the query, mirroring the mode dropdown).
+  // Otherwise enter find-replace, carry the query into Find, and focus it.
+  useEffect(() => {
+    if (findFocusNonce === 0) return;
+    if (searchMode === 'find-replace') {
+      setSearchQuery(findText);
+      setSearchMode('search');
+      return;
+    }
+    setFindText(searchQuery);
+    setSearchQuery('');
+    setSearchMode('find-replace');
+    requestAnimationFrame(() => document.querySelector('.find-input')?.focus());
+  }, [findFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close sort dropdown on outside click
   useEffect(() => {
@@ -113,7 +141,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
     lastNavQuery.current = searchQuery;
     const target = matchDetails[wrapped];
     setSearchFocusedId(target.id);
-    document.getElementById(`entry-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById(`entry-${target.id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     setDropdownOpen(false);
   }
 
@@ -131,7 +159,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
 
   function onResultClick(id) {
     setSearchFocusedId(id);
-    document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     setDropdownOpen(false);
   }
 

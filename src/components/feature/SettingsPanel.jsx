@@ -1,9 +1,12 @@
 // Settings tab content — all user preference controls, grouped into
 // collapsible categories so the panel stops being one long scroll.
-import { useState }          from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
+import { useUi }             from '../../hooks/use-ui.js';
+import { ThemeSettings }         from './ThemeSettings.jsx';
+import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import {
   MIN_WINDOW_WIDTH,
@@ -41,9 +44,6 @@ export function SettingsPanel() {
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
-    newEntryHotkey,
-    undoHotkey,
-    redoHotkey,
     hotbarSlots,
     entryTypeView,
     fabSize,
@@ -57,9 +57,6 @@ export function SettingsPanel() {
     setHideSuggestionsByDefault,
     setHideEntryStats,
     setMarkPrivateEntries,
-    setNewEntryHotkey,
-    setUndoHotkey,
-    setRedoHotkey,
     setHotbarSlots,
     setEntryTypeView,
     setFabSize,
@@ -95,6 +92,18 @@ export function SettingsPanel() {
   // Editing is open by default — most users land in Settings to tweak it.
   // Other sections collapsed so the panel reads as a short menu.
   const [openSet, setOpenSet] = useState(() => new Set(['editing']));
+
+  // Deep-link: another surface (e.g. the keyboard-help overlay's "Edit
+  // shortcuts") can request a specific accordion section be opened. Consume and
+  // clear the request when the panel mounts / the request changes.
+  const pendingSettingsSection    = useUi((s) => s.pendingSettingsSection);
+  const setPendingSettingsSection = useUi((s) => s.setPendingSettingsSection);
+  useEffect(() => {
+    if (!pendingSettingsSection) return;
+    setOpenSet((prev) => new Set(prev).add(pendingSettingsSection));
+    setPendingSettingsSection(null);
+  }, [pendingSettingsSection, setPendingSettingsSection]);
+
   function toggleSection(id) {
     setOpenSet((prev) => {
       const next = new Set(prev);
@@ -512,66 +521,17 @@ export function SettingsPanel() {
       </SettingsSection>
 
       {/* ════════════════════════════════════════════════════════════
-          Hotkeys
+          Appearance
           ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="hotkeys" title="Hotkeys" openSet={openSet} toggleSection={toggleSection}>
+      <SettingsSection id="appearance" title="Appearance" openSet={openSet} toggleSection={toggleSection}>
+        <ThemeSettings />
+      </SettingsSection>
 
-        <div className="settings-group">
-          <div className="settings-label">New entry hotkey</div>
-          <div className="settings-row settings-row--hotkey">
-            <span className="settings-hint">Alt +</span>
-            <input
-              type="text"
-              className="hotkey-input"
-              maxLength={1}
-              value={newEntryHotkey}
-              onChange={(e) => {
-                const v = e.target.value.toLowerCase();
-                if (v) setNewEntryHotkey(v);
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="settings-group">
-          <div className="settings-label">Undo hotkey</div>
-          <div className="settings-row settings-row--hotkey">
-            <span className="settings-hint">Ctrl +</span>
-            <input
-              type="text"
-              className="hotkey-input"
-              maxLength={1}
-              value={undoHotkey}
-              onChange={(e) => {
-                const v = e.target.value.toLowerCase();
-                if (v) setUndoHotkey(v);
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="settings-group">
-          <div className="settings-label">Redo hotkey</div>
-          <div className="settings-row settings-row--hotkey">
-            <span className="settings-hint">Ctrl +</span>
-            <input
-              type="text"
-              className="hotkey-input"
-              maxLength={1}
-              value={redoHotkey}
-              onChange={(e) => {
-                const v = e.target.value.toLowerCase();
-                if (v) setRedoHotkey(v);
-              }}
-            />
-          </div>
-          <div className="settings-hint">
-            <kbd>Alt+{newEntryHotkey.toUpperCase()}</kbd> New entry &nbsp;·&nbsp;
-            <kbd>Ctrl+{undoHotkey.toUpperCase()}</kbd> Undo &nbsp;·&nbsp;
-            <kbd>Ctrl+{redoHotkey.toUpperCase()}</kbd> Redo
-          </div>
-        </div>
-
+      {/* ════════════════════════════════════════════════════════════
+          Accessibility (text scale, motion, contrast, keyboard shortcuts)
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="accessibility" title="Accessibility" openSet={openSet} toggleSection={toggleSection}>
+        <AccessibilitySettings />
       </SettingsSection>
 
     </div>

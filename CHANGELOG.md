@@ -2,7 +2,46 @@
 
 ---
 
-## 2026-07-20
+## 2026-07-22
+
+### Additions
+
+- **Color themes** — Settings → Appearance now lets you switch the whole app between **Dark** (the original), **Light**, and a **High contrast** theme for maximum readability. Your choice is remembered and applied the instant the app loads, with no flash of the old colors.
+- **Custom theme** — pick **Custom** and set seven core colors (background, panel, border, text, muted text, accent, and links) with color pickers; the app shades everything else — panels, hovers, borders — from those. A live contrast readout tells you whether your text-on-background is easy to read (AAA / AA / Fail), so you don't accidentally make it unreadable. Custom colors are saved and restored across reloads.
+- **System theme** — a new **System** option follows your device's light/dark setting automatically, and flips the moment your device does.
+- **Accessibility settings** — a new Settings → Accessibility section with:
+  - **Text size** — bump the app's text to 90% / 100% / 110% / 125%. Only the text scales; the layout stays put. Remembered across reloads.
+  - **Reduce motion** — a toggle that turns off transitions and smooth scrolling (and your device's own "reduce motion" setting is always respected).
+  - **High-contrast** — a quick toggle for the high-contrast theme, right where you'd look for it.
+- **Clearer keyboard focus** — tabbing through the app with the keyboard now shows a clear focus ring on whatever's selected, so you can always see where you are. Icon-only buttons (the menu, the ＋, close buttons) also got proper labels for screen readers.
+
+### Adjustments
+
+- **Keyboard shortcuts moved into Accessibility** — the shortcut editor now lives under Settings → Accessibility (it used to be its own "Hotkeys" section). Nothing about how it works changed.
+
+---
+
+## 2026-07-21
+
+### Additions
+
+- **Customisable keyboard shortcuts** — Settings → Hotkeys is now a full shortcut editor. Click any action, press the keys you want, and it’s bound — modifiers and all, not just a single letter. Browser-reserved combos (Ctrl+T, Ctrl+W…) and bare letters are refused, and if a combo is already used elsewhere you get a heads-up. Each shortcut has a reset, plus a “Reset all to defaults”. Your existing New Entry / Undo / Redo letters carry over automatically.
+- **More things you can bind** — alongside New Entry, Undo, and Redo, you can now set shortcuts for toggling Select mode, expand/collapse all, focusing search, opening Find & Replace, toggling and swapping the reference panel, exporting, importing entries, opening Settings, and opening the shortcut list. Every shortcut in the list is live — there are no placeholders.
+- **Press `?` for the shortcut cheat sheet** — a tidy, always-current list of every shortcut, grouped by area. It reflects any custom keys you’ve set, and has an “Edit shortcuts…” button that jumps straight to the Hotkeys settings.
+- **Escape is smarter about what it closes** — with several things open at once (say a menu on top of Select mode), Escape now closes just the top-most one, then the next, in a sensible order — instead of dismissing everything or the wrong thing.
+
+### Adjustments
+
+- **Shortcut hints stay in sync everywhere** — the hints shown on the hotbar buttons, the launch screen, the empty-entry message, and the restore note now show your *actual* keys, so they update the moment you rebind something instead of showing the old default.
+
+### Fixes
+
+- **Option-key shortcuts now work on Mac** — the Alt/Option shortcuts (e.g. Option+N for a new entry) were dead on macOS, because holding Option makes the keyboard emit a special character instead of the plain letter. Shortcuts are now matched by physical key, so Option combos fire correctly on Mac while Shift-based symbols (like `?` vs `/`) still stay distinct.
+- **Shortcuts keep working while you're typing** — combos with a modifier (like Alt/Option or Ctrl/Cmd) now fire even when the cursor is inside a text field, so you can add a new entry, undo, or open Find & Replace without first clicking out. In particular, Undo/Redo now work right after creating an entry (when the cursor lands in the new entry), and Ctrl/Cmd+Z inside a field now runs the app's undo. Single-key shortcuts (`/`, `?`) still stay out of your way while typing.
+- **Find & Replace shortcut jumps into the field** — opening Find & Replace by shortcut now drops your cursor straight into the Find box (and carries over whatever was in the search box), matching how the search shortcut works. Pressing it again toggles back to Search.
+- **Export shortcut opens the real export menu** — the Export shortcut now pops the same filename-and-format menu as the hotbar Export button, centered on screen, instead of just opening the Import/Export tab.
+- **Import shortcut opens the file picker** — the Import shortcut now takes you straight to your file browser to pick a lorebook, instead of stopping at the import screen. After you pick a file, it asks whether to **append** the entries to the current book or bring them in as a **new** book.
+- **The shortcut guide gets out of the way** — pressing a shortcut while the `?` cheat sheet is open now runs it and closes the guide in one go.
 
 ### Additions
 

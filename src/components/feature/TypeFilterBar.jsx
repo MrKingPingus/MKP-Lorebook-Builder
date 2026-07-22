@@ -49,7 +49,9 @@ export function TypeFilterBar({ entries }) {
   // Close on Escape
   useEffect(() => {
     if (!open) return;
-    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
+    // Consume Escape (document fires before the window dispatcher) so it closes
+    // this popover only, not a dismissable mode beneath it.
+    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);

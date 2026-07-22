@@ -3,10 +3,11 @@
 //   - paste        : paste a block of entries into the textarea, parse, append
 //   - file-entries : drop / pick a file, parse, append entries to active book
 //   - file-book    : drop / pick a file, parse, then Replace or Import as New
-import { useState }          from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppendImport }   from '../../hooks/use-append-import.js';
 import { useEntries }        from '../../hooks/use-entries.js';
 import { useLorebook }       from '../../hooks/use-lorebook.js';
+import { useUi }             from '../../hooks/use-ui.js';
 import { ImportPreview }     from './ImportPreview.jsx';
 
 const MODES = [
@@ -35,6 +36,27 @@ export function AppendImportPanel() {
   const [mode, setMode]    = useState('paste');
   const [text, setText]    = useState('');
   const [dragging, setDragging] = useState(false);
+
+  // Import hotkey: jump straight to the file picker. Switch to file mode, then
+  // click the file input once it renders (the keydown's transient activation
+  // keeps the OS dialog allowed). One-shot — the store flag is consumed here.
+  const pendingImportPick    = useUi((s) => s.pendingImportPick);
+  const setPendingImportPick = useUi((s) => s.setPendingImportPick);
+  const fileInputRef = useRef(null);
+  const [armPick, setArmPick] = useState(false);
+  useEffect(() => {
+    if (!pendingImportPick) return;
+    setMode('file-choose');
+    setArmPick(true);
+    setPendingImportPick(false);
+  }, [pendingImportPick, setPendingImportPick]);
+  useEffect(() => {
+    if (!armPick) return;
+    if (mode.startsWith('file') && !preview && fileInputRef.current) {
+      fileInputRef.current.click();
+      setArmPick(false);
+    }
+  }, [armPick, mode, preview]);
 
   function onDragEnter(e) { e.preventDefault(); setDragging(true); }
   function onDragOver(e)  { e.preventDefault(); }
@@ -65,8 +87,11 @@ export function AppendImportPanel() {
 
   const lorebookName = activeLorebook?.name || '(unnamed)';
   const showPasteUi  = mode === 'paste'        && !preview;
-  const showFileUi   = (mode === 'file-entries' || mode === 'file-book') && !preview;
+  const showFileUi   = (mode === 'file-entries' || mode === 'file-book' || mode === 'file-choose') && !preview;
   const isBookMode   = mode === 'file-book';
+  // file-choose (opened by the Import hotkey): after picking a file, offer
+  // Append vs Import-as-New rather than committing to one disposition up front.
+  const isChooseMode = mode === 'file-choose';
 
   return (
     <div className="append-import-overlay">
@@ -79,7 +104,7 @@ export function AppendImportPanel() {
       >
         <div className="append-import-header">
           <span className="append-import-title">Import</span>
-          <button className="append-import-close" onClick={cancel} title="Close">×</button>
+          <button className="append-import-close" onClick={cancel} title="Close" aria-label="Close import">×</button>
         </div>
 
         {!preview && (
@@ -137,6 +162,7 @@ export function AppendImportPanel() {
             </div>
             <label className="append-file-picker">
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".txt,.docx,.odt,.json"
                 onChange={onPickFile}
@@ -155,7 +181,7 @@ export function AppendImportPanel() {
 
         {error && <div className="import-error">{error}</div>}
 
-        {preview && !isBookMode && (
+        {preview && !isBookMode && !isChooseMode && (
           <>
             <div className="import-disposition-banner">
               Will <strong>append</strong> {preview.length} {preview.length === 1 ? 'entry' : 'entries'} to &ldquo;{lorebookName}&rdquo;.
@@ -166,6 +192,31 @@ export function AppendImportPanel() {
               onConfirm={confirmAppend}
               onCancel={cancel}
             />
+          </>
+        )}
+
+        {preview && isChooseMode && (
+          <>
+            <div className="import-disposition-banner">
+              Importing {preview.length} {preview.length === 1 ? 'entry' : 'entries'}
+              {importedName ? <> from &ldquo;{importedName}&rdquo;</> : null}.
+              Add them how?
+            </div>
+            <ImportPreview
+              entries={preview}
+              hideActions
+            />
+            <div className="append-book-actions">
+              <button className="import-save-btn" onClick={confirmAppend}>
+                Append to &ldquo;{lorebookName}&rdquo;
+              </button>
+              <button className="import-save-btn import-save-btn--new" onClick={confirmAsNew}>
+                Import as New Lorebook
+              </button>
+              <button className="import-save-btn import-save-btn--cancel" onClick={cancel}>
+                Cancel
+              </button>
+            </div>
           </>
         )}
 

@@ -1,5 +1,6 @@
 // Rollback panel: snapshot list and snapshot preview (stacked current/snapshot display)
 import { useState }     from 'react';
+import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { ENTRY_TYPES }  from '../../constants/entry-types.js';
 import { diffEntries }  from '../../services/diff-service.js';
 
@@ -13,6 +14,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
   const [editingLabelIdx, setEditingLabelIdx] = useState(null);
   const [labelDraft, setLabelDraft]           = useState('');
   const [diffOn, setDiffOn]                   = useState(false);
+  const { displayChord }                      = useKeybindings();
 
   function openPreview(i) {
     setPreviewIndex(i);
@@ -246,7 +248,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
         >
           Restore this snapshot
         </button>
-        <span className="rollback-restore-hint">This action can be undone via Ctrl+Z.</span>
+        <span className="rollback-restore-hint">This action can be undone via {displayChord('undo')}.</span>
       </div>
     </div>
   );

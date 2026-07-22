@@ -1,0 +1,44 @@
+// Priority-ordered registry of dismissable UI layers. Escape pops the single
+// highest-priority active layer (a popover before the select mode beneath it,
+// etc.) instead of firing every open layer's handler at once. Plain module —
+// components register via the use-dismiss-layer hook; the keyboard dispatcher
+// calls dismissTopLayer().
+
+const layers = new Map(); // id -> { priority, onDismiss }
+
+// Standard priorities (higher wins). Keep app-level modes here so ordering is
+// declared in one place.
+export const DISMISS_PRIORITY = {
+  popover:            100,
+  modal:               90,
+  navAwayPrompt:       80,
+  findReplace:         60,
+  compare:             50,
+  pickFromReference:   45,
+  select:              40,
+  lander:              10,
+};
+
+export function registerDismissLayer(id, priority, onDismiss) {
+  layers.set(id, { priority, onDismiss });
+}
+
+export function unregisterDismissLayer(id) {
+  layers.delete(id);
+}
+
+/** Dismiss the highest-priority active layer. Returns true if one was popped. */
+export function dismissTopLayer() {
+  let top = null;
+  for (const [id, layer] of layers) {
+    if (!top || layer.priority > top.priority) top = { id, ...layer };
+  }
+  if (!top) return false;
+  top.onDismiss();
+  return true;
+}
+
+// Test/inspection aid — not used in app code.
+export function activeDismissLayerCount() {
+  return layers.size;
+}

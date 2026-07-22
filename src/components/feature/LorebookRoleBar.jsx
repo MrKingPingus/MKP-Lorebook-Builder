@@ -82,16 +82,20 @@ export function LorebookRoleBar() {
     setSwitchOpen(true);
   }
 
-  // Close all on Escape — single global handler for whichever popover is up
+  // Close all on Escape — single global handler for whichever popover is up.
+  // Only consumes Escape while something is actually open, so an Escape with
+  // nothing up still reaches the window dispatcher / dismiss stack.
   useEffect(() => {
+    if (!refMenuOpen && !renameOpen) return undefined;
     function onKey(e) {
       if (e.key !== 'Escape') return;
+      e.stopPropagation();
       setRefMenuOpen(false);
       setRenameOpen(false);
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [refMenuOpen, renameOpen]);
 
   // === Crosstalk + reference paired: two segments pinned to slots ===
   if (crosstalkEnabled && referenceLorebook) {

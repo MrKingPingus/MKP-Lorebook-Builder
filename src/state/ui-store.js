@@ -34,6 +34,11 @@ export const useUiStore = create((set) => ({
   pickFromReferenceMode: false, // mobile-only — true while the user is in the swap-and-back "Pick from Reference" pose (browsing reference as if it were active to multi-select for copy back to original active)
   crossFlashId:          null,  // entry id currently flashing as the target of a cross-pane "in both books" jump; auto-clears on a timer
   compareEntryId:        null,  // active-side entry id currently in side-by-side compare mode against its same-named reference counterpart; null = not comparing
+  keyboardHelpOpen:      false,  // true when the keyboard-shortcuts cheat-sheet overlay is open
+  searchFocusNonce:      0,      // bumped by the focus-search hotkey; SearchBar focuses its input on change
+  findFocusNonce:        0,      // bumped by the find/replace hotkey; SearchBar enters find-replace mode + focuses the find field
+  pendingImportPick:     false,  // set by the import hotkey; AppendImportPanel switches to file mode + opens the OS picker, then clears
+  pendingSettingsSection: null,  // accordion section id to auto-open next time the Settings panel mounts (deep-link); cleared once consumed
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -112,6 +117,17 @@ export const useUiStore = create((set) => ({
   setPickFromReferenceMode: (pickFromReferenceMode) => set({ pickFromReferenceMode }),
   setCrossFlashId:          (crossFlashId)          => set({ crossFlashId }),
   setCompareEntryId:        (compareEntryId)        => set({ compareEntryId }),
+  setKeyboardHelpOpen:      (keyboardHelpOpen)      => set({ keyboardHelpOpen }),
+  toggleKeyboardHelp:       ()                      => set((s) => ({ keyboardHelpOpen: !s.keyboardHelpOpen })),
+  requestSearchFocus:       ()                      => set((s) => ({ searchFocusNonce: s.searchFocusNonce + 1 })),
+  requestFindFocus:         ()                      => set((s) => ({ findFocusNonce: s.findFocusNonce + 1 })),
+  // Open the Import overlay and flag it to jump straight to the file picker.
+  requestImportPick:        ()                      => set({ showAppendImport: true, pendingImportPick: true }),
+  setPendingImportPick:     (pendingImportPick)     => set({ pendingImportPick }),
+  // Open the floating Export menu centred on screen (no hotbar anchor).
+  openExportMenuCentered:   ()                      => set({ exportMenuAnchor: 'center' }),
+  setPendingSettingsSection: (pendingSettingsSection) => set({ pendingSettingsSection }),
+  openSettingsSection:      (section)                => set({ activeMenuPanel: 'settings', pendingSettingsSection: section }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

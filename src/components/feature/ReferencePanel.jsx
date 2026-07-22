@@ -9,6 +9,7 @@
 // suppressed and clicking a card toggles its membership in the shared
 // selection set (with side='reference').
 import { useEffect, useRef, useState } from 'react';
+import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useSettings }          from '../../hooks/use-settings.js';
@@ -53,7 +54,7 @@ export function ReferencePanel() {
       });
       lastForcedRefId.current = compareForcedRefId;
       requestAnimationFrame(() => {
-        document.getElementById(`ref-entry-${compareForcedRefId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        document.getElementById(`ref-entry-${compareForcedRefId}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
       });
     } else if (!compareForcedRefId && lastForcedRefId.current) {
       const id = lastForcedRefId.current;
@@ -109,7 +110,7 @@ export function ReferencePanel() {
   function jumpToActive(activeId) {
     setCrossFlashId(activeId);
     requestAnimationFrame(() => {
-      document.getElementById(`entry-${activeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById(`entry-${activeId}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     });
     setTimeout(() => {
       if (useUi.getState().crossFlashId === activeId) setCrossFlashId(null);
@@ -304,7 +305,7 @@ export function ReferencePanel() {
                               setCompareEntryId(isComparing ? null : sameNameActiveId);
                               if (!isComparing) {
                                 requestAnimationFrame(() => {
-                                  document.getElementById(`entry-${sameNameActiveId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                  document.getElementById(`entry-${sameNameActiveId}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
                                 });
                               }
                             }

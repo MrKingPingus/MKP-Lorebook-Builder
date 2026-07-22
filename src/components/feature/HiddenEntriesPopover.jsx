@@ -1,5 +1,6 @@
 // Popover listing entries flagged hiddenFromExport — navigate or unhide from one place
 import { useEffect, useRef } from 'react';
+import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { createPortal } from 'react-dom';
 import { useEntries }    from '../../hooks/use-entries.js';
 import { useUi }         from '../../hooks/use-ui.js';
@@ -35,7 +36,7 @@ export function HiddenEntriesPopover({ anchorRect, hiddenEntries, onClose }) {
     } else {
       setSearchFocusedId(id);
       requestAnimationFrame(() => {
-        document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
       });
     }
     onClose();

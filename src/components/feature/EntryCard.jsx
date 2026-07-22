@@ -1,5 +1,6 @@
 // Full interactive entry card — mobile: slim tap-to-open row; desktop: collapsed/expanded with left type-color border
 import { useState, useRef, useEffect } from 'react';
+import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { TypeColorDot }    from '../ui/TypeColorDot.jsx';
 import { StatsBadge }      from '../ui/StatsBadge.jsx';
 import { TypeSelector }    from './TypeSelector.jsx';
@@ -180,7 +181,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       setCollapseAll(false);
     }
     requestAnimationFrame(() => {
-      document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     });
   }, [isComparing, isMobile]);
 
@@ -218,7 +219,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   function jumpToReference(refId) {
     setCrossFlashId(refId);
     requestAnimationFrame(() => {
-      document.getElementById(`ref-entry-${refId}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById(`ref-entry-${refId}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     });
     setTimeout(() => {
       // Only clear if it's still us — avoid stomping a later jump
