@@ -256,8 +256,8 @@ A dedicated help section accessible from the UI (button or settings tab) contain
 
 ---
 
-**Shift+Scroll on All Dropdowns**
-`TypeSelector` already supports Shift+scroll to cycle through entry types without opening the dropdown. Extend this pattern to every other `<select>` in the app: the sort mode selector, the trigger delimiter selector (both in `EntryCard` and `EntryDetailPanel`), and any future dropdowns. The implementation is a self-contained `onWheel` handler on the `<select>` element — the existing `TypeSelector` code is the reference.
+**Shift+Scroll on All Dropdowns** _(shipped 2026-07-22 for the content dropdowns)_
+The Shift+scroll cycle logic was factored out of `TypeSelector` into a reusable `components/ui/CyclingSelect.jsx` (a drop-in `<select>` wrapper). Adopted across the user-facing content dropdowns: entry type (`TypeSelector` + the select-mode staged-type select), the trigger delimiter selector in both `EntryCard` and `EntryDetailPanel`, and the Search/Find-Replace/Select mode selector. The sort control is a custom button popover (no longer a `<select>`), so it got an equivalent `onWheel` handler that cycles the sort mode in place. **Remaining:** the Settings/config selects (theme, storage profile, entry header height, window layout) were intentionally left on plain `<select>` — they're rarely-touched config, but adopting `CyclingSelect` there later is a mechanical swap.
 
 ---
 
@@ -365,8 +365,8 @@ Status: **Open** — patches applied, awaiting confirmation from reporter
 ---
 
 **Full Type Button Grid Setting Has No Effect**
-The "Full type button grid in entry editor" toggle in the settings panel does not appear to change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
-Status: **Open** — deferred; setting now displays a "currently broken" hint in the UI
+The "Full type button grid in entry editor" toggle in the settings panel did not change anything in the entry editor. Expected: toggling this setting switches the type selector between a compact and full grid layout.
+Status: **Fixed** (2026-07-22) — resolved by removal. The toggle, its `entryTypeView` setting (store/defaults/hook), the mobile detail-panel buttons branch, and the dead `.entry-type-buttons`/`.entry-type-btn` CSS were all removed; the detail panel always uses the compact type dropdown. The freed Settings slot now hosts the new Entry header height option. (GitHub #98)
 
 ---
 

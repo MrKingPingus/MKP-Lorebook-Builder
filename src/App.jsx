@@ -135,12 +135,12 @@ export default function App() {
   const openExportMenuCentered = useUiStore((s) => s.openExportMenuCentered);
   const toggleKeyboardHelp = useUiStore((s) => s.toggleKeyboardHelp);
 
-  // Expand / collapse all — mirror the Filter bar toggle: flip whichever flag
-  // is active. The two flags are mutually exclusive triggers consumed by cards.
+  // Expand / collapse all — mirror the Filter bar toggle: fire the opposite
+  // pulse to whatever the last bulk action was.
   function toggleExpandCollapseAll() {
     const ui = useUiStore.getState();
-    if (ui.expandAll) { ui.setExpandAll(false); ui.setCollapseAll(true); }
-    else              { ui.setExpandAll(true);  ui.setCollapseAll(false); }
+    if (ui.bulkExpanded) ui.collapseAllEntries();
+    else                 ui.expandAllEntries();
   }
 
   // Handler map keyed by registry action id. Actions without a handler here are

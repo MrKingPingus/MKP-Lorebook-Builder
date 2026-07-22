@@ -328,6 +328,24 @@ const SCENARIOS = [
     await page.waitForTimeout(400);
     check('scale persists after reload', await rootScale(), '1.25');
   }),
+
+  // Regression for #112: after Expand All, collapsing one card used to snap
+  // every card shut (the individual collapse cleared the global expand flag and
+  // the siblings fell back to their stale collapsed state). Now Expand/Collapse
+  // All are one-shot pulses committed into each card's own state.
+  scenario('Expand All then single-collapse leaves siblings expanded (#112)', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    const bulkBtn = page.locator('.filter-action-btn', { hasText: /Expand All|Collapse All/ });
+    await bulkBtn.click();
+    await page.waitForTimeout(200);
+    check('all cards expanded', await page.locator('.entry-card-body').count(), count);
+    check('button offers Collapse All', (await bulkBtn.innerText()).trim(), 'Collapse All');
+    // Collapse just the first card via its header toggle.
+    await page.locator('.entry-card .card-action-btn', { hasText: 'Collapse' }).first().click();
+    await page.waitForTimeout(200);
+    check('only one card collapsed', await page.locator('.entry-card-body').count(), count - 1);
+    check('button label unchanged by single collapse', (await bulkBtn.innerText()).trim(), 'Collapse All');
+  }),
 ];
 
 export async function runAllChecks() {

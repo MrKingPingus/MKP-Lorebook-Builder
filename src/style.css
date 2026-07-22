@@ -1865,6 +1865,12 @@ img.logo-icon {
   min-height: 40px;
 }
 
+/* Entry header height options (Settings → Editing & Entries). The default is
+   the rule above; these two give the header more breathing room for users who
+   find the dense default overwhelming on a long lorebook. */
+.entry-card-header--medium { padding-top: 13px; padding-bottom: 13px; min-height: 52px; }
+.entry-card-header--large  { padding-top: 18px; padding-bottom: 18px; min-height: 66px; }
+
 .drag-handle {
   color: var(--border2);
   font-size: 0.9375rem;
@@ -1974,6 +1980,14 @@ img.logo-icon {
   text-transform: none;
   letter-spacing: 0;
   color: var(--muted);
+}
+/* Advisory entry-title length counter — floats to the right of the field label,
+   surfaces only past the warn threshold (see TitleCharCounter.jsx). */
+.title-char-counter {
+  float: right;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 /* ── Entry Name + Type row ── */
@@ -2515,30 +2529,6 @@ img.logo-icon {
   width: 100%;
   box-sizing: border-box;
 }
-
-/* Entry type button grid in detail panel */
-.entry-type-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-}
-.entry-type-buttons .entry-type-btn:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.entry-type-btn {
-  padding: 10px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface2);
-  color: var(--muted2);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-.entry-type-btn:hover { background: var(--surface3); color: var(--text); }
-.entry-type-btn--active { color: #fff; }
 
 /* Entry type compact dropdown (default view in detail panel) */
 .entry-type-dropdown-wrap { width: 100%; }

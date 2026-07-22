@@ -19,7 +19,7 @@ export const useSettingsStore = create((set) => ({
   setKeybindings:              (keybindings)              => set({ keybindings }),
   setTriggerDelimiter:         (triggerDelimiter)         => set({ triggerDelimiter }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),
-  setEntryTypeView:            (entryTypeView)            => set({ entryTypeView }),
+  setEntryHeaderSize:          (entryHeaderSize)          => set({ entryHeaderSize }),
   setFabSize:                  (fabSize)                  => set({ fabSize }),
   setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
   setFabQuickMenuEnabled:      (fabQuickMenuEnabled)      => set({ fabQuickMenuEnabled }),

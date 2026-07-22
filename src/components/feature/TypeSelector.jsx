@@ -1,25 +1,17 @@
-// Entry type dropdown with scroll-wheel cycling between defined entry types
+// Entry type dropdown with Shift+scroll cycling between defined entry types
 import { ENTRY_TYPES } from '../../constants/entry-types.js';
+import { CyclingSelect } from '../ui/CyclingSelect.jsx';
 
 export function TypeSelector({ value, onChange }) {
-  function onWheel(e) {
-    if (!e.shiftKey) return;
-    e.preventDefault();
-    const idx  = ENTRY_TYPES.findIndex((t) => t.id === value);
-    const next = Math.min(ENTRY_TYPES.length - 1, Math.max(0, idx + (e.deltaY > 0 ? 1 : -1)));
-    onChange(ENTRY_TYPES[next].id);
-  }
-
   return (
-    <select
+    <CyclingSelect
       className="type-selector"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onWheel={onWheel}
     >
       {ENTRY_TYPES.map((t) => (
         <option key={t.id} value={t.id}>{t.label}</option>
       ))}
-    </select>
+    </CyclingSelect>
   );
 }

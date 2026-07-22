@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from 'react';
 import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { TypeColorDot }    from '../ui/TypeColorDot.jsx';
 import { StatsBadge }      from '../ui/StatsBadge.jsx';
+import { TitleCharCounter } from '../ui/TitleCharCounter.jsx';
+import { CyclingSelect }   from '../ui/CyclingSelect.jsx';
 import { TypeSelector }    from './TypeSelector.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
@@ -66,7 +68,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
-  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter } = useSettings();
+  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -77,13 +79,11 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setCompareEntryId       = useUi((s) => s.setCompareEntryId);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
-  const expandAll              = useUi((s) => s.expandAll);
-  const collapseAll            = useUi((s) => s.collapseAll);
+  const expandAllNonce         = useUi((s) => s.expandAllNonce);
+  const collapseAllNonce       = useUi((s) => s.collapseAllNonce);
   const searchQuery            = useUi((s) => s.searchQuery);
   const searchFocusedId        = useUi((s) => s.searchFocusedId);
   const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
-  const setExpandAll           = useUi((s) => s.setExpandAll);
-  const setCollapseAll         = useUi((s) => s.setCollapseAll);
   const setSearchFocusedId     = useUi((s) => s.setSearchFocusedId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
   const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
@@ -100,19 +100,28 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setStagedType  = useSetStagedType();
   const stagedDiffers  = stagedType !== null && stagedType !== entry.type;
 
-  // expandAll/collapseAll and search navigation override local collapsed state (desktop only)
+  // Each card owns its collapsed state (desktop). Expand/Collapse All are pulses
+  // that commit into localCollapsed (see effect below) rather than a persistent
+  // override, so collapsing one card never re-collapses the others.
   // In select mode, cards are always collapsed and not expandable.
   const isSearchFocused = searchFocusedId === entry.id;
   const collapsed = isSelectMode
     ? true
-    : (isSearchFocused ? false : (expandAll ? false : (collapseAll ? true : localCollapsed)));
+    : (isSearchFocused ? false : localCollapsed);
+
+  // Expand All / Collapse All pulses — commit the bulk action into this card's
+  // own state. Guarded on nonce > 0 so the initial mount doesn't fire.
+  useEffect(() => {
+    if (expandAllNonce > 0) setLocalCollapsed(false);
+  }, [expandAllNonce]);
+  useEffect(() => {
+    if (collapseAllNonce > 0) setLocalCollapsed(true);
+  }, [collapseAllNonce]);
 
   // Desktop: auto-expand and focus name input when a new entry is created
   useEffect(() => {
     if (isMobile || pendingFocusEntryId !== entry.id) return;
     setPendingFocusEntryId(null);
-    setExpandAll(false);
-    setCollapseAll(false);
     if (!collapsed) {
       // Card already expanded — focus immediately, no need to wait for collapse change
       nameInputRef.current?.focus();
@@ -177,8 +186,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     if (collapsed) {
       if (isSearchFocused) setSearchFocusedId(null);
       setLocalCollapsed(false);
-      setExpandAll(false);
-      setCollapseAll(false);
     }
     requestAnimationFrame(() => {
       document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
@@ -262,8 +269,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   function doCollapse() {
     if (isSearchFocused) setSearchFocusedId(null);
     setLocalCollapsed(true);
-    setExpandAll(false);
-    setCollapseAll(false);
     setRollbackOpen(false);
     setSuppressChecked(false);
   }
@@ -272,8 +277,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     if (collapsed) {
       if (isSearchFocused) setSearchFocusedId(null);
       setLocalCollapsed(false);
-      setExpandAll(false);
-      setCollapseAll(false);
     } else {
       rollback.handleCollapseIntent(doCollapse);
     }
@@ -370,7 +373,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     >
       {/* ── Card header ── */}
       <div
-        className="entry-card-header"
+        className={`entry-card-header${entryHeaderSize && entryHeaderSize !== 'default' ? ` entry-card-header--${entryHeaderSize}` : ''}`}
         onDoubleClick={isSelectMode ? undefined : onHeaderDoubleClick}
       >
         {!isSelectMode && (
@@ -390,7 +393,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </span>
         )}
         {isSelectMode && isSelected && (
-          <select
+          <CyclingSelect
             className={`staged-type-select${stagedDiffers ? ' staged-type-select--pending' : ''}`}
             value={stagedType ?? entry.type}
             onClick={(e) => e.stopPropagation()}
@@ -406,7 +409,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             {ENTRY_TYPES.map((t) => (
               <option key={t.id} value={t.id}>{t.label}</option>
             ))}
-          </select>
+          </CyclingSelect>
         )}
         {entry.isPublic === true && <PublicEyeIcon />}
         {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
@@ -499,6 +502,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 {isComparing && compareDelta?.name && (
                   <span className="diff-modified-dot" title="Differs from reference">●</span>
                 )}
+                <TitleCharCounter length={entry.name.length} />
               </div>
               <input
                 ref={nameInputRef}
@@ -546,7 +550,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                   </button>
                 );
               })()}
-              <select
+              <CyclingSelect
                 className="delimiter-select"
                 value={triggerDelimiter}
                 onChange={(e) => setTriggerDelimiter(e.target.value)}
@@ -558,7 +562,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 <option value="~">~ tilde</option>
                 <option value="/">/  forward slash</option>
                 <option value="\">\  backslash</option>
-              </select>
+              </CyclingSelect>
             </div>
 
             <TriggerChips
