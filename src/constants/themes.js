@@ -8,10 +8,12 @@ export const THEMES = [
   { id: 'dark',          label: 'Dark',          hint: 'The original dark palette.' },
   { id: 'light',         label: 'Light',         hint: 'Light background, dark text.' },
   { id: 'high-contrast', label: 'High contrast', hint: 'Maximum contrast for readability.' },
+  { id: 'system',        label: 'System',        hint: 'Follow your device’s light/dark setting.' },
   { id: 'custom',        label: 'Custom',        hint: 'Pick your own colors.' },
 ];
 
-export const THEME_IDS = THEMES.map((t) => t.id);
+// Concrete palettes only (excludes 'system', which resolves to one of these).
+export const THEME_IDS = ['dark', 'light', 'high-contrast', 'custom'];
 export const DEFAULT_THEME = 'dark';
 
 // The seven core tokens editable in Custom mode. Defaults mirror the Dark

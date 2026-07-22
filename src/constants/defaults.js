@@ -19,6 +19,10 @@ export const DEFAULT_SETTINGS = {
   // Custom-theme core token overrides: { '--bg': '#..', ... }. Empty = defaults
   // (see constants/themes.js). Only consulted when theme === 'custom'.
   customColors:             {},
+  // Accessibility: root text-scale multiplier (see constants/accessibility.js)
+  // and a manual reduced-motion override (the OS setting is honoured anyway).
+  uiScale:                  1,
+  reduceMotion:             false,
   // Keyboard shortcut overrides: { [actionId]: canonicalChord }. Stores only
   // deltas from the registry defaults (src/constants/keybindings.js); an empty
   // map means every action is on its default chord. Legacy single-letter

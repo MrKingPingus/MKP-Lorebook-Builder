@@ -104,7 +104,7 @@ export function AppendImportPanel() {
       >
         <div className="append-import-header">
           <span className="append-import-title">Import</span>
-          <button className="append-import-close" onClick={cancel} title="Close">×</button>
+          <button className="append-import-close" onClick={cancel} title="Close" aria-label="Close import">×</button>
         </div>
 
         {!preview && (

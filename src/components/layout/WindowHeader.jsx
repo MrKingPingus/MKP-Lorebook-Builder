@@ -130,6 +130,7 @@ export function WindowHeader() {
         <button
           className="header-close"
           title="Return to home"
+          aria-label="Return to home"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => setShowLander(true)}
         >

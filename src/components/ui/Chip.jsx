@@ -1,5 +1,6 @@
 // Single trigger keyword chip with inline editing, × delete, and optional conflict ring + popover
 import { useState, useRef, useEffect } from 'react';
+import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { createPortal }     from 'react-dom';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useHtmlEscape }    from '../../hooks/use-html-escape.js';
@@ -173,7 +174,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
     setSearchFocusedId(entry.id);
     // Defer scroll until after React re-renders the card into its expanded state
     requestAnimationFrame(() => {
-      document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.getElementById(`entry-${entry.id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     });
   }
 

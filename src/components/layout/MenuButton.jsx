@@ -36,6 +36,8 @@ export function MenuButton() {
         className={`menu-btn${open ? ' menu-btn--open' : ''}`}
         onClick={() => setOpen((v) => !v)}
         title="Menu"
+        aria-label="Menu"
+        aria-expanded={open}
       >
         ☰
       </button>

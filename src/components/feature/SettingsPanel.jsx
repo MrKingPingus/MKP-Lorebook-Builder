@@ -5,8 +5,8 @@ import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
 import { useUi }             from '../../hooks/use-ui.js';
-import { KeybindingSettings } from './KeybindingSettings.jsx';
-import { ThemeSettings }     from './ThemeSettings.jsx';
+import { ThemeSettings }         from './ThemeSettings.jsx';
+import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import {
   MIN_WINDOW_WIDTH,
@@ -528,10 +528,10 @@ export function SettingsPanel() {
       </SettingsSection>
 
       {/* ════════════════════════════════════════════════════════════
-          Hotkeys
+          Accessibility (text scale, motion, contrast, keyboard shortcuts)
           ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="hotkeys" title="Hotkeys" openSet={openSet} toggleSection={toggleSection}>
-        <KeybindingSettings />
+      <SettingsSection id="accessibility" title="Accessibility" openSet={openSet} toggleSection={toggleSection}>
+        <AccessibilitySettings />
       </SettingsSection>
 
     </div>

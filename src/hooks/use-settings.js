@@ -15,6 +15,8 @@ export function useSettings() {
   const markPrivateEntries       = useSettingsStore((s) => s.markPrivateEntries);
   const theme                    = useSettingsStore((s) => s.theme);
   const customColors             = useSettingsStore((s) => s.customColors);
+  const uiScale                  = useSettingsStore((s) => s.uiScale);
+  const reduceMotion             = useSettingsStore((s) => s.reduceMotion);
   const keybindings              = useSettingsStore((s) => s.keybindings);
   const triggerDelimiter         = useSettingsStore((s) => s.triggerDelimiter);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
@@ -44,6 +46,8 @@ export function useSettings() {
       markPrivateEntries,
       theme,
       customColors,
+      uiScale,
+      reduceMotion,
       keybindings,
       triggerDelimiter,
       hotbarSlots,
@@ -82,6 +86,8 @@ export function useSettings() {
     markPrivateEntries,
     theme,
     customColors,
+    uiScale,
+    reduceMotion,
     keybindings,
     triggerDelimiter,
     hotbarSlots,
@@ -106,6 +112,8 @@ export function useSettings() {
     setMarkPrivateEntries:       (v) => updateSetting('markPrivateEntries', v),
     setTheme:                    (v) => updateSetting('theme', v),
     setCustomColors:             (v) => updateSetting('customColors', v),
+    setUiScale:                  (v) => updateSetting('uiScale', v),
+    setReduceMotion:             (v) => updateSetting('reduceMotion', v),
     setKeybindings:              (v) => updateSetting('keybindings', v),
     setTriggerDelimiter:         (v) => updateSetting('triggerDelimiter', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),

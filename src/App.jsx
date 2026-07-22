@@ -5,6 +5,7 @@ import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
 import { useTheme }              from './hooks/use-theme.js';
+import { useAccessibility }      from './hooks/use-accessibility.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
 import { useKeybindings }        from './hooks/use-keybindings.js';
 import { useDismissLayer }       from './hooks/use-dismiss-layer.js';
@@ -112,6 +113,7 @@ export default function App() {
   useBootstrap();
   useAutosave();
   useTheme();
+  useAccessibility();
   useViewportResize();
 
   const { addEntry }   = useEntries();

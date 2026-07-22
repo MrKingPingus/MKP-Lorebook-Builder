@@ -14,6 +14,8 @@ export const useSettingsStore = create((set) => ({
   setMarkPrivateEntries:       (markPrivateEntries)       => set({ markPrivateEntries }),
   setTheme:                    (theme)                    => set({ theme }),
   setCustomColors:             (customColors)             => set({ customColors }),
+  setUiScale:                  (uiScale)                  => set({ uiScale }),
+  setReduceMotion:             (reduceMotion)             => set({ reduceMotion }),
   setKeybindings:              (keybindings)              => set({ keybindings }),
   setTriggerDelimiter:         (triggerDelimiter)         => set({ triggerDelimiter }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),

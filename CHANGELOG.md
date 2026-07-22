@@ -8,6 +8,16 @@
 
 - **Color themes** — Settings → Appearance now lets you switch the whole app between **Dark** (the original), **Light**, and a **High contrast** theme for maximum readability. Your choice is remembered and applied the instant the app loads, with no flash of the old colors.
 - **Custom theme** — pick **Custom** and set seven core colors (background, panel, border, text, muted text, accent, and links) with color pickers; the app shades everything else — panels, hovers, borders — from those. A live contrast readout tells you whether your text-on-background is easy to read (AAA / AA / Fail), so you don't accidentally make it unreadable. Custom colors are saved and restored across reloads.
+- **System theme** — a new **System** option follows your device's light/dark setting automatically, and flips the moment your device does.
+- **Accessibility settings** — a new Settings → Accessibility section with:
+  - **Text size** — bump the app's text to 90% / 100% / 110% / 125%. Only the text scales; the layout stays put. Remembered across reloads.
+  - **Reduce motion** — a toggle that turns off transitions and smooth scrolling (and your device's own "reduce motion" setting is always respected).
+  - **High-contrast** — a quick toggle for the high-contrast theme, right where you'd look for it.
+- **Clearer keyboard focus** — tabbing through the app with the keyboard now shows a clear focus ring on whatever's selected, so you can always see where you are. Icon-only buttons (the menu, the ＋, close buttons) also got proper labels for screen readers.
+
+### Adjustments
+
+- **Keyboard shortcuts moved into Accessibility** — the shortcut editor now lives under Settings → Accessibility (it used to be its own "Hotkeys" section). Nothing about how it works changed.
 
 ---
 

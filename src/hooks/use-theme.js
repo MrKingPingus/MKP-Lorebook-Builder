@@ -14,5 +14,11 @@ export function useTheme() {
   const customColors = useSettingsStore((s) => s.customColors);
   useEffect(() => {
     applyTheme(theme, customColors);
+    // While on 'system', re-resolve when the OS light/dark preference flips.
+    if (theme !== 'system' || typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyTheme('system', customColors);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, [theme, customColors]);
 }

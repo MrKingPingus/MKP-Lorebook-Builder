@@ -206,6 +206,7 @@ export function Hotbar() {
           onPointerCancel={onFabPointerUp}
           onContextMenu={(e) => { if (isMobile && fabQuickMenuEnabled) e.preventDefault(); }}
           title={`Add entry (${displayChord('new_entry')})`}
+          aria-label="Add entry"
           style={fabStyle}
         >
           +

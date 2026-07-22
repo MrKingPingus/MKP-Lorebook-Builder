@@ -227,7 +227,7 @@ const SCENARIOS = [
     const cards = page.locator('.entry-card');
     const before = await cards.count();
     await openSettings(page);
-    await page.locator('.settings-section-header', { hasText: 'Hotkeys' }).click();
+    await page.locator('.settings-section-header', { hasText: 'Accessibility' }).click();
     await page.waitForTimeout(150);
     const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
     const captureBtn = row.locator('.kbd-capture-btn');
@@ -268,6 +268,11 @@ const SCENARIOS = [
     await page.waitForTimeout(150);
     check('data-theme high-contrast', await themeAttr(), 'high-contrast');
 
+    // System resolves to a concrete palette (OS light/dark), never 'system'.
+    await page.locator('.theme-option', { hasText: 'System' }).click();
+    await page.waitForTimeout(150);
+    check('System resolves to light/dark', ['light', 'dark'].includes(await themeAttr()), true);
+
     await page.locator('.theme-option', { hasText: 'Custom' }).click();
     await page.waitForTimeout(150);
     check('data-theme custom', await themeAttr(), 'custom');
@@ -290,6 +295,38 @@ const SCENARIOS = [
     await page.waitForTimeout(400);
     check('theme persists after reload', await themeAttr(), 'custom');
     check('custom color persists after reload', await page.evaluate(() => document.documentElement.style.getPropertyValue('--bg').trim()), '#123456');
+  }),
+
+  scenario('Accessibility: text scale, reduced motion, high contrast', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    await page.locator('.settings-section-header', { hasText: 'Accessibility' }).click();
+    await page.waitForTimeout(150);
+
+    const rootScale = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim());
+    const bodyFont  = () => page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
+
+    const beforeFont = await bodyFont();
+    await page.locator('.a11y-scale-btn', { hasText: '125%' }).click();
+    await page.waitForTimeout(150);
+    check('ui-scale set to 1.25', await rootScale(), '1.25');
+    check('body text got larger', (await bodyFont()) > beforeFont, true);
+
+    await page.locator('label:has-text("Reduce motion") input[type=checkbox]').check();
+    await page.waitForTimeout(100);
+    check('data-reduce-motion set', await page.evaluate(() => document.documentElement.getAttribute('data-reduce-motion')), 'true');
+
+    await page.locator('label:has-text("High-contrast theme") input[type=checkbox]').check();
+    await page.waitForTimeout(100);
+    check('high-contrast theme toggles on', await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'high-contrast');
+
+    // Hotkeys relocated under Accessibility.
+    check('keybinding table lives here now', (await page.locator('.kbd-settings-row').count()) > 0, true);
+
+    // Text scale survives reload (applied pre-render).
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    check('scale persists after reload', await rootScale(), '1.25');
   }),
 ];
 

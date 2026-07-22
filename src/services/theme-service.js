@@ -4,17 +4,27 @@
 
 import { THEME_IDS, DEFAULT_THEME, CUSTOM_CORE_TOKENS } from '../constants/themes.js';
 
+/** Resolve a stored theme to the concrete palette to render. 'system' follows
+ *  the OS light/dark preference; unknown values fall back to the default. */
+export function resolveTheme(theme) {
+  if (theme === 'system') {
+    const dark = typeof window !== 'undefined' && window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return dark ? 'dark' : 'light';
+  }
+  return THEME_IDS.includes(theme) ? theme : DEFAULT_THEME;
+}
+
 /** Apply a theme id and, for the custom theme, its core color overrides.
  *  Built-in themes are CSS blocks keyed off data-theme; custom injects the
  *  seven core tokens inline and lets the CSS derive the rest. */
 export function applyTheme(theme, customColors = {}) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const id = THEME_IDS.includes(theme) ? theme : DEFAULT_THEME;
-  root.setAttribute('data-theme', id);
+  root.setAttribute('data-theme', resolveTheme(theme));
   // Always clear prior inline custom vars first so switching away is clean.
   for (const t of CUSTOM_CORE_TOKENS) root.style.removeProperty(t.var);
-  if (id === 'custom') {
+  if (theme === 'custom') {
     for (const t of CUSTOM_CORE_TOKENS) {
       root.style.setProperty(t.var, customColors?.[t.var] || t.default);
     }

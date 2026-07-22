@@ -1,5 +1,6 @@
 // Search input with mode select, sort button, match counter, Enter-key navigation, and results dropdown
 import { useState, useRef, useEffect } from 'react';
+import { reducedMotionScrollBehavior } from '../../hooks/use-accessibility.js';
 import { useSearch }            from '../../hooks/use-search.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useFindReplace }       from '../../hooks/use-find-replace.js';
@@ -140,7 +141,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
     lastNavQuery.current = searchQuery;
     const target = matchDetails[wrapped];
     setSearchFocusedId(target.id);
-    document.getElementById(`entry-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById(`entry-${target.id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     setDropdownOpen(false);
   }
 
@@ -158,7 +159,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
 
   function onResultClick(id) {
     setSearchFocusedId(id);
-    document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById(`entry-${id}`)?.scrollIntoView({ behavior: reducedMotionScrollBehavior(), block: 'nearest' });
     setDropdownOpen(false);
   }
 

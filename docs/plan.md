@@ -77,13 +77,19 @@ Foundation is solid: the whole palette is ~15 CSS custom properties in one `:roo
 
 **Goal:** A dedicated Accessibility section in Settings covering scale, motion, contrast, and hotkeys.
 
-- [ ] **New Settings → Accessibility accordion section.**
-- [ ] **Font / UI scale** — the CSS is ~274 px-based font-sizes vs. 1 rem, so scaling can't be a root-size toggle. Robust path: mechanical px→rem conversion + a root scale multiplier (3–4 steps, e.g. 90 / 100 / 110 / 125 %). Avoid `zoom` / `transform: scale` wrappers — they break this app's fixed-position portals, draggable/resizable window, and `getClientRects` diff overlays. Budget as a real pass, not a toggle.
-- [ ] **Reduced motion** — a toggle (and honouring `prefers-reduced-motion`) that disables smooth-scroll and CSS transitions.
-- [ ] **High-contrast** — surfaced here, backed by the 10C high-contrast theme.
-- [ ] **Move Hotkeys under Accessibility** — the hotkey engine itself (dispatch table, wider configurable set, Escape stack) shipped in **10C-pre**; the remaining 10D task is just relocating the rebuilt Hotkeys accordion into this section.
+**Scope (2026-07-22):** lean-but-real — decisions `1a text-only scale, 2a focus-visible, 3a targeted ARIA, 4b defer entry-list keyboard nav, 5 System theme`.
 
-**Stop condition:** Settings has an Accessibility section; font/UI scale visibly resizes the app; reduced-motion and high-contrast toggles work; hotkeys are configured from within this section.
+- [x] **New Settings → Accessibility accordion section** — text size, reduced motion, high-contrast, and the relocated keyboard shortcuts (`AccessibilitySettings.jsx`).
+- [x] **Font / UI scale (text-only)** — the 302 `font-size` px were converted to `rem` (scripted) with a root `--ui-scale` multiplier on `html` (90/100/110/125%). Layout px untouched, so only text scales — no `zoom`/`transform` wrappers. Applied pre-render (no resize flash) + persisted. The feared audit was smaller than budgeted: **zero** structural colors/sizes bypass tokens.
+- [x] **Reduced motion** — a toggle **and** `@media (prefers-reduced-motion)`; kills CSS transitions/animations and routes the 9 JS `scrollIntoView` smooth-scrolls through a `reducedMotionScrollBehavior()` helper so they jump too.
+- [x] **High-contrast** — surfaced as a toggle here, backed by the 10C high-contrast theme (no rework).
+- [x] **Keyboard focus visibility** *(added, decision 2a)* — a global `:focus-visible` ring overriding the 8 `outline:none` resets. The app had **zero** focus styling before.
+- [x] **Targeted ARIA labels** *(added, decision 3a)* — primary icon-only controls (menu, FAB, window close, import close); entry badges already had labels.
+- [x] **System theme** *(added, decision 5)* — follows the OS light/dark preference and re-resolves live on OS change (`resolveTheme`, in Appearance).
+- [x] **Move Hotkeys under Accessibility** — the rebuilt Hotkeys editor now lives inside the Accessibility section (the standalone Hotkeys accordion is gone; the help-overlay deep-link points here).
+- [ ] **Entry-list keyboard navigation** — *deferred (decision 4b)* to its own pass: a roving focus cursor + list `aria` so keyboard/screen-reader users can move through and act on entries. Also unblocks per-entry hotkeys if ever wanted.
+
+**Stop condition:** ✅ (verified 2026-07-22, browser-driven + screenshot) Settings has an Accessibility section; text scale visibly resizes the app and persists; reduced-motion, high-contrast, and System theme work; hotkeys are configured from within this section. See `verify/checks.mjs` (Accessibility + Themes scenarios, 10/10).
 
 **Estimated Complexity:** 10A Low · 10B Low–Medium · 10C Medium · 10D Medium–High
 
