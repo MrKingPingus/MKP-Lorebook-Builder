@@ -6,6 +6,7 @@ import { useRollbackConfig } from '../../hooks/use-rollback.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
 import { useUi }             from '../../hooks/use-ui.js';
 import { KeybindingSettings } from './KeybindingSettings.jsx';
+import { ThemeSettings }     from './ThemeSettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import {
   MIN_WINDOW_WIDTH,
@@ -517,6 +518,13 @@ export function SettingsPanel() {
           </div>
         </div>
 
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          Appearance
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="appearance" title="Appearance" openSet={openSet} toggleSection={toggleSection}>
+        <ThemeSettings />
       </SettingsSection>
 
       {/* ════════════════════════════════════════════════════════════

@@ -2,6 +2,15 @@
 
 ---
 
+## 2026-07-22
+
+### Additions
+
+- **Color themes** — Settings → Appearance now lets you switch the whole app between **Dark** (the original), **Light**, and a **High contrast** theme for maximum readability. Your choice is remembered and applied the instant the app loads, with no flash of the old colors.
+- **Custom theme** — pick **Custom** and set seven core colors (background, panel, border, text, muted text, accent, and links) with color pickers; the app shades everything else — panels, hovers, borders — from those. A live contrast readout tells you whether your text-on-background is easy to read (AAA / AA / Fail), so you don't accidentally make it unreadable. Custom colors are saved and restored across reloads.
+
+---
+
 ## 2026-07-21
 
 ### Additions

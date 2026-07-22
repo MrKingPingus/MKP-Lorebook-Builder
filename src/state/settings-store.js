@@ -12,6 +12,8 @@ export const useSettingsStore = create((set) => ({
   setHideSuggestionsByDefault: (hideSuggestionsByDefault) => set({ hideSuggestionsByDefault }),
   setHideEntryStats:           (hideEntryStats)           => set({ hideEntryStats }),
   setMarkPrivateEntries:       (markPrivateEntries)       => set({ markPrivateEntries }),
+  setTheme:                    (theme)                    => set({ theme }),
+  setCustomColors:             (customColors)             => set({ customColors }),
   setKeybindings:              (keybindings)              => set({ keybindings }),
   setTriggerDelimiter:         (triggerDelimiter)         => set({ triggerDelimiter }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),

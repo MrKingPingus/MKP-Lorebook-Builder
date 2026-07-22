@@ -14,6 +14,11 @@ export const DEFAULT_SETTINGS = {
   hideSuggestionsByDefault: false,
   hideEntryStats:           false,
   markPrivateEntries:       false, // when true, show an eye-off badge on private entries (public entries always show the eye badge)
+  // Color theme: 'dark' (default) | 'light' | 'high-contrast' | 'custom'.
+  theme:                    'dark',
+  // Custom-theme core token overrides: { '--bg': '#..', ... }. Empty = defaults
+  // (see constants/themes.js). Only consulted when theme === 'custom'.
+  customColors:             {},
   // Keyboard shortcut overrides: { [actionId]: canonicalChord }. Stores only
   // deltas from the registry defaults (src/constants/keybindings.js); an empty
   // map means every action is on its default chord. Legacy single-letter

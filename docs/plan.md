@@ -63,13 +63,15 @@ Root cause of #102: `json-import.js` (`normalizeEntry`) reads only `src.type`; C
 
 Foundation is solid: the whole palette is ~15 CSS custom properties in one `:root` block (`style.css:21–51`). Stock themes = alternate token sets; custom = user values persisted to `settings-store`, injected as inline vars. Decision (2026-07-19): **do all three tiers in one pass.**
 
-- [ ] **Theme mechanism** — a `data-theme` attribute/class on the app root selects a stock palette; `settings-store` gains a `theme` field, applied on boot.
-- [ ] **Stock dark themes** — a handful of curated dark palettes (low risk).
-- [ ] **Light / high-contrast theme** — needs an audit for hardcoded dark-assumption colors (shadows, inline hex bypassing tokens). High-contrast doubles as the accessibility theme (feeds 10D).
-- [ ] **Custom theme editor** — settings UI to set core tokens, validate contrast, persist as inline `:root` overrides.
-- [ ] **Entry-type dot colors stay in `entry-types.js`** and are untouched, *except* an opt-in override available only in custom mode (default: dots unchanged).
+**Scope trim (2026-07-21):** keep it lean — no curated preset palettes. Ship **light**, **high-contrast**, and **custom** only; dark stays the default. The feared audit was unfounded: the app has **zero** structural colors bypassing tokens (verified by grep), so light/high-contrast are just token-override blocks.
 
-**Stop condition:** User can pick a stock dark theme, switch to light/high-contrast, and define + persist a custom theme (optionally overriding entry-type dot colors).
+- [x] **Theme mechanism** — `data-theme` on `<html>` (cascades to portals); `settings-store.theme` (`dark`/`light`/`high-contrast`/`custom`), applied pre-render in `main.jsx` (no flash) and kept in sync by `use-theme`. `services/theme-service.js` is the applier.
+- [x] ~~Stock dark themes~~ — **descoped** (no curation, per the trim above).
+- [x] **Light + high-contrast themes** — full token-override blocks (`:root[data-theme="light"|"high-contrast"]`), verified in the real app (light + HC screenshots). High-contrast doubles as 10D's accessibility theme.
+- [x] **Custom theme editor** — Settings → Appearance: seven core color pickers (`constants/themes.js`), the rest derived via `color-mix` in the `[data-theme="custom"]` block; live WCAG contrast readout; persisted to `settings-store` and injected inline.
+- [x] **Entry-type dot colors stay fixed** — untouched in all themes, including custom (the opt-in override was dropped, decision 3a 2026-07-21).
+
+**Stop condition:** ✅ (verified 2026-07-21, browser-driven + screenshots) User can switch dark/light/high-contrast, define + persist a custom theme, and it survives reload without a flash. See `verify/checks.mjs` (Themes scenario, 9/9).
 
 ### 10D — Accessibility section
 

@@ -246,6 +246,51 @@ const SCENARIOS = [
     await page.waitForTimeout(200);
     check('old Alt+N no longer adds', await cards.count(), before + 1);
   }),
+
+  scenario('Themes: switch, custom colors, persist across reload', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    await page.locator('.settings-section-header', { hasText: 'Appearance' }).click();
+    await page.waitForTimeout(150);
+
+    const themeAttr = () => page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    const bodyBg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+
+    check('default theme is dark', await themeAttr(), 'dark');
+    const darkBg = await bodyBg();
+
+    await page.locator('.theme-option', { hasText: 'Light' }).click();
+    await page.waitForTimeout(200);
+    check('data-theme flips to light', await themeAttr(), 'light');
+    check('body background actually changed', (await bodyBg()) !== darkBg, true);
+
+    await page.locator('.theme-option', { hasText: 'High contrast' }).click();
+    await page.waitForTimeout(150);
+    check('data-theme high-contrast', await themeAttr(), 'high-contrast');
+
+    await page.locator('.theme-option', { hasText: 'Custom' }).click();
+    await page.waitForTimeout(150);
+    check('data-theme custom', await themeAttr(), 'custom');
+    check('seven custom color inputs', await page.locator('.theme-color-input').count(), 7);
+
+    // Set the first core token (--bg) and confirm it's injected inline.
+    await page.evaluate(() => {
+      const input = document.querySelector('.theme-color-input');
+      // Bypass React's controlled-input value tracker so onChange fires.
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, '#123456');
+      input.dispatchEvent(new Event('input',  { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await page.waitForTimeout(200);
+    check('custom --bg injected inline', await page.evaluate(() => document.documentElement.style.getPropertyValue('--bg').trim()), '#123456');
+
+    // Reload — theme + custom color must survive (applied pre-render in main.jsx).
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    check('theme persists after reload', await themeAttr(), 'custom');
+    check('custom color persists after reload', await page.evaluate(() => document.documentElement.style.getPropertyValue('--bg').trim()), '#123456');
+  }),
 ];
 
 export async function runAllChecks() {

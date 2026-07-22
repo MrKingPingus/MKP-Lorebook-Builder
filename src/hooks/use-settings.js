@@ -13,6 +13,8 @@ export function useSettings() {
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
   const markPrivateEntries       = useSettingsStore((s) => s.markPrivateEntries);
+  const theme                    = useSettingsStore((s) => s.theme);
+  const customColors             = useSettingsStore((s) => s.customColors);
   const keybindings              = useSettingsStore((s) => s.keybindings);
   const triggerDelimiter         = useSettingsStore((s) => s.triggerDelimiter);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
@@ -40,6 +42,8 @@ export function useSettings() {
       hideSuggestionsByDefault,
       hideEntryStats,
       markPrivateEntries,
+      theme,
+      customColors,
       keybindings,
       triggerDelimiter,
       hotbarSlots,
@@ -76,6 +80,8 @@ export function useSettings() {
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
+    theme,
+    customColors,
     keybindings,
     triggerDelimiter,
     hotbarSlots,
@@ -98,6 +104,8 @@ export function useSettings() {
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
     setMarkPrivateEntries:       (v) => updateSetting('markPrivateEntries', v),
+    setTheme:                    (v) => updateSetting('theme', v),
+    setCustomColors:             (v) => updateSetting('customColors', v),
     setKeybindings:              (v) => updateSetting('keybindings', v),
     setTriggerDelimiter:         (v) => updateSetting('triggerDelimiter', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
