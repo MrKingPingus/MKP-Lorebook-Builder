@@ -68,16 +68,19 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
     if (el) { el.focus(); el.select?.(); }
   }, [searchFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Find/Replace hotkey — enter find-replace mode (mirroring the mode-dropdown
-  // sync of carrying the current query into the Find field) and focus the Find
-  // input once it renders.
+  // Find/Replace hotkey — toggles. Already in find-replace? revert to search
+  // (carrying the Find text back into the query, mirroring the mode dropdown).
+  // Otherwise enter find-replace, carry the query into Find, and focus it.
   useEffect(() => {
     if (findFocusNonce === 0) return;
-    if (searchMode !== 'find-replace') {
-      setFindText(searchQuery);
-      setSearchQuery('');
-      setSearchMode('find-replace');
+    if (searchMode === 'find-replace') {
+      setSearchQuery(findText);
+      setSearchMode('search');
+      return;
     }
+    setFindText(searchQuery);
+    setSearchQuery('');
+    setSearchMode('find-replace');
     requestAnimationFrame(() => document.querySelector('.find-input')?.focus());
   }, [findFocusNonce]); // eslint-disable-line react-hooks/exhaustive-deps
 

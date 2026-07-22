@@ -46,13 +46,13 @@ export function AppendImportPanel() {
   const [armPick, setArmPick] = useState(false);
   useEffect(() => {
     if (!pendingImportPick) return;
-    setMode('file-entries');
+    setMode('file-choose');
     setArmPick(true);
     setPendingImportPick(false);
   }, [pendingImportPick, setPendingImportPick]);
   useEffect(() => {
     if (!armPick) return;
-    if ((mode === 'file-entries' || mode === 'file-book') && !preview && fileInputRef.current) {
+    if (mode.startsWith('file') && !preview && fileInputRef.current) {
       fileInputRef.current.click();
       setArmPick(false);
     }
@@ -87,8 +87,11 @@ export function AppendImportPanel() {
 
   const lorebookName = activeLorebook?.name || '(unnamed)';
   const showPasteUi  = mode === 'paste'        && !preview;
-  const showFileUi   = (mode === 'file-entries' || mode === 'file-book') && !preview;
+  const showFileUi   = (mode === 'file-entries' || mode === 'file-book' || mode === 'file-choose') && !preview;
   const isBookMode   = mode === 'file-book';
+  // file-choose (opened by the Import hotkey): after picking a file, offer
+  // Append vs Import-as-New rather than committing to one disposition up front.
+  const isChooseMode = mode === 'file-choose';
 
   return (
     <div className="append-import-overlay">
@@ -178,7 +181,7 @@ export function AppendImportPanel() {
 
         {error && <div className="import-error">{error}</div>}
 
-        {preview && !isBookMode && (
+        {preview && !isBookMode && !isChooseMode && (
           <>
             <div className="import-disposition-banner">
               Will <strong>append</strong> {preview.length} {preview.length === 1 ? 'entry' : 'entries'} to &ldquo;{lorebookName}&rdquo;.
@@ -189,6 +192,31 @@ export function AppendImportPanel() {
               onConfirm={confirmAppend}
               onCancel={cancel}
             />
+          </>
+        )}
+
+        {preview && isChooseMode && (
+          <>
+            <div className="import-disposition-banner">
+              Importing {preview.length} {preview.length === 1 ? 'entry' : 'entries'}
+              {importedName ? <> from &ldquo;{importedName}&rdquo;</> : null}.
+              Add them how?
+            </div>
+            <ImportPreview
+              entries={preview}
+              hideActions
+            />
+            <div className="append-book-actions">
+              <button className="import-save-btn" onClick={confirmAppend}>
+                Append to &ldquo;{lorebookName}&rdquo;
+              </button>
+              <button className="import-save-btn import-save-btn--new" onClick={confirmAsNew}>
+                Import as New Lorebook
+              </button>
+              <button className="import-save-btn import-save-btn--cancel" onClick={cancel}>
+                Cancel
+              </button>
+            </div>
           </>
         )}
 

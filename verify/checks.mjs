@@ -147,6 +147,11 @@ const SCENARIOS = [
     await page.waitForTimeout(250);
     check('Alt+I opens import overlay', await page.locator('.append-import-overlay').count(), 1);
     check('Alt+I lands in file mode', await page.locator('.append-file-picker').count(), 1);
+    // After picking a file, offer Append vs Import-as-New (not auto-append).
+    await page.locator('.append-file-picker input[type=file]').setInputFiles(FIXTURE);
+    await page.waitForTimeout(400);
+    check('Append option offered', await page.locator('.append-book-actions button', { hasText: 'Append to' }).count(), 1);
+    check('Import-as-New option offered', await page.locator('.append-book-actions button', { hasText: 'Import as New' }).count(), 1);
   }),
 
   scenario('Hotkeys in fields + find focus + export + help-close', async (page, check) => {
@@ -174,6 +179,11 @@ const SCENARIOS = [
     await page.keyboard.press('Alt+h');
     await page.waitForTimeout(250);
     check('Alt+H focuses the Find field', await page.evaluate(() => (document.activeElement?.className || '').includes('find-input')), true);
+    // Note 2: pressing Alt+H again toggles back to Search.
+    await page.keyboard.press('Alt+h');
+    await page.waitForTimeout(250);
+    check('Alt+H again reverts to search', await page.locator('input.search-input').count(), 1);
+    check('...Find field gone', await page.locator('.find-input').count(), 0);
 
     // Note 5: Alt+E surfaces the centered export menu (same menu as the button).
     await page.evaluate(() => document.activeElement?.blur());

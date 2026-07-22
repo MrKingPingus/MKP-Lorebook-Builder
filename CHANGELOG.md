@@ -19,9 +19,9 @@
 
 - **Option-key shortcuts now work on Mac** — the Alt/Option shortcuts (e.g. Option+N for a new entry) were dead on macOS, because holding Option makes the keyboard emit a special character instead of the plain letter. Shortcuts are now matched by physical key, so Option combos fire correctly on Mac while Shift-based symbols (like `?` vs `/`) still stay distinct.
 - **Shortcuts keep working while you're typing** — combos with a modifier (like Alt/Option or Ctrl/Cmd) now fire even when the cursor is inside a text field, so you can add a new entry, undo, or open Find & Replace without first clicking out. In particular, Undo/Redo now work right after creating an entry (when the cursor lands in the new entry), and Ctrl/Cmd+Z inside a field now runs the app's undo. Single-key shortcuts (`/`, `?`) still stay out of your way while typing.
-- **Find & Replace shortcut jumps into the field** — opening Find & Replace by shortcut now drops your cursor straight into the Find box (and carries over whatever was in the search box), matching how the search shortcut works.
+- **Find & Replace shortcut jumps into the field** — opening Find & Replace by shortcut now drops your cursor straight into the Find box (and carries over whatever was in the search box), matching how the search shortcut works. Pressing it again toggles back to Search.
 - **Export shortcut opens the real export menu** — the Export shortcut now pops the same filename-and-format menu as the hotbar Export button, centered on screen, instead of just opening the Import/Export tab.
-- **Import shortcut opens the file picker** — the Import shortcut now takes you straight to your file browser to pick a lorebook, instead of stopping at the import screen.
+- **Import shortcut opens the file picker** — the Import shortcut now takes you straight to your file browser to pick a lorebook, instead of stopping at the import screen. After you pick a file, it asks whether to **append** the entries to the current book or bring them in as a **new** book.
 - **The shortcut guide gets out of the way** — pressing a shortcut while the `?` cheat sheet is open now runs it and closes the guide in one go.
 
 ### Additions
