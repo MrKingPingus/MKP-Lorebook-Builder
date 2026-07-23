@@ -8,6 +8,7 @@ import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
+import { FeedbackLinks }        from './FeedbackLinks.jsx';
 import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
 import { LorebookSwitchPopover }  from '../feature/LorebookSwitchPopover.jsx';
 import logoUrl from '../../assets/Sacabambaspis2.png';
@@ -63,7 +64,10 @@ export function WindowHeader() {
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
-      {/* Lorebook name — desktop only; on mobile it lives in the build panel */}
+      {/* Lorebook name — desktop only; on mobile it lives in the build panel.
+          The input is absolutely centred in the window (see CSS); the count and
+          switch live in an aside anchored to the input's right edge so they
+          never shift the input off-centre. */}
       {!isMobile && (
         <div className="lorebook-name-sizer">
           <input
@@ -75,39 +79,41 @@ export function WindowHeader() {
             onPointerDown={(e) => e.stopPropagation()}
             spellCheck={false}
           />
-          {showSwitchButton && (
-            <button
-              ref={switchBtnRef}
-              className="lorebook-switch-btn"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={toggleSwitch}
-              title="Switch to another lorebook"
-              aria-label="Switch lorebook"
-            >
-              Switch ▾
-            </button>
-          )}
+          <span className="lorebook-name-aside">
+            {activeLorebook && (
+              <span className="lorebook-entry-count" title="Total entries in this lorebook">
+                · {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
+              </span>
+            )}
+            {activeLorebook && hiddenEntries.length > 0 && (
+              <button
+                ref={hiddenBtnRef}
+                className="lorebook-hidden-count"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={toggleHidden}
+                title="Entries excluded from JSON export — click to view and manage"
+              >
+                · {hiddenEntries.length} hidden
+              </button>
+            )}
+            {showSwitchButton && (
+              <button
+                ref={switchBtnRef}
+                className="lorebook-switch-btn"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={toggleSwitch}
+                title="Switch to another lorebook"
+                aria-label="Switch lorebook"
+              >
+                Switch ▾
+              </button>
+            )}
+          </span>
           {switchOpen && (
             <LorebookSwitchPopover
               anchorRect={switchAnchor}
               onClose={() => setSwitchOpen(false)}
             />
-          )}
-          {activeLorebook && (
-            <span className="lorebook-entry-count" title="Total entries in this lorebook">
-              · {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
-            </span>
-          )}
-          {activeLorebook && hiddenEntries.length > 0 && (
-            <button
-              ref={hiddenBtnRef}
-              className="lorebook-hidden-count"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={toggleHidden}
-              title="Entries excluded from JSON export — click to view and manage"
-            >
-              · {hiddenEntries.length} hidden
-            </button>
           )}
           {hiddenOpen && (
             <HiddenEntriesPopover
@@ -119,24 +125,31 @@ export function WindowHeader() {
         </div>
       )}
 
-      {/* Storage usage ring — sits to the left of the menu button */}
-      <StorageUsageRing />
+      {/* Right-side controls — pushed to the right edge; the centred name floats
+          over the gap between the logo and these. */}
+      <div className="header-right">
+        {/* Feedback links (desktop only) — bug report + feature request */}
+        {!isMobile && <FeedbackLinks />}
 
-      {/* Menu button — opens slide tray on both desktop and mobile */}
-      <MenuButton />
+        {/* Storage usage ring */}
+        <StorageUsageRing />
 
-      {/* Close — returns to lander; hidden on mobile */}
-      {!isMobile && (
-        <button
-          className="header-close"
-          title="Return to home"
-          aria-label="Return to home"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => setShowLander(true)}
-        >
-          ×
-        </button>
-      )}
+        {/* Menu button — opens slide tray on both desktop and mobile */}
+        <MenuButton />
+
+        {/* Close — returns to lander; hidden on mobile */}
+        {!isMobile && (
+          <button
+            className="header-close"
+            title="Return to home"
+            aria-label="Return to home"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setShowLander(true)}
+          >
+            ×
+          </button>
+        )}
+      </div>
     </div>
   );
 }

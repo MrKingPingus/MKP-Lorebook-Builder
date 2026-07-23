@@ -18,6 +18,7 @@
 - **Entry header height** — Settings → Editing & Entries has a new **Entry header height** option (Default / Medium / Large). The taller rows make a long lorebook easier to scan if the dense default feels overwhelming.
 - **Shift+scroll works on more dropdowns** — the Shift+scroll-to-cycle shortcut (already on the entry type picker) now also works on the trigger delimiter picker, the Search / Find-Replace / Select mode picker, and the sort button — so you can flip a setting without opening the menu.
 - **"Import File" opens your file browser right away** — on the launch screen, the **Import File** tile now opens your file picker immediately and loads the file straight into a new lorebook: no import screen, no "append or replace?" prompt, and no naming step (it takes the file's name). Pasting entries still lives on its own **Import Paste** tile, so nothing's lost.
+- **Report a bug or request a feature from the header** — a 🐞 bug icon and a 💡 lightbulb icon now sit in the window title bar, just left of the storage ring, each opening the matching GitHub form in a new tab. A more visible second home for the links that previously lived only in the launch-screen footer.
 
 ### Fixes
 
@@ -29,6 +30,7 @@
 - **Removed the broken "Full type button grid" setting** — this Editing & Entries toggle never had any visible effect, so it's been taken out. Its place is now the new Entry header height option.
 - **The lorebook switcher is easier to spot** — the easy-to-miss little arrow next to the lorebook name is now a clearly-labeled **Switch ▾** button, so the quick lorebook-switcher reads as an actual control. Renaming the book in place works exactly as before.
 - **Hotbar Import button tidied up** — it now simply reads **Import** (matching **Export**) and uses the same bold arrow as Export instead of a thinner one.
+- **Tidier window header** — the entry count now sits right next to the lorebook name (just left of the Switch button); the lorebook name field stays perfectly centered in the window no matter what's beside it; and the header's menu, close, and new feedback icons are larger and more uniform, closer in size to the storage ring.
 
 ---
 

@@ -11,6 +11,7 @@ import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useImport }            from '../../hooks/use-import.js';
 import { parseMarkdown }        from '../../services/markdown-parse.js';
 import { DUPE_FLASH_MS }        from '../../constants/limits.js';
+import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
 import changelogRaw             from '../../../CHANGELOG.md?raw';
 
 // Render the inline-span AST emitted by markdown-parse into React nodes.
@@ -55,10 +56,6 @@ function renderMarkdown(src) {
 }
 
 const RECENT_LIMIT = 6;
-
-const ISSUE_NEW_BASE = 'https://github.com/mrkingpingus/mkp-lorebook-builder/issues/new';
-const BUG_REPORT_URL      = ISSUE_NEW_BASE + '?template=bug_report.yml';
-const FEATURE_REQUEST_URL = ISSUE_NEW_BASE + '?template=feature_request.yml';
 
 export function Lander() {
   const setShowLander       = useUi((s) => s.setShowLander);
