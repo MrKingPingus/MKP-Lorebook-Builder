@@ -63,6 +63,7 @@ export function Lander() {
   const setShowLander       = useUi((s) => s.setShowLander);
   const setActiveMenuPanel  = useUi((s) => s.setActiveMenuPanel);
   const setShowAppendImport = useUi((s) => s.setShowAppendImport);
+  const setPendingImportFilePick = useUi((s) => s.setPendingImportFilePick);
   const { displayChord }    = useKeybindings();
   const {
     downloadTxtTemplate, downloadDocxTemplate,
@@ -98,6 +99,9 @@ export function Lander() {
   function onImportFile() {
     setShowLander(false);
     setActiveMenuPanel('import-export');
+    // Jump straight to the OS file picker — the click's transient activation
+    // carries through to ImportPanel's auto-open. (Paste has its own tile.)
+    setPendingImportFilePick(true);
   }
 
   function onImportPaste() {

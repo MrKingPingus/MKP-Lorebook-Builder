@@ -347,21 +347,26 @@ img.logo-icon {
 /* Small caret button next to the name input — opens LorebookSwitchPopover in
    solo mode so rename (input) and switch (button) live side by side. */
 .lorebook-switch-btn {
-  margin-left: 4px;
-  padding: 2px 6px;
-  background: transparent;
-  border: 1px solid transparent;
+  margin-left: 6px;
+  padding: 3px 8px;
+  /* Resting button chrome so it reads as an interactive control, not a stray
+     glyph — the old bare ▼ was too easy to miss (issue #113). */
+  background: var(--surface2);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  color: var(--muted);
-  font-size: 0.625rem;
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 .lorebook-switch-btn:hover {
   color: var(--text);
-  border-color: var(--border);
-  background: var(--surface2);
+  border-color: var(--border2);
+  background: var(--surface3);
 }
 
 /* Lorebook count badge */

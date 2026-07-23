@@ -84,7 +84,7 @@ export function WindowHeader() {
               title="Switch to another lorebook"
               aria-label="Switch lorebook"
             >
-              ▼
+              Switch ▾
             </button>
           )}
           {switchOpen && (

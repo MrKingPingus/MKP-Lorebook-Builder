@@ -1,9 +1,20 @@
 // Drag-and-drop file target that also opens the OS file picker on click — emits file via callback
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
-export function DropZone({ onFile, accept, children }) {
+export function DropZone({ onFile, accept, children, autoOpen = false }) {
   const inputRef  = useRef(null);
   const [over, setOver] = useState(false);
+  const autoOpened = useRef(false);
+
+  // One-shot: when the caller arrives already committed to picking a file
+  // (e.g. the lander "Import File" tile), pop the OS picker immediately. The
+  // ref guard keeps a remount from re-triggering it.
+  useEffect(() => {
+    if (autoOpen && !autoOpened.current) {
+      autoOpened.current = true;
+      inputRef.current?.click();
+    }
+  }, [autoOpen]);
 
   function handleDrop(e) {
     e.preventDefault();

@@ -39,6 +39,7 @@ export const useUiStore = create((set) => ({
   searchFocusNonce:      0,      // bumped by the focus-search hotkey; SearchBar focuses its input on change
   findFocusNonce:        0,      // bumped by the find/replace hotkey; SearchBar enters find-replace mode + focuses the find field
   pendingImportPick:     false,  // set by the import hotkey; AppendImportPanel switches to file mode + opens the OS picker, then clears
+  pendingImportFilePick: false,  // set by the lander "Import File" tile; ImportPanel auto-opens its file picker on mount, then clears
   pendingSettingsSection: null,  // accordion section id to auto-open next time the Settings panel mounts (deep-link); cleared once consumed
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
@@ -129,6 +130,7 @@ export const useUiStore = create((set) => ({
   // Open the Import overlay and flag it to jump straight to the file picker.
   requestImportPick:        ()                      => set({ showAppendImport: true, pendingImportPick: true }),
   setPendingImportPick:     (pendingImportPick)     => set({ pendingImportPick }),
+  setPendingImportFilePick: (pendingImportFilePick) => set({ pendingImportFilePick }),
   // Open the floating Export menu centred on screen (no hotbar anchor).
   openExportMenuCentered:   ()                      => set({ exportMenuAnchor: 'center' }),
   setPendingSettingsSection: (pendingSettingsSection) => set({ pendingSettingsSection }),

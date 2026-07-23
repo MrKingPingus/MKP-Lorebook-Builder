@@ -17,6 +17,7 @@
 - **Entry title length warning** — entry titles now show a small advisory counter once you pass 40 characters, nudging you toward the 50-character length CharSnap prefers. Like the app's other counters it's only a heads-up — longer titles are still allowed.
 - **Entry header height** — Settings → Editing & Entries has a new **Entry header height** option (Default / Medium / Large). The taller rows make a long lorebook easier to scan if the dense default feels overwhelming.
 - **Shift+scroll works on more dropdowns** — the Shift+scroll-to-cycle shortcut (already on the entry type picker) now also works on the trigger delimiter picker, the Search / Find-Replace / Select mode picker, and the sort button — so you can flip a setting without opening the menu.
+- **"Import File" opens your file browser right away** — on the launch screen, the **Import File** tile now pops your file picker immediately instead of dropping you on the import screen first. Pasting entries still lives on its own **Import Paste** tile, so nothing's lost.
 
 ### Fixes
 
@@ -26,6 +27,8 @@
 
 - **Keyboard shortcuts moved into Accessibility** — the shortcut editor now lives under Settings → Accessibility (it used to be its own "Hotkeys" section). Nothing about how it works changed.
 - **Removed the broken "Full type button grid" setting** — this Editing & Entries toggle never had any visible effect, so it's been taken out. Its place is now the new Entry header height option.
+- **The lorebook switcher is easier to spot** — the easy-to-miss little arrow next to the lorebook name is now a clearly-labeled **Switch ▾** button, so the quick lorebook-switcher reads as an actual control. Renaming the book in place works exactly as before.
+- **Hotbar Import button tidied up** — it now simply reads **Import** (matching **Export**) and uses the same bold arrow as Export instead of a thinner one.
 
 ---
 
