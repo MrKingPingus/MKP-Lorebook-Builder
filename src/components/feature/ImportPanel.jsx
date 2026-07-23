@@ -1,5 +1,5 @@
 // Import tab content — drag-drop zone, auto-detect format, save-warning prompt, and ImportPreview
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DropZone }      from '../ui/DropZone.jsx';
 import { ImportPreview } from './ImportPreview.jsx';
 import { useEntries }       from '../../hooks/use-entries.js';
@@ -28,20 +28,8 @@ export function ImportPanel() {
   const { parseFile }                  = useImport();
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
-  const pendingImportFilePick    = useUi((s) => s.pendingImportFilePick);
-  const setPendingImportFilePick = useUi((s) => s.setPendingImportFilePick);
   const isMobile                       = useMobile();
   const { keepMenuOpenAfterImport }    = useSettings();
-
-  // Consume the lander's "open the picker for me" signal once, into local state
-  // that drives the DropZone's one-shot auto-open.
-  const [autoOpenPick, setAutoOpenPick] = useState(false);
-  useEffect(() => {
-    if (pendingImportFilePick) {
-      setAutoOpenPick(true);
-      setPendingImportFilePick(false);
-    }
-  }, [pendingImportFilePick, setPendingImportFilePick]);
 
   function resetAll() {
     setPreview(null);
@@ -169,7 +157,7 @@ export function ImportPanel() {
       {!savePending && !preview?.length && (
         <>
         <p className="import-label">IMPORT</p>
-        <DropZone onFile={handleFile} accept=".txt,.docx,.odt,.json" autoOpen={autoOpenPick}>
+        <DropZone onFile={handleFile} accept=".txt,.docx,.odt,.json">
           <div className="drop-zone-content">
             {loading ? '⏳ Parsing…' : 'Drop a file here or click to browse (TXT, DOCX, ODT, JSON)'}
           </div>

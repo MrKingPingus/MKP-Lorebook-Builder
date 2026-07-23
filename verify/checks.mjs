@@ -32,6 +32,10 @@ async function runScenario({ name, fn }) {
 const SCENARIOS = [
   scenario('Import parity + Public badges + private-by-default', async (page, check) => {
     check('entry cards imported', await openBuilderWithFixture(page), 34);
+    // Lander import goes straight in — no "Name your lorebook" modal, no
+    // import-panel disposition prompt (issue: messy lander-import flow).
+    check('no name modal after lander import', await page.locator('.lb-name-modal-overlay').count(), 0);
+    check('no import disposition prompt', await page.locator('.import-save-prompt').count(), 0);
     check('public eye badges (isPublic===true)', await page.locator('.entry-public-icon').count(), 29);
     check('exported private count', countPrivate(await exportJson(page)), 5);
     check('no export-off badges', await page.locator('.entry-hidden-icon').count(), 0);
