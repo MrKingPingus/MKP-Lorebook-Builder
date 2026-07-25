@@ -25,6 +25,48 @@ All planned phases through **Phase 10** have shipped (see **Completed** below). 
 
 ---
 
+## Upcoming Phases
+
+Pre-planned but not yet started (unlike Future Features, these have locked design decisions and are queued to build). Both came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
+
+### Phase 11 — Custom Categories / Folders (GitHub #116)
+
+Builder-only organization layer — Reaper-style nested, collapsible, colored folders that entries live inside. **Separate from EntryType and never exported.**
+
+**Locked decisions (2026-07-24):**
+1. **Model A** — the flat `entries[]` array stays the single source of truth for order; folders are a render-time grouping layer (mirrors how `group-by-type` injects headers over a flat array in `EntryList.jsx`). Keeps export / autosave / history untouched. `lorebook.folders = [{ id, name, color, parentId, collapseState, order }]`; `entry.folderId = null`. Export is free (JSON export whitelists CharSnap fields, so folder data drops out); render treats an unknown `folderId` as top-level so a history undo can never orphan an entry.
+2. **Type-groups nest _inside_ folders** — render walk is folder (outer) → optional type sub-header (inner) → entries.
+3. **Three collapse states per folder** — `full` (entries normal size, indented), `condensed` (entries shrunk to name + a couple of buttons — needs a genuine compact `EntryCard` variant), `tucked` (entries hidden, header shows a count).
+4. **Assignment is menu/bulk first, drag deferred** — Select-mode bulk "Move to folder…" **and** a per-entry "Move to folder" button in the card footer (to the right of the `rollback-toggle-btn`); drag-into-folder comes last.
+5. **Colors: curated theme-safe swatch set now, custom hex later.**
+6. **Filter-by-folder = a `Folder ▾` dropdown/sheet** (parallels the type filter); new filter dimension in `ui-store`.
+7. **Search-in-folders:** empty folders hide during an active search; a match force-renders even inside a tucked/condensed folder.
+8. **Undoability:** structural ops (create/delete/move-entry) snapshot to history; collapse toggles don't.
+9. **Desktop-first; mobile folders are a separate deferred design.**
+
+**Sub-phases:** 11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states) — _usable on its own_ · 11B condensed compact-card variant · 11C nesting + type-in-folder + collapse-all · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11A Medium · 11B Medium · 11C Medium–High · 11D Medium · 11E High.
+
+### Phase 12 — Entry Templates (GitHub #114)
+
+Save an entry's content as a reusable, **globally-stored** template and load it into a new or existing entry. Sequenced after Phase 11 to reuse its category primitive.
+
+**Locked decisions (2026-07-24):**
+1. **Payload = the whole entry, always** — no save-time field menu; a user who doesn't want a title/triggers just leaves them off the source entry.
+2. **Two load actions:** "Fill current entry" and "Create new entry from template".
+3. **Content-driven checklist:** load shows a field checklist listing only the fields the template has content in; a description-only template loads straight in with no checklist.
+4. **Description conflict on fill-current:** ask (overwrite vs append at cursor).
+5. **Triggers captured literally** (good for `name / alias / nickname` scaffolds).
+6. **Global `mkp_templates` localStorage key** (via `storage-service.js`); new `templates-store` + `use-templates`.
+7. **Bookmarks-style drill-in folder dropdown** (navigate-in + breadcrumb) with colors + per-template hover preview — visually distinct from Phase 11's inline-indented folders by design; shares only the pure tree helper + data shape (`services/category-tree.js` if extracted), not components or stores. Extraction finalized once Phase 11 exists.
+8. **Management = both:** quick actions in the Load dropdown's manage mode **plus** a full Settings → Templates section.
+9. **Button placement:** Save-as-Template + Load-Template both in the entry-card footer **for now** — flagged for revisit (see note below).
+
+**Sub-phases:** 12A core (save whole entry, both load actions, content-driven checklist + description-conflict prompt, flat list) · 12B organization (drill-in folders, colors, hover preview, management). Complexity: 12A Medium · 12B Medium.
+
+> **Revisit — entry-card footer crowding.** Phase 11 adds "Move to folder" and Phase 12 adds "Save as Template" + "Load Template" on top of the existing entry-history / visibility / public controls. Before it overflows, rethink the footer — an overflow `⋯` menu, relocating the less-common actions, or regrouping per-entry actions. _(what would FabFilter do?)_ Noted 2026-07-24.
+
+---
+
 ## Future Features
 
 Not assigned to a phase. Documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
@@ -57,10 +99,10 @@ A categorised, genre-separated reference table for trigger suggestions — separ
 `suggestion-engine.js` applies different weights and candidate pools per entry type, so suggestions for a character differ from those for a location. Needs a per-type lookup table / seed word list to have real impact. Depends on a lookup-table approach being designed.
 
 **Thesaurus Trigger Suggestions — Follow-ups**
-Open follow-ups if `dictionaryapi.dev` data quality proves limiting in real use:
-1. **Datamuse `ml=` backup sense** — when the dictionary returns thin/empty synonyms, append a final "Related" sense from Datamuse's means-like endpoint. One extra request per word; free, no key, CORS-friendly. Tradeoff: `ml=` mixes looser semantic neighbours (sometimes antonyms).
-2. **Bundle a frequency-filtered local thesaurus** — removes the network dependency and gives data-quality control, at a ~1MB+ bundle hit. Only justified if API coverage stays poor after the Datamuse backup.
-3. **Surface the resolved lemma in the header** — e.g. "Synonyms for 'lives' (via 'life')" so users understand the noun-sense synonyms. Small clarity polish; the service already returns the resolved word.
+Follow-up status (data-quality safety nets on top of `dictionaryapi.dev`):
+1. ✅ **Datamuse `ml=` backup sense** — _shipped 2026-07-25._ When the dictionary + lemma fallback return **nothing**, `thesaurus-service.js` calls Datamuse's means-like endpoint and appends one "related" sense ("broader related words"). Scoped **empty-only** (not thin-or-empty append), so there's no latency on the common success path; best-effort, so any Datamuse failure falls back to "No synonyms found." Tradeoff stands: `ml=` mixes looser neighbours (occasionally antonyms). Possible later add: thin-or-empty append via a `THESAURUS_THIN_THRESHOLD` — deferred to avoid the extra request/delay on sparse-but-successful lookups.
+2. **Bundle a frequency-filtered local thesaurus** — removes the network dependency and gives data-quality control, at a ~1MB+ bundle hit (measured 2026-07-25: the whole app is only ~144 KB gzipped, so this would be ~5× the entire bundle). Only justified if API coverage stays poor after the Datamuse backup; the user wants to revisit it deliberately when the time comes.
+3. ✅ **Surface the resolved lemma in the header** — _shipped 2026-07-25._ When an inflection fallback resolves to a different base form, the popover header reads `Synonyms for "lives" (via "life")`. `fetchSynonyms` returns `resolved`, `use-thesaurus` threads + caches it, `ThesaurusPopover` shows the muted "(via …)" only when the lemma differs from what was hovered.
 
 Won't revisit unless something changes: per-PoS-vs-per-sense granularity (the API only populates meaning-level synonyms) and archaic synonyms ("sith" for "because") — filtering the latter needs a bundle-heavy frequency dictionary.
 
@@ -72,6 +114,9 @@ Intra-book entry-vs-entry consistency analysis — an adaptation of crosstalk ag
 
 **All-Conflicts Panel**
 Aggregate view of every trigger overlap across the active lorebook in one place (current crosstalk surfaces conflicts per-entry). Lists each conflicting trigger with the entries that share it, plus batch Allow/Revoke at the lorebook level. Phase 9 crosstalk may subsume parts of this.
+
+**Entry History — inline quick actions + Settings management**
+Apply the Phase 12 Templates management pattern to the Entry History (rollback/snapshot) system: quick per-snapshot actions inline where history is used, plus a fuller management surface in Settings — the same "quick actions where you are + full management in Settings" split. Noted 2026-07-24 while planning Entry Templates; the pattern fits history cleanly. Scope to define when picked up.
 
 **Entry Splitting**
 Optional system for breaking a long entry into two when it exceeds a length threshold: split detection + suggested split points; a split action (the second entry inherits triggers + a name suffix); a linear/non-linear prompt (linear splits inject a bridging prefix); a split-pair badge; and a temporary `CHAR_LIMIT` override until the split is confirmed. Deferred — per-entry limit overrides are sufficient for now.
