@@ -10,11 +10,13 @@
   - **Make one** with the **＋ Folder** button in the filter row, or straight from a selection with **Move to folder… → ＋ New folder** in Select mode.
   - **File entries** two ways: pick **Move to folder** in an entry's footer for one entry at a time, or select several entries and use **Move to folder…** to move the whole batch at once.
   - **Collapse a folder** with the arrow on its header to tuck its entries out of sight — the header keeps showing how many are inside. Click again to bring them back.
-  - **Rename** by clicking a folder's name, and **recolor** by clicking its dot to pick from eight colors. An entry filed into a folder shows that folder's name and color on its own footer button, so you can always tell where it lives.
+  - **Rename** by clicking a folder's name, and **recolor** by clicking its dot to pick from eight pastel colors, deliberately kept distinct from the entry-type colors so a folder stripe never reads as a type. An entry filed into a folder shows that folder's name and color on its own footer button, so you can always tell where it lives.
   - **Deleting a folder never deletes entries** — they simply move back out to the top level.
   - **Undo works on all of it** — creating, deleting, renaming, recoloring, and moving entries in or out are all undoable with Ctrl+Z. Collapsing a folder isn't undoable, since it's just a view.
   - Folders appear in the list wherever their first entry sits, and unfiled entries stay right where they were around them, so nothing gets shuffled into separate piles. A brand-new empty folder waits at the bottom of the list until you put something in it.
   - **In reference mode**, folders belong to the lorebook you're actively editing — the reference pane beside it still shows a plain list, and the folder buttons explain themselves rather than doing nothing. Copying an entry between two lorebooks drops its folder, so it arrives loose in the destination instead of remembering a folder that isn't there.
+  - **Naming is immediate** — a folder is created with its name field already open and selected, so you can type the name straight away instead of hunting for it.
+  - **Searching reaches inside collapsed folders** — if a match is filed in a folder you've tucked shut, the folder opens itself for the duration of the search and closes again when you clear it.
   - The two **"cross-book matches"** sort modes hide folders while they're on, since their whole job is to split the list into matched and unmatched — regrouping by folder would undo that. The folder buttons grey out with a note while that sort is active.
 
 - **Synonyms have a backup source** — when the main dictionary has no synonyms for a word (which used to just show "No synonyms found"), the thesaurus popover now falls back to a broader "related words" list so you're less likely to hit a dead end. These related words are looser than the dictionary's curated synonyms — handy, but eyeball them before adding. The backup only kicks in when there's nothing else to show, so it never slows down words that already have good synonyms.
@@ -22,6 +24,7 @@
 
 ### Fixes
 
+- **Filing entries now clears the selection** — after moving a batch of selected entries into a folder, they stay selected no longer, so you can go straight on to picking the next batch for a different folder.
 - **Drag-to-reorder moved the wrong entry** — dragging an entry while a search was active, or while **Group by type** was on, would silently reorder two *different* entries elsewhere in the list instead of the one you dragged. Reordering now always follows the entry you actually picked up.
 
 ### Adjustments

@@ -1891,7 +1891,7 @@ img.logo-icon {
   align-items: center;
   gap: 6px;
   position: relative;
-  padding: 4px 8px;
+  padding: 5px 8px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-left: 4px solid var(--folder-color, var(--border2));
@@ -1904,20 +1904,31 @@ img.logo-icon {
 }
 
 .folder-collapse-btn {
-  padding: 0 4px;
-  background: transparent;
-  border: none;
-  color: var(--muted2);
-  font-size: 0.75rem;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.875rem;
   line-height: 1;
   cursor: pointer;
-  transition: color var(--transition);
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
 }
-.folder-collapse-btn:hover { color: var(--text); }
+.folder-collapse-btn:hover {
+  background: var(--border);
+  border-color: var(--border2);
+  color: var(--text);
+}
 
 .folder-swatch {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid var(--border2);
@@ -1941,7 +1952,7 @@ img.logo-icon {
   text-overflow: ellipsis;
   cursor: text;
 }
-.folder-name:hover { color: var(--folder-color, var(--text)); }
+.folder-name:hover { color: var(--text); text-decoration: underline dotted; }
 
 .folder-name-input {
   flex: 1;
@@ -2013,12 +2024,12 @@ img.logo-icon {
   gap: 6px;
   margin-left: 10px;
   padding-left: 8px;
-  border-left: 2px solid var(--folder-color, var(--border));
+  border-left: 3px solid var(--folder-color, var(--border));
   opacity: 1;
 }
 /* The rail is the folder's own colour, dimmed so a stack of folders reads as
    structure rather than as a wall of saturated lines. */
-.folder-block > .folder-entries { border-left-color: color-mix(in srgb, var(--folder-color, var(--border)) 45%, transparent); }
+.folder-block > .folder-entries { border-left-color: color-mix(in srgb, var(--folder-color, var(--border)) 75%, transparent); }
 
 /* ---- Per-entry "Move to folder" control (entry card footer) ---- */
 .move-to-folder { position: relative; }
@@ -2042,9 +2053,11 @@ img.logo-icon {
   border-color: var(--border2);
 }
 .move-to-folder-btn:disabled { opacity: 0.4; cursor: default; }
+/* The folder colour rides on the border only — a pastel has nowhere near the
+   contrast to be label text, least of all on the light theme. */
 .move-to-folder-btn--filed {
   border-color: var(--folder-color, var(--border2));
-  color: var(--folder-color, var(--muted2));
+  color: var(--text);
 }
 
 .move-to-folder-menu {
@@ -2095,6 +2108,9 @@ img.logo-icon {
   border-left-color: var(--border2);
   border-style: dashed;
 }
+/* Folder chips fill with a pastel on hover, so their label flips to dark ink
+   rather than the #fff the type chips use. */
+.bulk-type-chip--folder:hover { color: #1f2430; }
 
 /* ============================================================
    Entry Card

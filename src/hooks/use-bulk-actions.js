@@ -92,10 +92,9 @@ export function useBulkActions() {
     updateActiveEntries(updated);
   }
 
-  // File the selection into a folder (folderId === null unfiles them). Mirrors
-  // the other bulk ops: no-op means no snapshot, and the selection survives so
-  // the user can keep acting on the same set. The snapshot carries folders too
-  // because the assignment also repositions entries[] around the folder.
+  // File the selection into a folder (folderId === null unfiles them). No-op
+  // means no snapshot, as with the other bulk ops. The snapshot carries folders
+  // too because the assignment also repositions entries[] around the folder.
   function moveSelectedToFolder(folderId) {
     if (selectedIds.size === 0 || selectionSide === 'reference') return;
     const target = folderId ?? null;
@@ -103,6 +102,11 @@ export function useBulkActions() {
     if (!hasWork) return;
     pushSnapshot({ entries: [...entries], folders: [...folders] });
     updateActiveEntriesAndFolders(assignEntriesToFolder(entries, selectedIds, target), folders);
+    // Unlike the type/visibility bulk ops, filing is a "that batch is done"
+    // action — the next move is almost always a *different* set of entries into
+    // a *different* folder, so holding the selection just gets in the way.
+    // Matches copyToOtherPanel, which clears for the same reason.
+    clearSelection();
   }
 
   // "Move to new folder…" — one snapshot covering both the new folder and the
@@ -118,6 +122,10 @@ export function useBulkActions() {
       assignEntriesToFolder(entries, selectedIds, folder.id),
       [...folders, folder]
     );
+    clearSelection();
+    // A folder born from a selection always needs naming — send the header
+    // straight into its rename input.
+    useUiStore.getState().setPendingFocusFolderId(folder.id);
     return folder;
   }
 

@@ -293,7 +293,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
           {folders.map((f) => (
             <button
               key={f.id}
-              className="bulk-type-chip"
+              className="bulk-type-chip bulk-type-chip--folder"
               style={{ '--type-color': f.color }}
               onClick={() => onApplyFolder(f.id)}
               title={`Move the selected entries into "${f.name || NEW_FOLDER_NAME}"`}

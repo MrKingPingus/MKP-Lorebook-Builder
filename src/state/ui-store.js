@@ -27,6 +27,7 @@ export const useUiStore = create((set) => ({
   activeEntryId:        null,  // mobile entry detail panel — id of the entry being edited, or null
   searchFocusedId:      null,  // entry id forced-expanded by search navigation; null = no override
   pendingFocusEntryId:       null,   // id of newly-created entry that should receive auto-focus; cleared once consumed
+  pendingFocusFolderId:      null,   // id of newly-created folder whose header should open its rename input; cleared once consumed
   pendingFocusLorebookName:  false,  // true after new lorebook created; WindowHeader focuses name input then resets
   activeSide: 'left',          // 'left' | 'right' — which physical slot holds the active lorebook in crosstalk mode.
                                //   swapReference flips roles AND this flag so the clicked panel stays put.
@@ -115,6 +116,7 @@ export const useUiStore = create((set) => ({
   closeExportMenu: ()     => set({ exportMenuAnchor: null }),
   setActiveEntryId:        (activeEntryId)        => set({ activeEntryId }),
   setPendingFocusEntryId:       (pendingFocusEntryId)       => set({ pendingFocusEntryId }),
+  setPendingFocusFolderId:      (pendingFocusFolderId)      => set({ pendingFocusFolderId }),
   setPendingFocusLorebookName:  (pendingFocusLorebookName)  => set({ pendingFocusLorebookName }),
   toggleActiveSide: () => set((s) => ({ activeSide: s.activeSide === 'left' ? 'right' : 'left' })),
   setPeekReferenceEntryId: (peekReferenceEntryId) => set({ peekReferenceEntryId }),

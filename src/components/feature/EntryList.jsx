@@ -32,6 +32,8 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     return () => window.removeEventListener('mouseup', resetFlag);
   }, []);
 
+  const searchActive = searchQuery.trim().length > 0;
+
   // `showFolders` goes false under the cross-match sorts, where regrouping by
   // folder would break the matched/unmatched partition the sort exists to show.
   // Passing no folders renders every entry loose, in pure sort order.
@@ -39,7 +41,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     // An empty folder can't anchor to a member, so it would otherwise trail
     // every search as a row of noise. Hide those while a search is narrowing
     // the list; they come back the moment the query clears.
-    hideEmptyFolders: searchQuery.trim().length > 0,
+    hideEmptyFolders: searchActive,
   });
 
   if (renderItems.length === 0) {
@@ -97,7 +99,10 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   renderItems.forEach((item) => {
     if (item.kind === 'folder') {
       const { folder } = item;
-      const tucked = folder.collapseState === COLLAPSE_STATES.TUCKED;
+      // A tucked folder opens itself while a search is running — otherwise the
+      // search silently fails to surface anything filed inside one. It tucks
+      // again the moment the query clears.
+      const tucked = folder.collapseState === COLLAPSE_STATES.TUCKED && !searchActive;
       items.push(
         <div
           key={`folder-${folder.id}`}

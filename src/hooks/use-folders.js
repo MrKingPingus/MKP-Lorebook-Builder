@@ -25,6 +25,7 @@ export function useFolders() {
   const updateActiveEntriesAndFolders  = useLorebookStore((s) => s.updateActiveEntriesAndFolders);
   const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
   const sortMode         = useUiStore((s) => s.sortMode);
+  const setPendingFocusFolderId = useUiStore((s) => s.setPendingFocusFolderId);
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
   const entries = activeLorebook?.entries ?? [];
@@ -35,11 +36,13 @@ export function useFolders() {
   }
 
   // Create an empty folder. Returns the new folder so callers can chain (e.g.
-  // "move selection into a brand-new folder").
+  // "move selection into a brand-new folder"). Every folder is born as
+  // "New Folder", so creation always hands the header its rename input.
   function createFolder(overrides = {}) {
     snapshot();
     const folder = makeFolder(folders, overrides);
     updateActiveFolders([...folders, folder]);
+    setPendingFocusFolderId(folder.id);
     return folder;
   }
 
@@ -50,6 +53,7 @@ export function useFolders() {
     const nextFolders = [...folders, folder];
     const nextEntries = assignEntriesToFolder(entries, ids, folder.id);
     updateActiveEntriesAndFolders(nextEntries, nextFolders);
+    setPendingFocusFolderId(folder.id);
     return folder;
   }
 

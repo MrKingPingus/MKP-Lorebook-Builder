@@ -1,18 +1,20 @@
 // Folder constants: curated colour swatches and the collapse-state vocabulary.
 // Folders are a builder-only organization layer — they never reach any export.
 
-// Theme-safe swatch set. Deliberately distinct from ENTRY_TYPES colours so a
-// folder stripe never reads as a type colour, and picked to stay legible on
-// both the dark and light themes. Custom hex is a later addition.
+// Pastel swatch set, chosen to sit clearly apart from the mid-saturation
+// ENTRY_TYPES palette so a folder stripe can never be misread as a type colour.
+// These are fill colours only — swatch dots, header stripes, indent rails.
+// Pastels don't carry enough contrast to be used as text on the light theme, so
+// nothing renders label text in a folder colour. Custom hex is a later addition.
 export const FOLDER_COLORS = [
-  { id: 'slate',   label: 'Slate',   color: '#94a3b8' },
-  { id: 'rose',    label: 'Rose',    color: '#fb7185' },
-  { id: 'amber',   label: 'Amber',   color: '#f59e0b' },
-  { id: 'lime',    label: 'Lime',    color: '#a3e635' },
-  { id: 'emerald', label: 'Emerald', color: '#34d399' },
-  { id: 'cyan',    label: 'Cyan',    color: '#22d3ee' },
-  { id: 'indigo',  label: 'Indigo',  color: '#818cf8' },
-  { id: 'fuchsia', label: 'Fuchsia', color: '#e879f9' },
+  { id: 'blush',      label: 'Blush',      color: '#f4b8c1' },
+  { id: 'peach',      label: 'Peach',      color: '#f8cba6' },
+  { id: 'butter',     label: 'Butter',     color: '#f0e4a8' },
+  { id: 'sage',       label: 'Sage',       color: '#c6dcae' },
+  { id: 'mint',       label: 'Mint',       color: '#a9e0cd' },
+  { id: 'sky',        label: 'Sky',        color: '#a9d3ee' },
+  { id: 'periwinkle', label: 'Periwinkle', color: '#bcc2f2' },
+  { id: 'lilac',      label: 'Lilac',      color: '#d9bdf0' },
 ];
 
 export const DEFAULT_FOLDER_COLOR = FOLDER_COLORS[0].color;

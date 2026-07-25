@@ -2,6 +2,7 @@
 // swatch (opens a picker), inline-editable name, entry count, and delete.
 import { useState, useRef, useEffect } from 'react';
 import { useFolders }      from '../../hooks/use-folders.js';
+import { useUi }           from '../../hooks/use-ui.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import {
@@ -18,6 +19,16 @@ export function FolderHeader({ folder, count }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef(null);
   const rootRef  = useRef(null);
+  const pendingFocusFolderId    = useUi((s) => s.pendingFocusFolderId);
+  const setPendingFocusFolderId = useUi((s) => s.setPendingFocusFolderId);
+
+  // A folder that was just created opens straight into its rename input — it's
+  // always born as "New Folder", so naming it is the guaranteed next step.
+  useEffect(() => {
+    if (pendingFocusFolderId !== folder.id) return;
+    setEditing(true);
+    setPendingFocusFolderId(null);
+  }, [pendingFocusFolderId, folder.id, setPendingFocusFolderId]);
 
   // Adopt external name changes (undo, or another surface renaming the folder)
   // whenever this header isn't the thing doing the editing.
@@ -26,7 +37,9 @@ export function FolderHeader({ folder, count }) {
   }, [folder.name, editing]);
 
   useEffect(() => {
-    if (editing) inputRef.current?.select();
+    if (!editing) return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
   }, [editing]);
 
   useDismissLayer(`folder-color-${folder.id}`, pickerOpen, DISMISS_PRIORITY.popover, () => setPickerOpen(false));

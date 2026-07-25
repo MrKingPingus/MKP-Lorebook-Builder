@@ -376,6 +376,9 @@ const SCENARIOS = [
     check('two entries inside the folder', await page.locator('.folder-entries .entry-card').count(), 2);
     check('header count reflects members', (await page.locator('.folder-count').innerText()).trim(), '2');
     check('no entries lost', await page.locator('.entry-card').count(), count);
+    // Filing is a "batch done" action — the selection clears so the next batch
+    // can go somewhere else.
+    check('selection cleared after the move', (await page.locator('.bulk-action-count').innerText()).trim(), '0 selected');
 
     // Tucking hides the members but keeps the count visible.
     await page.locator('.folder-collapse-btn').click();
@@ -403,6 +406,44 @@ const SCENARIOS = [
     await page.keyboard.press('Control+z');
     await page.waitForTimeout(250);
     check('undo restores the deleted folder', await page.locator('.folder-header').count(), 1);
+  }),
+
+  // A folder created from a selection is always named "New Folder", so the
+  // header hands over its rename input immediately. Searching also has to reach
+  // inside a tucked folder, or matches filed away become unfindable.
+  scenario('Folders: new-folder rename focus + search reaches into a tucked folder', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    const cards = page.locator('.entry-card');
+    await cards.nth(0).click();
+    await page.waitForTimeout(100);
+    // The card label reads "#N: Name" — strip the index prefix to get the name.
+    const firstLabel = (await cards.nth(0).locator('.entry-label').first().innerText()).trim();
+    const firstName  = firstLabel.replace(/^#\d+:\s*/, '');
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await page.waitForTimeout(250);
+    check('rename input is open', await page.locator('.folder-name-input').count(), 1);
+    check('rename input is focused', await page.evaluate(
+      () => document.activeElement?.className || ''), 'folder-name-input');
+    // Type straight over the pre-selected placeholder name.
+    await page.keyboard.type('Cast');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(200);
+    check('folder took the typed name', (await page.locator('.folder-name').innerText()).trim(), 'Cast');
+
+    // Tuck it, then search for the entry hidden inside.
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await page.waitForTimeout(150);
+    await page.locator('.folder-collapse-btn').click();
+    await page.waitForTimeout(200);
+    check('entry hidden while tucked', await page.locator('.folder-entries .entry-card').count(), 0);
+    await page.locator('.search-input').first().fill(firstName);
+    await page.waitForTimeout(350);
+    check('search reaches into the tucked folder', await page.locator('.folder-entries .entry-card').count(), 1);
+    await page.locator('.search-input').first().fill('');
+    await page.waitForTimeout(350);
+    check('folder tucks again once the search clears', await page.locator('.folder-entries .entry-card').count(), 0);
   }),
 
   scenario('Folders never reach the export', async (page, check) => {
