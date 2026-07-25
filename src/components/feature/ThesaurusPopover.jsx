@@ -22,7 +22,11 @@ export function ThesaurusPopover({
   sourceWord,
   onReplace,
 }) {
-  const { senses, senseIndex, currentSense, resolved, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
+  const {
+    senses, senseIndex, currentSense, resolved, loading, error,
+    relatedLoaded, relatedLoading, relatedError, loadRelated,
+    nextSense, prevSense, retry,
+  } = useThesaurus(word);
   const [selected,   setSelected]   = useState(() => new Set());
   const [pos,        setPos]        = useState(null);
   const [interacted, setInteracted] = useState(false);
@@ -207,6 +211,23 @@ export function ThesaurusPopover({
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {currentSense && !relatedLoaded && (
+          <div className="thesaurus-related-row">
+            <button
+              className="thesaurus-related-btn"
+              onClick={() => { setInteracted(true); loadRelated(); }}
+              disabled={relatedLoading}
+              title="Widen with looser related terms, grouped by part of speech"
+            >
+              {relatedLoading
+                ? 'Loading related…'
+                : relatedError
+                  ? 'Related terms unavailable — retry ↻'
+                  : '＋ Related terms'}
+            </button>
           </div>
         )}
       </div>

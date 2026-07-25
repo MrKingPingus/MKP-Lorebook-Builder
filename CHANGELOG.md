@@ -7,6 +7,7 @@
 ### Additions
 
 - **Synonyms have a backup source** — when the main dictionary has no synonyms for a word (which used to just show "No synonyms found"), the thesaurus popover now falls back to a broader "related words" list so you're less likely to hit a dead end. These related words are looser than the dictionary's curated synonyms — handy, but eyeball them before adding. The backup only kicks in when there's nothing else to show, so it never slows down words that already have good synonyms.
+- **Widen any trigger with "＋ Related terms"** — the synonyms popover now has a **＋ Related terms** button. When a trigger returns only a handful of dictionary synonyms (or you just want a wider net), it pulls in looser related words on demand — **grouped by part of speech** (nouns / verbs / adjectives / …) and trimmed of rare, obscure words, so the extras come organised instead of as a random pile. It only fetches when you ask, so it never slows down the normal popover.
 
 ### Adjustments
 

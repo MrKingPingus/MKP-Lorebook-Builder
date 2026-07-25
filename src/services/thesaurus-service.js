@@ -12,12 +12,18 @@
 // Inflection fallback: the API indexes lemmas (base forms), so plurals,
 // gerunds, past tense, etc. typically 404. If the original word returns
 // empty, we try base-form candidates from the lemmatizer in priority order.
-import { THESAURUS_SENSE_CAP, THESAURUS_RELATED_MAX } from '../constants/limits.js';
+import {
+  THESAURUS_SENSE_CAP,
+  THESAURUS_RELATED_MAX,
+  THESAURUS_RELATED_MIN_FREQ,
+  THESAURUS_RELATED_PER_POS,
+} from '../constants/limits.js';
 import { lemmaCandidates }    from './lemmatize.js';
 
 const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en';
-// Datamuse means-like endpoint — the last-resort backup when the dictionary
-// (and its lemma fallbacks) return nothing. Free, no key, CORS-friendly.
+// Datamuse means-like endpoint — powers the looser "related" terms, both as an
+// auto fallback when the dictionary returns nothing and on demand via the
+// popover's Related button. Free, no key, CORS-friendly.
 const DATAMUSE_ENDPOINT = 'https://api.datamuse.com/words';
 
 /**
@@ -26,13 +32,17 @@ const DATAMUSE_ENDPOINT = 'https://api.datamuse.com/words';
  * a retry state.
  *
  * Returns:
- *   { ok: true, senses: Array<{ partOfSpeech, definition, synonyms: string[] }>, resolved?: string }
+ *   { ok: true, senses: Array<{ partOfSpeech, definition, synonyms: string[] }>, resolved?: string, relatedIncluded?: boolean }
  *   { ok: false, error: 'network' | 'http' }
  *
  * `resolved` is the word that actually produced the synonyms — the original
  * query on a direct hit, or the lemma when an inflection fallback matched
  * (e.g. word 'lives' → resolved 'life'). Callers can surface it so users
  * understand why the synonyms reflect the base form.
+ *
+ * `relatedIncluded` is true when the dictionary came up empty and the returned
+ * senses are the Datamuse "related" fallback (so callers know Related is
+ * already on screen and shouldn't offer to load it again).
  */
 export async function fetchSynonyms(word) {
   const q = (word || '').trim();
@@ -53,46 +63,108 @@ export async function fetchSynonyms(word) {
   }
 
   // Dictionary + lemma fallback both came up empty. Last resort: Datamuse's
-  // means-like endpoint for a single "related" sense. Looser than the curated
-  // dictionary synonyms (can include the odd antonym), so it's only reached
-  // when there would otherwise be nothing to show — no latency cost on the
-  // common success path. Best-effort: any Datamuse failure just yields empty.
-  const related = await fetchDatamuseRelated(q);
-  if (related.senses.length > 0) return { ok: true, senses: related.senses, resolved: q };
+  // means-like endpoint, grouped into per-part-of-speech "related" senses.
+  // Looser than the curated dictionary synonyms (can include the odd antonym),
+  // so it's only auto-shown when there would otherwise be nothing — no latency
+  // cost on the common success path. Best-effort: any Datamuse failure yields
+  // empty and the caller falls back to "No synonyms found."
+  const related = await fetchRelated(q);
+  if (related.ok && related.senses.length > 0) {
+    return { ok: true, senses: related.senses, resolved: q, relatedIncluded: true };
+  }
 
   return { ok: true, senses: [] };
 }
 
 /**
- * Datamuse means-like fallback → a single "related" sense. Never throws and
- * never surfaces an error state: this is a best-effort backup, so any failure
- * (network, non-OK, malformed body, no results) resolves to an empty sense
- * list and the caller falls back to "No synonyms found."
+ * On-demand Datamuse "related" lookup → looser terms than the dictionary,
+ * grouped by part of speech and frequency-trimmed. Used two ways: as the
+ * empty-only auto fallback inside fetchSynonyms, and by the popover's "Related"
+ * button to widen a word that already has (possibly sparse) dictionary
+ * synonyms. Unlike fetchSynonyms this reports an error channel so the button
+ * can show a retry.
+ *
+ * Returns:
+ *   { ok: true, senses: Array<{ partOfSpeech: 'related', definition, synonyms }> }
+ *   { ok: false, error: 'network' | 'http' }
  */
-async function fetchDatamuseRelated(word) {
-  const url = `${DATAMUSE_ENDPOINT}?ml=${encodeURIComponent(word)}&max=${THESAURUS_RELATED_MAX}`;
+export async function fetchRelated(word) {
+  const q = (word || '').trim();
+  if (!q) return { ok: true, senses: [] };
+
+  // md=p → part-of-speech tags; md=f → usage frequency. Both ride one request.
+  const url = `${DATAMUSE_ENDPOINT}?ml=${encodeURIComponent(q)}&md=p,f&max=${THESAURUS_RELATED_MAX}`;
   let res;
   try {
     res = await fetch(url);
   } catch {
-    return { senses: [] };
+    return { ok: false, error: 'network' };
   }
-  if (!res.ok) return { senses: [] };
+  if (!res.ok) return { ok: false, error: 'http' };
 
   let body;
   try {
     body = await res.json();
   } catch {
-    return { senses: [] };
+    return { ok: false, error: 'http' };
   }
-  if (!Array.isArray(body) || body.length === 0) return { senses: [] };
+  if (!Array.isArray(body)) return { ok: true, senses: [] };
 
-  const synonyms = dedupeSynonyms(body.map((d) => d?.word), word.toLowerCase());
-  if (synonyms.length === 0) return { senses: [] };
+  return { ok: true, senses: groupRelatedByPos(body, q.toLowerCase()) };
+}
 
-  return {
-    senses: [{ partOfSpeech: 'related', definition: 'broader related words', synonyms }],
-  };
+// Datamuse part-of-speech tag → display label + sort order. Anything else
+// (proper nouns, unknown) collapses into a trailing "other" bucket.
+const POS_LABELS = [
+  ['n',   'nouns'],
+  ['v',   'verbs'],
+  ['adj', 'adjectives'],
+  ['adv', 'adverbs'],
+];
+
+/**
+ * Turn Datamuse md=p,f results into per-PoS "related" senses: drop the source
+ * word and low-frequency noise, bucket by the word's primary part of speech,
+ * cap each bucket, and emit buckets in noun→verb→adjective→adverb→other order.
+ * Each Datamuse item looks like { word, score, tags: ['n', 'f:12.34'] }.
+ */
+function groupRelatedByPos(items, lowerSource) {
+  const buckets = new Map(); // posKey -> ordered string[]
+  const seen = new Set();
+
+  for (const item of items) {
+    const w = (item?.word || '').trim();
+    if (!w) continue;
+    const key = w.toLowerCase();
+    if (key === lowerSource || seen.has(key)) continue;
+
+    const tags = Array.isArray(item?.tags) ? item.tags : [];
+
+    // Frequency trim: only drops words that carry a frequency tag below the
+    // floor; words with no f: tag are kept rather than guessed at.
+    const freqTag = tags.find((t) => typeof t === 'string' && t.startsWith('f:'));
+    if (freqTag) {
+      const freq = parseFloat(freqTag.slice(2));
+      if (!Number.isNaN(freq) && freq < THESAURUS_RELATED_MIN_FREQ) continue;
+    }
+
+    // Primary part of speech = first recognised PoS tag; else "other".
+    const posKey = tags.find((t) => POS_LABELS.some(([code]) => code === t)) || 'other';
+
+    seen.add(key);
+    if (!buckets.has(posKey)) buckets.set(posKey, []);
+    const bucket = buckets.get(posKey);
+    if (bucket.length < THESAURUS_RELATED_PER_POS) bucket.push(w);
+  }
+
+  const senses = [];
+  for (const [code, label] of [...POS_LABELS, ['other', 'other']]) {
+    const words = buckets.get(code);
+    if (words && words.length > 0) {
+      senses.push({ partOfSpeech: 'related', definition: label, synonyms: words });
+    }
+  }
+  return senses;
 }
 
 /** Single API call → senses[] (no lemma fallback). */
