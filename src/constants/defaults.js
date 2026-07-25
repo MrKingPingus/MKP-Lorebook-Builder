@@ -74,13 +74,29 @@ export const DEFAULT_ENTRY = {
   ignoreLimitWarnings: { description: false, triggers: false },
   isPublic:            false,  // CharSnap visibility flag — mirrors CharSnap's private-by-default; round-trips through JSON import/export
   hiddenFromExport:    false,  // when true, entry remains in builder but is excluded from all export formats
+  folderId:            null,   // builder-only folder assignment; null = top level. Never exported.
+                               //   An id with no matching folder renders top-level, so a history
+                               //   undo that removes a folder can never orphan an entry.
   snapshots:           [], // [{ name, type, description, triggers, timestamp, label }]
+};
+
+// A builder-only folder. `parentId` is carried from the start so nesting can
+// land later without a data migration; `order` breaks ties between folders
+// whose first member sits at the same place in entries[].
+export const DEFAULT_FOLDER = {
+  id:            '',
+  name:          '',
+  color:         '',
+  parentId:      null,
+  collapseState: '',
+  order:         0,
 };
 
 export const DEFAULT_LOREBOOK = {
   id:              '',
   name:            'New Lorebook',
   entries:         [],
+  folders:         [], // builder-only organization layer — see DEFAULT_FOLDER. Never exported.
   allowedOverlaps: [], // lowercase trigger strings acknowledged as intentional overlaps
   rollback:        { enabled: false, snapshotCount: 3, autoSnapshot: true },
 };

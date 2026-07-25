@@ -1,4 +1,5 @@
-// Filter bar: type pills, Group by type toggle (mobile inline), Expand All (desktop only).
+// Filter bar: type pills, Group by type toggle (mobile inline), Expand All and
+// New Folder (desktop only).
 // On mobile the type pills + Group-by-type are collapsed into a single "Filter ▾"
 // button that opens a popover with checkboxes — saves two rows of vertical chrome.
 import { useState, useRef, useEffect } from 'react';
@@ -7,6 +8,7 @@ import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { useTypeFilter }   from '../../hooks/use-type-filter.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useMobile }       from '../../hooks/use-mobile.js';
+import { useFolders }      from '../../hooks/use-folders.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
@@ -16,6 +18,7 @@ export function TypeFilterBar({ entries }) {
   const collapseAllEntries = useUi((s) => s.collapseAllEntries);
   const setGroupByType     = useUi((s) => s.setGroupByType);
   const isMobile           = useMobile();
+  const { createFolder }   = useFolders();
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -166,6 +169,17 @@ export function TypeFilterBar({ entries }) {
           onClick={bulkExpanded ? collapseAllEntries : expandAllEntries}
         >
           {bulkExpanded ? 'Collapse All' : 'Expand All'}
+        </button>
+      )}
+
+      {/* New folder — desktop only; folders on mobile are a separate design */}
+      {!isMobile && (
+        <button
+          className="filter-action-btn"
+          onClick={() => createFolder()}
+          title="Create an empty folder — drop entries into it from a card's Move to folder button or a select-mode bulk move"
+        >
+          ＋ Folder
         </button>
       )}
     </div>

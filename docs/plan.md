@@ -44,7 +44,18 @@ Builder-only organization layer — Reaper-style nested, collapsible, colored fo
 8. **Undoability:** structural ops (create/delete/move-entry) snapshot to history; collapse toggles don't.
 9. **Desktop-first; mobile folders are a separate deferred design.**
 
-**Sub-phases:** 11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states) — _usable on its own_ · 11B condensed compact-card variant · 11C nesting + type-in-folder + collapse-all · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11A Medium · 11B Medium · 11C Medium–High · 11D Medium · 11E High.
+**Sub-phases:** ~~11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states)~~ **shipped 2026-07-25** · 11B condensed compact-card variant · 11C nesting + type-in-folder + collapse-all · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11B Medium · 11C Medium–High · 11D Medium · 11E High.
+
+**Decisions taken during 11A (2026-07-25):**
+10. **Filing an entry repositions it in `entries[]`** so a folder's members stay contiguous (`assignEntriesToFolder`). Chosen over pure-visual grouping specifically to give 11E a real array index to drop into — display-order and array-order agree, so a drop position maps to a splice. Note this means filing entries *does* change export numbering (sort/group modes still don't — they never write the array).
+11. **History snapshots widened to `{ entries, folders }`** for folder ops. `use-undo-redo` only writes folders back when the snapshot carried them, so the ~10 existing entries-only `pushSnapshot` call sites are unaffected. Rename/recolour snapshot too (one step per edit session, committed on blur/Enter); collapse never does, per decision 8.
+12. **Reorder is by entry id, not list position** (`reorderEntriesById`). This also fixed a live bug: `EntryList` passed *display* indices into an `entries[]` splice, so dragging under an active search or `group-by-type` reordered two unrelated entries.
+13. **Empty folders trail the list** ordered by `order` — they have no member to anchor to, and a freshly created folder has to be visible somewhere. They hide while a search is active (decision 7's empty-folder half, taken early since 11A would otherwise render obvious noise).
+14. **Type sub-headers stay top-level-only in 11A** — `groupByType` heads the loose-entry stream and resets after each folder block. Type-inside-folder is 11C, per decision 2.
+
+**Open from 11A:**
+- **Drag has no folder semantics yet.** Dragging a card in or out of a folder block reorders `entries[]` but doesn't rewrite `folderId`, so the card snaps back to its folder visually. Expected — assignment is menu/bulk-first by decision 4 — but it's the first thing 11E has to close.
+- **Entry-card footer is at four controls** (Entry History · Move to folder · Public/Private · Hide from Export). Fits one line at the desktop default; wraps in a narrow crosstalk pane. The footer-crowding revisit below is now live, not theoretical.
 
 ### Phase 12 — Entry Templates (GitHub #114)
 

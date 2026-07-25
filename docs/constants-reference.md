@@ -7,6 +7,7 @@
 - `storage-keys.js` — all localStorage key strings
 - `defaults.js` — default shapes for new entries, lorebooks, settings, window size
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
+- `folders.js` — folder swatch palette (`FOLDER_COLORS`), the collapse-state vocabulary (`full` / `condensed` / `tucked`) and the cycle the header chevron walks
 
 ## CSS / Theming
 

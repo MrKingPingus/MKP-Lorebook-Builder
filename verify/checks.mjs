@@ -350,6 +350,80 @@ const SCENARIOS = [
     check('only one card collapsed', await page.locator('.entry-card-body').count(), count - 1);
     check('button label unchanged by single collapse', (await bulkBtn.innerText()).trim(), 'Collapse All');
   }),
+  // Phase 11A — folders are a builder-only layer: they group the list, they
+  // reposition entries[] so a folder's members stay contiguous, and they never
+  // reach an export.
+  scenario('Folders: create, bulk move, tuck, undo, delete', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    const newFolderBtn = page.locator('.filter-action-btn', { hasText: 'Folder' });
+    await newFolderBtn.click();
+    await page.waitForTimeout(200);
+    check('folder header rendered', await page.locator('.folder-header').count(), 1);
+    check('new folder starts empty', (await page.locator('.folder-count').innerText()).trim(), '0');
+
+    // Bulk-move two entries in.
+    await enterSelectMode(page);
+    const moveBtn = page.locator('.bulk-action-apply', { hasText: 'Move to folder' });
+    check('move-to-folder button present', await moveBtn.count(), 1);
+    check('disabled with no selection', await moveBtn.isDisabled(), true);
+    const cards = page.locator('.entry-card');
+    await cards.nth(0).click();
+    await cards.nth(1).click();
+    await page.waitForTimeout(100);
+    await moveBtn.click();
+    await page.locator('.bulk-action-chips .bulk-type-chip', { hasText: 'New Folder' }).first().click();
+    await page.waitForTimeout(250);
+    check('two entries inside the folder', await page.locator('.folder-entries .entry-card').count(), 2);
+    check('header count reflects members', (await page.locator('.folder-count').innerText()).trim(), '2');
+    check('no entries lost', await page.locator('.entry-card').count(), count);
+
+    // Tucking hides the members but keeps the count visible.
+    await page.locator('.folder-collapse-btn').click();
+    await page.waitForTimeout(200);
+    check('tucked hides folder entries', await page.locator('.folder-entries .entry-card').count(), 0);
+    check('tucked total on screen', await page.locator('.entry-card').count(), count - 2);
+    check('count still shown while tucked', (await page.locator('.folder-count').innerText()).trim(), '2');
+    await page.locator('.folder-collapse-btn').click();
+    await page.waitForTimeout(200);
+    check('untucked restores members', await page.locator('.folder-entries .entry-card').count(), 2);
+
+    // Undo pulls the entries back out of the folder.
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(250);
+    check('undo empties the folder', await page.locator('.folder-entries .entry-card').count(), 0);
+    check('undo keeps the folder itself', await page.locator('.folder-header').count(), 1);
+
+    // Deleting a folder never deletes entries.
+    await page.locator('.folder-delete-btn').click();
+    await page.waitForTimeout(250);
+    check('folder gone', await page.locator('.folder-header').count(), 0);
+    check('entries survive the delete', await page.locator('.entry-card').count(), count);
+    // ...and undoing the delete brings the folder back (folders ride in the
+    // history snapshot alongside entries).
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(250);
+    check('undo restores the deleted folder', await page.locator('.folder-header').count(), 1);
+  }),
+
+  scenario('Folders never reach the export', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).click();
+    await page.waitForTimeout(200);
+    await enterSelectMode(page);
+    const cards = page.locator('.entry-card');
+    await cards.nth(0).click();
+    await cards.nth(1).click();
+    await page.waitForTimeout(100);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-action-chips .bulk-type-chip', { hasText: 'New Folder' }).first().click();
+    await page.waitForTimeout(250);
+
+    const book = await exportJson(page);
+    const exported = Object.values(book.entries || {});
+    check('every entry still exported', exported.length, count);
+    check('no folderId leaked into export', exported.some((e) => 'folderId' in e), false);
+    check('no folders key on the book', 'folders' in book, false);
+  }),
 ];
 
 export async function runAllChecks() {

@@ -10,6 +10,7 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
+import { MoveToFolderButton } from './MoveToFolderButton.jsx';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useMobile }      from '../../hooks/use-mobile.js';
 import { useUi }          from '../../hooks/use-ui.js';
@@ -681,6 +682,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 ? `↺ Entry History${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`
                 : 'Enable entry history?'}
             </button>
+            <MoveToFolderButton entry={entry} />
             <button
               className={`entry-public-btn${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
               onClick={() => update({ isPublic: entry.isPublic !== true }, true)}

@@ -1,7 +1,9 @@
 // Factory functions: createEmptyEntry() and createEmptyLorebook() with canonical default shapes
 import { DEFAULT_ENTRY, DEFAULT_LOREBOOK } from '../constants/defaults.js';
 
-function uid() {
+// Shared id generator. Exported so folder-tree.js can mint folder ids from the
+// same scheme rather than growing a second, subtly different one.
+export function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 

@@ -1873,6 +1873,228 @@ img.logo-icon {
 }
 
 /* ============================================================
+   Folders (builder-only organization layer)
+   ============================================================ */
+/* §FOLDERS */
+/* A folder block is the header plus its indented entries. The colour rail on
+   the left runs the height of the block so nesting reads at a glance, the way
+   Reaper's track folders do. */
+.folder-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  padding: 4px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--folder-color, var(--border2));
+  border-radius: var(--radius);
+}
+.folder-header--tucked {
+  background: var(--surface);
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+.folder-collapse-btn {
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.folder-collapse-btn:hover { color: var(--text); }
+
+.folder-swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--folder-color, var(--border2));
+  cursor: pointer;
+  padding: 0;
+}
+
+.folder-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 2px 2px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+.folder-name:hover { color: var(--folder-color, var(--text)); }
+
+.folder-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.folder-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--surface3);
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  text-align: center;
+  cursor: default;
+}
+
+.folder-delete-btn {
+  flex-shrink: 0;
+  padding: 0 5px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.folder-delete-btn:hover { color: var(--accent); }
+
+/* Colour picker — anchored under the swatch it was opened from */
+.folder-color-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 24px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 16px);
+  gap: 5px;
+  padding: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.folder-color-option {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.folder-color-option--active { border-color: var(--text); }
+
+/* The indent. The rail is the folder's own colour at low opacity so a stack of
+   folders stays readable without shouting. */
+.folder-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 10px;
+  padding-left: 8px;
+  border-left: 2px solid var(--folder-color, var(--border));
+  opacity: 1;
+}
+/* The rail is the folder's own colour, dimmed so a stack of folders reads as
+   structure rather than as a wall of saturated lines. */
+.folder-block > .folder-entries { border-left-color: color-mix(in srgb, var(--folder-color, var(--border)) 45%, transparent); }
+
+/* ---- Per-entry "Move to folder" control (entry card footer) ---- */
+.move-to-folder { position: relative; }
+
+.move-to-folder-btn {
+  max-width: 140px;
+  padding: 3px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.move-to-folder-btn:hover {
+  background: var(--border);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.move-to-folder-btn--filed {
+  border-color: var(--folder-color, var(--border2));
+  color: var(--folder-color, var(--muted2));
+}
+
+.move-to-folder-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 150px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.move-to-folder-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.move-to-folder-item:hover { background: var(--surface3); }
+.move-to-folder-item--active { color: var(--blue); }
+.move-to-folder-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.move-to-folder-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
+.bulk-type-chip--new-folder {
+  border-left-color: var(--border2);
+  border-style: dashed;
+}
+
+/* ============================================================
    Entry Card
    ============================================================ */
 /* §ENTRY-CARD */
@@ -4535,6 +4757,7 @@ kbd {
 .rollback-footer {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   padding-top: 4px;
   border-top: 1px solid var(--border);

@@ -35,7 +35,16 @@ export function useEntries() {
     updateActiveEntries(entries.filter((e) => e.id !== id));
   }
 
-  function reorderEntries(fromIdx, toIdx) {
+  // Reorder by entry id, never by list position. The rendered list is a
+  // transform of entries[] — search filters it, group-by-type re-buckets it,
+  // folders group it — so a position in the rendered list is not a position in
+  // entries[]. Resolving both ends to ids and looking their indices up here is
+  // the only thing that stays correct through those transforms.
+  function reorderEntriesById(draggedId, targetId) {
+    if (!draggedId || !targetId || draggedId === targetId) return;
+    const fromIdx = entries.findIndex((e) => e.id === draggedId);
+    const toIdx   = entries.findIndex((e) => e.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
     snapshot();
     const next = [...entries];
     const [moved] = next.splice(fromIdx, 1);
@@ -72,5 +81,5 @@ export function useEntries() {
     updateActiveEntries(entries.map((e) => (e.isPublic === false ? e : { ...e, isPublic: false })));
   }
 
-  return { entries, addEntry, updateEntry, removeEntry, reorderEntries, replaceEntries, clearAllEntries, makeAllPublic, makeAllPrivate };
+  return { entries, addEntry, updateEntry, removeEntry, reorderEntriesById, replaceEntries, clearAllEntries, makeAllPublic, makeAllPrivate };
 }

@@ -6,8 +6,21 @@
 
 ### Additions
 
+- **Folders** — you can now group entries into colored folders, purely for your own organization inside the builder. Folders are **never exported** and have nothing to do with entry types: your JSON, TXT, DOCX and ZIP exports come out exactly as before, whether an entry is filed or not.
+  - **Make one** with the **＋ Folder** button in the filter row, or straight from a selection with **Move to folder… → ＋ New folder** in Select mode.
+  - **File entries** two ways: pick **Move to folder** in an entry's footer for one entry at a time, or select several entries and use **Move to folder…** to move the whole batch at once.
+  - **Collapse a folder** with the arrow on its header to tuck its entries out of sight — the header keeps showing how many are inside. Click again to bring them back.
+  - **Rename** by clicking a folder's name, and **recolor** by clicking its dot to pick from eight colors. An entry filed into a folder shows that folder's name and color on its own footer button, so you can always tell where it lives.
+  - **Deleting a folder never deletes entries** — they simply move back out to the top level.
+  - **Undo works on all of it** — creating, deleting, renaming, recoloring, and moving entries in or out are all undoable with Ctrl+Z. Collapsing a folder isn't undoable, since it's just a view.
+  - Folders appear in the list wherever their first entry sits, and unfiled entries stay right where they were around them, so nothing gets shuffled into separate piles. A brand-new empty folder waits at the bottom of the list until you put something in it.
+
 - **Synonyms have a backup source** — when the main dictionary has no synonyms for a word (which used to just show "No synonyms found"), the thesaurus popover now falls back to a broader "related words" list so you're less likely to hit a dead end. These related words are looser than the dictionary's curated synonyms — handy, but eyeball them before adding. The backup only kicks in when there's nothing else to show, so it never slows down words that already have good synonyms.
 - **Widen any trigger with "＋ Related terms"** — the synonyms popover now has a **＋ Related terms** button. When a trigger returns only a handful of dictionary synonyms (or you just want a wider net), it pulls in looser related words on demand — **grouped by part of speech** (nouns / verbs / adjectives / …) and trimmed of rare, obscure words, so the extras come organised instead of as a random pile. It only fetches when you ask, so it never slows down the normal popover.
+
+### Fixes
+
+- **Drag-to-reorder moved the wrong entry** — dragging an entry while a search was active, or while **Group by type** was on, would silently reorder two *different* entries elsewhere in the list instead of the one you dragged. Reordering now always follows the entry you actually picked up.
 
 ### Adjustments
 
