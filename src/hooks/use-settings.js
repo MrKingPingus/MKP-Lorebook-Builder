@@ -20,7 +20,7 @@ export function useSettings() {
   const keybindings              = useSettingsStore((s) => s.keybindings);
   const triggerDelimiter         = useSettingsStore((s) => s.triggerDelimiter);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
-  const entryTypeView            = useSettingsStore((s) => s.entryTypeView);
+  const entryHeaderSize          = useSettingsStore((s) => s.entryHeaderSize);
   const fabSize                  = useSettingsStore((s) => s.fabSize);
   const fabCustomSize            = useSettingsStore((s) => s.fabCustomSize);
   const fabQuickMenuEnabled      = useSettingsStore((s) => s.fabQuickMenuEnabled);
@@ -51,7 +51,7 @@ export function useSettings() {
       keybindings,
       triggerDelimiter,
       hotbarSlots,
-      entryTypeView,
+      entryHeaderSize,
       fabSize,
       fabCustomSize,
       fabQuickMenuEnabled,
@@ -91,7 +91,7 @@ export function useSettings() {
     keybindings,
     triggerDelimiter,
     hotbarSlots,
-    entryTypeView,
+    entryHeaderSize,
     fabSize,
     fabCustomSize,
     fabQuickMenuEnabled,
@@ -117,7 +117,7 @@ export function useSettings() {
     setKeybindings:              (v) => updateSetting('keybindings', v),
     setTriggerDelimiter:         (v) => updateSetting('triggerDelimiter', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
-    setEntryTypeView:            (v) => updateSetting('entryTypeView', v),
+    setEntryHeaderSize:          (v) => updateSetting('entryHeaderSize', v),
     setFabSize:                  (v) => updateSetting('fabSize', v),
     setFabCustomSize:            (v) => updateSetting('fabCustomSize', v),
     setFabQuickMenuEnabled:      (v) => updateSetting('fabQuickMenuEnabled', v),

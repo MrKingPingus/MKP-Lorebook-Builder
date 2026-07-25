@@ -17,9 +17,9 @@ can gate CI or a pre-push hook.
 
 - **`driver.mjs`** — the reusable pathways. Import these instead of re-figuring
   out the UI:
-  - `openBuilderWithFixture(page)` — lander → builder, dismiss the "Name your
-    lorebook" modal, import the fixture (Import File → mode → "Import N
-    entries"), return the entry-card count.
+  - `openBuilderWithFixture(page)` — lander → builder by importing the fixture
+    through the "Import File" tile (which opens the OS picker and loads the file
+    directly, no disposition prompt or name modal), returns the entry-card count.
   - `enterSelectMode(page)` — switch the search bar into Select mode.
   - `exportJson(page)` — click the hotbar Export button, capture the JSON
     download, return the parsed CharSnap object. `countPrivate(book)` tallies

@@ -45,7 +45,7 @@ export function SettingsPanel() {
     hideEntryStats,
     markPrivateEntries,
     hotbarSlots,
-    entryTypeView,
+    entryHeaderSize,
     fabSize,
     fabCustomSize,
     fabQuickMenuEnabled,
@@ -58,7 +58,7 @@ export function SettingsPanel() {
     setHideEntryStats,
     setMarkPrivateEntries,
     setHotbarSlots,
-    setEntryTypeView,
+    setEntryHeaderSize,
     setFabSize,
     setFabCustomSize,
     setFabQuickMenuEnabled,
@@ -311,18 +311,21 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        {/* Type selector style (mobile detail panel) */}
+        {/* Entry card header height (desktop) */}
         <div className="settings-group">
           <label className="settings-label">
-            <span>Full type button grid in entry editor</span>
-            <input
-              type="checkbox"
-              checked={entryTypeView === 'buttons'}
-              onChange={(e) => setEntryTypeView(e.target.checked ? 'buttons' : 'dropdown')}
-            />
+            <span>Entry header height</span>
+            <select
+              value={entryHeaderSize}
+              onChange={(e) => setEntryHeaderSize(e.target.value)}
+            >
+              <option value="default">Default</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
           </label>
           <div className="settings-hint">
-            Shows large type buttons instead of a compact dropdown when editing an entry. (Currently broken — has no visible effect.)
+            Taller entry rows on desktop, so a long lorebook is easier to scan when many entries at once feels overwhelming.
           </div>
         </div>
 

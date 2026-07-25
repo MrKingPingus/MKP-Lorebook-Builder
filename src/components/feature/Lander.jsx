@@ -8,8 +8,10 @@ import { useKeybindings }       from '../../hooks/use-keybindings.js';
 import { useExport }            from '../../hooks/use-export.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
+import { useImport }            from '../../hooks/use-import.js';
 import { parseMarkdown }        from '../../services/markdown-parse.js';
 import { DUPE_FLASH_MS }        from '../../constants/limits.js';
+import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
 import changelogRaw             from '../../../CHANGELOG.md?raw';
 
 // Render the inline-span AST emitted by markdown-parse into React nodes.
@@ -55,22 +57,21 @@ function renderMarkdown(src) {
 
 const RECENT_LIMIT = 6;
 
-const ISSUE_NEW_BASE = 'https://github.com/mrkingpingus/mkp-lorebook-builder/issues/new';
-const BUG_REPORT_URL      = ISSUE_NEW_BASE + '?template=bug_report.yml';
-const FEATURE_REQUEST_URL = ISSUE_NEW_BASE + '?template=feature_request.yml';
-
 export function Lander() {
   const setShowLander       = useUi((s) => s.setShowLander);
-  const setActiveMenuPanel  = useUi((s) => s.setActiveMenuPanel);
   const setShowAppendImport = useUi((s) => s.setShowAppendImport);
+  const setPendingFocusLorebookName = useUi((s) => s.setPendingFocusLorebookName);
   const { displayChord }    = useKeybindings();
   const {
     downloadTxtTemplate, downloadDocxTemplate,
     copyTxtTemplate,
   } = useExport();
-  const { items, switchLorebook } = useLorebookSwitcher();
-  const { createLorebook }        = useLorebook();
+  const { items, switchLorebook }               = useLorebookSwitcher();
+  const { createLorebook, importAsNewLorebook } = useLorebook();
+  const { parseFile }                           = useImport();
   const [copiedFlash, setCopiedFlash] = useState(false);
+  const [importError, setImportError] = useState('');
+  const fileInputRef = useRef(null);
   const flashTimer = useRef(null);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
@@ -95,9 +96,34 @@ export function Lander() {
     setShowLander(false);
   }
 
+  // Import File tile → straight to the OS picker via a hidden input on the
+  // lander. We parse and load the book here directly instead of routing through
+  // the full Import/Export panel: starting from the lander there's no existing
+  // book to protect, so the append / replace / save-backup prompts (and the
+  // "Name your lorebook" modal) would just be noise. Paste keeps its own tile.
   function onImportFile() {
-    setShowLander(false);
-    setActiveMenuPanel('import-export');
+    setImportError('');
+    fileInputRef.current?.click();
+  }
+
+  async function onImportFileChosen(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // let the user re-pick the same file after an error
+    if (!file) return;
+    try {
+      const { entries, name } = await parseFile(file);
+      // Fall back to the file's own name (sans extension) so TXT/DOCX imports
+      // land named — and importAsNewLorebook creates the book silently when a
+      // name is present, so no "Name your lorebook" prompt for an import.
+      const base = file.name.replace(/\.[^.]+$/, '');
+      importAsNewLorebook({ entries, name: name ?? base });
+      // The imported book already has a name — clear the first-run "Name your
+      // lorebook" prompt the bootstrap set for the placeholder book.
+      setPendingFocusLorebookName(false);
+      setShowLander(false);
+    } catch (err) {
+      setImportError(err.message ?? 'Failed to import file.');
+    }
   }
 
   function onImportPaste() {
@@ -139,6 +165,15 @@ export function Lander() {
           <div className="lander-tile-sub">Paste entries from clipboard</div>
         </button>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.docx,.odt,.json"
+        style={{ display: 'none' }}
+        onChange={onImportFileChosen}
+      />
+      {importError && <div className="lander-import-error">{importError}</div>}
 
       {recents.length > 0 && (
         <div className="lander-section">

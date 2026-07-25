@@ -51,33 +51,18 @@ export async function launch({ width = 1280, height = 900, mobile = false } = {}
   return { browser, page };
 }
 
-// Dismiss the "Name your lorebook" modal if present (Enter = confirm/keep book).
-async function dismissNameModal(page) {
-  if (await page.locator('.lb-name-modal-overlay').count()) {
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(250);
-  }
-}
-
-// Load a fixture JSON as the active book via the lander "Import File" tile.
-// Leaves the builder open with entry cards rendered. Returns the card count.
-export async function openBuilderWithFixture(page, fixturePath = FIXTURE, { mode = 'Append to active' } = {}) {
+// Load a fixture JSON as a fresh lorebook via the lander "Import File" tile.
+// The tile opens the OS file picker and imports the chosen file directly — no
+// import-panel disposition prompts and no "Name your lorebook" modal. Leaves
+// the builder open with entry cards rendered. Returns the card count.
+export async function openBuilderWithFixture(page, fixturePath = FIXTURE) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
   await page.waitForTimeout(300);
-  await page.locator('.lander-tile', { hasText: 'Import File' }).click();
-  await page.waitForTimeout(250);
-  await dismissNameModal(page);
-  await page.locator('input[type="file"]').first().setInputFiles(fixturePath);
-  // Import/Export panel: a backup/mode prompt, then a "Import N entries" confirm.
-  const modeBtn = page.locator('.import-save-btn', { hasText: mode });
-  await modeBtn.first().waitFor({ state: 'visible', timeout: 8000 });
-  await modeBtn.first().click();
-  const finalBtn = page.locator('button', { hasText: /Import \d+ entr/ });
-  await finalBtn.first().waitFor({ state: 'visible', timeout: 6000 });
-  await finalBtn.first().click();
-  await page.waitForTimeout(400);
-  await page.keyboard.press('Escape'); // close the menu panel
-  await page.waitForTimeout(300);
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.locator('.lander-tile', { hasText: 'Import File' }).click(),
+  ]);
+  await chooser.setFiles(fixturePath);
   await page.locator('.entry-card').first().waitFor({ timeout: 8000 });
   return page.locator('.entry-card').count();
 }

@@ -8,6 +8,7 @@ import { useSelection }         from '../../hooks/use-selection.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { MatchCounter }   from '../ui/MatchCounter.jsx';
+import { CyclingSelect }  from '../ui/CyclingSelect.jsx';
 import { FindReplace }    from './FindReplace.jsx';
 import { BulkActionBar }  from './BulkActionBar.jsx';
 
@@ -134,6 +135,18 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
     setSortOpen(false);
   }
 
+  // Shift+scroll over the sort button cycles the sort mode without opening the
+  // dropdown — mirrors the CyclingSelect affordance on the app's native selects.
+  function onSortWheel(e) {
+    if (!e.shiftKey) return;
+    e.preventDefault();
+    const opts = SORT_OPTIONS.filter((opt) => !opt.crosstalkOnly || crosstalkActive);
+    const idx  = opts.findIndex((o) => o.value === sortMode);
+    const base = idx === -1 ? 0 : idx;
+    const next = Math.min(opts.length - 1, Math.max(0, base + (e.deltaY > 0 ? 1 : -1)));
+    if (opts[next] && opts[next].value !== sortMode) setSortMode(opts[next].value);
+  }
+
   function navigateToMatch(index) {
     if (!matchDetails || matchDetails.length === 0) return;
     const wrapped = ((index % matchDetails.length) + matchDetails.length) % matchDetails.length;
@@ -188,7 +201,8 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
       <button
         className={`sort-btn${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
         onClick={() => setSortOpen((v) => !v)}
-        title="Sort entries"
+        onWheel={onSortWheel}
+        title="Sort entries (Shift+scroll to cycle)"
       >
         ↕
       </button>
@@ -309,7 +323,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
           <MatchCounter matches={matches} />
         )}
         {!mobileFindReplace && !mobileSearch && (
-          <select
+          <CyclingSelect
             className="search-mode-select"
             value={searchMode}
             onChange={onModeChange}
@@ -317,7 +331,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             <option value="search">Search</option>
             <option value="find-replace">Find/Replace</option>
             <option value="select">Select</option>
-          </select>
+          </CyclingSelect>
         )}
         {sortBtn}
       </div>
@@ -330,7 +344,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
           {searchMode === 'select' && (
             <span className="match-counter match-counter--select">{selectedCount} selected</span>
           )}
-          <select
+          <CyclingSelect
             className="search-mode-select"
             value={searchMode}
             onChange={onModeChange}
@@ -338,7 +352,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             <option value="search">Search</option>
             <option value="find-replace">Find/Replace</option>
             <option value="select">Select</option>
-          </select>
+          </CyclingSelect>
         </div>
       )}
 
@@ -369,7 +383,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             setScopeOpen={setScopeOpen}
             row="actions"
           />
-          <select
+          <CyclingSelect
             className="search-mode-select"
             value={searchMode}
             onChange={onModeChange}
@@ -377,7 +391,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             <option value="search">Search</option>
             <option value="find-replace">Find/Replace</option>
             <option value="select">Select</option>
-          </select>
+          </CyclingSelect>
         </div>
       )}
     </div>

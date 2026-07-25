@@ -14,10 +14,23 @@
   - **Reduce motion** — a toggle that turns off transitions and smooth scrolling (and your device's own "reduce motion" setting is always respected).
   - **High-contrast** — a quick toggle for the high-contrast theme, right where you'd look for it.
 - **Clearer keyboard focus** — tabbing through the app with the keyboard now shows a clear focus ring on whatever's selected, so you can always see where you are. Icon-only buttons (the menu, the ＋, close buttons) also got proper labels for screen readers.
+- **Entry title length warning** — entry titles now show a small advisory counter once you pass 40 characters, nudging you toward the 50-character length CharSnap prefers. Like the app's other counters it's only a heads-up — longer titles are still allowed.
+- **Entry header height** — Settings → Editing & Entries has a new **Entry header height** option (Default / Medium / Large). The taller rows make a long lorebook easier to scan if the dense default feels overwhelming.
+- **Shift+scroll works on more dropdowns** — the Shift+scroll-to-cycle shortcut (already on the entry type picker) now also works on the trigger delimiter picker, the Search / Find-Replace / Select mode picker, and the sort button — so you can flip a setting without opening the menu.
+- **"Import File" opens your file browser right away** — on the launch screen, the **Import File** tile now opens your file picker immediately and loads the file straight into a new lorebook: no import screen, no "append or replace?" prompt, and no naming step (it takes the file's name). Pasting entries still lives on its own **Import Paste** tile, so nothing's lost.
+- **Report a bug or request a feature from the header** — a 🐞 bug icon and a 💡 lightbulb icon now sit in the window title bar, just left of the storage ring, each opening the matching GitHub form in a new tab. A more visible second home for the links that previously lived only in the launch-screen footer.
+
+### Fixes
+
+- **Expand All no longer breaks single collapse** — after pressing **Expand All**, collapsing a single entry (with its button or a double-click) used to snap *every* entry shut. Now it collapses only the one you clicked and leaves the rest open.
 
 ### Adjustments
 
 - **Keyboard shortcuts moved into Accessibility** — the shortcut editor now lives under Settings → Accessibility (it used to be its own "Hotkeys" section). Nothing about how it works changed.
+- **Removed the broken "Full type button grid" setting** — this Editing & Entries toggle never had any visible effect, so it's been taken out. Its place is now the new Entry header height option.
+- **The lorebook switcher is easier to spot** — the easy-to-miss little arrow next to the lorebook name is now a clearly-labeled **Switch ▾** button, so the quick lorebook-switcher reads as an actual control. Renaming the book in place works exactly as before.
+- **Hotbar Import button tidied up** — it now simply reads **Import** (matching **Export**) and uses the same bold arrow as Export instead of a thinner one.
+- **Tidier window header** — the entry count now sits right next to the lorebook name (just left of the Switch button); the lorebook name field stays perfectly centered in the window no matter what's beside it; and the header's menu, close, and new feedback icons are larger and more uniform, closer in size to the storage ring.
 
 ---
 

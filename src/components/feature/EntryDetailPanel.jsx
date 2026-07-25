@@ -9,8 +9,9 @@ import { useNameMatch }    from '../../hooks/use-name-match.js';
 import { useReferenceLorebook }     from '../../hooks/use-reference-lorebook.js';
 import { useCopyEntryToReference }  from '../../hooks/use-copy-entry-to-reference.js';
 import { useRollback }     from '../../hooks/use-rollback.js';
-import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { TypeSelector }    from './TypeSelector.jsx';
+import { TitleCharCounter } from '../ui/TitleCharCounter.jsx';
+import { CyclingSelect }   from '../ui/CyclingSelect.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
@@ -23,7 +24,7 @@ export function EntryDetailPanel() {
   const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
   const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
-  const { entryTypeView, triggerDelimiter, setTriggerDelimiter } = useSettings();
+  const { triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -154,7 +155,10 @@ export function EntryDetailPanel() {
 
           {/* Entry Name */}
           <div className="entry-detail-section">
-            <div className="field-label">ENTRY NAME</div>
+            <div className="field-label">
+              ENTRY NAME
+              <TitleCharCounter length={entry.name.length} />
+            </div>
             <input
               ref={nameInputRef}
               className="entry-name-field entry-name-field--detail"
@@ -165,30 +169,12 @@ export function EntryDetailPanel() {
             />
           </div>
 
-          {/* Entry Type — dropdown (default) or full button grid (setting) */}
+          {/* Entry Type */}
           <div className="entry-detail-section">
             <div className="field-label">ENTRY TYPE</div>
-            {entryTypeView === 'buttons' ? (
-              <div className="entry-type-buttons">
-                {ENTRY_TYPES.map((t) => {
-                  const active = entry.type === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      className={`entry-type-btn${active ? ' entry-type-btn--active' : ''}`}
-                      style={active ? { background: t.color, borderColor: t.color, color: '#fff' } : {}}
-                      onClick={() => update({ type: t.id }, true)}
-                    >
-                      {t.label}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="entry-type-dropdown-wrap">
-                <TypeSelector value={entry.type} onChange={(type) => update({ type }, true)} />
-              </div>
-            )}
+            <div className="entry-type-dropdown-wrap">
+              <TypeSelector value={entry.type} onChange={(type) => update({ type }, true)} />
+            </div>
           </div>
 
           {/* Trigger Keywords */}
@@ -209,7 +195,7 @@ export function EntryDetailPanel() {
                   </button>
                 );
               })()}
-              <select
+              <CyclingSelect
                 className="delimiter-select"
                 value={triggerDelimiter}
                 onChange={(e) => setTriggerDelimiter(e.target.value)}
@@ -221,7 +207,7 @@ export function EntryDetailPanel() {
                 <option value="~">~ tilde</option>
                 <option value="/">/  forward slash</option>
                 <option value="\">\  backslash</option>
-              </select>
+              </CyclingSelect>
             </div>
             <TriggerChips
               entryId={entry.id}

@@ -262,6 +262,7 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
    ============================================================ */
 /* §WINDOW-HEADER */
 .window-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -300,13 +301,39 @@ img.logo-icon {
   white-space: nowrap;
 }
 
-/* Lorebook name */
+/* Lorebook name — absolutely centred on the window so the input stays dead
+   centre no matter how wide the entry-count / Switch aside beside it grows. */
 .lorebook-name-sizer {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  justify-content: center;
+  max-width: 52%;
   min-width: 0;
+}
+/* Count + Switch, anchored to the input's right edge — absolute so they add no
+   width to the centred sizer and therefore can't nudge the input. */
+.lorebook-name-aside {
+  position: absolute;
+  left: 100%;
+  margin-left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+/* Right-side controls pinned to the right edge; the centred name floats over
+   the gap between the logo and this cluster. */
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .lorebook-name-input {
   min-width: 60px;
@@ -329,13 +356,11 @@ img.logo-icon {
   font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
-  margin-left: 6px;
 }
 .lorebook-hidden-count {
   font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
-  margin-left: 6px;
   padding: 0;
   background: transparent;
   border: none;
@@ -347,21 +372,25 @@ img.logo-icon {
 /* Small caret button next to the name input — opens LorebookSwitchPopover in
    solo mode so rename (input) and switch (button) live side by side. */
 .lorebook-switch-btn {
-  margin-left: 4px;
-  padding: 2px 6px;
-  background: transparent;
-  border: 1px solid transparent;
+  padding: 3px 8px;
+  /* Resting button chrome so it reads as an interactive control, not a stray
+     glyph — the old bare ▼ was too easy to miss (issue #113). */
+  background: var(--surface2);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  color: var(--muted);
-  font-size: 0.625rem;
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 .lorebook-switch-btn:hover {
   color: var(--text);
-  border-color: var(--border);
-  background: var(--surface2);
+  border-color: var(--border2);
+  background: var(--surface3);
 }
 
 /* Lorebook count badge */
@@ -383,12 +412,15 @@ img.logo-icon {
 
 /* Menu button + dropdown */
 .menu-btn-wrap { position: relative; flex-shrink: 0; }
+/* Header glyph/icon buttons are all 28px squares; the glyphs/SVGs inside are
+   sized to read at a consistent ~20px optical size next to the storage ring. */
 .menu-btn {
   width: 28px;
   height: 28px;
   border-radius: var(--radius);
   color: var(--muted);
-  font-size: 1rem;
+  font-size: 1.375rem;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -431,12 +463,29 @@ img.logo-icon {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius);
-  font-size: 1.125rem;
+  font-size: 1.625rem;
+  line-height: 1;
   color: var(--muted);
   flex-shrink: 0;
   transition: color var(--transition), background var(--transition);
 }
 .header-close:hover { color: var(--text); background: var(--surface3); }
+
+/* Feedback icons (bug report + feature request) left of the storage ring. */
+.header-feedback { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.header-icon-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.header-icon-btn:hover { color: var(--text); background: var(--surface3); }
+.header-icon-svg { width: 19px; height: 19px; display: block; }
 
 /* ============================================================
    Window Body
@@ -1865,6 +1914,12 @@ img.logo-icon {
   min-height: 40px;
 }
 
+/* Entry header height options (Settings → Editing & Entries). The default is
+   the rule above; these two give the header more breathing room for users who
+   find the dense default overwhelming on a long lorebook. */
+.entry-card-header--medium { padding-top: 13px; padding-bottom: 13px; min-height: 52px; }
+.entry-card-header--large  { padding-top: 18px; padding-bottom: 18px; min-height: 66px; }
+
 .drag-handle {
   color: var(--border2);
   font-size: 0.9375rem;
@@ -1974,6 +2029,14 @@ img.logo-icon {
   text-transform: none;
   letter-spacing: 0;
   color: var(--muted);
+}
+/* Advisory entry-title length counter — floats to the right of the field label,
+   surfaces only past the warn threshold (see TitleCharCounter.jsx). */
+.title-char-counter {
+  float: right;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 /* ── Entry Name + Type row ── */
@@ -2515,30 +2578,6 @@ img.logo-icon {
   width: 100%;
   box-sizing: border-box;
 }
-
-/* Entry type button grid in detail panel */
-.entry-type-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-}
-.entry-type-buttons .entry-type-btn:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.entry-type-btn {
-  padding: 10px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface2);
-  color: var(--muted2);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-.entry-type-btn:hover { background: var(--surface3); color: var(--text); }
-.entry-type-btn--active { color: #fff; }
 
 /* Entry type compact dropdown (default view in detail panel) */
 .entry-type-dropdown-wrap { width: 100%; }
@@ -3940,6 +3979,16 @@ kbd {
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
+/* Inline error shown under the Start tiles when a lander "Import File" fails. */
+.lander-import-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-size: 0.8125rem;
+}
 .lander-tile {
   display: flex;
   flex-direction: column;
@@ -4310,8 +4359,6 @@ kbd {
   /* ── Hotbar: allow wrapping on very narrow screens ── */
   .hotbar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
 
-  /* ── Menu button: anchor to far right of header on mobile ── */
-  .menu-btn-wrap { margin-left: auto; }
 
   /* ── Search dropdown: full available width on mobile ── */
   .search-dropdown { width: calc(100vw - 24px); right: auto; }

@@ -10,23 +10,12 @@ import { useMobile }       from '../../hooks/use-mobile.js';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
-  const expandAll      = useUi((s) => s.expandAll);
-  const collapseAll    = useUi((s) => s.collapseAll);
-  const groupByType    = useUi((s) => s.groupByType);
-  const setExpandAll   = useUi((s) => s.setExpandAll);
-  const setCollapseAll = useUi((s) => s.setCollapseAll);
-  const setGroupByType = useUi((s) => s.setGroupByType);
-  const isMobile       = useMobile();
-
-  function handleExpandAll() {
-    setExpandAll(true);
-    setCollapseAll(false);
-  }
-
-  function handleCollapseAll() {
-    setCollapseAll(true);
-    setExpandAll(false);
-  }
+  const bulkExpanded       = useUi((s) => s.bulkExpanded);
+  const groupByType        = useUi((s) => s.groupByType);
+  const expandAllEntries   = useUi((s) => s.expandAllEntries);
+  const collapseAllEntries = useUi((s) => s.collapseAllEntries);
+  const setGroupByType     = useUi((s) => s.setGroupByType);
+  const isMobile           = useMobile();
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -174,9 +163,9 @@ export function TypeFilterBar({ entries }) {
       {!isMobile && (
         <button
           className="filter-action-btn"
-          onClick={expandAll ? handleCollapseAll : handleExpandAll}
+          onClick={bulkExpanded ? collapseAllEntries : expandAllEntries}
         >
-          {expandAll ? 'Collapse All' : 'Expand All'}
+          {bulkExpanded ? 'Collapse All' : 'Expand All'}
         </button>
       )}
     </div>

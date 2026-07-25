@@ -41,8 +41,8 @@ export const HOTBAR_ACTIONS = [
   },
   {
     id:      'append_import',
-    label:   'Import Entries',
-    icon:    '↓',
+    label:   'Import',
+    icon:    '⬇',
     title:   'Append entries from file or text',
   },
   {

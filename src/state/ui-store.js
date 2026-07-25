@@ -15,8 +15,9 @@ export const useUiStore = create((set) => ({
   typeFilter:  [],          // empty = show all
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
-  collapseAll: false,
-  expandAll:   false,
+  bulkExpanded:     false,   // last bulk action was Expand All — drives the Expand/Collapse All button label only
+  expandAllNonce:   0,       // bumped by Expand All; each card commits localCollapsed=false when it changes
+  collapseAllNonce: 0,       // bumped by Collapse All; each card commits localCollapsed=true when it changes
   groupByType: false,
   sortMode:    'default',    // 'default' | 'alpha-asc' | 'alpha-desc' | 'last-modified'
   savedAt:     null,        // timestamp of last successful save (for SaveBadge)
@@ -98,8 +99,12 @@ export const useUiStore = create((set) => ({
   setTypeFilter:  (typeFilter)  => set({ typeFilter }),
   setWindowPos:   (windowPos)   => set({ windowPos }),
   setWindowSize:  (windowSize)  => set({ windowSize }),
-  setCollapseAll: (collapseAll) => set({ collapseAll }),
-  setExpandAll:   (expandAll)   => set({ expandAll }),
+  // Expand/Collapse All are one-shot pulses: bump a nonce that every card's
+  // effect reads to commit its own local collapsed state. `bulkExpanded` is
+  // only the button-label memory — individual card collapses never touch it,
+  // so collapsing one card can't disturb the others.
+  expandAllEntries:   () => set((s) => ({ bulkExpanded: true,  expandAllNonce:   s.expandAllNonce   + 1 })),
+  collapseAllEntries: () => set((s) => ({ bulkExpanded: false, collapseAllNonce: s.collapseAllNonce + 1 })),
   setGroupByType: (groupByType) => set({ groupByType }),
   setSortMode:    (sortMode)    => set({ sortMode }),
   setSearchFocusedId:  (searchFocusedId)  => set({ searchFocusedId }),

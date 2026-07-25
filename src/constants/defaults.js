@@ -33,8 +33,10 @@ export const DEFAULT_SETTINGS = {
   // Layout: [Left1, Left2, Left3, Right1, Right2, Right3]
   //   Left:  Import · (empty) · Undo   |   Right: Redo · (empty) · Export
   hotbarSlots:              ['append_import', null, 'undo', 'redo', null, 'make_export'],
-  // Entry type selector style in the mobile detail panel
-  entryTypeView:            'dropdown',  // 'dropdown' | 'buttons'
+  // Entry card header height (desktop collapsed row): 'default' | 'medium' | 'large'.
+  // Taller rows make a long lorebook easier to scan for users who find the dense
+  // default overwhelming.
+  entryHeaderSize:          'default',
   // FAB (+ button) size
   fabSize:                  'large',     // 'small' | 'medium' | 'large' | 'custom'
   fabCustomSize:            60,          // px, used only when fabSize === 'custom'
