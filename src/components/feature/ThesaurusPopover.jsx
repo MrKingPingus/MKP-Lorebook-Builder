@@ -22,7 +22,7 @@ export function ThesaurusPopover({
   sourceWord,
   onReplace,
 }) {
-  const { senses, senseIndex, currentSense, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
+  const { senses, senseIndex, currentSense, resolved, loading, error, nextSense, prevSense, retry } = useThesaurus(word);
   const [selected,   setSelected]   = useState(() => new Set());
   const [pos,        setPos]        = useState(null);
   const [interacted, setInteracted] = useState(false);
@@ -96,6 +96,11 @@ export function ThesaurusPopover({
   const existingLower = new Set((existingTriggers || []).map((t) => t.toLowerCase()));
   const hasMultipleSenses = senses.length > 1;
   const showEmpty = !loading && !error && senses.length === 0;
+  // Show "(via 'life')" only when an inflection fallback resolved the word to a
+  // different base form than what the user hovered.
+  const viaLemma = resolved && resolved.toLowerCase() !== (word || '').trim().toLowerCase()
+    ? resolved
+    : null;
 
   return createPortal(
     <div
@@ -106,8 +111,12 @@ export function ThesaurusPopover({
       onMouseLeave={interacted ? undefined : onMouseLeave}
     >
       <div className="thesaurus-popover-header">
-        <div className="thesaurus-popover-title" title={`Synonyms for "${word}"`}>
+        <div
+          className="thesaurus-popover-title"
+          title={viaLemma ? `Synonyms for "${word}" (via "${viaLemma}")` : `Synonyms for "${word}"`}
+        >
           Synonyms for "{word}"
+          {viaLemma && <span className="thesaurus-popover-via"> (via "{viaLemma}")</span>}
         </div>
         <div className="thesaurus-popover-actions">
           {replaceMode && (

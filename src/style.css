@@ -2719,6 +2719,10 @@ img.logo-icon {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.thesaurus-popover-via {
+  color: var(--muted2);
+  text-transform: none;
+}
 .thesaurus-add-btn {
   flex: 0 0 auto;
   min-width: 56px;

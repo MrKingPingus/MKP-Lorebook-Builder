@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-07-25
+
+### Additions
+
+- **Synonyms have a backup source** — when the main dictionary has no synonyms for a word (which used to just show "No synonyms found"), the thesaurus popover now falls back to a broader "related words" list so you're less likely to hit a dead end. These related words are looser than the dictionary's curated synonyms — handy, but eyeball them before adding. The backup only kicks in when there's nothing else to show, so it never slows down words that already have good synonyms.
+
+### Adjustments
+
+- **Clearer synonym headers for word variations** — when you open synonyms on a word like "lives" and the results actually come from its base form "life", the popover header now says *Synonyms for "lives" (via "life")*, so it's obvious why the suggestions look the way they do.
+
+---
+
 ## 2026-07-22
 
 ### Additions
