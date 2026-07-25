@@ -2719,6 +2719,10 @@ img.logo-icon {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.thesaurus-popover-via {
+  color: var(--muted2);
+  text-transform: none;
+}
 .thesaurus-add-btn {
   flex: 0 0 auto;
   min-width: 56px;
@@ -2875,6 +2879,30 @@ img.logo-icon {
   opacity: 0.4;
   cursor: default;
   pointer-events: none;
+}
+.thesaurus-related-row {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.thesaurus-related-btn {
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.thesaurus-related-btn:hover:not(:disabled) {
+  background: var(--surface3);
+  color: var(--text);
+}
+.thesaurus-related-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 .thesaurus-state {
   font-size: 0.6875rem;
