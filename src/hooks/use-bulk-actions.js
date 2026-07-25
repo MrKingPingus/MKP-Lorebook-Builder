@@ -97,7 +97,7 @@ export function useBulkActions() {
   // the user can keep acting on the same set. The snapshot carries folders too
   // because the assignment also repositions entries[] around the folder.
   function moveSelectedToFolder(folderId) {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || selectionSide === 'reference') return;
     const target = folderId ?? null;
     const hasWork = entries.some((e) => selectedIds.has(e.id) && (e.folderId ?? null) !== target);
     if (!hasWork) return;
@@ -106,9 +106,12 @@ export function useBulkActions() {
   }
 
   // "Move to new folder…" — one snapshot covering both the new folder and the
-  // entries filed into it.
+  // entries filed into it. Folders live on the active book, so a selection made
+  // on the reference side has nothing to file here: without this guard it would
+  // create an empty folder in the active book and move nothing.
   function moveSelectedToNewFolder() {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || selectionSide === 'reference') return;
+    if (!entries.some((e) => selectedIds.has(e.id))) return;
     pushSnapshot({ entries: [...entries], folders: [...folders] });
     const folder = createFolder(folders);
     updateActiveEntriesAndFolders(

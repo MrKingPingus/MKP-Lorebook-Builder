@@ -162,8 +162,10 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       <button
         className="bulk-action-apply bulk-action-apply--secondary"
         onClick={() => togglePicker('folder')}
-        disabled={!hasSelection}
-        title="Move the selected entries into a folder"
+        disabled={!hasSelection || selectionSide === 'reference'}
+        title={selectionSide === 'reference'
+          ? 'Folders belong to the active lorebook — swap this book into the active slot to file its entries'
+          : 'Move the selected entries into a folder'}
       >
         Move to folder… {openPicker === 'folder' ? '▴' : '▾'}
       </button>
