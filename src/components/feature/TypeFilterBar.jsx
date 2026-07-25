@@ -18,7 +18,7 @@ export function TypeFilterBar({ entries }) {
   const collapseAllEntries = useUi((s) => s.collapseAllEntries);
   const setGroupByType     = useUi((s) => s.setGroupByType);
   const isMobile           = useMobile();
-  const { createFolder }   = useFolders();
+  const { createFolder, foldersSuppressed } = useFolders();
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -177,7 +177,10 @@ export function TypeFilterBar({ entries }) {
         <button
           className="filter-action-btn"
           onClick={() => createFolder()}
-          title="Create an empty folder — drop entries into it from a card's Move to folder button or a select-mode bulk move"
+          disabled={foldersSuppressed}
+          title={foldersSuppressed
+            ? 'Folders are hidden while sorting by cross-book matches — switch sort to use them'
+            : "Create an empty folder — drop entries into it from a card's Move to folder button or a select-mode bulk move"}
         >
           ＋ Folder
         </button>

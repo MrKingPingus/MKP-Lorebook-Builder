@@ -26,7 +26,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     moveSelectedToFolder, moveSelectedToNewFolder,
   } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
-  const { folders } = useFolders();
+  const { folders, foldersSuppressed } = useFolders();
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
@@ -162,10 +162,12 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       <button
         className="bulk-action-apply bulk-action-apply--secondary"
         onClick={() => togglePicker('folder')}
-        disabled={!hasSelection || selectionSide === 'reference'}
+        disabled={!hasSelection || selectionSide === 'reference' || foldersSuppressed}
         title={selectionSide === 'reference'
           ? 'Folders belong to the active lorebook — swap this book into the active slot to file its entries'
-          : 'Move the selected entries into a folder'}
+          : foldersSuppressed
+            ? 'Folders are hidden while sorting by cross-book matches — switch sort to use them'
+            : 'Move the selected entries into a folder'}
       >
         Move to folder… {openPicker === 'folder' ? '▴' : '▾'}
       </button>

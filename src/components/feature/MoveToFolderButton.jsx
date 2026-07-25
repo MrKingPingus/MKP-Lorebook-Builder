@@ -8,7 +8,7 @@ import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import { NO_FOLDER_LABEL, NEW_FOLDER_NAME } from '../../constants/folders.js';
 
 export function MoveToFolderButton({ entry }) {
-  const { folders, moveEntryToFolder, createFolderWithEntries } = useFolders();
+  const { folders, moveEntryToFolder, createFolderWithEntries, foldersSuppressed } = useFolders();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -41,7 +41,10 @@ export function MoveToFolderButton({ entry }) {
         className={`move-to-folder-btn${current ? ' move-to-folder-btn--filed' : ''}`}
         style={current ? { '--folder-color': current.color } : undefined}
         onClick={() => setOpen((o) => !o)}
-        title={current ? `In folder "${current.name || NEW_FOLDER_NAME}" — click to move` : 'Move this entry into a folder'}
+        disabled={foldersSuppressed}
+        title={foldersSuppressed
+          ? 'Folders are hidden while sorting by cross-book matches — switch sort to use them'
+          : current ? `In folder "${current.name || NEW_FOLDER_NAME}" — click to move` : 'Move this entry into a folder'}
         type="button"
       >
         {current ? `🗀 ${current.name || NEW_FOLDER_NAME}` : 'Move to folder'} {open ? '▴' : '▾'}

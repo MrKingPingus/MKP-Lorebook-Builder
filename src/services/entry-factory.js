@@ -12,13 +12,16 @@ export function createEmptyEntry(overrides = {}) {
 }
 
 // Clone an entry for cross-book copy: fresh id, fresh lastModified, no
-// snapshots (those belong to the source). Triggers/ignoreLimitWarnings get
-// shallow copies so the destination can mutate independently.
+// snapshots and no folder (both belong to the source book — a folderId carried
+// across would dangle in the destination, and would silently re-file the entry
+// if it ever got copied back). Triggers/ignoreLimitWarnings get shallow copies
+// so the destination can mutate independently.
 export function cloneEntry(entry) {
   return {
     ...entry,
     id:                  uid(),
     lastModified:        Date.now(),
+    folderId:            null,
     snapshots:           [],
     triggers:            [...(entry.triggers ?? [])],
     ignoreLimitWarnings: { ...(entry.ignoreLimitWarnings ?? {}) },

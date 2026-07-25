@@ -1822,7 +1822,8 @@ img.logo-icon {
   white-space: nowrap;
   transition: background var(--transition);
 }
-.filter-action-btn:hover { background: var(--surface3); }
+.filter-action-btn:hover:not(:disabled) { background: var(--surface3); }
+.filter-action-btn:disabled { opacity: 0.4; cursor: default; }
 .filter-action-btn--active {
   background: var(--surface3);
   border-color: var(--accent);
@@ -2035,11 +2036,12 @@ img.logo-icon {
   text-overflow: ellipsis;
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.move-to-folder-btn:hover {
+.move-to-folder-btn:hover:not(:disabled) {
   background: var(--border);
   color: var(--text);
   border-color: var(--border2);
 }
+.move-to-folder-btn:disabled { opacity: 0.4; cursor: default; }
 .move-to-folder-btn--filed {
   border-color: var(--folder-color, var(--border2));
   color: var(--folder-color, var(--muted2));

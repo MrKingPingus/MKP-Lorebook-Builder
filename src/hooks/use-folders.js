@@ -5,6 +5,8 @@
 // touch history.
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
+import { useUiStore }       from '../state/ui-store.js';
+import { suppressesFolders } from '../constants/sort-modes.js';
 import {
   createFolder as makeFolder,
   assignEntriesToFolder,
@@ -22,6 +24,7 @@ export function useFolders() {
   const updateActiveFolders            = useLorebookStore((s) => s.updateActiveFolders);
   const updateActiveEntriesAndFolders  = useLorebookStore((s) => s.updateActiveEntriesAndFolders);
   const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
+  const sortMode         = useUiStore((s) => s.sortMode);
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
   const entries = activeLorebook?.entries ?? [];
@@ -110,6 +113,9 @@ export function useFolders() {
   return {
     folders,
     hasFolders: folders.length > 0,
+    // True when the active sort is hiding the folder layer — surfaces in the UI
+    // so creating a folder can't silently produce something invisible.
+    foldersSuppressed: suppressesFolders(sortMode),
     createFolder,
     createFolderWithEntries,
     renameFolder,

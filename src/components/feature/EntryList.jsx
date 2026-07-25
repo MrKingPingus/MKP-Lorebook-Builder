@@ -14,7 +14,7 @@ import { buildRenderItems } from '../../services/folder-tree.js';
 import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { COLLAPSE_STATES } from '../../constants/folders.js';
 
-export function EntryList({ entries, groupByType }) {
+export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry, reorderEntriesById } = useEntries();
   const { folders } = useFolders();
   const { displayChord } = useKeybindings();
@@ -32,7 +32,10 @@ export function EntryList({ entries, groupByType }) {
     return () => window.removeEventListener('mouseup', resetFlag);
   }, []);
 
-  const renderItems = buildRenderItems(entries, folders, {
+  // `showFolders` goes false under the cross-match sorts, where regrouping by
+  // folder would break the matched/unmatched partition the sort exists to show.
+  // Passing no folders renders every entry loose, in pure sort order.
+  const renderItems = buildRenderItems(entries, showFolders ? folders : [], {
     // An empty folder can't anchor to a member, so it would otherwise trail
     // every search as a row of noise. Hide those while a search is narrowing
     // the list; they come back the moment the query clears.

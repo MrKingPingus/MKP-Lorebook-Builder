@@ -8,6 +8,7 @@ import { useTypeFilter } from './use-type-filter.js';
 import { useSort }       from './use-sort.js';
 import { useUi }         from './use-ui.js';
 import { ENTRY_TYPES }   from '../constants/entry-types.js';
+import { SORT_MODES_WITHOUT_GROUPING, suppressesFolders } from '../constants/sort-modes.js';
 
 export function useDisplayEntries(entries) {
   const { filteredEntries: searchFiltered, matchCount, entryMatchCount, matchLocations } = useSearch(entries);
@@ -19,10 +20,12 @@ export function useDisplayEntries(entries) {
   // last-modified and cross-match sorts override group-by-type (flat list,
   // no grouping — group-by-type would re-bucket and destroy the cross-match
   // partition or the recency order).
-  const effectiveGroupByType = groupByType
-    && sortMode !== 'last-modified'
-    && sortMode !== 'cross-match-first'
-    && sortMode !== 'cross-match-last';
+  const effectiveGroupByType = groupByType && !SORT_MODES_WITHOUT_GROUPING.includes(sortMode);
+
+  // Folders are the same kind of grouping layer, so the cross-match partition
+  // suppresses them too — otherwise filing an entry would quietly pull it out
+  // of the matched/unmatched band the sort just put it in.
+  const effectiveFolders = !suppressesFolders(sortMode);
 
   const displayEntries = effectiveGroupByType
     ? ENTRY_TYPES.flatMap((t) => sortedEntries.filter((e) => e.type === t.id))
@@ -36,6 +39,7 @@ export function useDisplayEntries(entries) {
     displayEntries,
     displayMatchDetails,
     effectiveGroupByType,
+    effectiveFolders,
     matchCount,
     entryMatchCount,
   };
