@@ -63,13 +63,18 @@ export function countEntriesInFolder(entries, folderId) {
 }
 
 // Move `ids` into `targetFolderId` (null unfiles them) AND reposition them in
-// entries[] so a folder's members stay contiguous.
+// entries[] so the folder's members end up contiguous.
 //
-// The moved block lands directly after the last entry that still belongs to
-// the anchor folder — the target folder when filing, or the first mover's
-// former folder when unfiling. With no such entry (a brand-new or empty
-// folder) the block stays where the first mover already was. Relative order
-// among the moved entries is always preserved.
+// Filing REBUILDS the destination folder's whole run rather than appending to
+// it: existing members in their current order, then the arrivals, placed at the
+// folder's first existing member (or where the first mover was, for an empty
+// folder). Rebuilding means the function *establishes* contiguity instead of
+// merely preserving it, so it also repairs a run that something else scattered
+// — a raw drag-reorder, or a history undo landing on an older arrangement.
+//
+// Unfiling parks the moved block directly after whatever remains of its former
+// folder, so an entry leaving a folder surfaces right where that folder sits.
+// Relative order among the moved entries is always preserved.
 export function assignEntriesToFolder(entries, ids, targetFolderId) {
   const moving = new Set(ids);
   if (moving.size === 0) return entries;
@@ -78,33 +83,45 @@ export function assignEntriesToFolder(entries, ids, targetFolderId) {
   if (firstMoverIdx === -1) return entries;
 
   const nextFolderId = targetFolderId ?? null;
-  const anchorFolderId = nextFolderId ?? entries[firstMoverIdx].folderId ?? null;
-
   const now = Date.now();
-  const moved = [];
-  const rest  = [];
+
+  const moved  = [];
+  const others = [];
   entries.forEach((e) => {
     if (moving.has(e.id)) {
       moved.push(e.folderId === nextFolderId ? e : { ...e, folderId: nextFolderId, lastModified: now });
     } else {
-      rest.push(e);
+      others.push(e);
     }
   });
 
-  // Where the block goes: after the anchor folder's last surviving member,
-  // else at the first mover's original slot (counted among the entries that
-  // aren't moving).
-  let insertAt = -1;
-  if (anchorFolderId) {
-    for (let i = rest.length - 1; i >= 0; i -= 1) {
-      if (rest[i].folderId === anchorFolderId) { insertAt = i + 1; break; }
-    }
-  }
-  if (insertAt === -1) {
-    insertAt = entries.slice(0, firstMoverIdx).filter((e) => !moving.has(e.id)).length;
+  // How many non-moving, non-run entries precede a given index — i.e. where
+  // that index lands once the run has been lifted out.
+  const offsetOf = (idx, belongsToRun) =>
+    entries.slice(0, idx).filter((e) => !moving.has(e.id) && !belongsToRun(e)).length;
+
+  if (nextFolderId) {
+    const inRun   = (e) => e.folderId === nextFolderId;
+    const staying = others.filter(inRun);
+    const outside = others.filter((e) => !inRun(e));
+    const anchorIdx = staying.length > 0
+      ? entries.findIndex((e) => !moving.has(e.id) && inRun(e))
+      : firstMoverIdx;
+    const insertAt = offsetOf(anchorIdx, inRun);
+    return [...outside.slice(0, insertAt), ...staying, ...moved, ...outside.slice(insertAt)];
   }
 
-  return [...rest.slice(0, insertAt), ...moved, ...rest.slice(insertAt)];
+  // Unfiling: sit just after the last surviving member of the former folder.
+  const formerFolderId = entries[firstMoverIdx].folderId ?? null;
+  let insertAt = -1;
+  if (formerFolderId) {
+    for (let i = others.length - 1; i >= 0; i -= 1) {
+      if (others[i].folderId === formerFolderId) { insertAt = i + 1; break; }
+    }
+  }
+  if (insertAt === -1) insertAt = offsetOf(firstMoverIdx, () => false);
+
+  return [...others.slice(0, insertAt), ...moved, ...others.slice(insertAt)];
 }
 
 // Delete a folder and unfile everything inside it. Members keep their slot in

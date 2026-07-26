@@ -3,7 +3,8 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, exportJson, countPrivate, openSettings, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, pairCrosstalk, FIXTURE } from './driver.mjs';
+import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 function scenario(name, fn) {
   return { name, fn };
@@ -520,6 +521,150 @@ const SCENARIOS = [
     check('every entry still exported', exported.length, count);
     check('no folderId leaked into export', exported.some((e) => 'folderId' in e), false);
     check('no folders key on the book', 'folders' in book, false);
+  }),
+  // ── Crosstalk / reference mode ───────────────────────────────────────────
+  // Uses pairCrosstalk(): the primary fixture active, the derived variant book
+  // as the read-only reference. Counts come from the variant generator so the
+  // fixture and the expectations can't drift apart.
+  scenario('Crosstalk: pairing + same-name match badges', async (page, check) => {
+    await pairCrosstalk(page);
+    check('active book fully loaded',    await page.locator('.build-panel .entry-card').count(), 34);
+    check('reference book fully loaded', await page.locator('.reference-entry-card').count(), VARIANT_COUNTS.total);
+
+    // 10 pairs are byte-identical → green "in both"; 16 differ → yellow "differs".
+    check('in-both badges on the active side',
+      await page.locator('.build-panel .entry-ref-badge--match').count(), VARIANT_COUNTS.identical);
+    check('differs badges on the active side',
+      await page.locator('.build-panel .entry-ref-badge--diff').count(), VARIANT_COUNTS.differing);
+    // The reference side mirrors the same verdicts.
+    check('in-both badges on the reference side',
+      await page.locator('.reference-panel .entry-ref-badge--match').count(), VARIANT_COUNTS.identical);
+    check('differs badges on the reference side',
+      await page.locator('.reference-panel .entry-ref-badge--diff').count(), VARIANT_COUNTS.differing);
+    // 8 active-only + 3 reference-only entries have no counterpart, so no badge.
+    check('unmatched entries carry no badge',
+      34 - await page.locator('.build-panel .entry-ref-badge--header').count(), VARIANT_COUNTS.activeOnly);
+  }),
+
+  // Regression for the folders × crosstalk pass: cloneEntry drops folderId,
+  // because a folder belongs to its source book.
+  //
+  // A single copy can't prove this — an entry carrying a dangling folderId
+  // renders top-level anyway, by design. The round trip can: copy a filed entry
+  // out to the reference book and straight back. If the clone kept its
+  // folderId, the returning copy would silently re-file itself into the folder
+  // it came from, and that folder would end up with two entries.
+  scenario('Crosstalk: a copied entry does not smuggle its folder back home', async (page, check) => {
+    await pairCrosstalk(page);
+    await enterSelectMode(page);
+
+    // File the first active entry into a new folder.
+    await selectCards(page, '.build-panel', [0]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(150);
+    check('one entry is filed', await page.locator('.build-panel .folder-entries .entry-card').count(), 1);
+
+    // Copy it out to the reference book.
+    await selectCards(page, '.build-panel', [0]);
+    await page.locator('.bulk-action-apply', { hasText: 'Copy to Reference' }).click();
+    await page.waitForTimeout(350);
+    check('reference book gained the copy',
+      await page.locator('.reference-entry-card').count(), VARIANT_COUNTS.total + 1);
+    check('no folder followed it across',
+      await page.locator('.reference-panel .folder-header').count(), 0);
+
+    // Copy that clone back. Selecting on the reference side flips the copy
+    // direction, so no swap is needed.
+    const refCards = page.locator('.reference-entry-card');
+    await refCards.nth(VARIANT_COUNTS.total).click();
+    await page.waitForTimeout(200);
+    await page.locator('.bulk-action-apply', { hasText: 'Copy to Active' }).click();
+    await page.waitForTimeout(400);
+
+    check('active book gained the return copy', await page.locator('.build-panel .entry-card').count(), 35);
+    check('the folder still holds exactly one entry',
+      await page.locator('.build-panel .folder-entries .entry-card').count(), 1);
+    check('and there is still just the one folder',
+      await page.locator('.build-panel .folder-header').count(), 1);
+  }),
+
+  // The cross-match sorts partition the list by which entries exist in both
+  // books. Folders regroup the list, which would destroy that partition, so
+  // they're suppressed and their controls disable while such a sort is active.
+  scenario('Crosstalk: cross-match sort suppresses folders', async (page, check) => {
+    await pairCrosstalk(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await page.waitForTimeout(200);
+    check('folder renders under the default sort',
+      await page.locator('.build-panel .folder-header').count(), 1);
+
+    // Switch to "In both books first".
+    await page.locator('.sort-btn').first().click();
+    await page.locator('.sort-dropdown-item', { hasText: 'In both books first' }).click();
+    await page.waitForTimeout(300);
+    check('folders are hidden under a cross-match sort',
+      await page.locator('.build-panel .folder-header').count(), 0);
+    check('every entry still renders, just unfiled',
+      await page.locator('.build-panel .entry-card').count(), 34);
+    check('the ＋ Folder button disables itself',
+      await page.locator('.filter-action-btn', { hasText: 'Folder' }).isDisabled(), true);
+    // The partition itself: the first card must be one that exists in both books.
+    check('a cross-match entry sorts to the top',
+      await page.locator('.build-panel .entry-card').first().locator('.entry-ref-badge--header').count(), 1);
+
+    // Back to default and the folder returns.
+    await page.locator('.sort-btn').first().click();
+    await page.locator('.sort-dropdown-item', { hasText: 'Default' }).first().click();
+    await page.waitForTimeout(300);
+    check('folders come back on the default sort',
+      await page.locator('.build-panel .folder-header').count(), 1);
+  }),
+
+  // The accepted 11A limitation, pinned as a test: the reference panel has its
+  // own read-only renderer and shows a flat list. If that ever changes, this
+  // check tells us rather than us discovering it by accident.
+  scenario('Crosstalk: reference side renders folders flat (known limitation)', async (page, check) => {
+    await pairCrosstalk(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(200);
+    check('the active side has a folder', await page.locator('.build-panel .folder-header').count(), 1);
+    check('the reference side has none',   await page.locator('.reference-panel .folder-header').count(), 0);
+    // Reference-side selections can't reach the folder bulk ops — that used to
+    // be able to mint a stray empty folder in the active book.
+    await page.locator('.reference-entry-card').first().click();
+    await page.waitForTimeout(200);
+    check('Move to folder disables for a reference-side selection',
+      await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).isDisabled(), true);
+    check('and no stray folder appeared',
+      await page.locator('.build-panel .folder-header').count(), 1);
+  }),
+
+  // The variant's edited descriptions must actually differ, or the "differs"
+  // verdicts above would be meaningless.
+  scenario('Crosstalk: the variant fixture really does differ', async (page, check) => {
+    await pairCrosstalk(page);
+    await page.locator('.search-input').first().fill(VARIANT_MARKER.slice(0, 24));
+    await page.waitForTimeout(400);
+    // The marker only exists in the variant, so the active side finds nothing
+    // while the reference side finds every edited entry.
+    check('marker absent from the active book',
+      await page.locator('.build-panel .entry-card').count(), 0);
+    check('marker present on 10 reference entries',
+      await page.locator('.reference-entry-card').count(), 10);
   }),
 ];
 

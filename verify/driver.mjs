@@ -22,6 +22,10 @@ import { fileURLToPath } from 'node:url';
 
 export const BASE_URL = process.env.VERIFY_URL || 'http://localhost:5173/';
 export const FIXTURE = fileURLToPath(new URL('../fixtures/reika-test-book.json', import.meta.url));
+// Second book for crosstalk/reference checks. Derived from FIXTURE by
+// fixtures/build-variant-book.mjs, which documents every deliberate difference
+// and exports the expected counts.
+export const VARIANT_FIXTURE = fileURLToPath(new URL('../fixtures/reika-test-book-variant.json', import.meta.url));
 
 function resolveChromium() {
   if (process.env.PW_CHROMIUM_PATH && existsSync(process.env.PW_CHROMIUM_PATH)) {
@@ -65,6 +69,79 @@ export async function openBuilderWithFixture(page, fixturePath = FIXTURE) {
   await chooser.setFiles(fixturePath);
   await page.locator('.entry-card').first().waitFor({ timeout: 8000 });
   return page.locator('.entry-card').count();
+}
+
+// Import a second lorebook from a file, as a NEW book rather than appending.
+// Note importAsNewLorebook makes the imported book the active one.
+export async function importBookAsNew(page, fixturePath) {
+  await page.locator('.hotbar').locator('button', { hasText: 'Import' }).first().click();
+  await page.locator('.append-import-panel').waitFor({ timeout: 4000 });
+  await page.locator('.append-import-mode-btn', { hasText: 'Whole book from file' }).click();
+  await page.locator('.append-file-picker input[type="file"]').setInputFiles(fixturePath);
+  await page.locator('.import-save-btn--new').waitFor({ timeout: 6000 });
+  await page.locator('.import-save-btn--new').click();
+  await page.locator('.append-import-panel').waitFor({ state: 'detached', timeout: 4000 });
+}
+
+// Put the app into paired crosstalk mode: FIXTURE active on the left, the
+// derived VARIANT_FIXTURE as the read-only reference on the right.
+//
+// The variant is loaded FIRST because importing a book as new makes it active —
+// so importing the primary second leaves the primary active, which is the
+// arrangement every crosstalk scenario wants. Returns the two book names.
+export async function pairCrosstalk(page) {
+  await openBuilderWithFixture(page, VARIANT_FIXTURE);
+  await importBookAsNew(page, FIXTURE);
+
+  // Turn on the reference panel. Settings is an accordion and collapsed
+  // sections don't render their children, so the section has to be opened
+  // before its controls exist in the DOM.
+  await openSettings(page);
+  await openSettingsSection(page, 'Reference & Crosstalk');
+  const toggle = page.locator('label:has-text("Show reference panel") input[type="checkbox"]');
+  await toggle.waitFor({ timeout: 4000 });
+  await toggle.check();
+  await page.keyboard.press('Escape');
+  await page.locator('.reference-panel').waitFor({ timeout: 4000 });
+
+  // Pick the variant as the reference. The picker excludes the active book, so
+  // the only remaining option is the one we want.
+  const picker = page.locator('.reference-panel .pane-header-picker');
+  const options = await picker.locator('option').evaluateAll(
+    (els) => els.map((e) => ({ value: e.value, label: e.textContent.trim() })).filter((o) => o.value)
+  );
+  if (options.length === 0) throw new Error('No reference lorebook options available');
+  await picker.selectOption(options[0].value);
+  await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+
+  const activeName = await page.locator('.build-panel .pane-header-picker').inputValue().catch(() => null);
+  return { activeName, referenceName: options[0].label };
+}
+
+// Expand a Settings accordion section by its visible title. Collapsed sections
+// render no children at all, so this is a prerequisite for touching anything
+// inside one. No-op if it's already open.
+export async function openSettingsSection(page, title) {
+  const header = page.locator('.settings-section-header', { hasText: title }).first();
+  await header.waitFor({ timeout: 4000 });
+  if ((await header.getAttribute('aria-expanded')) !== 'true') {
+    await header.click();
+    await page.waitForTimeout(150);
+  }
+}
+
+// Click entry cards to select them, in select mode.
+//
+// Always clicks the card's `.entry-label`, never the card's own centre: in
+// select mode the header also carries a type-change dropdown that calls
+// stopPropagation, and in a narrow crosstalk pane that dropdown sits right
+// under the card's midpoint, so a centre-click silently selects nothing.
+export async function selectCards(page, containerSelector, indices) {
+  for (const i of indices) {
+    await page.locator(`${containerSelector} .entry-card`).nth(i).locator('.entry-label').first().click();
+    await page.waitForTimeout(80);
+  }
+  await page.waitForTimeout(120);
 }
 
 export async function enterSelectMode(page) {

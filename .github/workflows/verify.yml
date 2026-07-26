@@ -1,0 +1,63 @@
+# Runs `npm run verify` — the pure-logic checks plus the Playwright behavioural
+# suite — on every pull request and every push to main.
+#
+# This reports only. It deliberately does NOT gate the Pages deploy in
+# main.yml: the browser scenarios use fixed waits tuned on a fast machine, and a
+# shared GitHub runner is slower and more variable, so the suite needs a while
+# in the open before it earns veto power over shipping. Once it has proven
+# stable here, main.yml can be made to depend on this workflow.
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to the same branch makes an in-flight run obsolete.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The container this project is usually developed in ships its own
+      # Chromium; a GitHub runner does not, so fetch the one Playwright wants.
+      # --with-deps pulls the shared libraries headless Chromium needs.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # The fixture is generated, so a stale committed copy would silently
+      # invalidate every count the crosstalk scenarios assert. Regenerate and
+      # fail if it differs from what's checked in.
+      - name: Check the derived fixture is up to date
+        run: |
+          node fixtures/build-variant-book.mjs
+          if ! git diff --quiet -- fixtures/reika-test-book-variant.json; then
+            echo "::error ::fixtures/reika-test-book-variant.json is stale. Run 'node fixtures/build-variant-book.mjs' and commit the result."
+            git diff -- fixtures/reika-test-book-variant.json
+            exit 1
+          fi
+
+      - name: Build
+        run: npm run build
+
+      # run.mjs starts its own dev server and tears it down afterwards.
+      - name: Verify
+        run: npm run verify
