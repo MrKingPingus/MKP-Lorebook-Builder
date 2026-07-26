@@ -2031,6 +2031,39 @@ img.logo-icon {
    structure rather than as a wall of saturated lines. */
 .folder-block > .folder-entries { border-left-color: color-mix(in srgb, var(--folder-color, var(--border)) 75%, transparent); }
 
+/* ---- Condensed rows (folder collapseState === 'condensed') ----
+   A single line carrying only what identifies the entry — type dot, index +
+   name — plus Expand and Remove. Drag handle, stats, and status badges are all
+   one Expand away. The row deliberately ignores the global entry-header-height
+   preference: that setting asks for roomier rows everywhere, condensing a
+   folder asks for tighter ones right here. */
+/* Selectors are doubled up (.entry-card--condensed .entry-card-header rather
+   than the modifier alone) so they outrank the base .entry-card-header rules,
+   which are defined further down this file. */
+.entry-card--condensed {
+  border-left-width: 3px;
+}
+.entry-card--condensed .entry-card-header {
+  gap: 6px;
+  padding: 2px 8px;
+  min-height: 26px;
+}
+.entry-card--condensed .entry-card-header .entry-label {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry-card--condensed .entry-card-header .card-action-btn {
+  padding: 1px 6px;
+  font-size: 0.625rem;
+}
+/* Tighter stack for condensed members — the gap that reads as breathing room
+   between full cards is most of the saved height at this size. */
+.folder-entries:has(.entry-card--condensed) {
+  gap: 3px;
+}
+
 /* ---- Per-entry "Move to folder" control (entry card footer) ---- */
 .move-to-folder { position: relative; }
 

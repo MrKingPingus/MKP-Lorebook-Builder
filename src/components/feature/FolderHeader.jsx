@@ -8,9 +8,11 @@ import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import {
   FOLDER_COLORS,
   COLLAPSE_GLYPHS,
+  COLLAPSE_LABELS,
   COLLAPSE_STATES,
   NEW_FOLDER_NAME,
 } from '../../constants/folders.js';
+import { nextCollapseState } from '../../services/folder-tree.js';
 
 export function FolderHeader({ folder, count }) {
   const { renameFolder, setFolderColor, deleteFolder, cycleCollapse } = useFolders();
@@ -69,6 +71,7 @@ export function FolderHeader({ folder, count }) {
 
   const isTucked = folder.collapseState === COLLAPSE_STATES.TUCKED;
   const glyph    = COLLAPSE_GLYPHS[folder.collapseState] ?? COLLAPSE_GLYPHS[COLLAPSE_STATES.FULL];
+  const nextState = nextCollapseState(folder.collapseState);
 
   return (
     <div
@@ -79,7 +82,7 @@ export function FolderHeader({ folder, count }) {
       <button
         className="folder-collapse-btn"
         onClick={() => cycleCollapse(folder.id)}
-        title={isTucked ? 'Show the entries in this folder' : 'Hide the entries in this folder'}
+        title={`${COLLAPSE_LABELS[folder.collapseState] ?? COLLAPSE_LABELS[COLLAPSE_STATES.FULL]} — click for: ${COLLAPSE_LABELS[nextState].toLowerCase()}`}
         aria-expanded={!isTucked}
         type="button"
       >

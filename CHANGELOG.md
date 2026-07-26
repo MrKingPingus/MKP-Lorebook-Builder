@@ -9,7 +9,8 @@
 - **Folders** — you can now group entries into colored folders, purely for your own organization inside the builder. Folders are **never exported** and have nothing to do with entry types: your JSON, TXT, DOCX and ZIP exports come out exactly as before, whether an entry is filed or not.
   - **Make one** with the **＋ Folder** button in the filter row, or straight from a selection with **Move to folder… → ＋ New folder** in Select mode.
   - **File entries** two ways: pick **Move to folder** in an entry's footer for one entry at a time, or select several entries and use **Move to folder…** to move the whole batch at once.
-  - **Collapse a folder** with the arrow on its header to tuck its entries out of sight — the header keeps showing how many are inside. Click again to bring them back.
+  - **Collapse a folder in stages.** The button on its header cycles through three sizes: full entries, **condensed** (each entry shrinks to a single line — type dot, name, and Expand/Remove), and **tucked** (entries hidden entirely, with the header showing how many are inside). Click round again to return to full size.
+  - **You can still open one entry inside a condensed folder** — hit Expand on any condensed row and that entry opens at full size with everything on it, while the rest of the folder stays compact.
   - **Rename** by clicking a folder's name, and **recolor** by clicking its dot to pick from eight pastel colors, deliberately kept distinct from the entry-type colors so a folder stripe never reads as a type. An entry filed into a folder shows that folder's name and color on its own footer button, so you can always tell where it lives.
   - **Deleting a folder never deletes entries** — they simply move back out to the top level.
   - **Undo works on all of it** — creating, deleting, renaming, recoloring, and moving entries in or out are all undoable with Ctrl+Z. Collapsing a folder isn't undoable, since it's just a view.

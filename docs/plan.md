@@ -44,7 +44,14 @@ Builder-only organization layer — Reaper-style nested, collapsible, colored fo
 8. **Undoability:** structural ops (create/delete/move-entry) snapshot to history; collapse toggles don't.
 9. **Desktop-first; mobile folders are a separate deferred design.**
 
-**Sub-phases:** ~~11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states)~~ **shipped 2026-07-25** · 11B condensed compact-card variant · 11C nesting + type-in-folder + collapse-all · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11B Medium · 11C Medium–High · 11D Medium · 11E High.
+**Sub-phases:** ~~11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states)~~ **shipped 2026-07-25** · ~~11B condensed compact-card variant~~ **shipped 2026-07-26** · 11C nesting + type-in-folder + collapse-all · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11C Medium–High · 11D Medium · 11E High.
+
+**Decisions taken during 11B (2026-07-26):**
+15. **Condensed is a `density` prop on `EntryCard`, not a separate component.** `EntryCard` already branches on collapsed/expanded, mobile/desktop, compare, and reference-mirror; a standalone compact card would have had to re-implement select mode, crosstalk badges, health, and rollback, and the two copies would drift.
+16. **Condensed row = type dot + `#N: Name` + `Expand` + `Remove`.** Drag handle, stats badge, and status badges (Public / Hidden / crosstalk) all drop — they're one Expand away. `Remove` stays by explicit user call, on the grounds that a condensed folder is where you scan and prune. ~26px against the 40px default, and the row ignores the global `entryHeaderSize` preference (that setting asks for roomier rows everywhere; condensing asks for tighter ones here).
+17. **Density is header-only, and only while shut.** Expanding a condensed card restores its full chrome for as long as it's open, so an expanded card is never a half-sized hybrid. Entering condensed force-collapses a card the user had open; leaving condensed doesn't re-open anything.
+18. **A condensed row can't start a drag** — it has no handle to grab. 11E will need to decide whether condensed rows are drag targets.
+19. **Search doesn't override condensed** (unlike tucked, which force-opens). A condensed row still shows the entry name, so a match is findable; a tucked folder shows nothing at all.
 
 **Decisions taken during 11A (2026-07-25):**
 10. **Filing an entry repositions it in `entries[]`** so a folder's members stay contiguous (`assignEntriesToFolder`). Chosen over pure-visual grouping specifically to give 11E a real array index to drop into — display-order and array-order agree, so a drop position maps to a splice. Note this means filing entries *does* change export numbering (sort/group modes still don't — they never write the array).

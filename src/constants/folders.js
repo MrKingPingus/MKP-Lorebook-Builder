@@ -31,10 +31,20 @@ export const COLLAPSE_STATES = {
 
 export const DEFAULT_COLLAPSE_STATE = COLLAPSE_STATES.FULL;
 
-// The order the header chevron cycles through. `condensed` needs a genuine
-// compact EntryCard variant, so it stays out of the cycle until that exists —
-// the state itself is already understood by the renderer.
-export const COLLAPSE_CYCLE = [COLLAPSE_STATES.FULL, COLLAPSE_STATES.TUCKED];
+// The order the header chevron cycles through, mirroring Reaper's three-stage
+// folder button: full size → compact rows → hidden entirely.
+export const COLLAPSE_CYCLE = [
+  COLLAPSE_STATES.FULL,
+  COLLAPSE_STATES.CONDENSED,
+  COLLAPSE_STATES.TUCKED,
+];
+
+// What each state does to the entries below the header, for tooltips.
+export const COLLAPSE_LABELS = {
+  [COLLAPSE_STATES.FULL]:      'Entries at full size',
+  [COLLAPSE_STATES.CONDENSED]: 'Entries condensed to a single line',
+  [COLLAPSE_STATES.TUCKED]:    'Entries hidden',
+};
 
 // Glyph shown on the cycle button for each state.
 export const COLLAPSE_GLYPHS = {

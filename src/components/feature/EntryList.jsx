@@ -67,8 +67,9 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
 
   const dragDisabled = isMobile || sortMode !== 'default';
 
-  function renderEntry(entry, position) {
-    const dragProps = dragDisabled ? {} : {
+  function renderEntry(entry, position, density = 'full') {
+    // A condensed row has no drag handle, so it can't start a drag either.
+    const dragProps = (dragDisabled || density === 'condensed') ? {} : {
       draggable: true,
       onDragStart: (e) => {
         if (!isDragFromHandle.current) { e.preventDefault(); return; }
@@ -86,6 +87,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
           index={position}
           onUpdate={updateEntry}
           onRemove={removeEntry}
+          density={density}
           onDragHandleMouseDown={dragDisabled ? undefined : () => { isDragFromHandle.current = true; }}
         />
       </div>
@@ -103,6 +105,10 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
       // search silently fails to surface anything filed inside one. It tucks
       // again the moment the query clears.
       const tucked = folder.collapseState === COLLAPSE_STATES.TUCKED && !searchActive;
+      // Condensed shrinks each member to a single line. A search leaves it
+      // alone — a condensed row still shows the entry name, which is enough to
+      // find the match by, unlike a tucked folder that shows nothing at all.
+      const density = folder.collapseState === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full';
       items.push(
         <div
           key={`folder-${folder.id}`}
@@ -112,7 +118,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
           <FolderHeader folder={folder} count={item.entries.length} />
           {!tucked && (
             <div className="folder-entries">
-              {item.entries.map((entry) => { position += 1; return renderEntry(entry, position); })}
+              {item.entries.map((entry) => { position += 1; return renderEntry(entry, position, density); })}
             </div>
           )}
         </div>

@@ -380,15 +380,19 @@ const SCENARIOS = [
     // can go somewhere else.
     check('selection cleared after the move', (await page.locator('.bulk-action-count').innerText()).trim(), '0 selected');
 
-    // Tucking hides the members but keeps the count visible.
-    await page.locator('.folder-collapse-btn').click();
+    // The cycle is full → condensed → tucked, so tucking is two stops away.
+    const cycleBtn = page.locator('.folder-collapse-btn');
+    await cycleBtn.click();
+    await page.waitForTimeout(200);
+    check('one click condenses, does not hide', await page.locator('.folder-entries .entry-card').count(), 2);
+    await cycleBtn.click();
     await page.waitForTimeout(200);
     check('tucked hides folder entries', await page.locator('.folder-entries .entry-card').count(), 0);
     check('tucked total on screen', await page.locator('.entry-card').count(), count - 2);
     check('count still shown while tucked', (await page.locator('.folder-count').innerText()).trim(), '2');
-    await page.locator('.folder-collapse-btn').click();
+    await cycleBtn.click();
     await page.waitForTimeout(200);
-    check('untucked restores members', await page.locator('.folder-entries .entry-card').count(), 2);
+    check('cycling round restores members', await page.locator('.folder-entries .entry-card').count(), 2);
 
     // Undo pulls the entries back out of the folder.
     await page.keyboard.press('Control+z');
@@ -435,6 +439,9 @@ const SCENARIOS = [
     // Tuck it, then search for the entry hidden inside.
     await page.locator('.search-mode-select').first().selectOption('search');
     await page.waitForTimeout(150);
+    // Two clicks to reach tucked (full → condensed → tucked).
+    await page.locator('.folder-collapse-btn').click();
+    await page.waitForTimeout(150);
     await page.locator('.folder-collapse-btn').click();
     await page.waitForTimeout(200);
     check('entry hidden while tucked', await page.locator('.folder-entries .entry-card').count(), 0);
@@ -444,6 +451,55 @@ const SCENARIOS = [
     await page.locator('.search-input').first().fill('');
     await page.waitForTimeout(350);
     check('folder tucks again once the search clears', await page.locator('.folder-entries .entry-card').count(), 0);
+  }),
+
+  // 11B — the middle stop of the collapse cycle. A condensed row keeps only
+  // what identifies the entry plus Expand/Remove, and a single card can still
+  // be opened without un-condensing the whole folder.
+  scenario('Folders: condensed rows + expand one in place', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    const cards = page.locator('.entry-card');
+    for (const i of [0, 1, 2]) await cards.nth(i).click();
+    await page.waitForTimeout(120);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await page.waitForTimeout(250);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await page.waitForTimeout(250);
+
+    const cycleBtn = page.locator('.folder-collapse-btn');
+    const condensed = page.locator('.entry-card--condensed');
+
+    check('starts at full size', await condensed.count(), 0);
+    await cycleBtn.click();
+    await page.waitForTimeout(250);
+    check('cycle stop 1 condenses the members', await condensed.count(), 3);
+
+    // Condensed keeps identity + Expand/Remove, and sheds everything else.
+    check('no drag handle on a condensed row', await condensed.locator('.drag-handle').count(), 0);
+    check('no stats badge on a condensed row', await condensed.locator('.stats-badge').count(), 0);
+    check('Expand + Remove survive', await condensed.first().locator('.card-action-btn').count(), 2);
+    check('condensed row is shorter than a full one',
+      (await condensed.first().boundingBox()).height < (await cards.last().boundingBox()).height, true);
+
+    // One card opens in place; its siblings stay condensed.
+    await condensed.first().locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await page.waitForTimeout(300);
+    check('the opened card has a body', await page.locator('.folder-entries .entry-card-body').count(), 1);
+    check('its siblings stay condensed', await condensed.count(), 2);
+    check('the opened card got its full chrome back',
+      await page.locator('.folder-entries .entry-card:not(.entry-card--condensed) .stats-badge').count(), 1);
+
+    // Cycle onward to tucked, then back round to full.
+    await cycleBtn.click();
+    await page.waitForTimeout(250);
+    check('cycle stop 2 tucks everything', await page.locator('.folder-entries .entry-card').count(), 0);
+    await cycleBtn.click();
+    await page.waitForTimeout(250);
+    check('cycle returns to full size', await page.locator('.folder-entries .entry-card').count(), 3);
+    check('and nothing is condensed', await condensed.count(), 0);
   }),
 
   scenario('Folders never reach the export', async (page, check) => {

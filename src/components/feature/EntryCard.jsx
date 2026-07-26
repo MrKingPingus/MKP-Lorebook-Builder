@@ -64,7 +64,7 @@ function ExportOffIcon() {
   );
 }
 
-export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, density = 'full' }) {
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
@@ -110,6 +110,11 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     ? true
     : (isSearchFocused ? false : localCollapsed);
 
+  // Condensed is a header-only density, and only while the card is shut. Expand
+  // a condensed card and it gets its full chrome back for as long as it's open,
+  // so an expanded card is never a half-sized hybrid.
+  const isCondensed = density === 'condensed' && collapsed;
+
   // Expand All / Collapse All pulses — commit the bulk action into this card's
   // own state. Guarded on nonce > 0 so the initial mount doesn't fire.
   useEffect(() => {
@@ -118,6 +123,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   useEffect(() => {
     if (collapseAllNonce > 0) setLocalCollapsed(true);
   }, [collapseAllNonce]);
+
+  // Entering condensed shuts a card the user had open, so condensing a folder
+  // visibly does something to every row in it. Leaving condensed doesn't
+  // re-open anything — that stays the user's call.
+  useEffect(() => {
+    if (density === 'condensed') setLocalCollapsed(true);
+  }, [density]);
 
   // Desktop: auto-expand and focus name input when a new entry is created
   useEffect(() => {
@@ -368,16 +380,16 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   return (
     <div
       id={`entry-${entry.id}`}
-      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}`}
+      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}${isCondensed ? ' entry-card--condensed' : ''}`}
       style={{ '--type-color': typeColor }}
       onClick={isSelectMode ? () => toggleSelected(entry.id, 'active') : undefined}
     >
       {/* ── Card header ── */}
       <div
-        className={`entry-card-header${entryHeaderSize && entryHeaderSize !== 'default' ? ` entry-card-header--${entryHeaderSize}` : ''}`}
+        className={`entry-card-header${isCondensed ? ' entry-card-header--condensed' : (entryHeaderSize && entryHeaderSize !== 'default' ? ` entry-card-header--${entryHeaderSize}` : '')}`}
         onDoubleClick={isSelectMode ? undefined : onHeaderDoubleClick}
       >
-        {!isSelectMode && (
+        {!isSelectMode && !isCondensed && (
           <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
         )}
 
@@ -412,10 +424,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             ))}
           </CyclingSelect>
         )}
-        {entry.isPublic === true && <PublicEyeIcon />}
-        {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
-        {entry.hiddenFromExport && <ExportOffIcon />}
-        {sameNameRefId && (
+        {!isCondensed && entry.isPublic === true && <PublicEyeIcon />}
+        {!isCondensed && entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
+        {!isCondensed && entry.hiddenFromExport && <ExportOffIcon />}
+        {!isCondensed && sameNameRefId && (
           <button
             className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
             onClick={onBadgeClick}
@@ -432,7 +444,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </button>
         )}
         <div className="entry-card-header-right">
-          {!hideEntryStats && (
+          {!hideEntryStats && !isCondensed && (
             <StatsBadge
               triggerCount={entry.triggers.length}
               charCount={entry.description.length}
