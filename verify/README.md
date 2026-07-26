@@ -66,20 +66,12 @@ Two, and they run in this order:
     type dropdown calls `stopPropagation`, and in a narrow crosstalk pane it
     sits right under the midpoint, so a centre-click selects nothing.
 
-## Continuous integration
-
-`.github/workflows/verify.yml` runs this suite on every pull request and every
-push to `main`, and also fails if the generated variant fixture is stale. It
-**reports only** — by design. It never gates the Pages deploy and never blocks a
-merge, so a red run can't leave anyone with a site that won't update or a PR
-that won't merge. The project's real test loop is a preview deploy plus a human
-looking at it; this suite is the safety net underneath that, for the classes of
-bug eyeballs don't catch.
-
-- **`checks.mjs`** — the scenarios (import parity + private-by-default, bulk
-  Hide/Show, bulk Public/Private, the opt-in private marker). Values are
-  anchored to `fixtures/reika-test-book.json` (34 entries, 29 public / 5
-  private).
+- **`checks.mjs`** — the browser scenarios: import parity, Public/Private,
+  Hide-from-Export, hotkeys and the Escape stack, themes and accessibility,
+  expand/collapse, folders, and crosstalk. Values are anchored to the fixtures.
+- **`keychord-checks.mjs`** — pure-logic checks for the keychord matcher.
+- **`folder-tree-checks.mjs`** — pure-logic checks for the folder splice and
+  render walk.
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
 
 ## Browser resolution
@@ -91,6 +83,25 @@ bug eyeballs don't catch.
    remote container ships one — no download needed),
 3. otherwise Playwright's managed browser — on a local machine run
    `npx playwright install chromium` once.
+
+## Timing
+
+Every fixed wait goes through `settle(page, ms)` rather than
+`page.waitForTimeout` directly, so there is one dial for all of them.
+`VERIFY_WAIT_SCALE` multiplies it, and CI defaults to 3× because a shared runner
+is slower and more variable than a dev machine. Locally the scale is 1, so
+normal runs are unaffected. If a scenario ever goes flaky on CI, raise the scale
+before reaching for anything cleverer.
+
+## Continuous integration
+
+`.github/workflows/verify.yml` runs this suite on every pull request and every
+push to `main`, and also fails if the generated variant fixture is stale. It
+**reports only** — by design. It never gates the Pages deploy and never blocks a
+merge, so a red run can't leave anyone with a site that won't update or a PR
+that won't merge. The project's real test loop is a preview deploy plus a human
+looking at it; this suite is the safety net underneath that, for the classes of
+bug eyeballs don't catch.
 
 ## Adding a scenario
 
