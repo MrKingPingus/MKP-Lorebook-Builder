@@ -1,11 +1,14 @@
 # Runs `npm run verify` — the pure-logic checks plus the Playwright behavioural
 # suite — on every pull request and every push to main.
 #
-# This reports only. It deliberately does NOT gate the Pages deploy in
-# main.yml: the browser scenarios use fixed waits tuned on a fast machine, and a
-# shared GitHub runner is slower and more variable, so the suite needs a while
-# in the open before it earns veto power over shipping. Once it has proven
-# stable here, main.yml can be made to depend on this workflow.
+# This REPORTS ONLY, by design. It never gates the Pages deploy in main.yml and
+# never blocks a merge — a red run can't leave anyone with a site that won't
+# update or a PR that won't merge. The project's real test loop is a preview
+# deploy plus a human looking at it; this suite is the safety net underneath,
+# for the classes of bug eyeballs don't catch.
+#
+# Fixed waits are scaled by VERIFY_WAIT_SCALE (3x on CI) so a slower shared
+# runner doesn't produce failures that mean nothing.
 name: Verify
 
 on:

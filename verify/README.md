@@ -70,10 +70,12 @@ Two, and they run in this order:
 
 `.github/workflows/verify.yml` runs this suite on every pull request and every
 push to `main`, and also fails if the generated variant fixture is stale. It
-reports only — it does **not** gate the Pages deploy in `main.yml` yet, because
-the browser scenarios use fixed waits tuned on a fast machine and a shared
-runner is slower and more variable. Once it has proven stable, `main.yml` can be
-made to depend on it.
+**reports only** — by design. It never gates the Pages deploy and never blocks a
+merge, so a red run can't leave anyone with a site that won't update or a PR
+that won't merge. The project's real test loop is a preview deploy plus a human
+looking at it; this suite is the safety net underneath that, for the classes of
+bug eyeballs don't catch.
+
 - **`checks.mjs`** — the scenarios (import parity + private-by-default, bulk
   Hide/Show, bulk Public/Private, the opt-in private marker). Values are
   anchored to `fixtures/reika-test-book.json` (34 entries, 29 public / 5
