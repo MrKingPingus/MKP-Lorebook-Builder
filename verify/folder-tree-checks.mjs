@@ -17,9 +17,19 @@ import {
   getFolder,
   isFiledIn,
   buildRenderItems,
+  flattenRenderItems,
   foldersOf,
+  depthOf,
+  childFoldersOf,
+  subtreeFolderIds,
+  subtreeHeight,
+  canNest,
+  eligibleParents,
+  gatherSubtree,
+  setFolderParent,
+  effectiveCollapseState,
 } from '../src/services/folder-tree.js';
-import { COLLAPSE_STATES } from '../src/constants/folders.js';
+import { COLLAPSE_STATES, MAX_FOLDER_DEPTH } from '../src/constants/folders.js';
 
 // Compact readable shorthand: 'a:F1' = entry id 'a' filed in folder 'F1',
 // 'b' = entry id 'b', unfiled. Lets a whole book be written on one line.
@@ -40,14 +50,19 @@ function folder(id, overrides = {}) {
   return { id, name: id, color: '#fff', parentId: null, collapseState: COLLAPSE_STATES.FULL, order: 0, ...overrides };
 }
 
-// Render the walk output as shorthand: '[F1 a c] b' = folder F1 holding a and c,
-// then loose entry b.
+// Render the walk output as shorthand. '[F1 a c] b' = folder F1 holding a and
+// c, then loose entry b. Nesting shows as nesting: '[P a [C b]]'.
 function showItems(items) {
-  return items.map((item) => (
+  return (items ?? []).map((item) => (
     item.kind === 'folder'
-      ? `[${item.folder.id}${item.entries.length ? ' ' + item.entries.map((e) => e.id).join(' ') : ''}]`
+      ? `[${item.folder.id}${item.children.length ? ' ' + showItems(item.children) : ''}]`
       : item.entry.id
   )).join(' ');
+}
+
+// Folder shorthand with a parent: nest('C', 'P') = folder C inside folder P.
+function nest(id, parentId, overrides = {}) {
+  return folder(id, { parentId, ...overrides });
 }
 
 export function runFolderTreeChecks() {
@@ -116,8 +131,7 @@ export function runFolderTreeChecks() {
     '[F1 a c] [F2 b d]');
 
   check('every entry appears exactly once',
-    buildRenderItems(book('a:F1 b c:F1 d'), F1)
-      .flatMap((i) => (i.kind === 'folder' ? i.entries : [i.entry])).length, 4);
+    flattenRenderItems(buildRenderItems(book('a:F1 b c:F1 d'), F1)).length, 4);
 
   // An id with no matching folder must read as top-level — that's what stops a
   // history undo that removed a folder from orphaning its entries.
@@ -148,11 +162,121 @@ export function runFolderTreeChecks() {
   check('empty inputs are handled', showItems(buildRenderItems([], [])), '');
   check('null-ish inputs are handled', showItems(buildRenderItems(null, null)), '');
 
+  // ── nesting: tree shape ────────────────────────────────────────────────────
+  const PC = [folder('P'), nest('C', 'P')];
+
+  check('a parent renders its child inside it',
+    showItems(buildRenderItems(book('a:P b:C'), PC)), '[P a [C b]]');
+
+  check('a parent with no entries of its own still anchors to its subtree',
+    showItems(buildRenderItems(book('x a:C y'), PC)), 'x [P [C a]] y');
+
+  check('loose entries stay interleaved around a nested tree',
+    showItems(buildRenderItems(book('x a:P y b:C'), PC)), 'x [P a [C b]] y');
+
+  check('three levels render',
+    showItems(buildRenderItems(book('a:G'), [folder('P'), nest('C', 'P'), nest('G', 'C')])),
+    '[P [C [G a]]]');
+
+  check('subtree entries all survive the walk',
+    flattenRenderItems(buildRenderItems(book('a:P b:C x'), PC)).length, 3);
+
+  check('header count is the whole subtree, not just direct members',
+    buildRenderItems(book('a:P b:C'), PC)[0].totalCount, 2);
+  check('direct count stays separate',
+    buildRenderItems(book('a:P b:C'), PC)[0].count, 1);
+
+  check('an empty nested tree trails the list',
+    showItems(buildRenderItems(book('a'), PC)), 'a [P [C]]');
+  check('hideEmptyFolders drops an empty subtree whole',
+    showItems(buildRenderItems(book('a'), PC, { hideEmptyFolders: true })), 'a');
+  check('hideEmptyFolders keeps a parent whose child has a match',
+    showItems(buildRenderItems(book('a:C'), PC, { hideEmptyFolders: true })), '[P [C a]]');
+
+  // A parentId pointing at a folder that no longer exists reads as top level,
+  // the same tolerance dangling entry.folderId gets.
+  check('dangling parentId renders the child at top level',
+    showItems(buildRenderItems(book('a:C'), [nest('C', 'GONE')])), '[C a]');
+
+  // ── nesting: depth, ancestry, legality ─────────────────────────────────────
+  check('top-level folder is depth 1',  depthOf(PC, 'P'), 1);
+  check('nested folder is depth 2',     depthOf(PC, 'C'), 2);
+  check('unknown folder is depth 0',    depthOf(PC, 'nope'), 0);
+  check('childFoldersOf finds children', childFoldersOf(PC, 'P').map((f) => f.id).join(','), 'C');
+  check('childFoldersOf(null) is the top level', childFoldersOf(PC, null).map((f) => f.id).join(','), 'P');
+  check('subtreeFolderIds includes the root', subtreeFolderIds(PC, 'P').join(','), 'P,C');
+  check('subtreeHeight counts levels', subtreeHeight(PC, 'P'), 2);
+  check('subtreeHeight of a leaf is 1', subtreeHeight(PC, 'C'), 1);
+
+  check('cannot nest a folder into itself', canNest(PC, 'P', 'P'), false);
+  check('cannot nest a parent into its own child', canNest(PC, 'P', 'C'), false);
+  check('can nest a sibling in', canNest([...PC, folder('S')], 'S', 'C'), true);
+  check('unparenting to top level is always allowed', canNest(PC, 'C', null), true);
+
+  // The depth cap counts the moved subtree's own height, not just the target.
+  const deep = [folder('P'), nest('C', 'P'), nest('G', 'C'), folder('S'), nest('S2', 'S')];
+  check(`cap is ${MAX_FOLDER_DEPTH}`, MAX_FOLDER_DEPTH, 3);
+  check('cannot nest below the deepest allowed level', canNest(deep, 'S', 'G'), false);
+  check('cannot nest a 2-tall subtree under a depth-2 folder', canNest(deep, 'S', 'C'), false);
+  check('can nest a 1-tall folder under a depth-2 folder', canNest(deep, 'S2', 'C'), true);
+  check('eligibleParents excludes self and descendants',
+    eligibleParents(PC, 'P').map((f) => f.id).join(','), '');
+  check('eligibleParents offers a legal target',
+    eligibleParents([...PC, folder('S')], 'S').map((f) => f.id).sort().join(','), 'C,P');
+
+  // ── nesting: subtree contiguity ────────────────────────────────────────────
+  check('gathering pulls a scattered subtree together',
+    show(gatherSubtree(book('a:P x b:C y'), PC, 'P')), 'a:P b:C x y');
+  check('gathering anchors at the earliest member',
+    show(gatherSubtree(book('x a:P y b:C'), PC, 'P')), 'x a:P b:C y');
+  check('gathering orders parent members before child members',
+    show(gatherSubtree(book('b:C a:P'), PC, 'P')), 'a:P b:C');
+  check('gathering an empty subtree is a no-op',
+    show(gatherSubtree(book('a b'), PC, 'P')), 'a b');
+
+  const reparented = setFolderParent(book('a:P x b:S y'), [folder('P'), folder('S')], 'S', 'P');
+  check('re-parenting sets the parent', reparented.folders.find((f) => f.id === 'S').parentId, 'P');
+  check('re-parenting gathers the subtree', show(reparented.entries), 'a:P b:S x y');
+  check('an illegal re-parent returns null', setFolderParent(book('a:P'), PC, 'P', 'C'), null);
+
+  // Un-nesting re-gathers the tree the folder left, so the old parent doesn't
+  // keep a hole where the child's entries used to sit.
+  const unnested = setFolderParent(book('a:P b:C x'), PC, 'C', null);
+  check('un-nesting clears the parent', unnested.folders.find((f) => f.id === 'C').parentId, null);
+  check('un-nesting keeps both trees contiguous', show(unnested.entries), 'a:P b:C x');
+
+  // Moving between two trees gathers both.
+  const twoTrees = [folder('P'), nest('C', 'P'), folder('Q')];
+  const moved = setFolderParent(book('a:P x b:C y c:Q'), twoTrees, 'C', 'Q');
+  check('moving between trees re-parents', moved.folders.find((f) => f.id === 'C').parentId, 'Q');
+  check('moving between trees gathers both', show(moved.entries), 'a:P x y c:Q b:C');
+
+  // ── nesting: inherited collapse ────────────────────────────────────────────
+  check('a child inherits a condensed ancestor',
+    effectiveCollapseState(COLLAPSE_STATES.CONDENSED, COLLAPSE_STATES.FULL), COLLAPSE_STATES.CONDENSED);
+  check('a child keeps its own state when it is more collapsed',
+    effectiveCollapseState(COLLAPSE_STATES.CONDENSED, COLLAPSE_STATES.TUCKED), COLLAPSE_STATES.TUCKED);
+  check('nothing inherited leaves the child alone',
+    effectiveCollapseState(COLLAPSE_STATES.FULL, COLLAPSE_STATES.CONDENSED), COLLAPSE_STATES.CONDENSED);
+  check('a tucked ancestor outranks everything',
+    effectiveCollapseState(COLLAPSE_STATES.TUCKED, COLLAPSE_STATES.FULL), COLLAPSE_STATES.TUCKED);
+
   // ── removeFolder ───────────────────────────────────────────────────────────
   const removed = removeFolder(book('a:F1 b c:F1'), F1, 'F1');
   check('removing a folder unfiles its members', show(removed.entries), 'a b c');
   check('removing a folder keeps every entry', removed.entries.length, 3);
   check('removing a folder drops it from the list', removed.folders.length, 0);
+  // Deleting never destroys a subtree: children rise to the deleted folder's
+  // own parent, so a middle deletion leaves them inside the grandparent.
+  const G = [folder('P'), nest('C', 'P'), nest('X', 'C')];
+  const midGone = removeFolder(book('a:X'), G, 'C');
+  check('deleting a middle folder promotes its children to the grandparent',
+    midGone.folders.find((f) => f.id === 'X').parentId, 'P');
+  check('deleting a middle folder keeps the rest of the tree', midGone.folders.length, 2);
+  check('deleting a top folder promotes its children to top level',
+    removeFolder(book('a:C'), PC, 'P').folders.find((f) => f.id === 'C').parentId, null);
+  check('deleting never loses an entry', removeFolder(book('a:X b'), G, 'C').entries.length, 2);
+
   check('removing leaves other folders alone',
     removeFolder(book('a:F1 b:F2'), [folder('F1'), folder('F2')], 'F1').folders.length, 1);
 

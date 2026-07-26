@@ -522,6 +522,105 @@ const SCENARIOS = [
     check('no folderId leaked into export', exported.some((e) => 'folderId' in e), false);
     check('no folders key on the book', 'folders' in book, false);
   }),
+  // ── 11C: nesting, inherited collapse, collapse-all ───────────────────────
+  scenario('Folders: nesting, depth cap, and inherited collapse', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+
+    // Three folders. Each takes the top two cards, which after the previous
+    // move are the same two entries — so World and Locations end up holding no
+    // entries of their own, only a child folder. That's the case nesting had to
+    // solve: a parent with nothing to anchor to in entries[].
+    async function makeFolder(name) {
+      await selectCards(page, '.build-panel', [0, 1]);
+      await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+      await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+      await settle(page, 300);
+      await page.keyboard.type(name);
+      await page.keyboard.press('Enter');
+      await settle(page, 250);
+    }
+    await makeFolder('World');
+    await makeFolder('Locations');
+    await makeFolder('Interiors');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 250);
+
+    async function nestInto(child, parent) {
+      await page.locator('.folder-header', { hasText: child }).first().locator('.folder-nest-btn').click();
+      await settle(page, 200);
+      await page.locator('.folder-nest-item', { hasText: parent }).first().click();
+      await settle(page, 350);
+    }
+    await nestInto('Interiors', 'Locations');
+    await nestInto('Locations', 'World');
+
+    check('all three folders still exist', await page.locator('.folder-header').count(), 3);
+    check('nesting is three levels deep',
+      await page.locator('.folder-entries .folder-entries .folder-entries .entry-card').count(), 2);
+    // A parent holding only a child folder still shows the subtree total.
+    check('the outer folder counts its whole subtree',
+      (await page.locator('.folder-header', { hasText: 'World' }).first().locator('.folder-count').innerText()).trim(), '2');
+
+    // The cap refuses a fourth level, and a cycle is impossible.
+    await page.locator('.folder-header', { hasText: 'World' }).first().locator('.folder-nest-btn').click();
+    await settle(page, 200);
+    const opts = await page.locator('.folder-nest-menu .folder-nest-item').allInnerTexts();
+    check('the outermost folder can only go to top level', opts.join(','), 'Top level');
+    check('and the cap is explained', await page.locator('.folder-nest-empty').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    // Condensing an ancestor compacts the subtree below it...
+    const worldCycle = page.locator('.folder-header', { hasText: 'World' }).first().locator('.folder-collapse-btn');
+    await worldCycle.click();
+    await settle(page, 300);
+    check('condensing the outer folder condenses its descendants',
+      await page.locator('.entry-card--condensed').count(), 2);
+    // ...without writing to them: opening it back up restores full size.
+    await worldCycle.click();
+    await settle(page, 250);
+    await worldCycle.click();
+    await settle(page, 250);
+    check('cycling back to full restores the descendants',
+      await page.locator('.entry-card--condensed').count(), 0);
+
+    // Tucking an ancestor hides the whole subtree, headers included.
+    await worldCycle.click();
+    await worldCycle.click();
+    await settle(page, 350);
+    check('tucking the outer folder hides the inner headers',
+      await page.locator('.folder-header').count(), 1);
+    check('and hides the entries under it', await page.locator('.entry-card').count(), 32);
+  }),
+
+  scenario('Folders: Collapse Folders toggles every folder', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    for (const name of ['One', 'Two']) {
+      await selectCards(page, '.build-panel', [0, 1]);
+      await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+      await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+      await settle(page, 300);
+      await page.keyboard.type(name);
+      await page.keyboard.press('Enter');
+      await settle(page, 250);
+    }
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 250);
+
+    const toggle = page.locator('.filter-action-btn', { hasText: /Collapse Folders|Open Folders/ });
+    check('the control appears once folders exist', await toggle.count(), 1);
+    await toggle.click();
+    await settle(page, 350);
+    check('every folder tucks', await page.locator('.folder-entries .entry-card').count(), 0);
+    check('the label flips', (await toggle.innerText()).trim(), 'Open Folders');
+    await toggle.click();
+    await settle(page, 350);
+    check('every folder opens again', await page.locator('.folder-entries .entry-card').count(), 2);
+    check('no entries were lost', await page.locator('.entry-card').count(), count);
+  }),
+
   // ── Crosstalk / reference mode ───────────────────────────────────────────
   // Uses pairCrosstalk(): the primary fixture active, the derived variant book
   // as the read-only reference. Counts come from the variant generator so the

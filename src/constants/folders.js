@@ -55,5 +55,23 @@ export const COLLAPSE_GLYPHS = {
 
 export const NEW_FOLDER_NAME = 'New Folder';
 
+// How many folder levels deep nesting may go (1 = top level). Each level costs
+// 21px of indent, and a crosstalk pane is only ~360px wide, so an uncapped tree
+// would let a user nest their way into rows too narrow to read. Three covers
+// the Reaper-style master → group → contents shape with room to spare.
+export const MAX_FOLDER_DEPTH = 3;
+
+// Collapse states ranked by how much they hide. A child renders at the most
+// collapsed of its own state and whatever it inherits from an ancestor, so a
+// condensed parent compacts its subtree without overwriting what each child
+// had set for itself.
+export const COLLAPSE_SEVERITY = {
+  [COLLAPSE_STATES.FULL]:      0,
+  [COLLAPSE_STATES.CONDENSED]: 1,
+  [COLLAPSE_STATES.TUCKED]:    2,
+};
+
+export const TOP_LEVEL_LABEL = 'Top level';
+
 // Label for the pseudo-target that clears an entry's folder assignment.
 export const NO_FOLDER_LABEL = 'No folder';

@@ -10,7 +10,7 @@ import { useFolders }    from '../../hooks/use-folders.js';
 import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { useUi }         from '../../hooks/use-ui.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
-import { buildRenderItems } from '../../services/folder-tree.js';
+import { buildRenderItems, effectiveCollapseState } from '../../services/folder-tree.js';
 import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { COLLAPSE_STATES } from '../../constants/folders.js';
 
@@ -37,14 +37,14 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   // `showFolders` goes false under the cross-match sorts, where regrouping by
   // folder would break the matched/unmatched partition the sort exists to show.
   // Passing no folders renders every entry loose, in pure sort order.
-  const renderItems = buildRenderItems(entries, showFolders ? folders : [], {
+  const renderTree = buildRenderItems(entries, showFolders ? folders : [], {
     // An empty folder can't anchor to a member, so it would otherwise trail
     // every search as a row of noise. Hide those while a search is narrowing
     // the list; they come back the moment the query clears.
     hideEmptyFolders: searchActive,
   });
 
-  if (renderItems.length === 0) {
+  if (renderTree.length === 0) {
     return (
       <div className="entry-list-empty">
         No entries yet. Press {displayChord('new_entry')} or click + to add one.
@@ -94,64 +94,71 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     );
   }
 
-  const items = [];
-  let position = 0;   // running 1-based badge number, following what's on screen
-  let lastType = null;
+  // Walk the render tree. `position` is a running badge number that follows
+  // what's on screen, and `inherited` carries an ancestor's collapse state down
+  // — a condensed parent compacts its subtree without writing to any child.
+  let position = 0;
 
-  renderItems.forEach((item) => {
-    if (item.kind === 'folder') {
-      const { folder } = item;
-      // A tucked folder opens itself while a search is running — otherwise the
-      // search silently fails to surface anything filed inside one. It tucks
-      // again the moment the query clears.
-      const tucked = folder.collapseState === COLLAPSE_STATES.TUCKED && !searchActive;
-      // Condensed shrinks each member to a single line. A search leaves it
-      // alone — a condensed row still shows the entry name, which is enough to
-      // find the match by, unlike a tucked folder that shows nothing at all.
-      const density = folder.collapseState === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full';
-      items.push(
-        <div
-          key={`folder-${folder.id}`}
-          className="folder-block"
-          style={{ '--folder-color': folder.color }}
-        >
-          <FolderHeader folder={folder} count={item.entries.length} />
-          {!tucked && (
-            <div className="folder-entries">
-              {item.entries.map((entry) => { position += 1; return renderEntry(entry, position, density); })}
-            </div>
-          )}
-        </div>
-      );
-      // Tucked entries still occupy their numbers so badges don't renumber as
-      // folders open and close.
-      if (tucked) position += item.entries.length;
-      // A folder breaks the top-level type run — the next loose entry of the
-      // same type gets its header back.
-      lastType = null;
-      return;
+  function renderItems(list, inherited) {
+    const out = [];
+    let lastType = null;
+
+    for (const item of list) {
+      if (item.kind === 'folder') {
+        const { folder } = item;
+        const state  = effectiveCollapseState(inherited, folder.collapseState);
+        const tucked = state === COLLAPSE_STATES.TUCKED && !searchActive;
+        const density = state === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full';
+
+        out.push(
+          <div
+            key={`folder-${folder.id}`}
+            className="folder-block"
+            style={{ '--folder-color': folder.color }}
+          >
+            <FolderHeader folder={folder} count={item.totalCount} effectiveState={state} />
+            {!tucked && item.children.length > 0 && (
+              <div className="folder-entries">
+                {renderItems(item.children, state)}
+              </div>
+            )}
+          </div>
+        );
+
+        // Tucked entries still consume their numbers, so badges don't renumber
+        // as folders open and close.
+        if (tucked) position += item.totalCount;
+        // A folder breaks the type run at this level — the next loose entry of
+        // the same type gets its header back.
+        lastType = null;
+        continue;
+      }
+
+      const { entry } = item;
+      // Type sub-headers group the entries at whatever level they sit — top
+      // level, or inside a folder (plan decision 2).
+      if (groupByType && entry.type !== lastType) {
+        const typeDef = ENTRY_TYPES.find((t) => t.id === entry.type);
+        out.push(
+          <div
+            key={`group-${entry.type}-${position}`}
+            className="type-group-header"
+            style={{ '--type-color': typeDef?.color ?? '#9ba1ad' }}
+          >
+            {typeDef?.label ?? entry.type}
+          </div>
+        );
+        lastType = entry.type;
+      }
+
+      position += 1;
+      out.push(renderEntry(entry, position, inherited === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full'));
     }
 
-    const { entry } = item;
-    // Type sub-headers inside folders are a later sub-phase; here they group
-    // the top-level stream only.
-    if (groupByType && entry.type !== lastType) {
-      const typeDef = ENTRY_TYPES.find((t) => t.id === entry.type);
-      items.push(
-        <div
-          key={`group-${entry.type}-${position}`}
-          className="type-group-header"
-          style={{ '--type-color': typeDef?.color ?? '#9ba1ad' }}
-        >
-          {typeDef?.label ?? entry.type}
-        </div>
-      );
-      lastType = entry.type;
-    }
+    return out;
+  }
 
-    position += 1;
-    items.push(renderEntry(entry, position));
-  });
+  const items = renderItems(renderTree, COLLAPSE_STATES.FULL);
 
   // A book with folders but no entries still renders the folders — keep the
   // add-an-entry hint underneath them so the list is never a dead end.

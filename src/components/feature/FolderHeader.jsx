@@ -11,14 +11,17 @@ import {
   COLLAPSE_LABELS,
   COLLAPSE_STATES,
   NEW_FOLDER_NAME,
+  TOP_LEVEL_LABEL,
+  MAX_FOLDER_DEPTH,
 } from '../../constants/folders.js';
 import { nextCollapseState } from '../../services/folder-tree.js';
 
-export function FolderHeader({ folder, count }) {
-  const { renameFolder, setFolderColor, deleteFolder, cycleCollapse } = useFolders();
+export function FolderHeader({ folder, count, effectiveState }) {
+  const { renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder, parentOptions } = useFolders();
   const [draftName, setDraftName] = useState(folder.name);
   const [editing, setEditing]     = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [nestOpen, setNestOpen]     = useState(false);
   const inputRef = useRef(null);
   const rootRef  = useRef(null);
   const pendingFocusFolderId    = useUi((s) => s.pendingFocusFolderId);
@@ -45,15 +48,19 @@ export function FolderHeader({ folder, count }) {
   }, [editing]);
 
   useDismissLayer(`folder-color-${folder.id}`, pickerOpen, DISMISS_PRIORITY.popover, () => setPickerOpen(false));
+  useDismissLayer(`folder-nest-${folder.id}`, nestOpen, DISMISS_PRIORITY.popover, () => setNestOpen(false));
 
   useEffect(() => {
-    if (!pickerOpen) return undefined;
+    if (!pickerOpen && !nestOpen) return undefined;
     function onMouseDown(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setPickerOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setPickerOpen(false);
+        setNestOpen(false);
+      }
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [pickerOpen]);
+  }, [pickerOpen, nestOpen]);
 
   // Rename commits on blur / Enter — one history step per edit session rather
   // than one per keystroke. Escape reverts to the stored name.
@@ -69,9 +76,15 @@ export function FolderHeader({ folder, count }) {
     if (e.key === 'Escape') { e.preventDefault(); setDraftName(folder.name); setEditing(false); }
   }
 
-  const isTucked = folder.collapseState === COLLAPSE_STATES.TUCKED;
-  const glyph    = COLLAPSE_GLYPHS[folder.collapseState] ?? COLLAPSE_GLYPHS[COLLAPSE_STATES.FULL];
-  const nextState = nextCollapseState(folder.collapseState);
+  // A folder renders at the more collapsed of its own state and whatever it
+  // inherits; the header reflects what's actually on screen, while the cycle
+  // button still advances the folder's OWN state.
+  const shownState = effectiveState ?? folder.collapseState;
+  const isTucked   = shownState === COLLAPSE_STATES.TUCKED;
+  const inherited  = shownState !== folder.collapseState;
+  const glyph      = COLLAPSE_GLYPHS[shownState] ?? COLLAPSE_GLYPHS[COLLAPSE_STATES.FULL];
+  const nextState  = nextCollapseState(folder.collapseState);
+  const parents    = nestOpen ? parentOptions(folder.id) : [];
 
   return (
     <div
@@ -82,7 +95,9 @@ export function FolderHeader({ folder, count }) {
       <button
         className="folder-collapse-btn"
         onClick={() => cycleCollapse(folder.id)}
-        title={`${COLLAPSE_LABELS[folder.collapseState] ?? COLLAPSE_LABELS[COLLAPSE_STATES.FULL]} — click for: ${COLLAPSE_LABELS[nextState].toLowerCase()}`}
+        title={inherited
+          ? `${COLLAPSE_LABELS[shownState]} (inherited from a parent folder) — click for: ${COLLAPSE_LABELS[nextState].toLowerCase()}`
+          : `${COLLAPSE_LABELS[shownState] ?? COLLAPSE_LABELS[COLLAPSE_STATES.FULL]} — click for: ${COLLAPSE_LABELS[nextState].toLowerCase()}`}
         aria-expanded={!isTucked}
         type="button"
       >
@@ -122,6 +137,16 @@ export function FolderHeader({ folder, count }) {
       </span>
 
       <button
+        className="folder-nest-btn"
+        onClick={() => { setNestOpen((o) => !o); setPickerOpen(false); }}
+        title="Move this folder inside another folder"
+        aria-label={`Move folder ${folder.name || NEW_FOLDER_NAME} into another folder`}
+        type="button"
+      >
+        ⇥
+      </button>
+
+      <button
         className="folder-delete-btn"
         onClick={() => deleteFolder(folder.id)}
         title="Delete this folder — the entries inside move back to the top level"
@@ -129,6 +154,32 @@ export function FolderHeader({ folder, count }) {
       >
         ×
       </button>
+
+      {nestOpen && (
+        <div className="folder-nest-menu">
+          <button
+            className={`folder-nest-item${!folder.parentId ? ' folder-nest-item--active' : ''}`}
+            onClick={() => { nestFolder(folder.id, null); setNestOpen(false); }}
+            type="button"
+          >
+            {TOP_LEVEL_LABEL}
+          </button>
+          {parents.map((f) => (
+            <button
+              key={f.id}
+              className={`folder-nest-item${f.id === folder.parentId ? ' folder-nest-item--active' : ''}`}
+              onClick={() => { nestFolder(folder.id, f.id); setNestOpen(false); }}
+              type="button"
+            >
+              <span className="folder-nest-dot" style={{ background: f.color }} />
+              {f.name || NEW_FOLDER_NAME}
+            </button>
+          ))}
+          {parents.length === 0 && (
+            <div className="folder-nest-empty">No folder can hold this one — the nesting limit is {MAX_FOLDER_DEPTH} levels.</div>
+          )}
+        </div>
+      )}
 
       {pickerOpen && (
         <div className="folder-color-picker">

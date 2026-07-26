@@ -44,7 +44,16 @@ Builder-only organization layer — Reaper-style nested, collapsible, colored fo
 8. **Undoability:** structural ops (create/delete/move-entry) snapshot to history; collapse toggles don't.
 9. **Desktop-first; mobile folders are a separate deferred design.**
 
-**Sub-phases:** ~~11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states)~~ **shipped 2026-07-25** · ~~11B condensed compact-card variant~~ **shipped 2026-07-26** · 11C nesting + type-in-folder + collapse-all · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11C Medium–High · 11D Medium · 11E High.
+**Sub-phases:** ~~11A foundation (data model, folder CRUD, bulk + per-entry assignment, full + tucked states)~~ **shipped 2026-07-25** · ~~11B condensed compact-card variant~~ **shipped 2026-07-26** · ~~11C nesting + type-in-folder + collapse-all~~ **shipped 2026-07-26** · 11D search/filter-by-folder + sort reconciliation · 11E drag-and-drop (highest risk: two-part `folderId`-write + `entries[]`-splice on a drag). Complexity: 11D Medium · 11E High.
+
+**Decisions taken during 11C (2026-07-26):**
+20. **Depth capped at 3** (`MAX_FOLDER_DEPTH`). Each level costs 21px of indent and a crosstalk pane is only ~360px wide; at depth 8 a condensed row has ~46px left for the name. Three covers the Reaper master → group → contents shape from #116 with room.
+21. **A folder anchors at the earliest display position anywhere in its subtree.** The 11A rule (anchor at first member) breaks under nesting, because a parent can hold no entries of its own — only child folders — and so has no position in `entries[]`. This is the minimal extension that keeps Model A intact.
+22. **Nesting re-gathers both trees in `entries[]`** (`setFolderParent` → `gatherSubtree`), extending decision 10 from a folder's members to a whole subtree. `gatherSubtree`'s `anchorIgnoring` makes the moved folder travel *to* its destination rather than dragging the destination up to itself — same direction as filing entries.
+23. **Collapse inherits by severity, never by writing.** A child renders at the more collapsed of its own state and its ancestor's (`effectiveCollapseState`), so a condensed parent compacts its subtree while each child keeps whatever it had set. Opening the parent restores those choices.
+24. **Deleting a folder promotes its children to the deleted folder's parent**, not to the top level — so removing a middle folder leaves its children inside the grandparent. Reduces to "top level" for a top-level folder, which is what 11A's note meant.
+25. **`buildRenderItems` returns a tree**, not a flat list: `{ kind:'folder', folder, depth, count, totalCount, children }`. The header shows `totalCount` (the whole subtree), since that's what tucking hides. `flattenRenderItems` gives a flat view where one is needed.
+26. **Collapse Folders is a two-state global toggle** (tuck all / open all), shown only when folders exist and hidden while a cross-match sort suppresses folders.
 
 **Decisions taken during 11B (2026-07-26):**
 15. **Condensed is a `density` prop on `EntryCard`, not a separate component.** `EntryCard` already branches on collapsed/expanded, mobile/desktop, compare, and reference-mirror; a standalone compact card would have had to re-implement select mode, crosstalk badges, health, and rollback, and the two copies would drift.

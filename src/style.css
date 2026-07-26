@@ -2064,6 +2064,73 @@ img.logo-icon {
   gap: 3px;
 }
 
+/* ---- Nesting ----
+   Depth is capped (see MAX_FOLDER_DEPTH) because each level costs 21px of
+   indent and a crosstalk pane is only ~360px wide. */
+.folder-nest-btn {
+  flex-shrink: 0;
+  padding: 0 5px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.folder-nest-btn:hover { color: var(--text); }
+
+.folder-nest-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 4px;
+  z-index: 20;
+  min-width: 160px;
+  max-width: 240px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.folder-nest-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.folder-nest-item:hover { background: var(--surface3); }
+.folder-nest-item--active { color: var(--blue); }
+.folder-nest-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.folder-nest-empty {
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+/* A nested folder block sits inside its parent's indent rail, so it needs no
+   extra margin of its own — the rail already carries the offset. */
+.folder-entries > .folder-block { margin-left: 0; }
+
 /* ---- Per-entry "Move to folder" control (entry card footer) ---- */
 .move-to-folder { position: relative; }
 

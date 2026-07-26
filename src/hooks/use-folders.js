@@ -16,7 +16,11 @@ import {
   countEntriesInFolder,
   getFolder,
   foldersOf,
+  setFolderParent,
+  eligibleParents,
+  depthOf,
 } from '../services/folder-tree.js';
+import { COLLAPSE_STATES } from '../constants/folders.js';
 
 export function useFolders() {
   const lorebooks        = useLorebookStore((s) => s.lorebooks);
@@ -94,6 +98,28 @@ export function useFolders() {
     updateActiveFolders(updateFolder(folders, id, { collapseState }));
   }
 
+  // Nest a folder under another (null = top level). Also re-gathers entries[]
+  // on both sides of the move so array order keeps matching the screen. No-op
+  // when the move would make a cycle or breach the depth cap.
+  function nestFolder(folderId, parentId) {
+    const folder = getFolder(folders, folderId);
+    if (!folder || (folder.parentId ?? null) === (parentId ?? null)) return;
+    const next = setFolderParent(entries, folders, folderId, parentId ?? null);
+    if (!next) return;
+    snapshot();
+    updateActiveEntriesAndFolders(next.entries, next.folders);
+  }
+
+  // Global folder collapse. View state, so no snapshot — same rule as the
+  // per-folder cycle. Two-state: anything not tucked means "tuck everything",
+  // otherwise open everything back up.
+  function toggleAllFolders() {
+    if (folders.length === 0) return;
+    const anyOpen = folders.some((f) => f.collapseState !== COLLAPSE_STATES.TUCKED);
+    const next = anyOpen ? COLLAPSE_STATES.TUCKED : COLLAPSE_STATES.FULL;
+    updateActiveFolders(folders.map((f) => ({ ...f, collapseState: next })));
+  }
+
   // Move entries into a folder (or out of one, with folderId === null). Also
   // repositions them in entries[] so a folder's members stay contiguous.
   function moveEntriesToFolder(ids, folderId) {
@@ -120,6 +146,13 @@ export function useFolders() {
     // True when the active sort is hiding the folder layer — surfaces in the UI
     // so creating a folder can't silently produce something invisible.
     foldersSuppressed: suppressesFolders(sortMode),
+    // True when every folder is tucked — drives the global toggle's label.
+    allFoldersTucked: folders.length > 0
+      && folders.every((f) => f.collapseState === COLLAPSE_STATES.TUCKED),
+    parentOptions: (folderId) => eligibleParents(folders, folderId),
+    folderDepth:   (folderId) => depthOf(folders, folderId),
+    nestFolder,
+    toggleAllFolders,
     createFolder,
     createFolderWithEntries,
     renameFolder,

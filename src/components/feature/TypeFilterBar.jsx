@@ -18,7 +18,7 @@ export function TypeFilterBar({ entries }) {
   const collapseAllEntries = useUi((s) => s.collapseAllEntries);
   const setGroupByType     = useUi((s) => s.setGroupByType);
   const isMobile           = useMobile();
-  const { createFolder, foldersSuppressed } = useFolders();
+  const { createFolder, foldersSuppressed, hasFolders, allFoldersTucked, toggleAllFolders } = useFolders();
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -169,6 +169,19 @@ export function TypeFilterBar({ entries }) {
           onClick={bulkExpanded ? collapseAllEntries : expandAllEntries}
         >
           {bulkExpanded ? 'Collapse All' : 'Expand All'}
+        </button>
+      )}
+
+      {/* Global folder collapse — only worth a slot once folders exist */}
+      {!isMobile && hasFolders && !foldersSuppressed && (
+        <button
+          className="filter-action-btn"
+          onClick={toggleAllFolders}
+          title={allFoldersTucked
+            ? 'Open every folder back to full size'
+            : 'Tuck every folder shut'}
+        >
+          {allFoldersTucked ? 'Open Folders' : 'Collapse Folders'}
         </button>
       )}
 
