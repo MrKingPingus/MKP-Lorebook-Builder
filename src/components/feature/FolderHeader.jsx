@@ -17,7 +17,11 @@ import {
 import { nextCollapseState } from '../../services/folder-tree.js';
 
 export function FolderHeader({ folder, count, effectiveState }) {
-  const { renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder, parentOptions } = useFolders();
+  const {
+    renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder,
+    parentOptions, canCreateParentFor, createFolderAsParentOf,
+    collapseCycle, renderedCollapseState,
+  } = useFolders();
   const [draftName, setDraftName] = useState(folder.name);
   const [editing, setEditing]     = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -79,11 +83,11 @@ export function FolderHeader({ folder, count, effectiveState }) {
   // A folder renders at the more collapsed of its own state and whatever it
   // inherits; the header reflects what's actually on screen, while the cycle
   // button still advances the folder's OWN state.
-  const shownState = effectiveState ?? folder.collapseState;
+  const shownState = effectiveState ?? renderedCollapseState(folder.collapseState);
   const isTucked   = shownState === COLLAPSE_STATES.TUCKED;
-  const inherited  = shownState !== folder.collapseState;
+  const inherited  = shownState !== renderedCollapseState(folder.collapseState);
   const glyph      = COLLAPSE_GLYPHS[shownState] ?? COLLAPSE_GLYPHS[COLLAPSE_STATES.FULL];
-  const nextState  = nextCollapseState(folder.collapseState);
+  const nextState  = nextCollapseState(renderedCollapseState(folder.collapseState), collapseCycle);
   const parents    = nestOpen ? parentOptions(folder.id) : [];
 
   return (
@@ -175,8 +179,21 @@ export function FolderHeader({ folder, count, effectiveState }) {
               {f.name || NEW_FOLDER_NAME}
             </button>
           ))}
-          {parents.length === 0 && (
+          {parents.length === 0 && !canCreateParentFor(folder.id) && (
             <div className="folder-nest-empty">No folder can hold this one — the nesting limit is {MAX_FOLDER_DEPTH} levels.</div>
+          )}
+          {canCreateParentFor(folder.id) && (
+            <>
+              <div className="folder-nest-divider" />
+              <button
+                className="folder-nest-item"
+                onClick={() => { createFolderAsParentOf(folder.id); setNestOpen(false); }}
+                title="Create a folder and put this one inside it"
+                type="button"
+              >
+                ＋ New folder
+              </button>
+            </>
           )}
         </div>
       )}

@@ -7,8 +7,11 @@ import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { suppressesFolders } from '../constants/sort-modes.js';
+import { MAX_FOLDER_DEPTH } from '../constants/folders.js';
 import {
   createFolder as makeFolder,
+  clampCollapseState,
+  subtreeHeight,
   assignEntriesToFolder,
   removeFolder,
   updateFolder,
@@ -20,7 +23,8 @@ import {
   eligibleParents,
   depthOf,
 } from '../services/folder-tree.js';
-import { COLLAPSE_STATES } from '../constants/folders.js';
+import { COLLAPSE_STATES, COLLAPSE_CYCLES, DEFAULT_COLLAPSE_STAGES } from '../constants/folders.js';
+import { useSettingsStore } from '../state/settings-store.js';
 
 export function useFolders() {
   const lorebooks        = useLorebookStore((s) => s.lorebooks);
@@ -30,6 +34,8 @@ export function useFolders() {
   const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
   const sortMode         = useUiStore((s) => s.sortMode);
   const setPendingFocusFolderId = useUiStore((s) => s.setPendingFocusFolderId);
+  const collapseStages = useSettingsStore((s) => s.folderCollapseStages);
+  const cycle = COLLAPSE_CYCLES[collapseStages] ?? COLLAPSE_CYCLES[DEFAULT_COLLAPSE_STAGES];
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
   const entries = activeLorebook?.entries ?? [];
@@ -87,8 +93,10 @@ export function useFolders() {
   function cycleCollapse(id) {
     const folder = getFolder(folders, id);
     if (!folder) return;
+    // Advance from what's actually rendering, so a folder left condensed after
+    // a switch to two stages moves on rather than sticking.
     updateActiveFolders(updateFolder(folders, id, {
-      collapseState: nextCollapseState(folder.collapseState),
+      collapseState: nextCollapseState(clampCollapseState(folder.collapseState, cycle), cycle),
     }));
   }
 
@@ -108,6 +116,26 @@ export function useFolders() {
     if (!next) return;
     snapshot();
     updateActiveEntriesAndFolders(next.entries, next.folders);
+  }
+
+  // Create a folder and drop this one inside it — "＋ New folder" from a
+  // folder's nest menu. Only legal while the subtree would still fit under the
+  // depth cap once a new level sits above it.
+  function createFolderAsParentOf(folderId) {
+    const folder = getFolder(folders, folderId);
+    if (!folder || !canCreateParentFor(folderId)) return;
+    snapshot();
+    const parent = makeFolder(folders, {});
+    const withParent = [...folders, parent];
+    const next = setFolderParent(entries, withParent, folderId, parent.id);
+    if (!next) return;
+    updateActiveEntriesAndFolders(next.entries, next.folders);
+    setPendingFocusFolderId(parent.id);
+    return parent;
+  }
+
+  function canCreateParentFor(folderId) {
+    return subtreeHeight(folders, folderId) + 1 <= MAX_FOLDER_DEPTH;
   }
 
   // Global folder collapse. View state, so no snapshot — same rule as the
@@ -150,6 +178,11 @@ export function useFolders() {
     allFoldersTucked: folders.length > 0
       && folders.every((f) => f.collapseState === COLLAPSE_STATES.TUCKED),
     parentOptions: (folderId) => eligibleParents(folders, folderId),
+    canCreateParentFor,
+    createFolderAsParentOf,
+    // The active collapse cycle, so the header can render only offered states.
+    collapseCycle: cycle,
+    renderedCollapseState: (state) => clampCollapseState(state, cycle),
     folderDepth:   (folderId) => depthOf(folders, folderId),
     nestFolder,
     toggleAllFolders,

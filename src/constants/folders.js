@@ -31,13 +31,23 @@ export const COLLAPSE_STATES = {
 
 export const DEFAULT_COLLAPSE_STATE = COLLAPSE_STATES.FULL;
 
-// The order the header chevron cycles through, mirroring Reaper's three-stage
-// folder button: full size → compact rows → hidden entirely.
-export const COLLAPSE_CYCLE = [
-  COLLAPSE_STATES.FULL,
-  COLLAPSE_STATES.CONDENSED,
-  COLLAPSE_STATES.TUCKED,
+// The order the header chevron cycles through. Three-stage mirrors Reaper's
+// folder button (full size → compact rows → hidden entirely); two-stage drops
+// the middle step for people who only ever want open or shut. Chosen in
+// Settings → Folders; see `folderCollapseStages`.
+export const COLLAPSE_CYCLES = {
+  three: [COLLAPSE_STATES.FULL, COLLAPSE_STATES.CONDENSED, COLLAPSE_STATES.TUCKED],
+  two:   [COLLAPSE_STATES.FULL, COLLAPSE_STATES.TUCKED],
+};
+
+export const DEFAULT_COLLAPSE_STAGES = 'three';
+
+export const COLLAPSE_STAGE_OPTIONS = [
+  { id: 'three', label: 'Three stages (full · condensed · hidden)' },
+  { id: 'two',   label: 'Two stages (full · hidden)' },
 ];
+
+export const COLLAPSE_CYCLE = COLLAPSE_CYCLES[DEFAULT_COLLAPSE_STAGES];
 
 // What each state does to the entries below the header, for tooltips.
 export const COLLAPSE_LABELS = {

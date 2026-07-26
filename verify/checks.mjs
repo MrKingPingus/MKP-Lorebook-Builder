@@ -3,7 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, pairCrosstalk, settle, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 function scenario(name, fn) {
@@ -619,6 +619,97 @@ const SCENARIOS = [
     await settle(page, 350);
     check('every folder opens again', await page.locator('.folder-entries .entry-card').count(), 2);
     check('no entries were lost', await page.locator('.entry-card').count(), count);
+  }),
+
+  scenario('Folders: new folders lead the list, and can create their own parent', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).first().click();
+    await settle(page, 300);
+    // A folder with nothing in it can't anchor to an entry, so it leads its
+    // level — right where you're looking after making one.
+    check('a new folder is the first row',
+      (await page.locator('.entry-list > *').first().getAttribute('class')), 'folder-block');
+    await page.keyboard.type('Outer');
+    await page.keyboard.press('Enter');
+    await settle(page, 250);
+
+    // The nest menu can mint the parent as well as pick one.
+    await page.locator('.folder-header', { hasText: 'Outer' }).first().locator('.folder-nest-btn').click();
+    await settle(page, 250);
+    check('the nest menu offers a new folder',
+      (await page.locator('.folder-nest-menu .folder-nest-item').allInnerTexts()).join(','),
+      'Top level,＋ New folder');
+    await page.locator('.folder-nest-item', { hasText: 'New folder' }).click();
+    await settle(page, 400);
+    check('a parent was created', await page.locator('.folder-header').count(), 2);
+    check('and the original sits inside it',
+      await page.locator('.folder-entries .folder-header').count(), 1);
+  }),
+
+  scenario('Folders: two-stage collapse setting skips condensed', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 250);
+
+    const cycle = page.locator('.folder-collapse-btn').first();
+    await cycle.click();
+    await settle(page, 300);
+    check('three stages condense first', await page.locator('.entry-card--condensed').count(), 2);
+    // Ride the three-stage cycle all the way back to full, so the switch below
+    // starts from a known open folder rather than a tucked one.
+    await cycle.click();
+    await settle(page, 250);
+    await cycle.click();
+    await settle(page, 300);
+    check('and cycle back round to full', await page.locator('.folder-entries .entry-card').count(), 2);
+
+    // Switch to two stages.
+    await openSettings(page);
+    const folderSettings = await openSettingsSection(page, 'Folders');
+    await folderSettings.locator('select.settings-select').first().selectOption('two');
+    await settle(page, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    await cycle.click();
+    await settle(page, 350);
+    check('two stages go straight to hidden', await page.locator('.folder-entries .entry-card').count(), 0);
+    check('and never condense', await page.locator('.entry-card--condensed').count(), 0);
+    await cycle.click();
+    await settle(page, 300);
+    check('and back to full', await page.locator('.folder-entries .entry-card').count(), 2);
+  }),
+
+  scenario('Folders: condensed rows can opt stats back in', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 250);
+    await page.locator('.folder-collapse-btn').first().click();
+    await settle(page, 300);
+    check('condensed sheds stats by default',
+      await page.locator('.entry-card--condensed .stats-badge').count(), 0);
+
+    await openSettings(page);
+    const folderSettings = await openSettingsSection(page, 'Folders');
+    await folderSettings.locator('label:has-text("Show entry stats on condensed rows") input').check();
+    await settle(page, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, 350);
+    check('the setting brings them back',
+      await page.locator('.entry-card--condensed .stats-badge').count(), 2);
+    check('rows are still condensed', await page.locator('.entry-card--condensed').count(), 2);
   }),
 
   // ── Crosstalk / reference mode ───────────────────────────────────────────

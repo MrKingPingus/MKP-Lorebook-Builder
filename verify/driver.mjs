@@ -121,13 +121,20 @@ export async function pairCrosstalk(page) {
 // Expand a Settings accordion section by its visible title. Collapsed sections
 // render no children at all, so this is a prerequisite for touching anything
 // inside one. No-op if it's already open.
+// Returns a locator SCOPED to that section, because several sections can be
+// open at once — an unscoped `.settings-select` reaches into whichever one
+// happens to come first in the DOM.
 export async function openSettingsSection(page, title) {
-  const header = page.locator('.settings-section-header', { hasText: title }).first();
-  await header.waitFor({ timeout: 4000 });
+  const section = page.locator('.settings-section', {
+    has: page.locator('.settings-section-title', { hasText: title }),
+  }).first();
+  await section.waitFor({ timeout: 4000 });
+  const header = section.locator('.settings-section-header').first();
   if ((await header.getAttribute('aria-expanded')) !== 'true') {
     await header.click();
     await settle(page, 150);
   }
+  return section;
 }
 
 // Click entry cards to select them, in select mode.

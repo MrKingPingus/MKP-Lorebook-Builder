@@ -45,6 +45,14 @@ export const DEFAULT_SETTINGS = {
   fabQuickMenuEnabled:      true,
   // Desktop: keep the menu panel open after importing a lorebook (mobile always closes)
   keepMenuOpenAfterImport:  false,
+  // Folder collapse stages: 'three' (full / condensed / hidden) or 'two'
+  // (full / hidden) for people who don't want the middle step. Only changes the
+  // cycle — a folder already condensed keeps its stored state and simply
+  // renders full until touched, so switching back restores it.
+  folderCollapseStages:     'three',
+  // Show the trigger/char stats on condensed rows, at a smaller size. Off by
+  // default: condensed exists to shed chrome.
+  condensedShowStats:       false,
   // Show the read-only reference panel beside the active panel for cross-book search/find-replace
   crosstalkEnabled:         false,
   // Crosstalk pane behaviour:

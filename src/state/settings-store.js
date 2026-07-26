@@ -20,6 +20,8 @@ export const useSettingsStore = create((set) => ({
   setTriggerDelimiter:         (triggerDelimiter)         => set({ triggerDelimiter }),
   setHotbarSlots:              (hotbarSlots)              => set({ hotbarSlots }),
   setEntryHeaderSize:          (entryHeaderSize)          => set({ entryHeaderSize }),
+  setFolderCollapseStages:     (folderCollapseStages)     => set({ folderCollapseStages }),
+  setCondensedShowStats:       (condensedShowStats)       => set({ condensedShowStats }),
   setFabSize:                  (fabSize)                  => set({ fabSize }),
   setFabCustomSize:            (fabCustomSize)            => set({ fabCustomSize }),
   setFabQuickMenuEnabled:      (fabQuickMenuEnabled)      => set({ fabQuickMenuEnabled }),

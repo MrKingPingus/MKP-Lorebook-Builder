@@ -8,7 +8,7 @@
 - `defaults.js` — default shapes for new entries, lorebooks, settings, window size
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
 - `sort-modes.js` — which sort modes suppress a grouping layer (`group-by-type`, folders) because they impose their own ordering
-- `folders.js` — folder swatch palette (`FOLDER_COLORS`), the collapse-state vocabulary (`full` / `condensed` / `tucked`) and the cycle the header chevron walks
+- `folders.js` — folder swatch palette, `MAX_FOLDER_DEPTH`, the collapse cycles (`COLLAPSE_CYCLES.three` / `.two`, chosen by the `folderCollapseStages` setting) (`FOLDER_COLORS`) and the collapse-state vocabulary (`full` / `condensed` / `tucked`)
 
 ## CSS / Theming
 

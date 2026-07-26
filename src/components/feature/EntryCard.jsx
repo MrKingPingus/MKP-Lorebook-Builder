@@ -69,7 +69,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
-  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize } = useSettings();
+  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -444,7 +444,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </button>
         )}
         <div className="entry-card-header-right">
-          {!hideEntryStats && !isCondensed && (
+          {!hideEntryStats && (!isCondensed || condensedShowStats) && (
             <StatsBadge
               triggerCount={entry.triggers.length}
               charCount={entry.description.length}

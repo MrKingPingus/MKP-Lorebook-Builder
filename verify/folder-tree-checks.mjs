@@ -28,8 +28,9 @@ import {
   gatherSubtree,
   setFolderParent,
   effectiveCollapseState,
+  clampCollapseState,
 } from '../src/services/folder-tree.js';
-import { COLLAPSE_STATES, MAX_FOLDER_DEPTH } from '../src/constants/folders.js';
+import { COLLAPSE_STATES, MAX_FOLDER_DEPTH, COLLAPSE_CYCLES } from '../src/constants/folders.js';
 
 // Compact readable shorthand: 'a:F1' = entry id 'a' filed in folder 'F1',
 // 'b' = entry id 'b', unfiled. Lets a whole book be written on one line.
@@ -134,21 +135,21 @@ export function runFolderTreeChecks() {
     flattenRenderItems(buildRenderItems(book('a:F1 b c:F1 d'), F1)).length, 4);
 
   // An id with no matching folder must read as top-level — that's what stops a
-  // history undo that removed a folder from orphaning its entries.
-  // `a` points at a folder that no longer exists, so it renders as a loose
-  // entry. F1 still trails as an empty folder — that part is correct.
+  // history undo that removed a folder from orphaning its entries. `a` points
+  // at a folder that no longer exists, so it renders as a loose entry; F1 leads
+  // as an empty folder.
   check('dangling folderId renders top-level',
-    showItems(buildRenderItems(book('a:GONE b'), F1)), 'a b [F1]');
+    showItems(buildRenderItems(book('a:GONE b'), F1)), '[F1] a b');
   check('dangling folderId is not swallowed by a real folder',
     showItems(buildRenderItems(book('a:GONE b:F1'), F1)), 'a [F1 b]');
 
-  // An empty folder has no member to anchor to, so it trails the list — that's
-  // what makes a freshly created folder visible at all.
-  check('empty folder trails the list',
-    showItems(buildRenderItems(book('a b'), F1)), 'a b [F1]');
-  check('empty folders trail in `order`',
+  // An empty folder has no member to anchor to, so it LEADS its level — a
+  // folder you just made lands at the top, where you're already looking.
+  check('empty folder leads the list',
+    showItems(buildRenderItems(book('a b'), F1)), '[F1] a b');
+  check('empty folders lead newest-first',
     showItems(buildRenderItems(book('a'), [folder('F2', { order: 2 }), folder('F1', { order: 1 })])),
-    'a [F1] [F2]');
+    '[F2] [F1] a');
   check('hideEmptyFolders drops them (search behaviour)',
     showItems(buildRenderItems(book('a b'), F1, { hideEmptyFolders: true })), 'a b');
   check('hideEmptyFolders keeps folders that do have matches',
@@ -186,8 +187,8 @@ export function runFolderTreeChecks() {
   check('direct count stays separate',
     buildRenderItems(book('a:P b:C'), PC)[0].count, 1);
 
-  check('an empty nested tree trails the list',
-    showItems(buildRenderItems(book('a'), PC)), 'a [P [C]]');
+  check('an empty nested tree leads the list',
+    showItems(buildRenderItems(book('a'), PC)), '[P [C]] a');
   check('hideEmptyFolders drops an empty subtree whole',
     showItems(buildRenderItems(book('a'), PC, { hideEmptyFolders: true })), 'a');
   check('hideEmptyFolders keeps a parent whose child has a match',
@@ -260,6 +261,29 @@ export function runFolderTreeChecks() {
     effectiveCollapseState(COLLAPSE_STATES.FULL, COLLAPSE_STATES.CONDENSED), COLLAPSE_STATES.CONDENSED);
   check('a tucked ancestor outranks everything',
     effectiveCollapseState(COLLAPSE_STATES.TUCKED, COLLAPSE_STATES.FULL), COLLAPSE_STATES.TUCKED);
+
+  // ── configurable collapse cycle ────────────────────────────────────────────
+  const TWO   = COLLAPSE_CYCLES.two;
+  const THREE = COLLAPSE_CYCLES.three;
+
+  check('three-stage cycle passes through condensed',
+    nextCollapseState(COLLAPSE_STATES.FULL, THREE), COLLAPSE_STATES.CONDENSED);
+  check('two-stage cycle skips condensed',
+    nextCollapseState(COLLAPSE_STATES.FULL, TWO), COLLAPSE_STATES.TUCKED);
+  check('two-stage wraps back to full',
+    nextCollapseState(COLLAPSE_STATES.TUCKED, TWO), COLLAPSE_STATES.FULL);
+  // A folder left condensed when the user switched to two stages must move on
+  // rather than sticking on a state the cycle no longer offers.
+  check('a state outside the cycle advances to its head',
+    nextCollapseState(COLLAPSE_STATES.CONDENSED, TWO), COLLAPSE_STATES.FULL);
+
+  // Clamping is a render-time view, never a write — switching back restores.
+  check('two stages render a condensed folder as full',
+    clampCollapseState(COLLAPSE_STATES.CONDENSED, TWO), COLLAPSE_STATES.FULL);
+  check('two stages leave tucked alone',
+    clampCollapseState(COLLAPSE_STATES.TUCKED, TWO), COLLAPSE_STATES.TUCKED);
+  check('three stages leave condensed alone',
+    clampCollapseState(COLLAPSE_STATES.CONDENSED, THREE), COLLAPSE_STATES.CONDENSED);
 
   // ── removeFolder ───────────────────────────────────────────────────────────
   const removed = removeFolder(book('a:F1 b c:F1'), F1, 'F1');

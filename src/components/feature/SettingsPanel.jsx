@@ -8,6 +8,7 @@ import { useUi }             from '../../hooks/use-ui.js';
 import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
+import { COLLAPSE_STAGE_OPTIONS } from '../../constants/folders.js';
 import {
   MIN_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
@@ -68,6 +69,10 @@ export function SettingsPanel() {
     setKeepMenuOpenAfterImport,
     crosstalkEnabled,
     setCrosstalkEnabled,
+    folderCollapseStages,
+    setFolderCollapseStages,
+    condensedShowStats,
+    setCondensedShowStats,
     crosstalkSwapMode,
     setCrosstalkSwapMode,
     thesaurusEnabled,
@@ -326,6 +331,47 @@ export function SettingsPanel() {
           </label>
           <div className="settings-hint">
             Taller entry rows on desktop, so a long lorebook is easier to scan when many entries at once feels overwhelming.
+          </div>
+        </div>
+
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          Folders
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="folders" title="Folders" openSet={openSet} toggleSection={toggleSection}>
+
+        <div className="settings-group">
+          <div className="settings-label">Collapse stages</div>
+          <select
+            className="settings-select"
+            value={folderCollapseStages}
+            onChange={(e) => setFolderCollapseStages(e.target.value)}
+          >
+            {COLLAPSE_STAGE_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>{opt.label}</option>
+            ))}
+          </select>
+          <div className="settings-hint">
+            How many sizes the button on a folder&rsquo;s header cycles through. Two stages
+            drops the middle &ldquo;condensed&rdquo; step if you only ever want a folder open or shut.
+            Switching is never destructive — a folder already condensed keeps that setting
+            and simply renders at full size until you touch it.
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Show entry stats on condensed rows</span>
+            <input
+              type="checkbox"
+              checked={condensedShowStats}
+              onChange={(e) => setCondensedShowStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Condensed rows normally shed the trigger and character counts to stay compact.
+            Turn this on to keep them, rendered smaller to fit the row.
           </div>
         </div>
 

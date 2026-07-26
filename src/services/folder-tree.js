@@ -40,13 +40,29 @@ export function createFolder(folders = [], overrides = {}) {
   };
 }
 
-// Next state in the collapse cycle. Falls back to the head of the cycle for a
-// state that isn't currently cycled through (e.g. a `condensed` folder while
-// the compact card variant doesn't exist yet).
-export function nextCollapseState(current) {
-  const i = COLLAPSE_CYCLE.indexOf(current);
-  if (i === -1) return COLLAPSE_CYCLE[0];
-  return COLLAPSE_CYCLE[(i + 1) % COLLAPSE_CYCLE.length];
+// Next state in the collapse cycle. The cycle is a setting (two-stage drops
+// `condensed`), so callers pass the active one. A state that isn't in the cycle
+// — a folder left condensed when the user switched to two-stage — advances to
+// the head rather than getting stuck.
+export function nextCollapseState(current, cycle = COLLAPSE_CYCLE) {
+  const i = cycle.indexOf(current);
+  if (i === -1) return cycle[0];
+  return cycle[(i + 1) % cycle.length];
+}
+
+// Render a stored state through the active cycle. Switching to two-stage
+// shouldn't rewrite every folder's saved state — it just renders anything the
+// cycle doesn't offer at the nearest less-collapsed state it does. Switch back
+// and the original returns, so the setting is never destructive.
+export function clampCollapseState(state, cycle = COLLAPSE_CYCLE) {
+  if (cycle.includes(state)) return state;
+  const target = COLLAPSE_SEVERITY[state] ?? 0;
+  let best = cycle[0];
+  for (const candidate of cycle) {
+    const severity = COLLAPSE_SEVERITY[candidate] ?? 0;
+    if (severity <= target && severity >= (COLLAPSE_SEVERITY[best] ?? 0)) best = candidate;
+  }
+  return best;
 }
 
 export function getFolder(folders, folderId) {
@@ -335,10 +351,10 @@ export function updateFolder(folders, folderId, patch) {
 // folders nest, because a parent may hold no entries of its own — only child
 // folders — and so has no position in entries[] to sit at.
 //
-// A folder whose whole subtree is empty can't anchor anywhere, so it trails its
-// level ordered by `order` — that's what makes a freshly created folder
-// visible. `hideEmptyFolders` drops those instead, for an active search where
-// they'd be pure noise.
+// A folder whose whole subtree is empty can't anchor anywhere, so it LEADS its
+// level, newest first — a folder you just made is the topmost thing on screen,
+// right where you're looking. `hideEmptyFolders` drops those instead, for an
+// active search where they'd be pure noise.
 //
 // Returns a tree:
 //   { kind: 'folder', folder, depth, count, totalCount, children: [...items] }
@@ -407,9 +423,10 @@ export function buildRenderItems(displayEntries, folders, { hideEmptyFolders = f
     rows.sort((a, b) => {
       const aEmpty = a.sort === undefined;
       const bEmpty = b.sort === undefined;
-      if (aEmpty && bEmpty) return (a.order ?? 0) - (b.order ?? 0);
-      if (aEmpty) return 1;
-      if (bEmpty) return -1;
+      // Newest empty folder first, so creating one puts it at the very top.
+      if (aEmpty && bEmpty) return (b.order ?? 0) - (a.order ?? 0);
+      if (aEmpty) return -1;
+      if (bEmpty) return 1;
       return a.sort - b.sort;
     });
 
