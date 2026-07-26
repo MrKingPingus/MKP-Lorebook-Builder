@@ -61,7 +61,7 @@ export async function launch({ width = 1280, height = 900, mobile = false } = {}
 // the builder open with entry cards rendered. Returns the card count.
 export async function openBuilderWithFixture(page, fixturePath = FIXTURE) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
+  await settle(page, 300);
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
     page.locator('.lander-tile', { hasText: 'Import File' }).click(),
@@ -126,7 +126,7 @@ export async function openSettingsSection(page, title) {
   await header.waitFor({ timeout: 4000 });
   if ((await header.getAttribute('aria-expanded')) !== 'true') {
     await header.click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
   }
 }
 
@@ -139,9 +139,20 @@ export async function openSettingsSection(page, title) {
 export async function selectCards(page, containerSelector, indices) {
   for (const i of indices) {
     await page.locator(`${containerSelector} .entry-card`).nth(i).locator('.entry-label').first().click();
-    await page.waitForTimeout(80);
+    await settle(page, 80);
   }
-  await page.waitForTimeout(120);
+  await settle(page, 120);
+}
+
+// Every fixed wait in the suite goes through here so there's one dial for all
+// of them. A shared CI runner is slower and more variable than a dev machine,
+// so VERIFY_WAIT_SCALE stretches them there instead of leaving the suite to
+// discover on its own that 150ms wasn't enough. Locally the scale is 1, so
+// nothing gets slower for day-to-day runs.
+export const WAIT_SCALE = Number(process.env.VERIFY_WAIT_SCALE || (process.env.CI ? 3 : 1)) || 1;
+
+export function settle(page, ms) {
+  return page.waitForTimeout(Math.round(ms * WAIT_SCALE));
 }
 
 export async function enterSelectMode(page) {
@@ -168,7 +179,7 @@ export function countPrivate(book) {
 // Open the Settings panel via the header ☰ menu.
 export async function openSettings(page) {
   await page.locator('.menu-btn').click();
-  await page.waitForTimeout(150);
+  await settle(page, 150);
   await page.getByText('Settings', { exact: true }).first().click();
-  await page.waitForTimeout(300);
+  await settle(page, 300);
 }

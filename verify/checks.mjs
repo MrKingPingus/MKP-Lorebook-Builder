@@ -3,7 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, pairCrosstalk, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, pairCrosstalk, settle, FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 function scenario(name, fn) {
@@ -42,7 +42,7 @@ const SCENARIOS = [
     check('no export-off badges', await page.locator('.entry-hidden-icon').count(), 0);
     // A brand-new entry must default to private (CharSnap mirror).
     await page.locator('.footer-fab').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('public badges unchanged after add', await page.locator('.entry-public-icon').count(), 29);
     check('new entry is private', countPrivate(await exportJson(page)), 6);
   }),
@@ -56,21 +56,21 @@ const SCENARIOS = [
     const cards = page.locator('.entry-card');
     await cards.nth(0).click();
     await cards.nth(1).click();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     await hideBtn.click();
     const chips = await page.locator('.bulk-action-chips .bulk-type-chip').allInnerTexts();
     check('two hide chips (Hidden/Shown)', chips.join(','), 'Hidden,Shown');
     await page.locator('.bulk-type-chip', { hasText: 'Hidden' }).click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('export-off badges after Hide x2', await page.locator('.entry-hidden-icon').count(), 2);
     await page.keyboard.press('Control+z');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('undo restores', await page.locator('.entry-hidden-icon').count(), 0);
     // Mutual exclusivity of the picker rows.
     await page.locator('.bulk-action-apply', { hasText: 'Set Public/Private' }).click();
-    await page.waitForTimeout(60);
+    await settle(page, 60);
     await hideBtn.click();
-    await page.waitForTimeout(60);
+    await settle(page, 60);
     check('one chip row open at a time', await page.locator('.bulk-action-chips').count(), 1);
   }),
 
@@ -82,26 +82,26 @@ const SCENARIOS = [
     const cards = page.locator('.entry-card');
     await cards.nth(0).click();
     await cards.nth(1).click();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     await pubBtn.click();
     const chips = await page.locator('.bulk-action-chips .bulk-type-chip').allInnerTexts();
     check('two public chips (Public/Private)', chips.join(','), 'Public,Private');
     await page.locator('.bulk-type-chip', { hasText: 'Private' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('private after Private x2', countPrivate(await exportJson(page)), 7);
     await page.keyboard.press('Control+z');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('private after undo', countPrivate(await exportJson(page)), 5);
     // Chaining: selection persists, so we can flip the same set to Public.
     await pubBtn.click();
-    await page.waitForTimeout(60);
+    await settle(page, 60);
     await page.locator('.bulk-type-chip', { hasText: 'Private' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('private after re-Private', countPrivate(await exportJson(page)), 7);
     await pubBtn.click();
-    await page.waitForTimeout(60);
+    await settle(page, 60);
     await page.locator('.bulk-type-chip', { hasText: 'Public' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('private after Public', countPrivate(await exportJson(page)), 5);
   }),
 
@@ -112,9 +112,9 @@ const SCENARIOS = [
     const cb = page.locator('label:has-text("Mark private entries") input[type="checkbox"]');
     await cb.waitFor({ timeout: 4000 });
     await cb.check();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('private badges after enabling', await page.locator('.entry-private-icon').count(), 5);
     check('public badges unchanged', await page.locator('.entry-public-icon').count(), 29);
   }),
@@ -126,35 +126,35 @@ const SCENARIOS = [
     // ? opens the cheat sheet; Escape closes it (top-priority dismiss layer).
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('?');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('? opens keyboard help', await page.locator('.kbd-help-panel').count(), 1);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('Escape closes help', await page.locator('.kbd-help-panel').count(), 0);
     // Alt+S toggles select mode; Escape exits it.
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Alt+s');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('Alt+S enters select mode', await page.locator('.bulk-action-bar').count(), 1);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('Escape exits select mode', await page.locator('.bulk-action-bar').count(), 0);
     // New-entry hotkey last — it auto-focuses the new entry, which (correctly)
     // suppresses further bare/Alt hotkeys until the field is blurred.
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Alt+n');
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('Alt+N adds an entry', await cards.count(), before + 1);
     // Alt+I opens the append-import overlay straight into file mode.
     await page.evaluate(() => document.activeElement?.blur());
     page.on('filechooser', () => {}); // swallow the auto-opened OS picker in headless
     await page.keyboard.press('Alt+i');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('Alt+I opens import overlay', await page.locator('.append-import-overlay').count(), 1);
     check('Alt+I lands in file mode', await page.locator('.append-file-picker').count(), 1);
     // After picking a file, offer Append vs Import-as-New (not auto-append).
     await page.locator('.append-file-picker input[type=file]').setInputFiles(FIXTURE);
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check('Append option offered', await page.locator('.append-book-actions button', { hasText: 'Append to' }).count(), 1);
     check('Import-as-New option offered', await page.locator('.append-book-actions button', { hasText: 'Import as New' }).count(), 1);
   }),
@@ -167,44 +167,44 @@ const SCENARIOS = [
     // Note 1: "/" focuses search; a modified chord still fires while focused there.
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('/');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('/ focuses the search input', await page.evaluate(() => (document.activeElement?.className || '').includes('search-input')), true);
     await page.keyboard.press('Alt+n');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('Alt+N fires from inside the search field', await cards.count(), before + 1);
 
     // Note 3: undo works even though focus is now in the new entry's field.
     check('focus moved into a text field', await page.evaluate(() => ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)), true);
     await page.keyboard.press('Control+z');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('Ctrl+Z undoes from within a field', await cards.count(), before);
 
     // Note 2: Alt+H opens find/replace AND focuses the Find field.
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Alt+h');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('Alt+H focuses the Find field', await page.evaluate(() => (document.activeElement?.className || '').includes('find-input')), true);
     // Note 2: pressing Alt+H again toggles back to Search.
     await page.keyboard.press('Alt+h');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('Alt+H again reverts to search', await page.locator('input.search-input').count(), 1);
     check('...Find field gone', await page.locator('.find-input').count(), 0);
 
     // Note 5: Alt+E surfaces the centered export menu (same menu as the button).
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Alt+e');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('Alt+E opens the export menu', await page.locator('.export-menu').count(), 1);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
 
     // Note 4: a hotkey pressed while the guide is open closes it and still runs.
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('?');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('help overlay open', await page.locator('.kbd-help-panel').count(), 1);
     await page.keyboard.press('Alt+s');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('a hotkey closes the guide', await page.locator('.kbd-help-panel').count(), 0);
     check('...and still runs (select on)', await page.locator('.bulk-action-bar').count(), 1);
   }),
@@ -213,17 +213,17 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Alt+s');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('select mode active', await page.locator('.bulk-action-bar').count(), 1);
     await page.keyboard.press('?');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('help overlay open over select', await page.locator('.kbd-help-panel').count(), 1);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('Escape closes help first', await page.locator('.kbd-help-panel').count(), 0);
     check('select mode still active beneath', await page.locator('.bulk-action-bar').count(), 1);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('Escape then exits select', await page.locator('.bulk-action-bar').count(), 0);
   }),
 
@@ -233,22 +233,22 @@ const SCENARIOS = [
     const before = await cards.count();
     await openSettings(page);
     await page.locator('.settings-section-header', { hasText: 'Accessibility' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
     const captureBtn = row.locator('.kbd-capture-btn');
     await captureBtn.click();
-    await page.waitForTimeout(120);
+    await settle(page, 120);
     await page.keyboard.press('Alt+j');                 // capture the new chord
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     const label = (await captureBtn.innerText()).replace(/\s+/g, '');
     check('capture button shows new chord', /Alt\+?J/i.test(label), true);
     // Fire the new binding (the global window listener works with the tray open).
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Alt+j');
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('new chord adds an entry', await cards.count(), before + 1);
     await page.keyboard.press('Alt+n');                 // old default no longer bound
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('old Alt+N no longer adds', await cards.count(), before + 1);
   }),
 
@@ -256,7 +256,7 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     await openSettings(page);
     await page.locator('.settings-section-header', { hasText: 'Appearance' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
 
     const themeAttr = () => page.evaluate(() => document.documentElement.getAttribute('data-theme'));
     const bodyBg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -265,21 +265,21 @@ const SCENARIOS = [
     const darkBg = await bodyBg();
 
     await page.locator('.theme-option', { hasText: 'Light' }).click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('data-theme flips to light', await themeAttr(), 'light');
     check('body background actually changed', (await bodyBg()) !== darkBg, true);
 
     await page.locator('.theme-option', { hasText: 'High contrast' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('data-theme high-contrast', await themeAttr(), 'high-contrast');
 
     // System resolves to a concrete palette (OS light/dark), never 'system'.
     await page.locator('.theme-option', { hasText: 'System' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('System resolves to light/dark', ['light', 'dark'].includes(await themeAttr()), true);
 
     await page.locator('.theme-option', { hasText: 'Custom' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('data-theme custom', await themeAttr(), 'custom');
     check('seven custom color inputs', await page.locator('.theme-color-input').count(), 7);
 
@@ -292,12 +292,12 @@ const SCENARIOS = [
       input.dispatchEvent(new Event('input',  { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('custom --bg injected inline', await page.evaluate(() => document.documentElement.style.getPropertyValue('--bg').trim()), '#123456');
 
     // Reload — theme + custom color must survive (applied pre-render in main.jsx).
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check('theme persists after reload', await themeAttr(), 'custom');
     check('custom color persists after reload', await page.evaluate(() => document.documentElement.style.getPropertyValue('--bg').trim()), '#123456');
   }),
@@ -306,23 +306,23 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     await openSettings(page);
     await page.locator('.settings-section-header', { hasText: 'Accessibility' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
 
     const rootScale = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim());
     const bodyFont  = () => page.evaluate(() => parseFloat(getComputedStyle(document.body).fontSize));
 
     const beforeFont = await bodyFont();
     await page.locator('.a11y-scale-btn', { hasText: '125%' }).click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('ui-scale set to 1.25', await rootScale(), '1.25');
     check('body text got larger', (await bodyFont()) > beforeFont, true);
 
     await page.locator('label:has-text("Reduce motion") input[type=checkbox]').check();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     check('data-reduce-motion set', await page.evaluate(() => document.documentElement.getAttribute('data-reduce-motion')), 'true');
 
     await page.locator('label:has-text("High-contrast theme") input[type=checkbox]').check();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     check('high-contrast theme toggles on', await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'high-contrast');
 
     // Hotkeys relocated under Accessibility.
@@ -330,7 +330,7 @@ const SCENARIOS = [
 
     // Text scale survives reload (applied pre-render).
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check('scale persists after reload', await rootScale(), '1.25');
   }),
 
@@ -342,12 +342,12 @@ const SCENARIOS = [
     const count = await openBuilderWithFixture(page);
     const bulkBtn = page.locator('.filter-action-btn', { hasText: /Expand All|Collapse All/ });
     await bulkBtn.click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('all cards expanded', await page.locator('.entry-card-body').count(), count);
     check('button offers Collapse All', (await bulkBtn.innerText()).trim(), 'Collapse All');
     // Collapse just the first card via its header toggle.
     await page.locator('.entry-card .card-action-btn', { hasText: 'Collapse' }).first().click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('only one card collapsed', await page.locator('.entry-card-body').count(), count - 1);
     check('button label unchanged by single collapse', (await bulkBtn.innerText()).trim(), 'Collapse All');
   }),
@@ -358,7 +358,7 @@ const SCENARIOS = [
     const count = await openBuilderWithFixture(page);
     const newFolderBtn = page.locator('.filter-action-btn', { hasText: 'Folder' });
     await newFolderBtn.click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('folder header rendered', await page.locator('.folder-header').count(), 1);
     check('new folder starts empty', (await page.locator('.folder-count').innerText()).trim(), '0');
 
@@ -370,10 +370,10 @@ const SCENARIOS = [
     const cards = page.locator('.entry-card');
     await cards.nth(0).click();
     await cards.nth(1).click();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     await moveBtn.click();
     await page.locator('.bulk-action-chips .bulk-type-chip', { hasText: 'New Folder' }).first().click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('two entries inside the folder', await page.locator('.folder-entries .entry-card').count(), 2);
     check('header count reflects members', (await page.locator('.folder-count').innerText()).trim(), '2');
     check('no entries lost', await page.locator('.entry-card').count(), count);
@@ -384,32 +384,32 @@ const SCENARIOS = [
     // The cycle is full → condensed → tucked, so tucking is two stops away.
     const cycleBtn = page.locator('.folder-collapse-btn');
     await cycleBtn.click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('one click condenses, does not hide', await page.locator('.folder-entries .entry-card').count(), 2);
     await cycleBtn.click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('tucked hides folder entries', await page.locator('.folder-entries .entry-card').count(), 0);
     check('tucked total on screen', await page.locator('.entry-card').count(), count - 2);
     check('count still shown while tucked', (await page.locator('.folder-count').innerText()).trim(), '2');
     await cycleBtn.click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('cycling round restores members', await page.locator('.folder-entries .entry-card').count(), 2);
 
     // Undo pulls the entries back out of the folder.
     await page.keyboard.press('Control+z');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('undo empties the folder', await page.locator('.folder-entries .entry-card').count(), 0);
     check('undo keeps the folder itself', await page.locator('.folder-header').count(), 1);
 
     // Deleting a folder never deletes entries.
     await page.locator('.folder-delete-btn').click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('folder gone', await page.locator('.folder-header').count(), 0);
     check('entries survive the delete', await page.locator('.entry-card').count(), count);
     // ...and undoing the delete brings the folder back (folders ride in the
     // history snapshot alongside entries).
     await page.keyboard.press('Control+z');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('undo restores the deleted folder', await page.locator('.folder-header').count(), 1);
   }),
 
@@ -421,36 +421,36 @@ const SCENARIOS = [
     await enterSelectMode(page);
     const cards = page.locator('.entry-card');
     await cards.nth(0).click();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     // The card label reads "#N: Name" — strip the index prefix to get the name.
     const firstLabel = (await cards.nth(0).locator('.entry-label').first().innerText()).trim();
     const firstName  = firstLabel.replace(/^#\d+:\s*/, '');
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
     await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('rename input is open', await page.locator('.folder-name-input').count(), 1);
     check('rename input is focused', await page.evaluate(
       () => document.activeElement?.className || ''), 'folder-name-input');
     // Type straight over the pre-selected placeholder name.
     await page.keyboard.type('Cast');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('folder took the typed name', (await page.locator('.folder-name').innerText()).trim(), 'Cast');
 
     // Tuck it, then search for the entry hidden inside.
     await page.locator('.search-mode-select').first().selectOption('search');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     // Two clicks to reach tucked (full → condensed → tucked).
     await page.locator('.folder-collapse-btn').click();
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     await page.locator('.folder-collapse-btn').click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('entry hidden while tucked', await page.locator('.folder-entries .entry-card').count(), 0);
     await page.locator('.search-input').first().fill(firstName);
-    await page.waitForTimeout(350);
+    await settle(page, 350);
     check('search reaches into the tucked folder', await page.locator('.folder-entries .entry-card').count(), 1);
     await page.locator('.search-input').first().fill('');
-    await page.waitForTimeout(350);
+    await settle(page, 350);
     check('folder tucks again once the search clears', await page.locator('.folder-entries .entry-card').count(), 0);
   }),
 
@@ -462,20 +462,20 @@ const SCENARIOS = [
     await enterSelectMode(page);
     const cards = page.locator('.entry-card');
     for (const i of [0, 1, 2]) await cards.nth(i).click();
-    await page.waitForTimeout(120);
+    await settle(page, 120);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
     await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     await page.keyboard.press('Enter');
     await page.locator('.search-mode-select').first().selectOption('search');
-    await page.waitForTimeout(250);
+    await settle(page, 250);
 
     const cycleBtn = page.locator('.folder-collapse-btn');
     const condensed = page.locator('.entry-card--condensed');
 
     check('starts at full size', await condensed.count(), 0);
     await cycleBtn.click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('cycle stop 1 condenses the members', await condensed.count(), 3);
 
     // Condensed keeps identity + Expand/Remove, and sheds everything else.
@@ -487,7 +487,7 @@ const SCENARIOS = [
 
     // One card opens in place; its siblings stay condensed.
     await condensed.first().locator('.card-action-btn', { hasText: 'Expand' }).click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('the opened card has a body', await page.locator('.folder-entries .entry-card-body').count(), 1);
     check('its siblings stay condensed', await condensed.count(), 2);
     check('the opened card got its full chrome back',
@@ -495,10 +495,10 @@ const SCENARIOS = [
 
     // Cycle onward to tucked, then back round to full.
     await cycleBtn.click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('cycle stop 2 tucks everything', await page.locator('.folder-entries .entry-card').count(), 0);
     await cycleBtn.click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     check('cycle returns to full size', await page.locator('.folder-entries .entry-card').count(), 3);
     check('and nothing is condensed', await condensed.count(), 0);
   }),
@@ -506,15 +506,15 @@ const SCENARIOS = [
   scenario('Folders never reach the export', async (page, check) => {
     const count = await openBuilderWithFixture(page);
     await page.locator('.filter-action-btn', { hasText: 'Folder' }).click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     await enterSelectMode(page);
     const cards = page.locator('.entry-card');
     await cards.nth(0).click();
     await cards.nth(1).click();
-    await page.waitForTimeout(100);
+    await settle(page, 100);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
     await page.locator('.bulk-action-chips .bulk-type-chip', { hasText: 'New Folder' }).first().click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
 
     const book = await exportJson(page);
     const exported = Object.values(book.entries || {});
@@ -562,15 +562,15 @@ const SCENARIOS = [
     await selectCards(page, '.build-panel', [0]);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
     await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(150);
+    await settle(page, 150);
     check('one entry is filed', await page.locator('.build-panel .folder-entries .entry-card').count(), 1);
 
     // Copy it out to the reference book.
     await selectCards(page, '.build-panel', [0]);
     await page.locator('.bulk-action-apply', { hasText: 'Copy to Reference' }).click();
-    await page.waitForTimeout(350);
+    await settle(page, 350);
     check('reference book gained the copy',
       await page.locator('.reference-entry-card').count(), VARIANT_COUNTS.total + 1);
     check('no folder followed it across',
@@ -580,9 +580,9 @@ const SCENARIOS = [
     // direction, so no swap is needed.
     const refCards = page.locator('.reference-entry-card');
     await refCards.nth(VARIANT_COUNTS.total).click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     await page.locator('.bulk-action-apply', { hasText: 'Copy to Active' }).click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
 
     check('active book gained the return copy', await page.locator('.build-panel .entry-card').count(), 35);
     check('the folder still holds exactly one entry',
@@ -600,17 +600,17 @@ const SCENARIOS = [
     await selectCards(page, '.build-panel', [0]);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
     await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     await page.keyboard.press('Enter');
     await page.locator('.search-mode-select').first().selectOption('search');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('folder renders under the default sort',
       await page.locator('.build-panel .folder-header').count(), 1);
 
     // Switch to "In both books first".
     await page.locator('.sort-btn').first().click();
     await page.locator('.sort-dropdown-item', { hasText: 'In both books first' }).click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('folders are hidden under a cross-match sort',
       await page.locator('.build-panel .folder-header').count(), 0);
     check('every entry still renders, just unfiled',
@@ -624,7 +624,7 @@ const SCENARIOS = [
     // Back to default and the folder returns.
     await page.locator('.sort-btn').first().click();
     await page.locator('.sort-dropdown-item', { hasText: 'Default' }).first().click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check('folders come back on the default sort',
       await page.locator('.build-panel .folder-header').count(), 1);
   }),
@@ -638,15 +638,15 @@ const SCENARIOS = [
     await selectCards(page, '.build-panel', [0]);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
     await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
-    await page.waitForTimeout(250);
+    await settle(page, 250);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('the active side has a folder', await page.locator('.build-panel .folder-header').count(), 1);
     check('the reference side has none',   await page.locator('.reference-panel .folder-header').count(), 0);
     // Reference-side selections can't reach the folder bulk ops — that used to
     // be able to mint a stray empty folder in the active book.
     await page.locator('.reference-entry-card').first().click();
-    await page.waitForTimeout(200);
+    await settle(page, 200);
     check('Move to folder disables for a reference-side selection',
       await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).isDisabled(), true);
     check('and no stray folder appeared',
@@ -658,7 +658,7 @@ const SCENARIOS = [
   scenario('Crosstalk: the variant fixture really does differ', async (page, check) => {
     await pairCrosstalk(page);
     await page.locator('.search-input').first().fill(VARIANT_MARKER.slice(0, 24));
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     // The marker only exists in the variant, so the active side finds nothing
     // while the reference side finds every edited entry.
     check('marker absent from the active book',
