@@ -35,6 +35,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | The scrollable list of all entry cards | `src/components/feature/EntryList.jsx` |
 | A folder header row in the entry list (collapse, colour, name, count, delete) | `src/components/feature/FolderHeader.jsx` |
 | The `Folder ▾` filter button and its checkbox menu (also supplies the rows TypeFilterBar drops into the mobile `Filter ▾` popover) | `src/components/feature/FolderFilterButton.jsx` |
+| Drag-and-drop state machine (drop target, spring-loaded folders, auto-scroll, single-snapshot commit) — wired in `EntryList.jsx`; the folder header is the drag source for a folder | `src/hooks/use-entry-drag.js` |
 | Modifier+click selection (shift/ctrl ranges) — wired in `EntryList.jsx` (owns the display-ordered id list) and handled on the capture phase in `EntryCard.jsx` / `FolderHeader.jsx` headers | `src/hooks/use-selection-macros.js` |
 | The "Move to folder" button + menu in an entry card's footer | `src/components/feature/MoveToFolderButton.jsx` |
 | The entry name field inside a card | `src/components/feature/EntryName.jsx` |

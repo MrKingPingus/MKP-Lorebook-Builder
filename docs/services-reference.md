@@ -8,6 +8,7 @@ Plain JS modules in `src/services/` — no React imports.
 | `autosave.js` | Debounced subscriber that persists active lorebook |
 | `entry-factory.js` | Creates new entry objects with default shape; exports the shared `uid()` |
 | `folder-tree.js` | Folder creation, entry assignment (with the `entries[]` splice that keeps a folder's members contiguous), removal, the render walk the entry list consumes, and the folder-filter predicate (`filterEntriesByFolders` / `pruneFolderFilter` — pruning is what makes a deleted folder or a crosstalk role swap degrade to "no filter" instead of an empty list) |
+| `drag-drop.js` | Drop resolution — turns "these ids were dropped here" into the next `entries[]` (and `folders[]` for a folder drag). The drop position implies the parent, so order and `folderId` are written together. Pure |
 | `selection-range.js` | Modifier+click gesture table — resolves a click into add/remove plus the ids it applies to (`rangeBetween`, `resolveSelectionClick`). Pure; no store access |
 | `lorebook-index.js` | Builds/maintains the lorebook index |
 | `suggestion-engine.js` | Generates trigger/keyword suggestions |

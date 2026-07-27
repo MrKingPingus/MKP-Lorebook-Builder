@@ -6261,3 +6261,74 @@ kbd {
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* ── Drag and drop ────────────────────────────────────────────────────────────
+   The insertion indicator is a pseudo-element line rather than a real element,
+   so showing it never changes layout — a shifting list under a moving cursor
+   makes a drop target impossible to aim at. */
+.entry-list-item { position: relative; }
+.entry-list-item--drop-before::before,
+.entry-list-item--drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--blue);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 3;
+}
+.entry-list-item--drop-before::before { top: -4px; }
+.entry-list-item--drop-after::after   { bottom: -4px; }
+
+/* What's in hand fades but keeps its space, so the list doesn't reflow mid-drag. */
+.entry-list-item--dragging,
+.folder-block--dragging {
+  opacity: 0.4;
+}
+
+/* Hovering a folder header means "into this folder". */
+.folder-header--drop-into,
+.folder-block--drop-into > .folder-header {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+
+.folder-drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.folder-drag-handle:active { cursor: grabbing; }
+
+/* Run-off zone below the last row. Collapsed to nothing until a drag starts, so
+   it costs no space in normal use. */
+/* No height transition: the zone must be at its final size the instant a drag
+   starts, or you spend the first moments aiming at a target that is still
+   growing underneath the cursor. */
+.entry-list-tail {
+  height: 0;
+  flex-shrink: 0;
+}
+.entry-list-tail--armed {
+  height: 46px;
+  margin-top: 4px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.entry-list-tail--active {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 10%, transparent);
+}

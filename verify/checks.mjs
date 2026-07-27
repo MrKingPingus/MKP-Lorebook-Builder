@@ -3,7 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 function scenario(name, fn) {
@@ -1021,6 +1021,160 @@ const SCENARIOS = [
     check('but the header does', await page.locator('.bulk-action-bar').count(), 1);
     check('selecting exactly one entry',
       (await page.locator('.bulk-action-count').innerText()).trim(), '1 selected');
+  }),
+
+  // ── 11E: drag and drop ─────────────────────────────────────────────────────
+  // Drop resolution itself is covered exhaustively in drag-drop-checks.mjs.
+  // These prove the browser wiring: that a real drag reaches it, that the
+  // position decides the folder, and that the whole gesture is one undo.
+  scenario('Drag: reordering moves the row and costs exactly one undo', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const before = await rowNames(page);
+
+    // Drag row 0 down past row 3.
+    const handle = page.locator('.entry-card').nth(0).locator('.drag-handle');
+    await dragTo(page, handle, page.locator('.entry-card').nth(3), 'after');
+
+    const after = await rowNames(page);
+    check('the dragged row left its old position', after[0] !== before[0], true);
+    check('and landed further down', after.indexOf(before[0]), 3);
+    check('no row was lost', after.length, before.length);
+
+    // The old model pushed one snapshot per row passed, so this took four
+    // presses and evicted four slots from a 50-deep stack.
+    await page.keyboard.press('Control+z');
+    await settle(page, 350);
+    check('one undo puts the whole drag back', (await rowNames(page)).join('|'), before.join('|'));
+  }),
+
+  // The governing rule: a drop position decides the parent.
+  scenario('Drag: dropping into a folder files the entry, dropping out unfiles it', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [1, 2]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+    check('two entries are filed to begin with',
+      await page.locator('.folder-entries .entry-card').count(), 2);
+
+    // Drop a loose row onto a row inside the folder → it joins. Both rows are
+    // near the top of the list, so nothing here goes near the auto-scroll zone.
+    const loose = page.locator('.entry-list > .entry-list-item .entry-card').first();
+    await dragTo(page, loose.locator('.drag-handle'),
+      page.locator('.folder-entries .entry-card').first(), 'before');
+    check('dropping beside a filed row joins the folder',
+      await page.locator('.folder-entries .entry-card').count(), 3);
+    check('nothing was lost', await page.locator('.entry-card').count(), count);
+
+    // Narrow to just this folder so the whole list — and the run-off zone under
+    // it — fits on screen without scrolling. This doubles as the check that
+    // dragging still works while the list is filtered.
+    await page.locator('.folder-filter-btn').click();
+    await settle(page, 250);
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'New Folder' }).click();
+    await page.keyboard.press('Escape');
+    await settle(page, 350);
+    check('filtered down to the folder', await page.locator('.entry-card').count(), 3);
+
+    await dragTo(page, page.locator('.folder-entries .entry-card').first().locator('.drag-handle'),
+      page.locator('.entry-list-tail'), 'before');
+    check('dropping on the tail zone unfiles',
+      await page.locator('.folder-entries .entry-card').count(), 2);
+    check('and the tail zone collapses away again once the drag ends',
+      await page.locator('.entry-list-tail--armed').count(), 0);
+
+    // Clear the filter: the unfiled entry is still in the book, just loose now.
+    await page.locator('.folder-filter-btn').click();
+    await settle(page, 250);
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'All folders' }).click();
+    await page.keyboard.press('Escape');
+    await settle(page, 350);
+    check('still nothing lost', await page.locator('.entry-card').count(), count);
+  }),
+
+  // Dropping onto the header itself files into the folder, and must agree with
+  // what the Move-to-folder menu would have done.
+  scenario('Drag: dropping on a folder header files into it', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).first().click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await settle(page, 250);
+    check('an empty folder to aim at', await page.locator('.folder-header').count(), 1);
+
+    const row = page.locator('.entry-list > .entry-list-item .entry-card').first();
+    await dragTo(page, row.locator('.drag-handle'), page.locator('.folder-header'), 'before');
+    check('the entry is now inside the folder',
+      await page.locator('.folder-entries .entry-card').count(), 1);
+    check('and the list still holds every entry',
+      await page.locator('.entry-card').count(), count);
+  }),
+
+  // Multi-drag: grabbing a selected row carries the whole selection. A
+  // selection only exists inside select mode, so the drag handle has to be
+  // reachable there — that is what makes this gesture possible at all.
+  scenario('Drag: grabbing a selected row drags the whole selection', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    const before = await rowNames(page);
+
+    // Build a three-entry selection with the 11DD macros.
+    const labels = page.locator('.entry-list > .entry-list-item .entry-label');
+    await labels.nth(0).click({ modifiers: ['Shift'] });
+    await settle(page, 250);
+    await labels.nth(2).click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    check('three entries selected',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '3 selected');
+    check('the drag handle is reachable in select mode',
+      await page.locator('.entry-card').nth(0).locator('.drag-handle').count(), 1);
+
+    // Drag one of them down past row 6; all three should travel together.
+    await dragTo(page, page.locator('.entry-card').nth(0).locator('.drag-handle'),
+      page.locator('.entry-card').nth(6), 'after');
+
+    const after = await rowNames(page);
+    check('no entry was lost', after.length, count);
+    const moved = before.slice(0, 3);
+    const at = moved.map((n) => after.indexOf(n));
+    check('all three moved', at.every((i) => i > 0), true);
+    check('and landed as one contiguous block',
+      at[1] === at[0] + 1 && at[2] === at[1] + 1, true);
+    check('keeping their original relative order',
+      after.slice(at[0], at[0] + 3).join('|'), moved.join('|'));
+
+    // Still one gesture, still one undo.
+    await page.keyboard.press('Control+z');
+    await settle(page, 350);
+    check('one undo puts all three back', (await rowNames(page)).join('|'), before.join('|'));
+  }),
+
+  // A folder drags as a unit, subtree and all.
+  scenario('Drag: a folder moves as a whole block', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [3, 4]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    const firstRowClass = async () =>
+      page.locator('.entry-list > *').first().getAttribute('class');
+    check('the folder does not start at the top', (await firstRowClass()).includes('folder-block'), false);
+
+    await dragTo(page, page.locator('.folder-drag-handle').first(),
+      page.locator('.entry-list > .entry-list-item').first(), 'before');
+    check('dragging the folder header moves the whole block',
+      (await firstRowClass()).includes('folder-block'), true);
+    check('its entries came with it',
+      await page.locator('.folder-entries .entry-card').count(), 2);
+    check('and nothing was lost', await page.locator('.entry-card').count(), count);
   }),
 
   scenario('Crosstalk: pairing + same-name match badges', async (page, check) => {

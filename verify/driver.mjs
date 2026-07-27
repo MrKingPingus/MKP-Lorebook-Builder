@@ -190,3 +190,49 @@ export async function openSettings(page) {
   await page.getByText('Settings', { exact: true }).first().click();
   await settle(page, 300);
 }
+
+// Drive a native HTML5 drag. The app gates a drag on a mousedown over the drag
+// handle (`isDragFromHandle`), so this has to press on the handle specifically
+// rather than the row centre — and Chromium only synthesises dragstart once the
+// pointer has actually moved a few pixels under a held button.
+//
+// `edge` picks which half of the destination row to release over, which is what
+// decides before/after.
+export async function dragTo(page, handleLocator, targetLocator, edge = 'before') {
+  const from = await handleLocator.boundingBox();
+  if (!from) throw new Error('dragTo: source not visible');
+
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  // Nudge first: this crosses the drag threshold and starts the drag.
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 + 12, { steps: 4 });
+  await settle(page, 250);
+
+  // Measure the target only now, and only once the layout has settled. The
+  // run-off zone below the list is 0px tall until a drag is in progress, so a
+  // box taken before mousedown would be a zero-height strip the pointer could
+  // never land on.
+  const to = await targetLocator.boundingBox();
+  if (!to) throw new Error('dragTo: target not visible');
+  const y = edge === 'after' ? to.y + to.height * 0.8 : to.y + to.height * 0.2;
+  const x = to.x + to.width / 2;
+
+  await page.mouse.move(x, y, { steps: 12 });
+  await settle(page, 300);
+  await page.mouse.up();
+  await settle(page, 250);
+}
+
+// Names of the entry rows as they currently render, top to bottom.
+export async function rowNames(page, scope = '.build-panel') {
+  const raw = await page.locator(`${scope} .entry-card .entry-label`).allInnerTexts();
+  return raw.map((t) => t.replace(/^#\d+:\s*/, '').trim());
+}
+
+// Scroll the entry list to the bottom. The run-off drop zone lives under the
+// last row, so any test aiming at it has to bring it into view first — a
+// boundingBox below the fold gives coordinates the mouse can't reach.
+export async function scrollListToBottom(page) {
+  await page.locator('.entry-list').evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await settle(page, 200);
+}

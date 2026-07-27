@@ -17,7 +17,11 @@ import {
 } from '../../constants/folders.js';
 import { nextCollapseState } from '../../services/folder-tree.js';
 
-export function FolderHeader({ folder, count, effectiveState, entryIds = [], onFolderSelectionClick }) {
+export function FolderHeader({
+  folder, count, effectiveState, entryIds = [], onFolderSelectionClick,
+  onDragHandleMouseDown, onHeaderDragOver, onHeaderDrop, isDropTarget = false,
+  dragProps = {},
+}) {
   const {
     renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder,
     parentOptions, canCreateParentFor, createFolderAsParentOf,
@@ -97,9 +101,12 @@ export function FolderHeader({ folder, count, effectiveState, entryIds = [], onF
 
   return (
     <div
-      className={`folder-header${isTucked ? ' folder-header--tucked' : ''}`}
+      {...dragProps}
+      className={`folder-header${isTucked ? ' folder-header--tucked' : ''}${isDropTarget ? ' folder-header--drop-into' : ''}`}
       style={{ '--folder-color': folder.color }}
       ref={rootRef}
+      onDragOver={onHeaderDragOver}
+      onDrop={onHeaderDrop}
       // Shift+click anywhere on the header takes everything inside the folder,
       // ctrl+click gives it back. Capture phase so the gesture never reaches
       // the collapse / rename / nest / delete buttons underneath it.
@@ -112,6 +119,16 @@ export function FolderHeader({ folder, count, effectiveState, entryIds = [], onF
         }
       }}
     >
+      {onDragHandleMouseDown && (
+        <span
+          className="folder-drag-handle"
+          title="Drag to move this folder"
+          onMouseDown={onDragHandleMouseDown}
+        >
+          ⠿
+        </span>
+      )}
+
       <button
         className="folder-collapse-btn"
         onClick={() => cycleCollapse(folder.id)}

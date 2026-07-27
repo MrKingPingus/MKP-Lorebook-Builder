@@ -7,6 +7,7 @@ import { runAllChecks } from './checks.mjs';
 import { runKeychordChecks } from './keychord-checks.mjs';
 import { runFolderTreeChecks } from './folder-tree-checks.mjs';
 import { runSelectionRangeChecks } from './selection-range-checks.mjs';
+import { runDragDropChecks } from './drag-drop-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -21,7 +22,12 @@ async function serverUp() {
 // Pure-logic checks first — no browser needed. They cover the platform paths
 // (macOS Option key) the Linux-only browser suite can't reach, and the folder
 // maths, which is far cheaper to exercise exhaustively here than through the UI.
-const pureOk = [runKeychordChecks(), runFolderTreeChecks(), runSelectionRangeChecks()].every(Boolean);
+const pureOk = [
+  runKeychordChecks(),
+  runFolderTreeChecks(),
+  runSelectionRangeChecks(),
+  runDragDropChecks(),
+].every(Boolean);
 
 let child = null;
 if (await serverUp()) {

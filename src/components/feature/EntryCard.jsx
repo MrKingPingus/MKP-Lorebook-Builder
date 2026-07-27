@@ -401,8 +401,16 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         onClickCapture={onHeaderClickCapture}
         onDoubleClick={isSelectMode ? undefined : onHeaderDoubleClick}
       >
-        {!isSelectMode && !isCondensed && (
-          <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
+        {/* The handle stays in select mode: a selection only exists there, so
+            hiding it would make multi-entry drag unreachable. Clicking the row
+            still toggles selection — only the handle starts a drag. */}
+        {!isCondensed && (
+          <span
+            className="drag-handle"
+            title={isSelectMode ? 'Drag to move every selected entry' : 'Drag to reorder'}
+            onMouseDown={onDragHandleMouseDown}
+            onClick={(e) => e.stopPropagation()}
+          >⠿</span>
         )}
 
         <TypeColorDot type={entry.type} />

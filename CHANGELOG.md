@@ -6,6 +6,22 @@
 
 ### Additions
 
+- **Drag entries into and out of folders.** Dragging now understands folders: where you drop something decides where it belongs.
+  - **Drop between two entries inside a folder** and it joins that folder. **Drop between two top-level entries** and it comes out of whatever folder it was in. **Drop straight onto a folder's header** and it files inside.
+  - **A drop zone appears under the list while you drag** — drop there to pull something out of every folder and send it to the end.
+  - **A blue line shows exactly where the entry will land** before you let go, and it won't appear anywhere a drop isn't allowed.
+  - **Drag several entries at once.** Select the ones you want, then drag any of them by its handle and the whole selection travels together, landing as one block in the order you had them. Grabbing an entry that *isn't* selected drags just that one and leaves your selection alone.
+  - **Drag a whole folder** by the handle on its header, to reorder it or to drop it inside another folder — everything inside comes with it. Folders can't be dropped inside themselves, and the three-level nesting limit still applies.
+  - **The list scrolls itself** when you drag near the top or bottom edge, so you can move an entry somewhere off screen.
+  - **Hold a dragged entry over a closed folder** and it opens after a moment so you can drop it exactly where you want inside.
+  - **Condensed entries can be dragged too**, from anywhere on the row.
+  - Dragging still works while the list is filtered or searched — drop between two rows you can see and it goes exactly where it looks like it will.
+
+### Fixes
+
+- **Undoing a drag now takes one press of Ctrl+Z.** Previously every entry you dragged *past* was recorded as its own separate step, so dragging an entry ten rows down took ten presses to undo — and quietly used up ten slots of your 50-step undo history. A drag is now a single step, and a drag that ends up back where it started doesn't take a step at all.
+- **Entries inside a folder can now be dragged.** They couldn't be — starting a drag on one was cancelled immediately.
+
 - **Filter the list by folder.** A **Folder ▾** button in the filter row lets you narrow the list to one folder, several at once, or **Unfiled entries** — everything you haven't put away yet. It only appears once you actually have folders, so it doesn't clutter the row if you don't use them.
   - **Picking a folder includes everything nested inside it**, so filtering to an outer folder shows its sub-folders' entries too rather than just the entries sitting directly in it.
   - **Folder headers stay while you filter**, so you keep the structure and can still collapse things — folders left with nothing simply drop out of view, the same way they do during a search.

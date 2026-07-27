@@ -2,6 +2,12 @@
 // support (desktop only), rendered through the folder walk: folders appear at
 // the position of their first member and swallow all of it, loose entries stay
 // interleaved around them.
+//
+// Dragging shows an insertion indicator and commits once on release. The drop
+// *position* decides the parent — between two rows inside a folder joins that
+// folder, between two top-level rows leaves every folder, onto a folder header
+// files into it — so one gesture writes order and `folderId` as a single
+// undoable step. See services/drag-drop.js.
 import { useRef, useEffect } from 'react';
 import { EntryCard }     from './EntryCard.jsx';
 import { FolderHeader }  from './FolderHeader.jsx';
@@ -12,13 +18,14 @@ import { useUi }         from '../../hooks/use-ui.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useFolderFilter } from '../../hooks/use-folder-filter.js';
 import { useSelectionMacros } from '../../hooks/use-selection-macros.js';
+import { useEntryDrag }     from '../../hooks/use-entry-drag.js';
 import { buildRenderItems, effectiveCollapseState, flattenRenderItems } from '../../services/folder-tree.js';
 import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { COLLAPSE_STATES } from '../../constants/folders.js';
 import { folderOrderFor } from '../../constants/sort-modes.js';
 
 export function EntryList({ entries, groupByType, showFolders = true }) {
-  const { updateEntry, removeEntry, reorderEntriesById } = useEntries();
+  const { updateEntry, removeEntry } = useEntries();
   const { folders } = useFolders();
   const { filterActive } = useFolderFilter();
   const { handleSelectionClick, selectFolderEntries } = useSelectionMacros();
@@ -26,13 +33,18 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   const isMobile    = useMobile();
   const sortMode    = useUi((s) => s.sortMode);
   const searchQuery = useUi((s) => s.searchQuery);
-  const dragId           = useRef(null);
-  const lastOverId       = useRef(null);
-  const isDragFromHandle = useRef(false);
+  const isDragFromHandle       = useRef(false);
+  const isFolderDragFromHandle = useRef(false);
+  const listRef                = useRef(null);
+  const tailRef                = useRef(null);
+  const drag = useEntryDrag(listRef);
 
   // Reset the drag-handle flag on every mouseup so stale state can't bleed into the next gesture
   useEffect(() => {
-    function resetFlag() { isDragFromHandle.current = false; }
+    function resetFlag() {
+      isDragFromHandle.current = false;
+      isFolderDragFromHandle.current = false;
+    }
     window.addEventListener('mouseup', resetFlag);
     return () => window.removeEventListener('mouseup', resetFlag);
   }, []);
@@ -72,36 +84,61 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     );
   }
 
-  // Drag moves entries by id — the rendered order is a transform of entries[],
-  // so a rendered position is not an array position (see reorderEntriesById).
-  // `lastOverId` latches the card we most recently swapped past: without it the
-  // repeated dragover events over that same card would swap the pair back and
-  // forth on every mouse tick.
-  function onDragOver(e, overId) {
-    e.preventDefault();
-    if (dragId.current === null || dragId.current === overId) return;
-    if (lastOverId.current === overId) return;
-    reorderEntriesById(dragId.current, overId);
-    lastOverId.current = overId;
-  }
-
+  // A non-default sort imposes its own order, so a manual reorder under one
+  // would be immediately overwritten and read as the drag having failed.
+  // Narrowing (search / type filter / folder filter) does *not* disable drag:
+  // the splice resolves by id, so dropping between two visible rows means
+  // exactly what it looks like even when rows between them are filtered out.
   const dragDisabled = isMobile || sortMode !== 'default';
 
+  // Which half of the row the pointer is in decides before/after.
+  function edgeFor(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    return (e.clientY - r.top) < r.height / 2 ? drag.DROP_EDGES.BEFORE : drag.DROP_EDGES.AFTER;
+  }
+
+  function indicatorClass(id) {
+    const t = drag.dropTarget;
+    if (!t || t.kind !== drag.DROP_KINDS.ENTRY || t.id !== id) return '';
+    return t.edge === drag.DROP_EDGES.BEFORE ? ' entry-list-item--drop-before' : ' entry-list-item--drop-after';
+  }
+
   function renderEntry(entry, position, density = 'full') {
-    // A condensed row has no drag handle, so it can't start a drag either.
-    const dragProps = (dragDisabled || density === 'condensed') ? {} : {
+    // A condensed row has no handle to grab, so the whole row starts a drag —
+    // a condensed folder is exactly where bulk rearranging happens.
+    const canDrag = !dragDisabled;
+    const dragProps = !canDrag ? {} : {
       draggable: true,
       onDragStart: (e) => {
-        if (!isDragFromHandle.current) { e.preventDefault(); return; }
-        dragId.current = entry.id;
-        lastOverId.current = null;
+        if (density !== 'condensed' && !isDragFromHandle.current) { e.preventDefault(); return; }
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+        drag.startEntryDrag(entry.id, orderedIds);
       },
-      onDragOver: (e) => onDragOver(e, entry.id),
-      onDragEnd:  () => { dragId.current = null; lastOverId.current = null; isDragFromHandle.current = false; },
+      onDragOver: (e) => {
+        if (!drag.isDragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        drag.hoverTarget({ kind: drag.DROP_KINDS.ENTRY, id: entry.id, edge: edgeFor(e) }, e.clientY);
+      },
+      // preventDefault only. Letting `drop` reach the document matters for the
+      // same reason `dragend` does — anything tracking the end of a drag from
+      // above needs to see it. The container's own drop handler re-checks the
+      // target, which is already cleared by the time it runs, so this can't
+      // commit twice.
+      onDrop: (e) => { e.preventDefault(); drag.commitDrop(); },
+      // Deliberately NOT stopPropagation: `dragend` has to reach the document.
+      // Anything watching there for the end of a drag — the window backstop
+      // below, and the test harness's drag manager — otherwise never learns the
+      // gesture finished and treats the next one as a drag still in progress.
+      onDragEnd:  () => { drag.endDrag(); isDragFromHandle.current = false; },
     };
 
     return (
-      <div key={entry.id} {...dragProps} className="entry-list-item">
+      <div
+        key={entry.id}
+        {...dragProps}
+        className={`entry-list-item${drag.isDragged(entry.id) ? ' entry-list-item--dragging' : ''}${indicatorClass(entry.id)}`}
+      >
         <EntryCard
           entry={entry}
           index={position}
@@ -131,10 +168,26 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
         const tucked = state === COLLAPSE_STATES.TUCKED && !narrowed;
         const density = state === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full';
 
+        const isDropFolder = drag.dropTarget?.kind === drag.DROP_KINDS.FOLDER
+          && drag.dropTarget.id === folder.id;
+        // The *header* is the drag source, not the block. Making the block
+        // draggable would nest every entry row inside a draggable ancestor,
+        // which stalls the browser's drag session outright — no entry inside a
+        // folder could be dragged at all.
+        const folderDragProps = dragDisabled ? {} : {
+          draggable: true,
+          onDragStart: (e) => {
+            if (!isFolderDragFromHandle.current) { e.preventDefault(); return; }
+            if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+            drag.startFolderDrag(folder.id);
+          },
+          onDragEnd: () => { drag.endDrag(); isFolderDragFromHandle.current = false; },
+        };
+
         out.push(
           <div
             key={`folder-${folder.id}`}
-            className="folder-block"
+            className={`folder-block${drag.draggingFolderId === folder.id ? ' folder-block--dragging' : ''}${isDropFolder ? ' folder-block--drop-into' : ''}`}
             style={{ '--folder-color': folder.color }}
           >
             <FolderHeader
@@ -143,6 +196,19 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
               effectiveState={state}
               entryIds={flattenRenderItems([item]).map((e) => e.id)}
               onFolderSelectionClick={selectFolderEntries}
+              dragProps={folderDragProps}
+              onDragHandleMouseDown={dragDisabled ? undefined : () => { isFolderDragFromHandle.current = true; }}
+              onHeaderDragOver={dragDisabled ? undefined : (e) => {
+                if (!drag.isDragging) return;
+                e.preventDefault();
+                e.stopPropagation();
+                drag.hoverTarget({ kind: drag.DROP_KINDS.FOLDER, id: folder.id }, e.clientY);
+              }}
+              onHeaderDrop={dragDisabled ? undefined : (e) => {
+                e.preventDefault();
+                drag.commitDrop();
+              }}
+              isDropTarget={isDropFolder}
             />
             {!tucked && item.children.length > 0 && (
               <div className="folder-entries">
@@ -197,8 +263,56 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     );
   }
 
+  // Run-off zone under the last row: the only way to express "top level, at the
+  // very end" when the last row happens to live inside a folder.
+  if (!dragDisabled) {
+    items.push(
+      <div
+        key="entry-list-tail"
+        ref={tailRef}
+        className={`entry-list-tail${
+          drag.dropTarget?.kind === drag.DROP_KINDS.ROOT_END ? ' entry-list-tail--active' : ''
+        }${drag.isDragging ? ' entry-list-tail--armed' : ''}`}
+        onDragOver={(e) => {
+          if (!drag.isDragging) return;
+          e.preventDefault();
+          e.stopPropagation();
+          // No clientY: resting on the tail shouldn't keep auto-scrolling, or
+          // the zone slides out from under the pointer as it makes room.
+          drag.hoverTarget({ kind: drag.DROP_KINDS.ROOT_END, id: null });
+        }}
+        onDrop={(e) => { e.preventDefault(); drag.commitDrop(); }}
+      >
+        {drag.isDragging ? 'Drop here to move out of every folder' : ''}
+      </div>
+    );
+  }
+
+  // Anything below the last row means "top level, at the end". This lives on
+  // the container rather than only on the tail element because auto-scroll can
+  // slide the tail up past the pointer as it makes room, leaving the pointer
+  // over the container's own padding — the tail alone would be unreachable at
+  // exactly the moment you were aiming for it. Rows and folder headers
+  // stopPropagation on dragover, so this only ever sees unclaimed space.
+  function onListDragOver(e) {
+    if (!drag.isDragging) return;
+    const tailTop = tailRef.current?.getBoundingClientRect().top;
+    if (tailTop == null || e.clientY < tailTop) return;
+    e.preventDefault();
+    drag.hoverTarget({ kind: drag.DROP_KINDS.ROOT_END, id: null }, e.clientY);
+  }
+
   return (
-    <div className="entry-list">
+    <div
+      className="entry-list"
+      ref={listRef}
+      onDragOver={onListDragOver}
+      onDrop={(e) => {
+        if (drag.dropTarget?.kind !== drag.DROP_KINDS.ROOT_END) return;
+        e.preventDefault();
+        drag.commitDrop();
+      }}
+    >
       {items}
     </div>
   );

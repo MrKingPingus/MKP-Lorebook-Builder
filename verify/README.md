@@ -75,7 +75,26 @@ Two, and they run in this order:
   selection from blanking the list), and folder ordering under the alpha sorts.
 - **`selection-range-checks.mjs`** — pure-logic checks for the modifier+click
   gesture table (shift adds, ctrl removes, ranges, anchor fallbacks).
+- **`drag-drop-checks.mjs`** — pure-logic checks for drop resolution: reorder,
+  the position-decides-the-folder rule, multi-drag, folder moves, and the
+  "nothing is ever lost" invariant on every path.
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
+
+## Driving drags
+
+`dragTo` in the driver runs a real native HTML5 drag (mousedown on the handle,
+a nudge to cross the drag threshold, then a move to the target). Two things
+about it are worth knowing before adding a drag scenario:
+
+- **Measure the target during the drag, not before.** The run-off drop zone
+  below the list is 0px tall until a drag starts, so a box taken beforehand is
+  a zero-height strip the pointer can never land on. `dragTo` handles this.
+- **Keep drags out of the auto-scroll zone.** Scrolling the list mid-drag
+  desynchronises Playwright's drag manager, and the *next* drag in that page
+  then hangs on `mouse.move`. This is a harness limitation, not an app bug —
+  auto-scroll works in a real browser. Scenarios avoid it by dragging near the
+  top of the list, or by narrowing the list (search or the folder filter) so
+  everything fits on screen without scrolling.
 
 ## Browser resolution
 
