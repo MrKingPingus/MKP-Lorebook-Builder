@@ -44,11 +44,12 @@ function resolveChromium() {
   return undefined; // let Playwright use its managed browser
 }
 
-export async function launch({ width = 1280, height = 900, mobile = false } = {}) {
+export async function launch({ width = 1280, height = 900, mobile = false, deviceScaleFactor } = {}) {
   const browser = await chromium.launch({ headless: true, executablePath: resolveChromium() });
   const context = await browser.newContext({
     viewport: { width, height },
-    isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 2 : 1,
+    isMobile: mobile, hasTouch: mobile,
+    deviceScaleFactor: deviceScaleFactor ?? (mobile ? 2 : 1),
   });
   const page = await context.newPage();
   page.on('pageerror', (e) => console.log('  PAGEERROR', e.message));

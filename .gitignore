@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated feature screenshots — rebuild with verify/screenshots.mjs
+screenshots/*.png
