@@ -50,30 +50,7 @@ export function dropEntriesInFolder(entries, ids, folderId) {
   return assignEntriesToFolder(entries, ids ?? [], folderId ?? null);
 }
 
-// Drop above the list: top level, at the very front of entries[].
-export function moveEntriesToStart(entries, ids) {
-  const list   = entries ?? [];
-  const moving = new Set(ids ?? []);
-  if (moving.size === 0) return list;
-  const moved = list.filter((e) => moving.has(e.id))
-    .map((e) => (e.folderId == null ? e : { ...e, folderId: null }));
-  const rest  = list.filter((e) => !moving.has(e.id));
-  return [...moved, ...rest];
-}
 
-// Move a folder out to the top level, at the front of the list. This is what
-// makes "which folder is first" adjustable: a folder anchors at its earliest
-// member, so putting its block at the front of entries[] puts its header at the
-// top of the list.
-export function moveFolderToStart(entries, folders, folderId) {
-  if (!canDropFolder(folders, folderId, null)) return null;
-  const nextFolders = updateFolder(folders, folderId, { parentId: null });
-  const gathered = gatherSubtree(entries ?? [], nextFolders, folderId);
-  const moving   = new Set(subtreeEntryIds(gathered, nextFolders, folderId));
-  const block    = gathered.filter((e) => moving.has(e.id));
-  const rest     = gathered.filter((e) => !moving.has(e.id));
-  return { folders: nextFolders, entries: [...block, ...rest] };
-}
 
 // Drop past the end of the list: top level, at the end of entries[].
 export function moveEntriesToEnd(entries, ids) {
@@ -207,10 +184,3 @@ export function isNoopEntryDrop(entries, ids, targetId, edge) {
   return next.every((e, i) => e === list[i]);
 }
 
-// Folder a drop target belongs to, for highlighting the receiving folder block
-// while the pointer hovers a position inside it.
-export function dropTargetFolderId(entries, folders, targetId) {
-  const target = (entries ?? []).find((e) => e.id === targetId);
-  const folder = getFolder(folders, target?.folderId);
-  return folder?.id ?? null;
-}

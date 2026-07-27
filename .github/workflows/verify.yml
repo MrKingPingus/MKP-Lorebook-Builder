@@ -61,6 +61,24 @@ jobs:
       - name: Build
         run: npm run build
 
-      # run.mjs starts its own dev server and tears it down afterwards.
+      # Serve the *built* artifact and test that, not the dev server. What ships
+      # to Pages is the production bundle, so that is what the suite should be
+      # exercising — a dev-only pass would miss anything the build itself
+      # changes. run.mjs reuses a server already listening on VERIFY_URL.
+      - name: Serve the production build
+        run: |
+          npx vite preview --port 4173 --strictPort > /tmp/preview.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:4173/; then ready=1; break; fi
+            sleep 1
+          done
+          if [ -z "$ready" ]; then
+            echo "::error ::vite preview did not come up on port 4173"
+            cat /tmp/preview.log
+            exit 1
+          fi
+
       - name: Verify
+        env:
+          VERIFY_URL: http://127.0.0.1:4173/
         run: npm run verify

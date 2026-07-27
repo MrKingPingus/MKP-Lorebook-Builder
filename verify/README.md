@@ -95,6 +95,20 @@ VERIFY_ONLY=crosstalk npm run verify
 Matching is case-insensitive substring. The pure-logic checks take milliseconds
 so they always run regardless of the filter. Run the whole suite before pushing.
 
+## Testing the production build
+
+`npm run verify` starts a dev server. Before a release, run it against the
+*built* artifact instead — that is what actually ships:
+
+```bash
+npm run build
+npx vite preview --port 4173 --strictPort &
+VERIFY_URL=http://localhost:4173/ npm run verify
+```
+
+CI does this too, so a PR exercises the production bundle rather than the dev
+server.
+
 ## Driving drags
 
 `dragTo` in the driver runs a real native HTML5 drag (mousedown on the handle,
