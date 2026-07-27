@@ -6,6 +6,7 @@ import { useKeybindings }  from '../../hooks/use-keybindings.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
+import { SELECTION_GESTURES, SELECTION_GESTURES_LABEL } from '../../constants/selection.js';
 
 export function KeyboardHelpOverlay() {
   const open                  = useUi((s) => s.keyboardHelpOpen);
@@ -58,6 +59,24 @@ export function KeyboardHelpOverlay() {
               </ul>
             </section>
           ))}
+
+          {/* Mouse gestures aren't rebindable, so they aren't in the registry —
+              but this overlay is where people look for "how do I do X". */}
+          <section className="kbd-help-group">
+            <h3 className="kbd-help-group-title">{SELECTION_GESTURES_LABEL}</h3>
+            <ul className="kbd-help-list">
+              {SELECTION_GESTURES.map((g) => (
+                <li key={g.id} className="kbd-help-row">
+                  <span className="kbd-help-label">{g.label}</span>
+                  <span className="kbd-help-keys">
+                    {g.keys.map((k, i) => (
+                      <kbd key={i} className="kbd-help-key">{k}</kbd>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
 
         <div className="kbd-help-footer">

@@ -16,6 +16,16 @@
   - **In reference mode the filter only touches the lorebook you're editing.** Folders belong to one lorebook, so filtering by them leaves the reference pane beside it showing its full list. Swapping which book is active clears the filter rather than pointing it at the wrong book.
   - Filtering by folder still works under the **"cross-book matches"** sorts, even though those hide folder headers — you get that folder's entries as a flat list, still split into matched and unmatched.
 
+- **Select entries with Shift and Ctrl, like a file manager.** You no longer have to turn Select mode on first — **Shift+click any entry** and it opens Select mode with that entry already picked. From there:
+  - **Shift+click** another entry to grab **everything between the two**, so a run of twenty entries takes two clicks instead of twenty.
+  - **Ctrl+click** (Cmd on a Mac) to **drop one entry** back out of the selection you've built.
+  - **Ctrl+Shift+click** to **drop a whole range** back out.
+  - **Shift+click a folder's header** to select **everything inside it**, sub-folders included; Ctrl+click the header gives it all back.
+  - Adding and removing are always what they say — nothing you've selected is ever silently thrown away by the next click.
+  - **A range reaches into a collapsed folder.** Entries tucked out of sight still sit between the two entries you clicked, so they come along — and the folder's header shows how many of its hidden entries are selected, so the count is never a mystery.
+  - **Your open entries are safe.** These shortcuts only work on an entry's header row, so Shift+clicking inside a description box still selects text the way it always has.
+  - All of it is listed under **Selecting with the mouse** in the keyboard shortcuts overlay (press **?**).
+
 ### Fixes
 
 - **A → Z and Z → A now put folders in alphabetical order too.** Previously a folder was positioned by the first entry inside it, so a folder named "Zeta" holding an entry called "Apple" could sit above a loose entry called "Beta" — the list didn't read alphabetically even though that's what you'd asked for. Folders and entries now sort together in one alphabetical run, by the folder's own name. Sorting by **Last modified** is unchanged: a folder still appears wherever its most recently edited entry lands, which is what that sort is for.

@@ -9,6 +9,8 @@ export const useUiStore = create((set) => ({
   selectedIds: new Set(),   // Set<entryId> — entries selected while searchMode === 'select'
   selectionSide: null,      // 'active' | 'reference' | null — which side the current selection
                             //   was clicked from. Locks "Copy to other panel" semantics.
+  selectionAnchorId: null,  // entry id a shift+click range measures from. Set by every
+                            //   modifier+click, cleared whenever the selection is.
   stagedTypes: new Map(),   // Map<entryId, typeId> — per-row staged type changes in select mode,
                             //   committed in a batch via Apply Staged Types. Cleared on exit
                             //   select mode, on deselect of an entry, and on apply.
@@ -53,17 +55,32 @@ export const useUiStore = create((set) => ({
       // Leaving select mode clears any lingering selection (and its side) and
       // any pending staged type changes.
       if (state.searchMode === 'select' && searchMode !== 'select') {
-        return { searchMode, selectedIds: new Set(), selectionSide: null, stagedTypes: new Map() };
+        return {
+          searchMode,
+          selectedIds: new Set(),
+          selectionSide: null,
+          stagedTypes: new Map(),
+          selectionAnchorId: null,
+        };
       }
       return { searchMode };
     }),
   toggleSelected: (id, side) =>
     set((state) => {
+      // A plain click re-anchors too (`selectionAnchorId` below), so a
+      // click-then-shift+click reads as one gesture rather than measuring from
+      // something the user has long forgotten clicking.
+      //
       // Switching sides mid-selection: clear the existing selection and start
       // a fresh one on the side the user just clicked. Staged types reset too
       // since they only make sense for the current selection.
       if (state.selectionSide && side && state.selectionSide !== side) {
-        return { selectedIds: new Set([id]), selectionSide: side, stagedTypes: new Map() };
+        return {
+          selectedIds: new Set([id]),
+          selectionSide: side,
+          stagedTypes: new Map(),
+          selectionAnchorId: id,
+        };
       }
       const next = new Set(state.selectedIds);
       const stagedNext = new Map(state.stagedTypes);
@@ -77,9 +94,25 @@ export const useUiStore = create((set) => ({
         selectedIds: next,
         selectionSide: next.size === 0 ? null : (state.selectionSide ?? side ?? null),
         stagedTypes: stagedNext,
+        selectionAnchorId: id,
       };
     }),
-  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null, stagedTypes: new Map() }),
+  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null, stagedTypes: new Map(), selectionAnchorId: null }),
+  setSelectionAnchor: (selectionAnchorId) => set({ selectionAnchorId }),
+  // Take ids back out of the selection (ctrl+click and ctrl+shift+click). Any
+  // staged type change for a deselected entry goes with it, matching what
+  // toggleSelected already does on a single deselect.
+  deselectIds: (ids) =>
+    set((state) => {
+      const next       = new Set(state.selectedIds);
+      const stagedNext = new Map(state.stagedTypes);
+      for (const id of ids) { next.delete(id); stagedNext.delete(id); }
+      return {
+        selectedIds: next,
+        stagedTypes: stagedNext,
+        selectionSide: next.size === 0 ? null : state.selectionSide,
+      };
+    }),
   setStagedType:    (id, typeId) =>
     set((state) => {
       const next = new Map(state.stagedTypes);

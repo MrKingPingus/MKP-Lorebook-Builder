@@ -894,6 +894,135 @@ const SCENARIOS = [
       await page.locator('.reference-entry-card').count(), refCount);
   }),
 
+  // ── 11DD: modifier+click selection macros ──────────────────────────────────
+  // shift adds, ctrl removes, and shift with either does it to a whole range.
+  // The gesture table itself is covered exhaustively in
+  // selection-range-checks.mjs; these prove the wiring reaches it.
+  scenario('Selection: shift+click opens select mode and extends a range', async (page, check) => {
+    await openBuilderWithFixture(page);
+    check('not in select mode to begin with', await page.locator('.bulk-action-bar').count(), 0);
+
+    const labels = page.locator('.entry-list > .entry-list-item .entry-label');
+    await labels.nth(1).click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    check('shift+click enters select mode', await page.locator('.bulk-action-bar').count(), 1);
+    check('with that one entry selected',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '1 selected');
+
+    // Second shift+click extends from the first — inclusive at both ends.
+    await labels.nth(4).click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    check('a second shift+click takes the range',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '4 selected');
+
+    // Ctrl removes a single entry from the middle of that range.
+    await labels.nth(2).click({ modifiers: ['Control'] });
+    await settle(page, 250);
+    check('ctrl+click removes one',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '3 selected');
+
+    // Ctrl+shift removes a range, measured from the entry ctrl+click anchored.
+    await labels.nth(4).click({ modifiers: ['Control', 'Shift'] });
+    await settle(page, 250);
+    check('ctrl+shift+click removes a range',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '1 selected');
+  }),
+
+  // A range runs through a tucked folder: those entries really do sit between
+  // the endpoints, so they join the selection and the header says how many.
+  scenario('Selection: a range reaches into a tucked folder and says so', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    // Cards 2 and 3, so the folder ends up with loose entries either side.
+    await selectCards(page, '.build-panel', [2, 3]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    // Tuck it — two clicks, since the cycle stops at condensed first.
+    const cycle = page.locator('.folder-collapse-btn').first();
+    await cycle.click();
+    await settle(page, 200);
+    await cycle.click();
+    await settle(page, 250);
+    check('the folder is tucked', await page.locator('.folder-entries .entry-card').count(), 0);
+
+    // Top-level loose rows are now e0, e1, e4, … with the folder between e1
+    // and e4. A range from e0 to e4 has to swallow the two hidden entries.
+    const loose = page.locator('.entry-list > .entry-list-item .entry-label');
+    await loose.nth(0).click({ modifiers: ['Shift'] });
+    await settle(page, 250);
+    await loose.nth(2).click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    check('the hidden entries join the range',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '5 selected');
+    check('and the folder header reports them',
+      (await page.locator('.folder-selected-count').innerText()).trim(), '2 selected');
+  }),
+
+  // Shift+click on a folder header is the fast "everything in here".
+  scenario('Selection: shift+click a folder header takes its whole subtree', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1, 2]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+    check('left select mode cleanly', await page.locator('.bulk-action-bar').count(), 0);
+
+    // Click the *name button* specifically, not the header's dead space — that
+    // is the real test of the capture-phase guard, since a plain click there
+    // opens the rename input. Same for the collapse glyph below.
+    await page.locator('.folder-name').first().click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    check('shift+click the name selects everything inside',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '3 selected');
+    check('and does not start a rename', await page.locator('.folder-name-input').count(), 0);
+
+    await page.locator('.folder-collapse-btn').first().click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    // Assert on *density*, not on the card count: the first cycle stop is
+    // condensed, which still renders all three cards, so a count check here
+    // would pass whether or not the guard works.
+    check('shift+click the collapse glyph does not cycle the folder',
+      await page.locator('.entry-card--condensed').count(), 0);
+    check('and the selection is unchanged',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '3 selected');
+
+    await page.locator('.folder-name').first().click({ modifiers: ['Control'] });
+    await settle(page, 300);
+    check('ctrl+click the name gives them back',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '0 selected');
+  }),
+
+  // Modifier+click is header-only on purpose: an expanded card's body is a live
+  // editor, and shift+click inside a textarea is a real text-selection gesture.
+  scenario('Selection: modifier+click never hijacks an expanded card body', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.card-action-btn', { hasText: 'Expand' }).first().click();
+    await settle(page, 300);
+
+    const box = page.locator('.entry-card').first().locator('textarea').first();
+    check('the card really is expanded', await box.count(), 1);
+    await box.click({ modifiers: ['Shift'] });
+    await settle(page, 250);
+    check('shift+click in the description does not enter select mode',
+      await page.locator('.bulk-action-bar').count(), 0);
+
+    // The header of that same card still works.
+    await page.locator('.entry-card').first().locator('.entry-label').click({ modifiers: ['Shift'] });
+    await settle(page, 300);
+    check('but the header does', await page.locator('.bulk-action-bar').count(), 1);
+    check('selecting exactly one entry',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '1 selected');
+  }),
+
   scenario('Crosstalk: pairing + same-name match badges', async (page, check) => {
     await pairCrosstalk(page);
     check('active book fully loaded',    await page.locator('.build-panel .entry-card').count(), 34);

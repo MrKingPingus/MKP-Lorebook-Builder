@@ -11,7 +11,8 @@ import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { useUi }         from '../../hooks/use-ui.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useFolderFilter } from '../../hooks/use-folder-filter.js';
-import { buildRenderItems, effectiveCollapseState } from '../../services/folder-tree.js';
+import { useSelectionMacros } from '../../hooks/use-selection-macros.js';
+import { buildRenderItems, effectiveCollapseState, flattenRenderItems } from '../../services/folder-tree.js';
 import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { COLLAPSE_STATES } from '../../constants/folders.js';
 import { folderOrderFor } from '../../constants/sort-modes.js';
@@ -20,6 +21,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry, reorderEntriesById } = useEntries();
   const { folders } = useFolders();
   const { filterActive } = useFolderFilter();
+  const { handleSelectionClick, selectFolderEntries } = useSelectionMacros();
   const { displayChord } = useKeybindings();
   const isMobile    = useMobile();
   const sortMode    = useUi((s) => s.sortMode);
@@ -54,6 +56,13 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     // folder at the earliest position in its subtree. See `folderOrderFor`.
     orderBy: folderOrderFor(sortMode),
   });
+
+  // Display order, including entries tucked out of sight inside a collapsed
+  // folder — they still sit between the endpoints of a shift+click range, so a
+  // range can't silently mean something different depending on what happens to
+  // be collapsed. The folder header reports how many of its hidden entries the
+  // range caught.
+  const orderedIds = flattenRenderItems(renderTree).map((e) => e.id);
 
   if (renderTree.length === 0) {
     return (
@@ -98,6 +107,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
           index={position}
           onUpdate={updateEntry}
           onRemove={removeEntry}
+          onSelectionClick={(e) => handleSelectionClick(e, entry.id, 'active', orderedIds)}
           density={density}
           onDragHandleMouseDown={dragDisabled ? undefined : () => { isDragFromHandle.current = true; }}
         />
@@ -127,7 +137,13 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
             className="folder-block"
             style={{ '--folder-color': folder.color }}
           >
-            <FolderHeader folder={folder} count={item.totalCount} effectiveState={state} />
+            <FolderHeader
+              folder={folder}
+              count={item.totalCount}
+              effectiveState={state}
+              entryIds={flattenRenderItems([item]).map((e) => e.id)}
+              onFolderSelectionClick={selectFolderEntries}
+            />
             {!tucked && item.children.length > 0 && (
               <div className="folder-entries">
                 {renderItems(item.children, state)}

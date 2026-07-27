@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useFolders }      from '../../hooks/use-folders.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { useSelection }    from '../../hooks/use-selection.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import {
   FOLDER_COLORS,
@@ -16,7 +17,7 @@ import {
 } from '../../constants/folders.js';
 import { nextCollapseState } from '../../services/folder-tree.js';
 
-export function FolderHeader({ folder, count, effectiveState }) {
+export function FolderHeader({ folder, count, effectiveState, entryIds = [], onFolderSelectionClick }) {
   const {
     renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder,
     parentOptions, canCreateParentFor, createFolderAsParentOf,
@@ -28,6 +29,7 @@ export function FolderHeader({ folder, count, effectiveState }) {
   const [nestOpen, setNestOpen]     = useState(false);
   const inputRef = useRef(null);
   const rootRef  = useRef(null);
+  const { isSelectMode, selectedIds } = useSelection();
   const pendingFocusFolderId    = useUi((s) => s.pendingFocusFolderId);
   const setPendingFocusFolderId = useUi((s) => s.setPendingFocusFolderId);
 
@@ -85,6 +87,9 @@ export function FolderHeader({ folder, count, effectiveState }) {
   // button still advances the folder's OWN state.
   const shownState = effectiveState ?? renderedCollapseState(folder.collapseState);
   const isTucked   = shownState === COLLAPSE_STATES.TUCKED;
+  const selectedInside = isSelectMode && isTucked
+    ? entryIds.reduce((n, id) => n + (selectedIds.has(id) ? 1 : 0), 0)
+    : 0;
   const inherited  = shownState !== renderedCollapseState(folder.collapseState);
   const glyph      = COLLAPSE_GLYPHS[shownState] ?? COLLAPSE_GLYPHS[COLLAPSE_STATES.FULL];
   const nextState  = nextCollapseState(renderedCollapseState(folder.collapseState), collapseCycle);
@@ -95,6 +100,17 @@ export function FolderHeader({ folder, count, effectiveState }) {
       className={`folder-header${isTucked ? ' folder-header--tucked' : ''}`}
       style={{ '--folder-color': folder.color }}
       ref={rootRef}
+      // Shift+click anywhere on the header takes everything inside the folder,
+      // ctrl+click gives it back. Capture phase so the gesture never reaches
+      // the collapse / rename / nest / delete buttons underneath it.
+      onClickCapture={(e) => {
+        if (!e.shiftKey && !e.ctrlKey && !e.metaKey) return;
+        const remove = e.ctrlKey || e.metaKey;
+        if (onFolderSelectionClick?.(entryIds, 'active', { remove })) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
     >
       <button
         className="folder-collapse-btn"
@@ -139,6 +155,18 @@ export function FolderHeader({ folder, count, effectiveState }) {
       <span className="folder-count" title={`${count} entr${count === 1 ? 'y' : 'ies'} in this folder`}>
         {count}
       </span>
+
+      {/* A shift+click range runs through a tucked folder, so entries the user
+          cannot see can end up selected. Say so on the header rather than
+          letting the bulk bar's total be the only clue. */}
+      {isSelectMode && isTucked && selectedInside > 0 && (
+        <span
+          className="folder-selected-count"
+          title={`${selectedInside} selected entr${selectedInside === 1 ? 'y' : 'ies'} hidden inside this folder`}
+        >
+          {selectedInside} selected
+        </span>
+      )}
 
       <button
         className="folder-nest-btn"

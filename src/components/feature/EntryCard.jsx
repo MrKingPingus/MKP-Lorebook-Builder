@@ -64,7 +64,7 @@ function ExportOffIcon() {
   );
 }
 
-export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, density = 'full' }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, onSelectionClick, density = 'full' }) {
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
@@ -297,8 +297,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   // Desktop: double-click header (skip if clicking a button or badge)
   function onHeaderDoubleClick(e) {
+    // A quick pair of shift+clicks building a selection also fires dblclick;
+    // collapsing the card underneath the user mid-gesture is pure noise.
+    if (e.shiftKey || e.ctrlKey || e.metaKey) return;
     if (e.target.closest('button, .stats-badge')) return;
     toggleCollapse();
+  }
+
+  // Modifier+click runs on the header only. An expanded card's body is a live
+  // editor, and shift+click inside a textarea is a real text-selection gesture
+  // that must not be hijacked. Capture phase so a macro click never reaches the
+  // Expand/Remove buttons sitting inside the header.
+  function onHeaderClickCapture(e) {
+    if (onSelectionClick?.(e)) e.stopPropagation();
   }
 
   // ── Mobile card — slim tap-to-open row ──────────────────────────────────────
@@ -387,6 +398,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       {/* ── Card header ── */}
       <div
         className={`entry-card-header${isCondensed ? ' entry-card-header--condensed' : (entryHeaderSize && entryHeaderSize !== 'default' ? ` entry-card-header--${entryHeaderSize}` : '')}`}
+        onClickCapture={onHeaderClickCapture}
         onDoubleClick={isSelectMode ? undefined : onHeaderDoubleClick}
       >
         {!isSelectMode && !isCondensed && (

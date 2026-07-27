@@ -73,6 +73,8 @@ Two, and they run in this order:
 - **`folder-tree-checks.mjs`** — pure-logic checks for the folder splice, the
   render walk, the folder filter (including the pruning that keeps a stale
   selection from blanking the list), and folder ordering under the alpha sorts.
+- **`selection-range-checks.mjs`** — pure-logic checks for the modifier+click
+  gesture table (shift adds, ctrl removes, ranges, anchor fallbacks).
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
 
 ## Browser resolution

@@ -6247,3 +6247,17 @@ kbd {
   transition: color var(--transition), background var(--transition);
 }
 .storage-usage-refresh-btn:hover { color: var(--text); background: var(--border); }
+
+/* Count of selected-but-hidden entries on a tucked folder header. A shift+click
+   range runs straight through a collapsed folder, so this is what keeps those
+   entries from being invisible members of the selection. */
+.folder-selected-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
