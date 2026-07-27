@@ -17,6 +17,7 @@ import {
   dropEntriesInFolder,
   moveFolderToPosition,
   moveFolderToEnd,
+  moveFolderBeforeFolder,
   dropFolderInFolder,
   canDropFolder,
   dragPayloadFor,
@@ -139,6 +140,11 @@ export function useEntryDrag(scrollRef) {
 
     if (drag.kind === DRAG_KINDS.FOLDER) {
       if (next.kind === DROP_KINDS.ROOT_END) return canDropFolder(folders, drag.folderId, null);
+      // Only offered when it would actually resolve — an empty target folder has
+      // no position in entries[] to sit in front of.
+      if (next.kind === DROP_KINDS.FOLDER_BEFORE) {
+        return moveFolderBeforeFolder(entries, folders, drag.folderId, next.id) !== null;
+      }
       if (next.kind === DROP_KINDS.FOLDER)   return canDropFolder(folders, drag.folderId, next.id);
       const entry = entries.find((e) => e.id === next.id);
       if (!entry) return false;
@@ -147,6 +153,7 @@ export function useEntryDrag(scrollRef) {
       return canDropFolder(folders, drag.folderId, entry.folderId ?? null);
     }
 
+    if (next.kind === DROP_KINDS.FOLDER_BEFORE) return false;  // folder drags only
     if (next.kind === DROP_KINDS.ENTRY && drag.ids.includes(next.id)) return false;
     return true;
   }
@@ -230,9 +237,10 @@ export function useEntryDrag(scrollRef) {
 
     if (drag.kind === DRAG_KINDS.FOLDER) {
       let next = null;
-      if (target.kind === DROP_KINDS.FOLDER)        next = dropFolderInFolder(entries, folders, drag.folderId, target.id);
-      else if (target.kind === DROP_KINDS.ROOT_END) next = moveFolderToEnd(entries, folders, drag.folderId);
-      else                                         next = moveFolderToPosition(entries, folders, drag.folderId, target.id, target.edge);
+      if (target.kind === DROP_KINDS.FOLDER)          next = dropFolderInFolder(entries, folders, drag.folderId, target.id);
+      else if (target.kind === DROP_KINDS.ROOT_END)   next = moveFolderToEnd(entries, folders, drag.folderId);
+      else if (target.kind === DROP_KINDS.FOLDER_BEFORE) next = moveFolderBeforeFolder(entries, folders, drag.folderId, target.id);
+      else                                           next = moveFolderToPosition(entries, folders, drag.folderId, target.id, target.edge);
       if (next) {
         snapshot();
         updateActiveEntriesAndFolders(next.entries, next.folders);

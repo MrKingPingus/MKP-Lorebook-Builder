@@ -628,7 +628,7 @@ const SCENARIOS = [
     // A folder with nothing in it can't anchor to an entry, so it leads its
     // level — right where you're looking after making one.
     check('a new folder is the first row',
-      (await page.locator('.entry-list > *').first().getAttribute('class')), 'folder-block');
+      (await page.locator('.entry-list > *:not(.entry-list-dropzone)').first().getAttribute('class')), 'folder-block');
     await page.keyboard.type('Outer');
     await page.keyboard.press('Enter');
     await settle(page, 250);
@@ -857,7 +857,7 @@ const SCENARIOS = [
 
     // Manual order anchors it at its member, which is the first entry.
     check('anchored at its member under manual order',
-      await page.locator('.entry-list > *').first().getAttribute('class'), 'folder-block');
+      await page.locator('.entry-list > *:not(.entry-list-dropzone)').first().getAttribute('class'), 'folder-block');
 
     await page.locator('.sort-btn').first().click();
     await settle(page, 200);
@@ -868,10 +868,11 @@ const SCENARIOS = [
     // so anchoring by member position would keep the folder at the very top
     // under A → Z. Ordering by folder name sends "Zzz Folder" to the bottom.
     // Keep those two facts together if the fixture ever changes.
+    const rows = '.entry-list > *:not(.entry-list-dropzone)';
     check('A → Z drops the Z folder to the end',
-      await page.locator('.entry-list > *').last().getAttribute('class'), 'folder-block');
+      await page.locator(rows).last().getAttribute('class'), 'folder-block');
     check('and it is no longer anchored at its member',
-      await page.locator('.entry-list > *').first().getAttribute('class'), 'entry-list-item');
+      await page.locator(rows).first().getAttribute('class'), 'entry-list-item');
     check('no entries lost to the reorder',
       await page.locator('.entry-card').count(), count);
   }),
@@ -1319,6 +1320,80 @@ const SCENARIOS = [
       await page.locator('.entry-card--condensed').count(), 2);
   }),
 
+  // Folder order is adjustable by dropping on a header's leading edge. Nothing
+  // else can express it: every row around a folder belongs to some folder, so an
+  // entry-row drop always resolves as "join that folder".
+  scenario('Drag: a folder can be moved above the first folder', async (page, check) => {
+    await openBuilderWithFixture(page);
+    // Two folders, the second made from entries further down the list.
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.type('Alpha');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+
+    await selectCards(page, '.build-panel', [2, 3]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.type('Beta');
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 350);
+
+    const folderNames = async () =>
+      (await page.locator('.folder-name').allInnerTexts()).map((t) => t.trim());
+    check('Alpha leads to begin with', (await folderNames())[0], 'Alpha');
+
+    // Drag Beta's handle onto the *leading edge* of Alpha's header. `dragTo`'s
+    // 'before' aims at the top 20% of the target, which is inside the
+    // before-band; the middle of the header would mean "nest inside Alpha".
+    const betaHandle = page.locator('.folder-header', { hasText: 'Beta' }).first()
+      .locator('.folder-drag-handle');
+    await dragTo(page, betaHandle,
+      page.locator('.folder-header', { hasText: 'Alpha' }).first(), 'before');
+    check('Beta now leads', (await folderNames())[0], 'Beta');
+    check('and Alpha is still there', (await folderNames())[1], 'Alpha');
+    check('both folders kept their entries',
+      await page.locator('.folder-entries .entry-card').count(), 4);
+
+    // One undo puts it back — still a single gesture.
+    await page.keyboard.press('Control+z');
+    await settle(page, 400);
+    check('one undo restores the original order', (await folderNames())[0], 'Alpha');
+  }),
+
+  // The entry-row height preference should carry to the folder headers those
+  // rows sit under, or a "roomier rows" setting leaves the folders untouched.
+  scenario('Folders: the entry header size setting also sizes folder headers', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).first().click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await settle(page, 250);
+
+    const header = page.locator('.folder-header').first();
+    const before = (await header.boundingBox()).height;
+
+    await openSettings(page);
+    // "Entry header height" lives under Editing & Entries, not Window & Layout —
+    // one of the placements the Settings-reorganisation note in plan.md covers.
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    await editing.locator('.settings-label', { hasText: 'Entry header height' })
+      .locator('select').selectOption('large');
+    await settle(page, 300);
+    await page.locator('.menu-panel-close').first().click();
+    await settle(page, 350);
+
+    const after = (await header.boundingBox()).height;
+    check('the folder header grew with the setting', after > before, true);
+    check('and the buttons on it are real hit targets',
+      (await page.locator('.folder-add-entry-btn').first().boundingBox()).height >= 24, true);
+  }),
+
   scenario('Crosstalk: pairing + same-name match badges', async (page, check) => {
     await pairCrosstalk(page);
     check('active book fully loaded',    await page.locator('.build-panel .entry-card').count(), 34);
@@ -1461,10 +1536,30 @@ const SCENARIOS = [
   }),
 ];
 
-export async function runAllChecks() {
+// A full run launches a fresh browser per scenario, so it costs minutes. When
+// you are iterating on one area, `npm run verify -- <substring>` (or
+// VERIFY_ONLY=<substring>) runs just the scenarios whose names match, which
+// turns an eight-minute loop into a ten-second one. Matching is
+// case-insensitive; several terms can be comma-separated.
+function selectScenarios(filter) {
+  if (!filter) return SCENARIOS;
+  const terms = filter.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+  if (terms.length === 0) return SCENARIOS;
+  return SCENARIOS.filter((s) => terms.some((t) => s.name.toLowerCase().includes(t)));
+}
+
+export async function runAllChecks(filter = process.env.VERIFY_ONLY) {
   console.log(`Fixture: ${FIXTURE}`);
+  const chosen = selectScenarios(filter);
+  if (chosen.length === 0) {
+    console.log(`\nNo scenario name matches ${JSON.stringify(filter)} — nothing to run.`);
+    return false;
+  }
+  if (chosen.length !== SCENARIOS.length) {
+    console.log(`Filter ${JSON.stringify(filter)} — running ${chosen.length}/${SCENARIOS.length} scenarios.`);
+  }
   const outcomes = [];
-  for (const s of SCENARIOS) outcomes.push(await runScenario(s));
+  for (const s of chosen) outcomes.push(await runScenario(s));
   const passed = outcomes.filter(Boolean).length;
   console.log(`\n${passed}/${outcomes.length} scenarios passed`);
   return outcomes.every(Boolean);

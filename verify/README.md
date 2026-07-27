@@ -80,6 +80,21 @@ Two, and they run in this order:
   "nothing is ever lost" invariant on every path.
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
 
+## Running a subset
+
+A full run launches a fresh browser per scenario and takes several minutes.
+While iterating on one area, filter by name:
+
+```bash
+npm run verify -- folders        # only scenarios with "folders" in the name
+npm run verify -- "Drag:"        # only the drag scenarios
+npm run verify -- drag,selection # comma-separated terms, any match
+VERIFY_ONLY=crosstalk npm run verify
+```
+
+Matching is case-insensitive substring. The pure-logic checks take milliseconds
+so they always run regardless of the filter. Run the whole suite before pushing.
+
 ## Driving drags
 
 `dragTo` in the driver runs a real native HTML5 drag (mousedown on the handle,
@@ -89,6 +104,12 @@ about it are worth knowing before adding a drag scenario:
 - **Measure the target during the drag, not before.** The run-off drop zone
   below the list is 0px tall until a drag starts, so a box taken beforehand is
   a zero-height strip the pointer can never land on. `dragTo` handles this.
+- **Never let a drop target resize the list.** A zone that grows when a drag
+  begins shifts every row out from under the cursor, and scrolling the list
+  mid-drag desynchronises Playwright's drag manager so the *next* drag hangs on
+  `mouse.move`. The tail zone can grow because it sits below everything; the
+  equivalent above the list could not, which is why "before this folder" is a
+  band on the folder header rather than a zone at the top.
 - **Keep drags out of the auto-scroll zone.** Scrolling the list mid-drag
   desynchronises Playwright's drag manager, and the *next* drag in that page
   then hangs on `mouse.move`. This is a harness limitation, not an app bug —

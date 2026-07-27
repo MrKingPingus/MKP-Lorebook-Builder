@@ -6,6 +6,13 @@
 
 ### Additions
 
+- **Reorder folders by dragging.** Drop a folder onto the **top edge** of another folder's header and it becomes that folder's sibling, sitting just above it — including moving a folder above whichever one is currently first. Dropping onto the middle of a header still files inside it, as before. A blue line across the top of the header shows which one you'll get.
+- **Folder headers follow the entry header height setting.** Setting roomier rows in Settings → Editing & Entries now sizes the folder headers to match, instead of leaving them at the original height.
+
+### Fixes
+
+- **The buttons on a folder header are much bigger.** Add-entry, nest and delete were tiny and hard to hit; they're now proper 24px targets with a hover background, matching the collapse button.
+
 - **Add an entry straight into a folder** with the **＋** button on its header, instead of making one and then moving it.
 - **Two new keyboard shortcuts** — **Alt+V** selects everything currently visible (turning on Select mode if it isn't already), and **Alt+D** clears the selection. "Visible" honours whatever search, type filter or folder filter is active, so you can filter down and grab exactly that set. Both are rebindable in Settings like every other shortcut.
 - **Folder collapse stages are now yours to pick.** Settings → Folders has a checkbox for each size — Full, Condensed and Hidden — so you can have a folder button that's simply open-or-shut, or one that stops at a condensed middle step on the way. **The new default is open-or-shut**; turn Condensed on if you want the middle stage back. Full is always on, and one other stage has to stay on, since a button with only one size to show wouldn't do anything.

@@ -8,13 +8,23 @@
 export const DROP_KINDS = {
   ENTRY:  'entry',    // before/after a specific entry, inheriting its folder
   FOLDER: 'folder',   // onto a folder header — file into that folder
-  ROOT_END: 'root-end', // the run-off zone below the list — top level, at the end
+  ROOT_END: 'root-end',     // the run-off zone below the list — top level, at the end
+  FOLDER_BEFORE: 'folder-before', // the top edge of a folder header — become that
+                                  //   folder's sibling, immediately before it. The only
+                                  //   way to reorder folders: every row around a folder
+                                  //   belongs to some folder, so an entry-row drop always
+                                  //   reads as "join that folder" instead.
 };
 
 export const DROP_EDGES = { BEFORE: 'before', AFTER: 'after' };
 
 // What is being dragged.
 export const DRAG_KINDS = { ENTRIES: 'entries', FOLDER: 'folder' };
+
+// Fraction of a folder header's height, measured from the top, that means
+// "before this folder" rather than "into it" while dragging a folder. Small
+// enough that aiming at the header still means "into" by default.
+export const FOLDER_BEFORE_BAND = 0.35;
 
 // Hover this long over a tucked folder and it opens so you can drop inside it.
 // Long enough not to fire while passing over on the way somewhere else.

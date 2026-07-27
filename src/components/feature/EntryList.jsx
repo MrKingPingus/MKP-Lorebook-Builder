@@ -23,6 +23,7 @@ import { buildRenderItems, effectiveCollapseState, flattenRenderItems } from '..
 import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { COLLAPSE_STATES } from '../../constants/folders.js';
 import { folderOrderFor } from '../../constants/sort-modes.js';
+import { FOLDER_BEFORE_BAND } from '../../constants/drag.js';
 
 export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry } = useEntries();
@@ -174,6 +175,8 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
 
         const isDropFolder = drag.dropTarget?.kind === drag.DROP_KINDS.FOLDER
           && drag.dropTarget.id === folder.id;
+        const isDropBefore = drag.dropTarget?.kind === drag.DROP_KINDS.FOLDER_BEFORE
+          && drag.dropTarget.id === folder.id;
         // The *header* is the drag source, not the block. Making the block
         // draggable would nest every entry row inside a draggable ancestor,
         // which stalls the browser's drag session outright — no entry inside a
@@ -206,13 +209,24 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
                 if (!drag.isDragging) return;
                 e.preventDefault();
                 e.stopPropagation();
-                drag.hoverTarget({ kind: drag.DROP_KINDS.FOLDER, id: folder.id }, e.clientY);
+                // Dragging a folder: the top slice of a header means "become
+                // this folder's sibling, just before it", which is the only way
+                // to reorder folders — every row around a folder belongs to
+                // one, so an entry-row drop always reads as "join it".
+                const r = e.currentTarget.getBoundingClientRect();
+                const onLeadingEdge = drag.dragKind === 'folder'
+                  && (e.clientY - r.top) < r.height * FOLDER_BEFORE_BAND;
+                drag.hoverTarget({
+                  kind: onLeadingEdge ? drag.DROP_KINDS.FOLDER_BEFORE : drag.DROP_KINDS.FOLDER,
+                  id: folder.id,
+                }, e.clientY);
               }}
               onHeaderDrop={dragDisabled ? undefined : (e) => {
                 e.preventDefault();
                 drag.commitDrop();
               }}
               isDropTarget={isDropFolder}
+              isDropBefore={isDropBefore}
             />
             {!tucked && item.children.length > 0 && (
               <div className="folder-entries">
@@ -257,24 +271,16 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
 
   const items = renderItems(renderTree, COLLAPSE_STATES.FULL);
 
-  // A book with folders but no entries still renders the folders — keep the
-  // add-an-entry hint underneath them so the list is never a dead end.
-  if (entries.length === 0) {
-    items.push(
-      <div key="entry-list-empty" className="entry-list-empty">
-        No entries yet. Press {displayChord('new_entry')} or click + to add one.
-      </div>
-    );
-  }
-
-  // Run-off zone under the last row: the only way to express "top level, at the
-  // very end" when the last row happens to live inside a folder.
+  // Run-off zone under the last row: the only way to say "top level, at the very
+  // end" when the last row happens to live inside a folder. It sits below
+  // everything, so growing it during a drag pushes nothing around — the same
+  // trick above the list would shift every row out from under the cursor.
   if (!dragDisabled) {
     items.push(
       <div
         key="entry-list-tail"
         ref={tailRef}
-        className={`entry-list-tail${
+        className={`entry-list-tail entry-list-dropzone${
           drag.dropTarget?.kind === drag.DROP_KINDS.ROOT_END ? ' entry-list-tail--active' : ''
         }${drag.isDragging ? ' entry-list-tail--armed' : ''}`}
         onDragOver={(e) => {

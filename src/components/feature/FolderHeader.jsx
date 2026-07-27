@@ -5,6 +5,7 @@ import { useFolders }      from '../../hooks/use-folders.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
 import { useSelection }    from '../../hooks/use-selection.js';
+import { useSettings }     from '../../hooks/use-settings.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import {
   FOLDER_COLORS,
@@ -19,7 +20,7 @@ import { nextCollapseState } from '../../services/folder-tree.js';
 
 export function FolderHeader({
   folder, count, effectiveState, entryIds = [], onFolderSelectionClick,
-  onDragHandleMouseDown, onHeaderDragOver, onHeaderDrop, isDropTarget = false,
+  onDragHandleMouseDown, onHeaderDragOver, onHeaderDrop, isDropTarget = false, isDropBefore = false,
   dragProps = {},
 }) {
   const {
@@ -34,6 +35,10 @@ export function FolderHeader({
   const inputRef = useRef(null);
   const rootRef  = useRef(null);
   const { isSelectMode, selectedIds } = useSelection();
+  // Folder headers follow the same row-height preference as entry rows — a
+  // setting asking for roomier rows should not leave the folders they sit in
+  // at the original height.
+  const { entryHeaderSize } = useSettings();
   const pendingFocusFolderId    = useUi((s) => s.pendingFocusFolderId);
   const setPendingFocusFolderId = useUi((s) => s.setPendingFocusFolderId);
 
@@ -102,7 +107,8 @@ export function FolderHeader({
   return (
     <div
       {...dragProps}
-      className={`folder-header${isTucked ? ' folder-header--tucked' : ''}${isDropTarget ? ' folder-header--drop-into' : ''}`}
+      className={`folder-header${isTucked ? ' folder-header--tucked' : ''}${isDropTarget ? ' folder-header--drop-into' : ''}${isDropBefore ? ' folder-header--drop-before' : ''}${
+        entryHeaderSize && entryHeaderSize !== 'default' ? ` folder-header--${entryHeaderSize}` : ''}`}
       style={{ '--folder-color': folder.color }}
       ref={rootRef}
       onDragOver={onHeaderDragOver}

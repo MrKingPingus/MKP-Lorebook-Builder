@@ -22,6 +22,10 @@ async function serverUp() {
 // Pure-logic checks first — no browser needed. They cover the platform paths
 // (macOS Option key) the Linux-only browser suite can't reach, and the folder
 // maths, which is far cheaper to exercise exhaustively here than through the UI.
+// `npm run verify -- folders` runs only the scenarios whose names contain
+// "folders". The pure-logic checks are milliseconds, so they always run.
+const only = process.argv.slice(2).find((a) => !a.startsWith('-')) || process.env.VERIFY_ONLY || '';
+
 const pureOk = [
   runKeychordChecks(),
   runFolderTreeChecks(),
@@ -45,7 +49,7 @@ if (await serverUp()) {
 
 let ok = false;
 try {
-  ok = await runAllChecks();
+  ok = await runAllChecks(only);
 } finally {
   if (child) child.kill('SIGTERM');
 }

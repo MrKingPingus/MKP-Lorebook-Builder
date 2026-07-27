@@ -50,6 +50,12 @@ Builder-only organization layer — Reaper-style nested, collapsible, colored fo
 
 Two things worth remembering from that pass. **`Mod` in this codebase means Ctrl/Cmd, not Alt** — `Mod+V` is Paste, and a request for "Mod+V" should be read as an ambiguity to resolve, not a collision to engineer around. And **`clampCollapseState` was only half-wired**: `FolderHeader` clamped its glyph but `EntryList` rendered from the raw stored state, so a folder saved as condensed kept rendering condensed after that stage was switched off. Latent since 11C, and missed because the old scenario always returned the folder to full before switching the setting.
 
+**Folder reordering (2026-07-27).** Dropping a folder on the top ~35% of another folder's header (`FOLDER_BEFORE`, `moveFolderBeforeFolder`) makes it that folder's sibling, immediately before it. Nothing else can express folder order: every row around a folder belongs to some folder, so an entry-row drop always resolves as "join that folder".
+
+This was first built as a drop zone above the list, mirroring the tail. That does not work, and the reason generalises: **a drop target must never resize the list.** The zone went 0→46px when a drag began, which shifted every row down under the cursor, and the resulting scroll-geometry change desynchronised the test harness's drag manager so the *next* drag hung. The tail zone gets away with growing only because it sits below everything. Anything above the content has to be a paint-only affordance — hence a band on the header drawn with a pseudo-element.
+
+Still open: there is no "after this folder" band, so ordering is expressed purely as "before X". Reaching an arbitrary permutation can take more than one drag.
+
 **Decisions taken during 11E (2026-07-27) — drag and drop:**
 41. **A drop position implies the parent.** Between two rows inside a folder joins that folder; between two top-level rows leaves every folder; onto a folder header files into it; past the end of the list unfiles. One rule covers reordering and re-filing, which is what lets a drag write order and `folderId` as a single undoable step.
 42. **Swap-on-hover replaced with an indicator that commits on release.** The old model couldn't express "into folder F" — no array swap means "change this row's parent" — and it pushed **one history snapshot per row dragged past**, so undoing one gesture took a dozen Ctrl+Z presses and evicted a dozen slots from a 50-deep stack. Both bugs closed together. A drop that lands where it started is detected (`isNoopEntryDrop`) and costs no history step at all.
@@ -112,6 +118,18 @@ Two things worth remembering from that pass. **`Mod` in this codebase means Ctrl
 **Open from 11A:**
 - ~~**Drag has no folder semantics yet.**~~ **Closed in 11E** — a drop position now decides the folder, and the whole gesture is one undo.
 - **Entry-card footer is at four controls** (Entry History · Move to folder · Public/Private · Hide from Export). Fits one line at the desktop default; wraps in a narrow crosstalk pane. The footer-crowding revisit below is now live, not theoretical.
+
+### Settings reorganisation (queued, not yet scheduled)
+
+**Raised 2026-07-27 from user testing.** Settings has accreted section by section as features landed, and options are now in places that make sense only historically. Finding a given setting means guessing which section it grew up in rather than which one it belongs to.
+
+Concrete examples of the drift:
+- **Entry header height** sits under *Editing & Entries*, but it is purely a layout/row-density control and reads as belonging with *Window & Layout*.
+- *Editing & Entries* has become a catch-all — counters, trigger delimiter, entry stats, private-entry marking, hotbar slots and row height all share it, with no ordering principle among them.
+- **Folders** is its own section while **Reference & Crosstalk** is another, yet folder behaviour *in* crosstalk is explained in neither.
+- Density and sizing controls are split across three sections (*Editing & Entries*, *Window & Layout*, *Appearance*) with no obvious rule for which lands where.
+
+Worth doing as a deliberate pass rather than incrementally: decide the grouping principle first (by *what you are changing* — content, layout, appearance, behaviour — rather than by which feature introduced it), then move everything at once. `pendingSettingsSection` deep-links and the `openSettingsSection` verify helper both key off section titles, so a rename or re-home has to update those together. Purely a re-organisation — no setting should change meaning or default.
 
 ### Phase 12 — Entry Templates (GitHub #114)
 

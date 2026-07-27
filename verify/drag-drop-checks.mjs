@@ -10,6 +10,7 @@ import {
   dropEntriesInFolder,
   moveFolderToPosition,
   moveFolderToEnd,
+  moveFolderBeforeFolder,
   dropFolderInFolder,
   canDropFolder,
   dragPayloadFor,
@@ -206,6 +207,46 @@ export function runDragDropChecks() {
       show(end.entries), 'a b d c:F');
   }
 
+  // ── reordering folders ─────────────────────────────────────────────────────
+  // Dropping on a header's leading edge is the only way to change folder order:
+  // every row around a folder belongs to some folder, so an entry-row drop
+  // always resolves as "join that folder" instead.
+  {
+    const fs = [folder('A'), folder('B')];
+    const b  = book('a1:A a2:A b1:B c');
+
+    check('folder A leads to begin with',
+      showItems(buildRenderItems(b, fs)), '[A a1 a2] [B b1] c');
+
+    const moved = moveFolderBeforeFolder(b, fs, 'B', 'A');
+    check('dropping B before A reorders them',
+      showItems(buildRenderItems(moved.entries, moved.folders)), '[B b1] [A a1 a2] c');
+    check('and B\'s whole block travels', show(moved.entries), 'b1:B a1:A a2:A c');
+    check('B stays at the same level', moved.folders.find((f) => f.id === 'B').parentId, null);
+
+    // The reverse direction works from the same target.
+    const back = moveFolderBeforeFolder(moved.entries, moved.folders, 'A', 'B');
+    check('and it can be reordered back',
+      showItems(buildRenderItems(back.entries, back.folders)), '[A a1 a2] [B b1] c');
+
+    // Dropping before a nested folder joins that folder's parent.
+    const nested = [folder('P'), folder('C', { parentId: 'P' }), folder('X')];
+    const nb = book('c1:C x1:X p1:P');
+    const into = moveFolderBeforeFolder(nb, nested, 'X', 'C');
+    check('dropping before a nested folder adopts its parent',
+      into.folders.find((f) => f.id === 'X').parentId, 'P');
+
+    // Guards.
+    check('a folder cannot be dropped before itself',
+      moveFolderBeforeFolder(b, fs, 'A', 'A'), null);
+    check('a folder cannot be dropped before its own descendant',
+      moveFolderBeforeFolder(nb, nested, 'P', 'C'), null);
+    check('an empty target has no position to sit in front of',
+      moveFolderBeforeFolder(book('a1:A'), [folder('A'), folder('E')], 'A', 'E'), null);
+    check('an unknown target is refused',
+      moveFolderBeforeFolder(b, fs, 'B', 'GONE'), null);
+  }
+
   // ── nothing is ever lost ───────────────────────────────────────────────────
   // The single invariant worth checking on every path: a drop rearranges, it
   // never adds or drops an entry.
@@ -219,6 +260,8 @@ export function runDragDropChecks() {
     check('move-to-end preserves the set', ids(moveEntriesToEnd(b, ['a'])), 'abcd');
     check('folder move preserves the set', ids(moveFolderToPosition(b, fs, 'C', 'b', BEFORE).entries), 'abcd');
     check('folder-to-end preserves the set', ids(moveFolderToEnd(b, fs, 'C').entries), 'abcd');
+    check('folder-before preserves the set',
+      ids(moveFolderBeforeFolder(book('a:P b c:C d'), fs, 'C', 'P').entries), 'abcd');
 
     // And the render walk still shows every entry exactly once afterwards.
     const moved = moveFolderToPosition(b, fs, 'C', 'b', BEFORE);

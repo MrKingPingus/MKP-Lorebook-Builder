@@ -50,6 +50,31 @@ export function dropEntriesInFolder(entries, ids, folderId) {
   return assignEntriesToFolder(entries, ids ?? [], folderId ?? null);
 }
 
+// Drop above the list: top level, at the very front of entries[].
+export function moveEntriesToStart(entries, ids) {
+  const list   = entries ?? [];
+  const moving = new Set(ids ?? []);
+  if (moving.size === 0) return list;
+  const moved = list.filter((e) => moving.has(e.id))
+    .map((e) => (e.folderId == null ? e : { ...e, folderId: null }));
+  const rest  = list.filter((e) => !moving.has(e.id));
+  return [...moved, ...rest];
+}
+
+// Move a folder out to the top level, at the front of the list. This is what
+// makes "which folder is first" adjustable: a folder anchors at its earliest
+// member, so putting its block at the front of entries[] puts its header at the
+// top of the list.
+export function moveFolderToStart(entries, folders, folderId) {
+  if (!canDropFolder(folders, folderId, null)) return null;
+  const nextFolders = updateFolder(folders, folderId, { parentId: null });
+  const gathered = gatherSubtree(entries ?? [], nextFolders, folderId);
+  const moving   = new Set(subtreeEntryIds(gathered, nextFolders, folderId));
+  const block    = gathered.filter((e) => moving.has(e.id));
+  const rest     = gathered.filter((e) => !moving.has(e.id));
+  return { folders: nextFolders, entries: [...block, ...rest] };
+}
+
 // Drop past the end of the list: top level, at the end of entries[].
 export function moveEntriesToEnd(entries, ids) {
   const list   = entries ?? [];
@@ -110,6 +135,42 @@ export function moveFolderToPosition(entries, folders, folderId, targetId, edge 
     folders: nextFolders,
     entries: [...rest.slice(0, insertAt), ...block, ...rest.slice(insertAt)],
   };
+}
+
+// Drop a folder onto the *top edge* of another folder's header: it becomes that
+// folder's sibling, immediately before it.
+//
+// This is what makes folder order adjustable. A folder anchors at its earliest
+// member, and the rows around a folder all belong to some folder, so dropping
+// "between" two folders via an entry row is impossible — the row's own folder
+// always wins. Aiming at the header edge is unambiguous.
+//
+// Returns null when the target holds no entries anywhere in its subtree: an
+// empty folder has no position in entries[] to sit in front of, so there is
+// nothing to express.
+export function moveFolderBeforeFolder(entries, folders, folderId, targetFolderId) {
+  const list = entries ?? [];
+  if (!folderId || !targetFolderId || folderId === targetFolderId) return null;
+
+  const target = getFolder(folders, targetFolderId);
+  if (!target) return null;
+  // Can't sit beside a folder that lives inside the one being dragged.
+  if (subtreeFolderIds(folders, folderId).includes(targetFolderId)) return null;
+
+  const nextParent = target.parentId ?? null;
+  if (!canDropFolder(folders, folderId, nextParent)) return null;
+
+  const nextFolders = updateFolder(folders, folderId, { parentId: nextParent });
+  const gathered = gatherSubtree(list, nextFolders, folderId);
+  const moving   = new Set(subtreeEntryIds(gathered, nextFolders, folderId));
+  const block    = gathered.filter((e) => moving.has(e.id));
+  const rest     = gathered.filter((e) => !moving.has(e.id));
+
+  const targetIds = new Set(subtreeEntryIds(rest, nextFolders, targetFolderId));
+  const at = rest.findIndex((e) => targetIds.has(e.id));
+  if (at === -1) return null;
+
+  return { folders: nextFolders, entries: [...rest.slice(0, at), ...block, ...rest.slice(at)] };
 }
 
 // Move a folder out to the top level, at the end of the list.
