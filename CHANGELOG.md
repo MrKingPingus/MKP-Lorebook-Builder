@@ -6,6 +6,15 @@
 
 ### Additions
 
+- **Add an entry straight into a folder** with the **＋** button on its header, instead of making one and then moving it.
+- **Two new keyboard shortcuts** — **Alt+V** selects everything currently visible (turning on Select mode if it isn't already), and **Alt+D** clears the selection. "Visible" honours whatever search, type filter or folder filter is active, so you can filter down and grab exactly that set. Both are rebindable in Settings like every other shortcut.
+- **Folder collapse stages are now yours to pick.** Settings → Folders has a checkbox for each size — Full, Condensed and Hidden — so you can have a folder button that's simply open-or-shut, or one that stops at a condensed middle step on the way. **The new default is open-or-shut**; turn Condensed on if you want the middle stage back. Full is always on, and one other stage has to stay on, since a button with only one size to show wouldn't do anything.
+
+### Fixes
+
+- **A folder you open by hovering during a drag now closes again if you don't use it.** Resting a dragged entry over a closed folder still opens it so you can drop inside, but if you carry on and drop somewhere else, the folder goes back to how you left it. The folder you actually drop into stays open.
+- **Turning off a collapse stage no longer leaves folders stuck in it.** A folder set to Condensed now correctly falls back to full size when you turn the Condensed stage off, and returns to condensed if you turn it back on — previously the header button updated but the entries underneath stayed condensed.
+
 - **Drag entries into and out of folders.** Dragging now understands folders: where you drop something decides where it belongs.
   - **Drop between two entries inside a folder** and it joins that folder. **Drop between two top-level entries** and it comes out of whatever folder it was in. **Drop straight onto a folder's header** and it files inside.
   - **A drop zone appears under the list while you drag** — drop there to pull something out of every folder and send it to the end.

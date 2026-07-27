@@ -23,7 +23,7 @@ export function FolderHeader({
   dragProps = {},
 }) {
   const {
-    renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder,
+    renameFolder, setFolderColor, deleteFolder, cycleCollapse, nestFolder, addEntryInFolder,
     parentOptions, canCreateParentFor, createFolderAsParentOf,
     collapseCycle, renderedCollapseState,
   } = useFolders();
@@ -184,6 +184,16 @@ export function FolderHeader({
           {selectedInside} selected
         </span>
       )}
+
+      <button
+        className="folder-add-entry-btn"
+        onClick={() => addEntryInFolder(folder.id)}
+        title={`Add a new entry inside "${folder.name || NEW_FOLDER_NAME}"`}
+        aria-label={`Add a new entry inside folder ${folder.name || NEW_FOLDER_NAME}`}
+        type="button"
+      >
+        ＋
+      </button>
 
       <button
         className="folder-nest-btn"

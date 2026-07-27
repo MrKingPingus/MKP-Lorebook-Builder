@@ -151,6 +151,8 @@ export default function App() {
     redo:                () => redo(),
     toggle_select:       () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
     expand_collapse_all: () => toggleExpandCollapseAll(),
+    select_all_visible:  () => useUiStore.getState().requestSelectAllVisible(),
+    deselect_all:        () => useUiStore.getState().clearSelection(),
     focus_search:        () => requestSearchFocus(),
     focus_find_replace:  () => requestFindFocus(),
     toggle_reference:    () => setCrosstalkEnabled(!useSettingsStore.getState().crosstalkEnabled),

@@ -37,7 +37,9 @@ import {
 import {
   COLLAPSE_STATES,
   MAX_FOLDER_DEPTH,
-  COLLAPSE_CYCLES,
+  COLLAPSE_STAGE_ORDER,
+  DEFAULT_COLLAPSE_STAGES,
+  normalizeCollapseStages,
   UNFILED_FILTER_ID,
 } from '../src/constants/folders.js';
 import { folderOrderFor } from '../src/constants/sort-modes.js';
@@ -273,8 +275,8 @@ export function runFolderTreeChecks() {
     effectiveCollapseState(COLLAPSE_STATES.TUCKED, COLLAPSE_STATES.FULL), COLLAPSE_STATES.TUCKED);
 
   // ── configurable collapse cycle ────────────────────────────────────────────
-  const TWO   = COLLAPSE_CYCLES.two;
-  const THREE = COLLAPSE_CYCLES.three;
+  const TWO   = DEFAULT_COLLAPSE_STAGES;
+  const THREE = COLLAPSE_STAGE_ORDER;
 
   check('three-stage cycle passes through condensed',
     nextCollapseState(COLLAPSE_STATES.FULL, THREE), COLLAPSE_STATES.CONDENSED);
@@ -315,11 +317,22 @@ export function runFolderTreeChecks() {
     removeFolder(book('a:F1 b:F2'), [folder('F1'), folder('F2')], 'F1').folders.length, 1);
 
   // ── collapse cycle ─────────────────────────────────────────────────────────
-  check('cycle full → condensed',      nextCollapseState(COLLAPSE_STATES.FULL),      COLLAPSE_STATES.CONDENSED);
-  check('cycle condensed → tucked',    nextCollapseState(COLLAPSE_STATES.CONDENSED), COLLAPSE_STATES.TUCKED);
-  check('cycle tucked → full (wraps)', nextCollapseState(COLLAPSE_STATES.TUCKED),    COLLAPSE_STATES.FULL);
+  // The *default* cycle is now open-or-shut, so these skip condensed. The
+  // three-stage cycle is still available and checked just below.
+  check('default cycle full → tucked',      nextCollapseState(COLLAPSE_STATES.FULL),   COLLAPSE_STATES.TUCKED);
+  check('default cycle tucked → full (wraps)', nextCollapseState(COLLAPSE_STATES.TUCKED), COLLAPSE_STATES.FULL);
+  check('a condensed folder rejoins the default cycle at the head',
+    nextCollapseState(COLLAPSE_STATES.CONDENSED), COLLAPSE_STATES.FULL);
   check('unknown state falls back to the head of the cycle',
     nextCollapseState('nonsense'), COLLAPSE_STATES.FULL);
+
+  const ALL3 = COLLAPSE_STAGE_ORDER;
+  check('three-stage cycle full → condensed',
+    nextCollapseState(COLLAPSE_STATES.FULL, ALL3),      COLLAPSE_STATES.CONDENSED);
+  check('three-stage cycle condensed → tucked',
+    nextCollapseState(COLLAPSE_STATES.CONDENSED, ALL3), COLLAPSE_STATES.TUCKED);
+  check('three-stage cycle tucked → full (wraps)',
+    nextCollapseState(COLLAPSE_STATES.TUCKED, ALL3),    COLLAPSE_STATES.FULL);
 
   // ── folder filter ──────────────────────────────────────────────────────────
   // The filter is an entry-level predicate, but it reads the folder *tree*:
@@ -425,6 +438,37 @@ export function runFolderTreeChecks() {
     // Filtering and ordering compose: no entry may be lost or duplicated.
     const all = flattenRenderItems(buildRenderItems(b, zeta, { orderBy: 'name-asc' }));
     check('alpha ordering keeps every entry exactly once', all.map((e) => e.id).sort().join(' '), 'apple beta');
+  }
+
+  // ── collapse stage sets ────────────────────────────────────────────────────
+  // The setting moved from a two-value dropdown to a set of checkboxes. The
+  // read has to stay tolerant: old stored values, partial arrays and junk all
+  // have to resolve to a usable cycle, and a cycle is only usable if it has
+  // 'full' plus at least one other stage.
+  {
+    const j = (v) => normalizeCollapseStages(v).join(',');
+    const F = COLLAPSE_STATES.FULL, C = COLLAPSE_STATES.CONDENSED, T = COLLAPSE_STATES.TUCKED;
+
+    check('the default is open-or-shut', DEFAULT_COLLAPSE_STAGES.join(','), `${F},${T}`);
+    check('legacy "three" still means all three stages', j('three'), `${F},${C},${T}`);
+    check('legacy "two" still means full and hidden', j('two'), `${F},${T}`);
+    check('an explicit set is honoured', j([F, C]), `${F},${C}`);
+    check('order is canonical regardless of input order', j([T, C, F]), `${F},${C},${T}`);
+    check('full is added back if omitted', j([C]), `${F},${C}`);
+    check('a set with only full falls back to the default', j([F]), `${F},${T}`);
+    check('an empty set falls back to the default', j([]), `${F},${T}`);
+    check('junk falls back to the default', j('nonsense'), `${F},${T}`);
+    check('undefined falls back to the default', j(undefined), `${F},${T}`);
+    check('unknown states are ignored', j([F, 'bogus', T]), `${F},${T}`);
+
+    // A normalised cycle is always usable by the two functions that consume it.
+    for (const input of ['three', 'two', [C], [], 'junk', [T]]) {
+      const cycle = normalizeCollapseStages(input);
+      const ok = cycle.length >= 2 && cycle.includes(F)
+        && cycle.includes(nextCollapseState(F, cycle))
+        && cycle.includes(clampCollapseState(C, cycle));
+      check(`cycle from ${JSON.stringify(input)} is usable`, ok, true);
+    }
   }
 
   // ── small helpers ──────────────────────────────────────────────────────────

@@ -43,6 +43,8 @@ export const useUiStore = create((set) => ({
   crossFlashId:          null,  // entry id currently flashing as the target of a cross-pane "in both books" jump; auto-clears on a timer
   compareEntryId:        null,  // active-side entry id currently in side-by-side compare mode against its same-named reference counterpart; null = not comparing
   keyboardHelpOpen:      false,  // true when the keyboard-shortcuts cheat-sheet overlay is open
+  selectAllVisibleNonce: 0,      // bumped by the select-all-visible hotkey; GlobalFilterBar owns the
+                                 //   visible-id lists for both panes, so it services the request there
   searchFocusNonce:      0,      // bumped by the focus-search hotkey; SearchBar focuses its input on change
   findFocusNonce:        0,      // bumped by the find/replace hotkey; SearchBar enters find-replace mode + focuses the find field
   pendingImportPick:     false,  // set by the import hotkey; AppendImportPanel switches to file mode + opens the OS picker, then clears
@@ -163,6 +165,10 @@ export const useUiStore = create((set) => ({
   setCompareEntryId:        (compareEntryId)        => set({ compareEntryId }),
   setKeyboardHelpOpen:      (keyboardHelpOpen)      => set({ keyboardHelpOpen }),
   toggleKeyboardHelp:       ()                      => set((s) => ({ keyboardHelpOpen: !s.keyboardHelpOpen })),
+  requestSelectAllVisible:  ()                      => set((s) => ({
+    searchMode: 'select',
+    selectAllVisibleNonce: s.selectAllVisibleNonce + 1,
+  })),
   requestSearchFocus:       ()                      => set((s) => ({ searchFocusNonce: s.searchFocusNonce + 1 })),
   requestFindFocus:         ()                      => set((s) => ({ findFocusNonce: s.findFocusNonce + 1 })),
   // Open the Import overlay and flag it to jump straight to the file picker.

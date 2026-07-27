@@ -31,23 +31,53 @@ export const COLLAPSE_STATES = {
 
 export const DEFAULT_COLLAPSE_STATE = COLLAPSE_STATES.FULL;
 
-// The order the header chevron cycles through. Three-stage mirrors Reaper's
-// folder button (full size → compact rows → hidden entirely); two-stage drops
-// the middle step for people who only ever want open or shut. Chosen in
-// Settings → Folders; see `folderCollapseStages`.
-export const COLLAPSE_CYCLES = {
-  three: [COLLAPSE_STATES.FULL, COLLAPSE_STATES.CONDENSED, COLLAPSE_STATES.TUCKED],
-  two:   [COLLAPSE_STATES.FULL, COLLAPSE_STATES.TUCKED],
-};
-
-export const DEFAULT_COLLAPSE_STAGES = 'three';
-
-export const COLLAPSE_STAGE_OPTIONS = [
-  { id: 'three', label: 'Three stages (full · condensed · hidden)' },
-  { id: 'two',   label: 'Two stages (full · hidden)' },
+// Which sizes the header button cycles through, chosen in Settings → Folders
+// as a set of checkboxes. Stored as an array of states in this canonical order.
+//
+// `full` is always part of the cycle: it is the state every folder returns to,
+// and a cycle without it could never show a folder's entries at normal size
+// again. Beyond that the user picks freely, so the meaningful choice is which
+// of condensed/hidden to include — and at least one must be, or the button
+// would have nothing to cycle to.
+export const COLLAPSE_STAGE_ORDER = [
+  COLLAPSE_STATES.FULL,
+  COLLAPSE_STATES.CONDENSED,
+  COLLAPSE_STATES.TUCKED,
 ];
 
-export const COLLAPSE_CYCLE = COLLAPSE_CYCLES[DEFAULT_COLLAPSE_STAGES];
+// Open or shut, no middle step. The condensed stage is genuinely useful but it
+// is the less obvious of the two, and a two-stage button is what most people
+// expect from a folder.
+export const DEFAULT_COLLAPSE_STAGES = [COLLAPSE_STATES.FULL, COLLAPSE_STATES.TUCKED];
+
+export const COLLAPSE_STAGE_LABELS = {
+  [COLLAPSE_STATES.FULL]:      'Full size',
+  [COLLAPSE_STATES.CONDENSED]: 'Condensed',
+  [COLLAPSE_STATES.TUCKED]:    'Hidden',
+};
+
+export const COLLAPSE_STAGE_HINTS = {
+  [COLLAPSE_STATES.FULL]:      'Entries at normal size — always available',
+  [COLLAPSE_STATES.CONDENSED]: 'Entries shrunk to a single line each',
+  [COLLAPSE_STATES.TUCKED]:    'Entries hidden, header shows the count',
+};
+
+// Read a stored setting into a usable cycle, tolerating anything: the legacy
+// 'three'/'two' strings from before this was a checkbox set, a partial array,
+// junk, or nothing at all. Always returns full plus at least one other stage,
+// in canonical order, so the cycle can never be empty or one-state.
+export function normalizeCollapseStages(value) {
+  if (value === 'three') return [...COLLAPSE_STAGE_ORDER];
+  if (value === 'two')   return [...DEFAULT_COLLAPSE_STAGES];
+
+  const wanted = new Set(Array.isArray(value) ? value : []);
+  const picked = COLLAPSE_STAGE_ORDER.filter(
+    (state) => state === COLLAPSE_STATES.FULL || wanted.has(state),
+  );
+  return picked.length > 1 ? picked : [...DEFAULT_COLLAPSE_STAGES];
+}
+
+export const COLLAPSE_CYCLE = DEFAULT_COLLAPSE_STAGES;
 
 // What each state does to the entries below the header, for tooltips.
 export const COLLAPSE_LABELS = {

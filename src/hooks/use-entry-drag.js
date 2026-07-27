@@ -52,6 +52,10 @@ export function useEntryDrag(scrollRef) {
 
   const springTimer = useRef(null);
   const springFor   = useRef(null);
+  // Folders this drag sprang open, and what they were before. Anything the drop
+  // didn't actually use gets put back — a folder you merely passed over on the
+  // way somewhere else shouldn't be left hanging open behind you.
+  const sprungOpen  = useRef(new Map());
   const scrollRaf   = useRef(null);
   const scrollVel   = useRef(0);
 
@@ -105,7 +109,9 @@ export function useEntryDrag(scrollRef) {
   // stuck in its dragging state, indicator and all.
   useEffect(() => {
     if (!drag) return undefined;
-    function onEnd() { setDrag(null); setTarget(null); clearSpring(); stopAutoScroll(); }
+    // Runs after our own drop handler (window is the last stop on the bubble),
+    // so a real drop has already decided which folder to leave open.
+    function onEnd() { endDrag(); }
     window.addEventListener('dragend', onEnd);
     window.addEventListener('drop', onEnd);
     return () => {
@@ -164,6 +170,9 @@ export function useEntryDrag(scrollRef) {
         clearSpring();
         springFor.current = next.id;
         springTimer.current = setTimeout(() => {
+          if (!sprungOpen.current.has(next.id)) {
+            sprungOpen.current.set(next.id, folder.collapseState);
+          }
           updateActiveFolders(
             folders.map((f) => (f.id === next.id ? { ...f, collapseState: COLLAPSE_STATES.FULL } : f)),
           );
@@ -174,7 +183,31 @@ export function useEntryDrag(scrollRef) {
     }
   }
 
-  function endDrag() {
+  // Put back any folder this drag sprang open that the drop didn't end up
+  // using. `keepOpenId` is the folder the entries actually landed in — that one
+  // stays open, because you want to see what you just put there.
+  function restoreSprungFolders(keepOpenId = null) {
+    const sprung = sprungOpen.current;
+    sprungOpen.current = new Map();
+    if (sprung.size === 0) return;
+
+    const current = foldersOf(
+      useLorebookStore.getState().lorebooks[useLorebookStore.getState().activeLorebookId],
+    );
+    let changed = false;
+    const next = current.map((f) => {
+      if (!sprung.has(f.id) || f.id === keepOpenId) return f;
+      // Only put it back if it is still sitting at the state we opened it to —
+      // if the user clicked the header themselves mid-drag, that wins.
+      if (f.collapseState !== COLLAPSE_STATES.FULL) return f;
+      changed = true;
+      return { ...f, collapseState: sprung.get(f.id) };
+    });
+    if (changed) updateActiveFolders(next);
+  }
+
+  function endDrag(keepOpenId = null) {
+    restoreSprungFolders(keepOpenId);
     setDrag(null);
     setTarget(null);
     clearSpring();
@@ -187,6 +220,14 @@ export function useEntryDrag(scrollRef) {
 
     const snapshot = () => pushSnapshot({ entries: [...entries], folders: [...folders] });
 
+    // The folder the drop lands in stays open; anything else this drag sprang
+    // open on the way gets put back.
+    const landedIn = target.kind === DROP_KINDS.FOLDER
+      ? target.id
+      : (target.kind === DROP_KINDS.ENTRY
+          ? (entries.find((e) => e.id === target.id)?.folderId ?? null)
+          : null);
+
     if (drag.kind === DRAG_KINDS.FOLDER) {
       let next = null;
       if (target.kind === DROP_KINDS.FOLDER)        next = dropFolderInFolder(entries, folders, drag.folderId, target.id);
@@ -196,7 +237,7 @@ export function useEntryDrag(scrollRef) {
         snapshot();
         updateActiveEntriesAndFolders(next.entries, next.folders);
       }
-      endDrag();
+      endDrag(next ? landedIn : null);
       return;
     }
 
@@ -207,7 +248,7 @@ export function useEntryDrag(scrollRef) {
       nextEntries = moveEntriesToEnd(entries, drag.ids);
     } else {
       // A drag that ends exactly where it started shouldn't cost a history step.
-      if (isNoopEntryDrop(entries, drag.ids, target.id, target.edge)) { endDrag(); return; }
+      if (isNoopEntryDrop(entries, drag.ids, target.id, target.edge)) { endDrag(landedIn); return; }
       nextEntries = moveEntriesToPosition(entries, drag.ids, target.id, target.edge);
     }
 
@@ -215,7 +256,7 @@ export function useEntryDrag(scrollRef) {
       snapshot();
       updateActiveEntriesAndFolders(nextEntries, folders);
     }
-    endDrag();
+    endDrag(landedIn);
   }
 
   const draggingIds = drag ? new Set(drag.ids) : null;

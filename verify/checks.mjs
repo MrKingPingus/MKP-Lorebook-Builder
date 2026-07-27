@@ -3,7 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 function scenario(name, fn) {
@@ -381,14 +381,12 @@ const SCENARIOS = [
     // can go somewhere else.
     check('selection cleared after the move', (await page.locator('.bulk-action-count').innerText()).trim(), '0 selected');
 
-    // The cycle is full → condensed → tucked, so tucking is two stops away.
+    // The default cycle is open-or-shut, so one click tucks. (The three-stage
+    // cycle is covered by the condensed scenarios, which opt into it.)
     const cycleBtn = page.locator('.folder-collapse-btn');
     await cycleBtn.click();
     await settle(page, 200);
-    check('one click condenses, does not hide', await page.locator('.folder-entries .entry-card').count(), 2);
-    await cycleBtn.click();
-    await settle(page, 200);
-    check('tucked hides folder entries', await page.locator('.folder-entries .entry-card').count(), 0);
+    check('one click tucks the folder', await page.locator('.folder-entries .entry-card').count(), 0);
     check('tucked total on screen', await page.locator('.entry-card').count(), count - 2);
     check('count still shown while tucked', (await page.locator('.folder-count').innerText()).trim(), '2');
     await cycleBtn.click();
@@ -440,9 +438,7 @@ const SCENARIOS = [
     // Tuck it, then search for the entry hidden inside.
     await page.locator('.search-mode-select').first().selectOption('search');
     await settle(page, 150);
-    // Two clicks to reach tucked (full → condensed → tucked).
-    await page.locator('.folder-collapse-btn').click();
-    await settle(page, 150);
+    // One click reaches tucked — the default cycle is open-or-shut.
     await page.locator('.folder-collapse-btn').click();
     await settle(page, 200);
     check('entry hidden while tucked', await page.locator('.folder-entries .entry-card').count(), 0);
@@ -459,6 +455,7 @@ const SCENARIOS = [
   // be opened without un-condensing the whole folder.
   scenario('Folders: condensed rows + expand one in place', async (page, check) => {
     await openBuilderWithFixture(page);
+    await enableCondensedStage(page);
     await enterSelectMode(page);
     const cards = page.locator('.entry-card');
     for (const i of [0, 1, 2]) await cards.nth(i).click();
@@ -525,6 +522,9 @@ const SCENARIOS = [
   // ── 11C: nesting, inherited collapse, collapse-all ───────────────────────
   scenario('Folders: nesting, depth cap, and inherited collapse', async (page, check) => {
     await openBuilderWithFixture(page);
+    // Inheritance is most visible through the condensed stage, which is off by
+    // default now, so opt into the three-stage cycle for this one.
+    await enableCondensedStage(page);
     await enterSelectMode(page);
 
     // Three folders. Each takes the top two cards, which after the previous
@@ -646,8 +646,13 @@ const SCENARIOS = [
       await page.locator('.folder-entries .folder-header').count(), 1);
   }),
 
-  scenario('Folders: two-stage collapse setting skips condensed', async (page, check) => {
+  // Turning a stage off must not rewrite what folders already had set. This is
+  // the property that makes the setting safe to change on a big book: a folder
+  // left condensed renders at the nearest offered size and springs back
+  // untouched when the stage returns.
+  scenario('Folders: turning a collapse stage off is non-destructive', async (page, check) => {
     await openBuilderWithFixture(page);
+    await enableCondensedStage(page);
     await enterSelectMode(page);
     await selectCards(page, '.build-panel', [0, 1]);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
@@ -660,34 +665,36 @@ const SCENARIOS = [
     const cycle = page.locator('.folder-collapse-btn').first();
     await cycle.click();
     await settle(page, 300);
-    check('three stages condense first', await page.locator('.entry-card--condensed').count(), 2);
-    // Ride the three-stage cycle all the way back to full, so the switch below
-    // starts from a known open folder rather than a tucked one.
-    await cycle.click();
-    await settle(page, 250);
-    await cycle.click();
-    await settle(page, 300);
-    check('and cycle back round to full', await page.locator('.folder-entries .entry-card').count(), 2);
+    check('with three stages, one click condenses',
+      await page.locator('.entry-card--condensed').count(), 2);
 
-    // Switch to two stages.
+    // Turn the condensed stage back off while the folder is sitting in it.
     await openSettings(page);
     const folderSettings = await openSettingsSection(page, 'Folders');
-    await folderSettings.locator('select.settings-select').first().selectOption('two');
+    await folderSettings.locator('.settings-checkbox-row input').nth(1).uncheck();
     await settle(page, 200);
-    await page.keyboard.press('Escape');
-    await settle(page, 300);
-
-    await cycle.click();
+    await page.locator('.menu-panel-close').first().click();
     await settle(page, 350);
-    check('two stages go straight to hidden', await page.locator('.folder-entries .entry-card').count(), 0);
-    check('and never condense', await page.locator('.entry-card--condensed').count(), 0);
-    await cycle.click();
-    await settle(page, 300);
-    check('and back to full', await page.locator('.folder-entries .entry-card').count(), 2);
+
+    check('the folder falls back to full size',
+      await page.locator('.folder-entries .entry-card').count(), 2);
+    check('and nothing renders condensed',
+      await page.locator('.entry-card--condensed').count(), 0);
+
+    // Turn it back on: the folder was never rewritten, so it is condensed again.
+    await openSettings(page);
+    const again = await openSettingsSection(page, 'Folders');
+    await again.locator('.settings-checkbox-row input').nth(1).check();
+    await settle(page, 200);
+    await page.locator('.menu-panel-close').first().click();
+    await settle(page, 350);
+    check('turning the stage back on restores what the folder had',
+      await page.locator('.entry-card--condensed').count(), 2);
   }),
 
   scenario('Folders: condensed rows can opt stats back in', async (page, check) => {
     await openBuilderWithFixture(page);
+    await enableCondensedStage(page);
     await enterSelectMode(page);
     await selectCards(page, '.build-panel', [0, 1]);
     await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
@@ -942,10 +949,8 @@ const SCENARIOS = [
     await page.locator('.search-mode-select').first().selectOption('search');
     await settle(page, 300);
 
-    // Tuck it — two clicks, since the cycle stops at condensed first.
+    // Tuck it — one click, since the default cycle is open-or-shut.
     const cycle = page.locator('.folder-collapse-btn').first();
-    await cycle.click();
-    await settle(page, 200);
     await cycle.click();
     await settle(page, 250);
     check('the folder is tucked', await page.locator('.folder-entries .entry-card').count(), 0);
@@ -1175,6 +1180,143 @@ const SCENARIOS = [
     check('its entries came with it',
       await page.locator('.folder-entries .entry-card').count(), 2);
     check('and nothing was lost', await page.locator('.entry-card').count(), count);
+  }),
+
+  // ── polish pass ────────────────────────────────────────────────────────────
+  // A folder sprung open on the way past should not be left hanging open.
+  scenario('Drag: a folder opened only in passing closes again', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [1, 2]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    // Shut it. The default cycle is now open-or-shut, so that is one click.
+    await page.locator('.folder-collapse-btn').first().click();
+    await settle(page, 300);
+    check('the folder is tucked', await page.locator('.folder-entries .entry-card').count(), 0);
+
+    // Rest over the header long enough to spring it open, then carry on and
+    // drop somewhere else entirely.
+    // The row just above the folder: on screen, and a short hop to the header,
+    // so this never enters the auto-scroll zone.
+    const handle = page.locator('.entry-list > .entry-list-item .entry-card').first().locator('.drag-handle');
+    const from = await handle.boundingBox();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 + 12, { steps: 4 });
+    const head = await page.locator('.folder-header').first().boundingBox();
+    await page.mouse.move(head.x + head.width / 2, head.y + head.height / 2, { steps: 8 });
+    await settle(page, 1100);
+    check('resting on it springs it open',
+      await page.locator('.folder-entries .entry-card').count(), 2);
+
+    // Move away and drop on a different loose row instead.
+    const other = await page.locator('.entry-list > .entry-list-item .entry-card').nth(1).boundingBox();
+    await page.mouse.move(other.x + other.width / 2, other.y + other.height * 0.2, { steps: 10 });
+    await settle(page, 250);
+    await page.mouse.up();
+    await settle(page, 400);
+    check('but dropping elsewhere puts it back shut',
+      await page.locator('.folder-entries .entry-card').count(), 0);
+  }),
+
+  // Add an entry straight into a folder from its header.
+  scenario('Folders: the header + adds a new entry inside the folder', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).first().click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await settle(page, 250);
+    check('an empty folder', await page.locator('.folder-entries .entry-card').count(), 0);
+
+    await page.locator('.folder-add-entry-btn').first().click();
+    await settle(page, 400);
+    check('the new entry lands inside the folder',
+      await page.locator('.folder-entries .entry-card').count(), 1);
+    check('and the book gained exactly one entry',
+      await page.locator('.entry-card').count(), count + 1);
+    check('the folder header counts it', (await page.locator('.folder-count').innerText()).trim(), '1');
+
+    // It is a normal entry — undo takes it back out.
+    await page.keyboard.press('Control+z');
+    await settle(page, 400);
+    check('undo removes it again', await page.locator('.entry-card').count(), count);
+    check('and the folder survives', await page.locator('.folder-header').count(), 1);
+  }),
+
+  // Select-all-visible / deselect-all hotkeys, and the paste guard.
+  scenario('Hotkeys: select all visible and deselect all', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await page.keyboard.press('Alt+v');
+    await settle(page, 400);
+    check('Alt+V enters select mode', await page.locator('.bulk-action-bar').count(), 1);
+    check('and selects every visible entry',
+      (await page.locator('.bulk-action-count').innerText()).trim(), `${count} selected`);
+
+    await page.keyboard.press('Alt+d');
+    await settle(page, 350);
+    check('Alt+D clears the selection',
+      (await page.locator('.bulk-action-count').innerText()).trim(), '0 selected');
+
+    // A filter narrows what "visible" means.
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await page.locator('.search-input').first().fill('Lichtenburg');
+    await settle(page, 400);
+    const shown = await page.locator('.entry-card').count();
+    await page.keyboard.press('Alt+v');
+    await settle(page, 400);
+    check('it selects only what the search left on screen',
+      (await page.locator('.bulk-action-count').innerText()).trim(), `${shown} selected`);
+  }),
+
+  // Collapse stages are now a checkbox set, defaulting to open-or-shut.
+  scenario('Folders: collapse stages default to open-or-shut and are configurable', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    const cycle = page.locator('.folder-collapse-btn').first();
+    await cycle.click();
+    await settle(page, 300);
+    check('one click hides, skipping condensed',
+      await page.locator('.folder-entries .entry-card').count(), 0);
+    await cycle.click();
+    await settle(page, 300);
+    check('and the next click reopens it',
+      await page.locator('.folder-entries .entry-card').count(), 2);
+
+    // Turn the condensed stage on and the cycle gains its middle step.
+    await openSettings(page);
+    const folders = await openSettingsSection(page, 'Folders');
+    const boxes = folders.locator('.settings-checkbox-row input');
+    check('three stage checkboxes', await boxes.count(), 3);
+    check('full is locked on', await boxes.nth(0).isDisabled(), true);
+    check('condensed starts off', await boxes.nth(1).isChecked(), false);
+    check('hidden starts on', await boxes.nth(2).isChecked(), true);
+    // Hidden is the only optional stage on, so it cannot be turned off yet.
+    check('the last optional stage is locked', await boxes.nth(2).isDisabled(), true);
+
+    await boxes.nth(1).check();
+    await settle(page, 300);
+    check('with both on, neither is locked', await boxes.nth(2).isDisabled(), false);
+    await page.locator('.menu-panel-close').first().click();
+    await settle(page, 350);
+
+    await cycle.click();
+    await settle(page, 350);
+    check('now one click condenses instead of hiding',
+      await page.locator('.entry-card--condensed').count(), 2);
   }),
 
   scenario('Crosstalk: pairing + same-name match badges', async (page, check) => {

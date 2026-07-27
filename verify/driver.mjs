@@ -236,3 +236,18 @@ export async function scrollListToBottom(page) {
   await page.locator('.entry-list').evaluate((el) => { el.scrollTop = el.scrollHeight; });
   await settle(page, 200);
 }
+
+// Turn the condensed collapse stage on. It is off by default now — a folder's
+// header button cycles open-or-shut unless you ask for the middle step — so any
+// scenario exercising condensed rows has to enable it first.
+export async function enableCondensedStage(page) {
+  await openSettings(page);
+  const folders = await openSettingsSection(page, 'Folders');
+  const condensed = folders.locator('.settings-checkbox-row input').nth(1);
+  if (!(await condensed.isChecked())) {
+    await condensed.check();
+    await settle(page, 200);
+  }
+  await page.locator('.menu-panel-close').first().click();
+  await settle(page, 300);
+}

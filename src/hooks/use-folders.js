@@ -3,6 +3,7 @@
 // a history snapshot that carries BOTH entries and folders, so an undo puts the
 // whole organization layer back. Collapse toggles are view state and never
 // touch history.
+import { createEmptyEntry } from '../services/entry-factory.js';
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
@@ -23,7 +24,7 @@ import {
   eligibleParents,
   depthOf,
 } from '../services/folder-tree.js';
-import { COLLAPSE_STATES, COLLAPSE_CYCLES, DEFAULT_COLLAPSE_STAGES } from '../constants/folders.js';
+import { COLLAPSE_STATES, normalizeCollapseStages } from '../constants/folders.js';
 import { useSettingsStore } from '../state/settings-store.js';
 
 export function useFolders() {
@@ -34,8 +35,11 @@ export function useFolders() {
   const pushSnapshot     = useHistoryStore((s) => s.pushSnapshot);
   const sortMode         = useUiStore((s) => s.sortMode);
   const setPendingFocusFolderId = useUiStore((s) => s.setPendingFocusFolderId);
+  const setPendingFocusEntryId  = useUiStore((s) => s.setPendingFocusEntryId);
   const collapseStages = useSettingsStore((s) => s.folderCollapseStages);
-  const cycle = COLLAPSE_CYCLES[collapseStages] ?? COLLAPSE_CYCLES[DEFAULT_COLLAPSE_STAGES];
+  // Tolerant read: handles the legacy 'three'/'two' strings from before this
+  // was a checkbox set, so nobody's stored setting needs migrating on disk.
+  const cycle = normalizeCollapseStages(collapseStages);
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
   const entries = activeLorebook?.entries ?? [];
@@ -65,6 +69,20 @@ export function useFolders() {
     updateActiveEntriesAndFolders(nextEntries, nextFolders);
     setPendingFocusFolderId(folder.id);
     return folder;
+  }
+
+  // New entry, born inside a folder. Goes through assignEntriesToFolder so it
+  // lands at the end of that folder's run exactly like a filed entry would —
+  // appending to entries[] and then filing would leave it stranded outside the
+  // run until the next reshuffle.
+  function addEntryInFolder(folderId) {
+    if (!getFolder(folders, folderId)) return null;
+    snapshot();
+    const entry = createEmptyEntry();
+    const next  = assignEntriesToFolder([...entries, entry], [entry.id], folderId);
+    updateActiveEntriesAndFolders(next, folders);
+    setPendingFocusEntryId(entry.id);
+    return entry;
   }
 
   function renameFolder(id, name) {
@@ -188,6 +206,7 @@ export function useFolders() {
     toggleAllFolders,
     createFolder,
     createFolderWithEntries,
+    addEntryInFolder,
     renameFolder,
     setFolderColor,
     deleteFolder,

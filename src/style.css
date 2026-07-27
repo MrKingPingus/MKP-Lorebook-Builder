@@ -6332,3 +6332,33 @@ kbd {
   color: var(--blue);
   background: color-mix(in srgb, var(--blue) 10%, transparent);
 }
+
+/* Checkbox rows in Settings, for options that are a set rather than a choice. */
+.settings-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+.settings-checkbox-row input[disabled] { cursor: not-allowed; }
+.settings-checkbox-row:has(input[disabled]) { cursor: not-allowed; opacity: 0.75; }
+.settings-checkbox-label { display: flex; flex-direction: column; gap: 1px; }
+.settings-checkbox-hint { font-size: 0.6875rem; color: var(--muted); }
+
+/* Add-an-entry-here button on a folder header. Matches the nest button's
+   metrics so the header's trailing controls read as one group. */
+.folder-add-entry-btn {
+  flex-shrink: 0;
+  padding: 0 5px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.folder-add-entry-btn:hover { color: var(--blue); }

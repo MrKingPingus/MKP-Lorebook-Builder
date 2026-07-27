@@ -1,6 +1,7 @@
 // Default shapes for new entries, lorebook, settings, and window size/position
 import { DEFAULT_TYPE } from './entry-types.js';
 import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
+import { DEFAULT_COLLAPSE_STAGES } from './folders.js';
 
 export const DEFAULT_WINDOW = { width: 760, height: 620, x: 60, y: 40 };
 export const DEFAULT_WINDOW_FRACTION = 2 / 3;
@@ -45,11 +46,11 @@ export const DEFAULT_SETTINGS = {
   fabQuickMenuEnabled:      true,
   // Desktop: keep the menu panel open after importing a lorebook (mobile always closes)
   keepMenuOpenAfterImport:  false,
-  // Folder collapse stages: 'three' (full / condensed / hidden) or 'two'
-  // (full / hidden) for people who don't want the middle step. Only changes the
-  // cycle — a folder already condensed keeps its stored state and simply
-  // renders full until touched, so switching back restores it.
-  folderCollapseStages:     'three',
+  // Which sizes a folder's header button cycles through, as an array of
+  // collapse states. 'full' is always included. Only changes the cycle — a
+  // folder already condensed keeps its stored state and simply renders at the
+  // nearest offered size until touched, so switching back restores it.
+  folderCollapseStages:     DEFAULT_COLLAPSE_STAGES,
   // Show the trigger/char stats on condensed rows, at a smaller size. Off by
   // default: condensed exists to shed chrome.
   condensedShowStats:       false,

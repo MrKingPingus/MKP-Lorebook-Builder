@@ -26,7 +26,7 @@ import { folderOrderFor } from '../../constants/sort-modes.js';
 
 export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry } = useEntries();
-  const { folders } = useFolders();
+  const { folders, renderedCollapseState } = useFolders();
   const { filterActive } = useFolderFilter();
   const { handleSelectionClick, selectFolderEntries } = useSelectionMacros();
   const { displayChord } = useKeybindings();
@@ -164,7 +164,11 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     for (const item of list) {
       if (item.kind === 'folder') {
         const { folder } = item;
-        const state  = effectiveCollapseState(inherited, folder.collapseState);
+        // Clamp the stored state through the active cycle *before* inheritance.
+        // Without this a folder saved as condensed keeps rendering condensed
+        // after that stage is switched off — the header glyph clamped, but the
+        // rows underneath it did not, so the setting was only half render-level.
+        const state  = effectiveCollapseState(inherited, renderedCollapseState(folder.collapseState));
         const tucked = state === COLLAPSE_STATES.TUCKED && !narrowed;
         const density = state === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full';
 
