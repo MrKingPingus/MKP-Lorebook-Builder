@@ -13,7 +13,7 @@ export function GlobalFilterBar() {
   const { entries } = useEntries();
   const { referenceLorebook } = useReferenceLorebook();
   const active    = useDisplayEntries(entries);
-  const reference = useDisplayEntries(referenceLorebook?.entries ?? []);
+  const reference = useDisplayEntries(referenceLorebook?.entries ?? [], { isReference: true });
 
   const matches = [
     { role: 'Active', matchCount: active.matchCount, entryMatchCount: active.entryMatchCount },

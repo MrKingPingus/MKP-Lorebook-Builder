@@ -17,3 +17,23 @@ export const SORT_MODES_WITHOUT_FOLDERS = ['cross-match-first', 'cross-match-las
 export function suppressesFolders(sortMode) {
   return SORT_MODES_WITHOUT_FOLDERS.includes(sortMode);
 }
+
+// How folder rows order themselves against their sibling entries.
+//
+// By default a folder anchors at the earliest position anywhere in its subtree,
+// which reads correctly for manual order and for `last-modified` (a folder lands
+// where its most recently touched member landed). It reads *wrong* under an
+// alpha sort: a folder named "Zeta" holding an entry named "Apple" would anchor
+// above a loose entry named "Beta", so the column doesn't run A→Z even though
+// that is exactly what was asked for. Under those modes folder rows sort by
+// their own name instead, interleaved with entries in one alphabetical stream.
+export const FOLDER_ORDER_BY_SORT = {
+  'alpha-asc':  'name-asc',
+  'alpha-desc': 'name-desc',
+};
+
+export const DEFAULT_FOLDER_ORDER = 'position';
+
+export function folderOrderFor(sortMode) {
+  return FOLDER_ORDER_BY_SORT[sortMode] ?? DEFAULT_FOLDER_ORDER;
+}

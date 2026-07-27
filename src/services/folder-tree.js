@@ -18,7 +18,9 @@ import {
   COLLAPSE_STATES,
   MAX_FOLDER_DEPTH,
   NEW_FOLDER_NAME,
+  UNFILED_FILTER_ID,
 } from '../constants/folders.js';
+import { DEFAULT_FOLDER_ORDER } from '../constants/sort-modes.js';
 
 // Colour for the next folder: walk the swatch list in order so a user making
 // several folders in a row gets visually distinct ones without picking.
@@ -361,7 +363,11 @@ export function updateFolder(folders, folderId, patch) {
 //   { kind: 'entry',  entry,  depth }
 // where `count` is the folder's direct members and `totalCount` its whole
 // subtree — the number the header shows, since tucking hides all of it.
-export function buildRenderItems(displayEntries, folders, { hideEmptyFolders = false } = {}) {
+export function buildRenderItems(
+  displayEntries,
+  folders,
+  { hideEmptyFolders = false, orderBy = DEFAULT_FOLDER_ORDER } = {},
+) {
   const list = displayEntries ?? [];
   const all  = folders ?? [];
 
@@ -412,23 +418,36 @@ export function buildRenderItems(displayEntries, folders, { hideEmptyFolders = f
   function buildLevel(parentKey, depth, seen) {
     const rows = [];
     const here = parentKey === '' ? loose : (byFolder.get(parentKey) ?? []);
-    for (const entry of here) rows.push({ kind: 'entry', entry, sort: posOf.get(entry.id) });
+    for (const entry of here) {
+      rows.push({ kind: 'entry', entry, sort: posOf.get(entry.id), name: entry.name ?? '' });
+    }
     for (const folder of childrenByParent.get(parentKey) ?? []) {
       if (seen.has(folder.id)) continue;
       const sort = anchorOf(folder.id, seen);
       if (sort === undefined && hideEmptyFolders) continue;
-      rows.push({ kind: 'folder', folder, sort, order: folder.order ?? 0 });
+      rows.push({ kind: 'folder', folder, sort, order: folder.order ?? 0, name: folder.name ?? '' });
     }
 
-    rows.sort((a, b) => {
-      const aEmpty = a.sort === undefined;
-      const bEmpty = b.sort === undefined;
-      // Newest empty folder first, so creating one puts it at the very top.
-      if (aEmpty && bEmpty) return (b.order ?? 0) - (a.order ?? 0);
-      if (aEmpty) return -1;
-      if (bEmpty) return 1;
-      return a.sort - b.sort;
-    });
+    if (orderBy === 'name-asc' || orderBy === 'name-desc') {
+      // One alphabetical stream: a folder row sorts on its own name, an entry
+      // row on the entry's, so the column reads A→Z whatever a given row is.
+      // An empty folder has a name like any other and takes its natural place —
+      // the "newest first" rule below only exists for position ordering, where
+      // an empty folder has no member to anchor to.
+      const dir = orderBy === 'name-asc' ? 1 : -1;
+      rows.sort((a, b) =>
+        dir * (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' }));
+    } else {
+      rows.sort((a, b) => {
+        const aEmpty = a.sort === undefined;
+        const bEmpty = b.sort === undefined;
+        // Newest empty folder first, so creating one puts it at the very top.
+        if (aEmpty && bEmpty) return (b.order ?? 0) - (a.order ?? 0);
+        if (aEmpty) return -1;
+        if (bEmpty) return 1;
+        return a.sort - b.sort;
+      });
+    }
 
     return rows.map((row) => {
       if (row.kind === 'entry') return { kind: 'entry', entry: row.entry, depth };
@@ -453,6 +472,52 @@ export function flattenRenderItems(items) {
   return (items ?? []).flatMap((item) => (
     item.kind === 'entry' ? [item.entry] : flattenRenderItems(item.children)
   ));
+}
+
+// Drop selections that no longer name a real folder, keeping the "unfiled"
+// sentinel. Folder ids are per-book, so this is what stops a filter from
+// surviving a folder deletion — or a crosstalk role swap — as a predicate that
+// silently matches nothing. An empty result means "no filter", not "no entries".
+export function pruneFolderFilter(folders, selectedIds) {
+  const known = new Set((folders ?? []).map((f) => f.id));
+  return (selectedIds ?? []).filter((id) => id === UNFILED_FILTER_ID || known.has(id));
+}
+
+// Every entry id a folder filter admits: each selected folder contributes its
+// whole subtree, so filtering to a parent shows everything nested under it.
+export function folderFilterEntryIds(entries, folders, selectedIds) {
+  const ids = new Set();
+  for (const selected of selectedIds ?? []) {
+    if (selected === UNFILED_FILTER_ID) {
+      for (const entry of entries ?? []) {
+        if (!getFolder(folders, entry.folderId)) ids.add(entry.id);
+      }
+      continue;
+    }
+    for (const id of subtreeEntryIds(entries, folders, selected)) ids.add(id);
+  }
+  return ids;
+}
+
+// Narrow a list to the selected folders. No selection = no filtering.
+export function filterEntriesByFolders(entries, folders, selectedIds) {
+  const list     = entries ?? [];
+  const selected = pruneFolderFilter(folders, selectedIds);
+  if (selected.length === 0) return list;
+  const keep = folderFilterEntryIds(list, folders, selected);
+  return list.filter((e) => keep.has(e.id));
+}
+
+// Flat, depth-tagged folder list in render order, for the filter menu. Uses the
+// same anchor ordering the list itself uses so the menu reads top-to-bottom the
+// way the folders appear on screen.
+export function folderFilterOptions(entries, folders) {
+  const walk = (items) => items.flatMap((item) => (
+    item.kind === 'folder'
+      ? [{ id: item.folder.id, name: item.folder.name, color: item.folder.color, depth: item.depth, count: item.totalCount }, ...walk(item.children)]
+      : []
+  ));
+  return walk(buildRenderItems(entries, folders));
 }
 
 // Read folders off a lorebook, tolerating books saved before folders existed.

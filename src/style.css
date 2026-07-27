@@ -1799,6 +1799,27 @@ img.logo-icon {
   flex: 1;
 }
 
+/* Folder filter menu. Wider than the type menu because folder names are
+   user-written and indent by nesting depth, and it caps its height so a book
+   with a lot of folders scrolls the menu instead of running off screen. */
+.folder-filter-popover {
+  min-width: 240px;
+  max-width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.folder-filter-popover .type-filter-popover-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-filter-count {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
 .filter-hint {
   font-size: 0.6875rem;
   color: var(--muted);

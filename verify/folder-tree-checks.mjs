@@ -29,8 +29,18 @@ import {
   setFolderParent,
   effectiveCollapseState,
   clampCollapseState,
+  pruneFolderFilter,
+  filterEntriesByFolders,
+  folderFilterEntryIds,
+  folderFilterOptions,
 } from '../src/services/folder-tree.js';
-import { COLLAPSE_STATES, MAX_FOLDER_DEPTH, COLLAPSE_CYCLES } from '../src/constants/folders.js';
+import {
+  COLLAPSE_STATES,
+  MAX_FOLDER_DEPTH,
+  COLLAPSE_CYCLES,
+  UNFILED_FILTER_ID,
+} from '../src/constants/folders.js';
+import { folderOrderFor } from '../src/constants/sort-modes.js';
 
 // Compact readable shorthand: 'a:F1' = entry id 'a' filed in folder 'F1',
 // 'b' = entry id 'b', unfiled. Lets a whole book be written on one line.
@@ -310,6 +320,112 @@ export function runFolderTreeChecks() {
   check('cycle tucked → full (wraps)', nextCollapseState(COLLAPSE_STATES.TUCKED),    COLLAPSE_STATES.FULL);
   check('unknown state falls back to the head of the cycle',
     nextCollapseState('nonsense'), COLLAPSE_STATES.FULL);
+
+  // ── folder filter ──────────────────────────────────────────────────────────
+  // The filter is an entry-level predicate, but it reads the folder *tree*:
+  // selecting a parent has to pull in everything nested under it, and a
+  // selection that no longer names a real folder has to degrade to "no filter"
+  // rather than to "no results".
+  {
+    const nest = [folder('P'), folder('C', { parentId: 'P' })];
+    const b    = book('a:P b c:C d');
+
+    const ids = (list) => list.map((e) => e.id).join(' ');
+
+    check('no selection filters nothing', ids(filterEntriesByFolders(b, nest, [])), 'a b c d');
+    check('selecting a leaf folder keeps only its members',
+      ids(filterEntriesByFolders(b, nest, ['C'])), 'c');
+    check('selecting a parent pulls in the whole subtree',
+      ids(filterEntriesByFolders(b, nest, ['P'])), 'a c');
+    check('selecting parent and child does not duplicate',
+      ids(filterEntriesByFolders(b, nest, ['P', 'C'])), 'a c');
+    check('unfiled selects entries outside every folder',
+      ids(filterEntriesByFolders(b, nest, [UNFILED_FILTER_ID])), 'b d');
+    check('unfiled combines with a folder',
+      ids(filterEntriesByFolders(b, nest, ['C', UNFILED_FILTER_ID])), 'b c d');
+    check('filtering preserves list order, it does not regroup',
+      ids(filterEntriesByFolders(book('a:P b c:C d'), nest, ['P', UNFILED_FILTER_ID])), 'a b c d');
+
+    // An entry pointing at a folder that no longer exists is unfiled, by the
+    // same rule buildRenderItems uses — a dangling folderId renders top-level.
+    check('an entry with a dangling folderId counts as unfiled',
+      ids(filterEntriesByFolders(book('a:GONE b'), nest, [UNFILED_FILTER_ID])), 'a b');
+
+    // Pruning is the whole safety story for deletion and for crosstalk role
+    // swaps: the ids simply stop existing, so the filter stops constraining.
+    check('pruning drops ids with no folder', pruneFolderFilter(nest, ['P', 'GONE']).join(','), 'P');
+    check('pruning keeps the unfiled sentinel',
+      pruneFolderFilter(nest, [UNFILED_FILTER_ID]).join(','), UNFILED_FILTER_ID);
+    check('pruning tolerates no folders at all', pruneFolderFilter([], ['P']).length, 0);
+    check('a fully stale selection filters nothing',
+      ids(filterEntriesByFolders(b, nest, ['GONE', 'ALSO-GONE'])), 'a b c d');
+    // Crosstalk role swap: the selection still carries the other book's ids
+    // while `folders` is now the current book's. Pruning empties the selection,
+    // so the pane shows everything instead of going blank.
+    check('a selection from another book filters nothing',
+      ids(filterEntriesByFolders(b, nest, ['OTHER-BOOK-FOLDER'])), 'a b c d');
+    // Distinct from the above: a folder that really exists but holds nothing
+    // filters to nothing, which is the honest answer.
+    check('selecting a genuinely empty folder yields nothing',
+      ids(filterEntriesByFolders(b, [...nest, folder('EMPTY')], ['EMPTY'])), '');
+
+    check('folderFilterEntryIds returns a set of the subtree', folderFilterEntryIds(b, nest, ['P']).size, 2);
+
+    // Menu options walk the tree in render order and carry subtree counts, so
+    // the number beside a parent matches what selecting it would show.
+    const opts = folderFilterOptions(b, nest);
+    check('menu lists every folder', opts.map((o) => o.id).join(' '), 'P C');
+    check('menu carries nesting depth', opts.map((o) => o.depth).join(','), '0,1');
+    check('menu count is the whole subtree', opts.find((o) => o.id === 'P').count, 2);
+    check('menu is empty with no folders', folderFilterOptions(b, []).length, 0);
+  }
+
+  // ── folder order under sorts ───────────────────────────────────────────────
+  // Anchoring reads member position, which is right for manual order and for
+  // last-modified but wrong under alpha: a folder named Zeta holding Apple
+  // would sit above a loose Beta. Alpha modes sort folder rows by folder name.
+  {
+    const zeta = [folder('Zeta')];
+    const b    = [
+      { id: 'apple', name: 'Apple', folderId: 'Zeta' },
+      { id: 'beta',  name: 'Beta',  folderId: null   },
+    ];
+
+    check('position order anchors the folder at its first member',
+      showItems(buildRenderItems(b, zeta)), '[Zeta apple] beta');
+    check('name-asc sorts the folder by its own name',
+      showItems(buildRenderItems(b, zeta, { orderBy: 'name-asc' })), 'beta [Zeta apple]');
+    check('name-desc reverses it',
+      showItems(buildRenderItems(b, zeta, { orderBy: 'name-desc' })), '[Zeta apple] beta');
+
+    // Entries inside a folder sort by name too, at their own level.
+    const inner = [
+      { id: 'c', name: 'Cherry', folderId: 'Zeta' },
+      { id: 'a', name: 'Apple',  folderId: 'Zeta' },
+    ];
+    check('name-asc sorts inside a folder as well',
+      showItems(buildRenderItems(inner, zeta, { orderBy: 'name-asc' })), '[Zeta a c]');
+
+    // An empty folder has a name, so under alpha it takes its alphabetical
+    // place rather than jumping to the top the way position order needs.
+    const withEmpty = [folder('Mango', { order: 1 }), folder('Zzz', { order: 2 })];
+    check('empty folders lead under position order',
+      showItems(buildRenderItems([{ id: 'b', name: 'Beta', folderId: null }], withEmpty)),
+      '[Zzz] [Mango] b');
+    check('empty folders sort by name under alpha',
+      showItems(buildRenderItems([{ id: 'b', name: 'Beta', folderId: null }], withEmpty, { orderBy: 'name-asc' })),
+      'b [Mango] [Zzz]');
+
+    check('folderOrderFor maps alpha-asc', folderOrderFor('alpha-asc'), 'name-asc');
+    check('folderOrderFor maps alpha-desc', folderOrderFor('alpha-desc'), 'name-desc');
+    check('folderOrderFor leaves default alone', folderOrderFor('default'), 'position');
+    check('folderOrderFor leaves last-modified anchored', folderOrderFor('last-modified'), 'position');
+    check('folderOrderFor tolerates an unknown mode', folderOrderFor('nope'), 'position');
+
+    // Filtering and ordering compose: no entry may be lost or duplicated.
+    const all = flattenRenderItems(buildRenderItems(b, zeta, { orderBy: 'name-asc' }));
+    check('alpha ordering keeps every entry exactly once', all.map((e) => e.id).sort().join(' '), 'apple beta');
+  }
 
   // ── small helpers ──────────────────────────────────────────────────────────
   check('createFolder mints a distinct id', createFolder([]).id !== createFolder([]).id, true);

@@ -9,6 +9,8 @@ import { useTypeFilter }   from '../../hooks/use-type-filter.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useMobile }       from '../../hooks/use-mobile.js';
 import { useFolders }      from '../../hooks/use-folders.js';
+import { useFolderFilter }  from '../../hooks/use-folder-filter.js';
+import { FolderFilterButton, FolderFilterRows } from './FolderFilterButton.jsx';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
@@ -19,6 +21,7 @@ export function TypeFilterBar({ entries }) {
   const setGroupByType     = useUi((s) => s.setGroupByType);
   const isMobile           = useMobile();
   const { createFolder, foldersSuppressed, hasFolders, allFoldersTucked, toggleAllFolders } = useFolders();
+  const { folderFilter, hasFolders: hasFoldersToFilter } = useFolderFilter();
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -54,7 +57,11 @@ export function TypeFilterBar({ entries }) {
   }
 
   if (isMobile) {
-    const filterCount = typeFilter.length;
+    // Two counts: the button badge sums both dimensions, but the "All types"
+    // row must reflect the type filter alone or a folder selection would
+    // wrongly un-check it.
+    const typeCount   = typeFilter.length;
+    const filterCount = typeCount + folderFilter.length;
     const summary = filterCount === 0
       ? (groupByType ? 'Filter · Grouped' : 'Filter')
       : `Filter (${filterCount})${groupByType ? ' · Grouped' : ''}`;
@@ -84,11 +91,11 @@ export function TypeFilterBar({ entries }) {
             >
               <div className="type-filter-popover-section">
                 <button
-                  className={`type-filter-popover-row${filterCount === 0 ? ' type-filter-popover-row--active' : ''}`}
+                  className={`type-filter-popover-row${typeCount === 0 ? ' type-filter-popover-row--active' : ''}`}
                   onClick={clearFilter}
                   type="button"
                 >
-                  <span className="type-filter-popover-check">{filterCount === 0 ? '✓' : ''}</span>
+                  <span className="type-filter-popover-check">{typeCount === 0 ? '✓' : ''}</span>
                   <span className="type-filter-popover-label">All types</span>
                 </button>
                 {ENTRY_TYPES.map((t) => {
@@ -107,6 +114,14 @@ export function TypeFilterBar({ entries }) {
                   );
                 })}
               </div>
+              {hasFoldersToFilter && (
+                <>
+                  <div className="type-filter-popover-divider" />
+                  <div className="type-filter-popover-section">
+                    <FolderFilterRows />
+                  </div>
+                </>
+              )}
               <div className="type-filter-popover-divider" />
               <div className="type-filter-popover-section">
                 <button
@@ -161,6 +176,9 @@ export function TypeFilterBar({ entries }) {
       >
         Group by type
       </button>
+
+      {/* Folder ▾ — self-hiding until the book has folders */}
+      <FolderFilterButton />
 
       {/* Expand All / Collapse All — desktop only (mobile uses slide-in detail panel) */}
       {!isMobile && (

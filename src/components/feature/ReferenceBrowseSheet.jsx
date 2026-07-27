@@ -15,7 +15,7 @@ export function ReferenceBrowseSheet() {
   const setOpen                 = useUi((s) => s.setReferenceBrowseOpen);
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const { referenceLorebook }   = useReferenceLorebook();
-  const { displayEntries }      = useDisplayEntries(referenceLorebook?.entries ?? []);
+  const { displayEntries }      = useDisplayEntries(referenceLorebook?.entries ?? [], { isReference: true });
 
   if (!open) return null;
 

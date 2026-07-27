@@ -716,6 +716,184 @@ const SCENARIOS = [
   // Uses pairCrosstalk(): the primary fixture active, the derived variant book
   // as the read-only reference. Counts come from the variant generator so the
   // fixture and the expectations can't drift apart.
+  // ── 11D: filter by folder ──────────────────────────────────────────────────
+  // The filter is an entry predicate that reads the folder tree. The failure
+  // modes worth guarding are the quiet ones: a stale selection that blanks the
+  // list, and a filter that leaks onto the reference book's ids.
+  scenario('Folders: filter narrows the list, unfiled inverts it', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    check('no Folder filter button before any folder exists',
+      await page.locator('.folder-filter-btn').count(), 0);
+
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.type('Alpha');
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 250);
+
+    check('the Folder filter appears once a folder exists',
+      await page.locator('.folder-filter-btn').count(), 1);
+
+    await page.locator('.folder-filter-btn').click();
+    await settle(page, 250);
+    check('the menu lists the folder and the unfiled row',
+      (await page.locator('.folder-filter-popover .type-filter-popover-label').allInnerTexts()).join(','),
+      'All folders,Alpha,Unfiled entries');
+
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'Alpha' }).click();
+    await settle(page, 300);
+    check('only the folder’s entries survive', await page.locator('.entry-card').count(), 2);
+    check('the folder header stays for context', await page.locator('.folder-header').count(), 1);
+    check('the button badges the selection',
+      (await page.locator('.folder-filter-btn').innerText()).includes('(1)'), true);
+
+    // Unfiled is the exact complement.
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'Alpha' }).click();
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'Unfiled' }).click();
+    await settle(page, 300);
+    check('unfiled shows everything outside a folder', await page.locator('.entry-card').count(), count - 2);
+    check('and hides the now-empty folder', await page.locator('.folder-header').count(), 0);
+
+    // Both together is the whole book again.
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'Alpha' }).click();
+    await settle(page, 300);
+    check('folder plus unfiled is everything', await page.locator('.entry-card').count(), count);
+
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'All folders' }).click();
+    await settle(page, 300);
+    check('All folders clears the filter', await page.locator('.entry-card').count(), count);
+    check('and the badge clears too',
+      (await page.locator('.folder-filter-btn').innerText()).includes('('), false);
+  }),
+
+  // Filtering to a parent has to mean the whole subtree, or a nested book makes
+  // the filter useless exactly where organization matters most.
+  scenario('Folders: filtering a parent includes everything nested under it', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.type('Child');
+    await page.keyboard.press('Enter');
+    await settle(page, 250);
+
+    // Give it a parent from the nest menu, then file one more entry up there.
+    await page.locator('.folder-header', { hasText: 'Child' }).first().locator('.folder-nest-btn').click();
+    await settle(page, 250);
+    await page.locator('.folder-nest-item', { hasText: 'New folder' }).click();
+    await settle(page, 400);
+    await page.keyboard.type('Parent');
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    await page.locator('.folder-filter-btn').click();
+    await settle(page, 250);
+    check('the menu shows both levels',
+      (await page.locator('.folder-filter-popover .type-filter-popover-label').allInnerTexts()).join(','),
+      'All folders,Parent,Child,Unfiled entries');
+
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'Parent' }).click();
+    await settle(page, 300);
+    check('the parent pulls in its child’s entries', await page.locator('.entry-card').count(), 2);
+    check('and both folder levels render', await page.locator('.folder-header').count(), 2);
+  }),
+
+  // The prune: a filtered folder that stops existing must degrade to "no
+  // filter", never to an empty list with no way back.
+  scenario('Folders: deleting a filtered folder clears rather than blanks', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 250);
+
+    await page.locator('.folder-filter-btn').click();
+    await settle(page, 250);
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'New Folder' }).click();
+    await settle(page, 300);
+    check('filtered down to the folder', await page.locator('.entry-card').count(), 2);
+
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    await page.locator('.folder-delete-btn').click();
+    await settle(page, 350);
+    check('deleting the folder restores the whole list',
+      await page.locator('.entry-card').count(), count);
+    check('and the filter button retires with it',
+      await page.locator('.folder-filter-btn').count(), 0);
+  }),
+
+  // Anchoring reads member position, which puts a folder out of alphabetical
+  // order under an alpha sort. Alpha modes sort folder rows by folder name.
+  scenario('Folders: an alpha sort orders folders by folder name', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.type('Zzz Folder');
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    // Manual order anchors it at its member, which is the first entry.
+    check('anchored at its member under manual order',
+      await page.locator('.entry-list > *').first().getAttribute('class'), 'folder-block');
+
+    await page.locator('.sort-btn').first().click();
+    await settle(page, 200);
+    await page.locator('.sort-dropdown-item', { hasText: 'A → Z' }).click();
+    await settle(page, 400);
+    // This discriminates only because of the entry the folder holds. Card [0]
+    // is "Akaya's Apartment", the alphabetically *first* name in the fixture,
+    // so anchoring by member position would keep the folder at the very top
+    // under A → Z. Ordering by folder name sends "Zzz Folder" to the bottom.
+    // Keep those two facts together if the fixture ever changes.
+    check('A → Z drops the Z folder to the end',
+      await page.locator('.entry-list > *').last().getAttribute('class'), 'folder-block');
+    check('and it is no longer anchored at its member',
+      await page.locator('.entry-list > *').first().getAttribute('class'), 'entry-list-item');
+    check('no entries lost to the reorder',
+      await page.locator('.entry-card').count(), count);
+  }),
+
+  // Folder ids belong to one book. If the filter reached the reference pane it
+  // would blank it, and a crosstalk role swap would aim it at the wrong book.
+  scenario('Crosstalk: the folder filter never touches the reference pane', async (page, check) => {
+    await pairCrosstalk(page);
+    const refCount = await page.locator('.reference-entry-card').count();
+
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New folder' }).click();
+    await settle(page, 300);
+    await page.keyboard.press('Enter');
+    await page.locator('.search-mode-select').first().selectOption('search');
+    await settle(page, 300);
+
+    await page.locator('.folder-filter-btn').click();
+    await settle(page, 250);
+    await page.locator('.folder-filter-popover .type-filter-popover-row', { hasText: 'New Folder' }).click();
+    await settle(page, 350);
+
+    check('the active pane narrows', await page.locator('.build-panel .entry-card').count(), 1);
+    check('the reference pane is untouched',
+      await page.locator('.reference-entry-card').count(), refCount);
+  }),
+
   scenario('Crosstalk: pairing + same-name match badges', async (page, check) => {
     await pairCrosstalk(page);
     check('active book fully loaded',    await page.locator('.build-panel .entry-card').count(), 34);

@@ -34,6 +34,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | An entry card (collapsed or expanded, with name/type/triggers/description) | `src/components/feature/EntryCard.jsx` |
 | The scrollable list of all entry cards | `src/components/feature/EntryList.jsx` |
 | A folder header row in the entry list (collapse, colour, name, count, delete) | `src/components/feature/FolderHeader.jsx` |
+| The `Folder ▾` filter button and its checkbox menu (also supplies the rows TypeFilterBar drops into the mobile `Filter ▾` popover) | `src/components/feature/FolderFilterButton.jsx` |
 | The "Move to folder" button + menu in an entry card's footer | `src/components/feature/MoveToFolderButton.jsx` |
 | The entry name field inside a card | `src/components/feature/EntryName.jsx` |
 | The description textarea and its char counter | `src/components/feature/DescriptionArea.jsx` |

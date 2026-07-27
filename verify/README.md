@@ -70,8 +70,9 @@ Two, and they run in this order:
   Hide-from-Export, hotkeys and the Escape stack, themes and accessibility,
   expand/collapse, folders, and crosstalk. Values are anchored to the fixtures.
 - **`keychord-checks.mjs`** — pure-logic checks for the keychord matcher.
-- **`folder-tree-checks.mjs`** — pure-logic checks for the folder splice and
-  render walk.
+- **`folder-tree-checks.mjs`** — pure-logic checks for the folder splice, the
+  render walk, the folder filter (including the pruning that keeps a stale
+  selection from blanking the list), and folder ordering under the alpha sorts.
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
 
 ## Browser resolution

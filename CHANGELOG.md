@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-27
+
+### Additions
+
+- **Filter the list by folder.** A **Folder ▾** button in the filter row lets you narrow the list to one folder, several at once, or **Unfiled entries** — everything you haven't put away yet. It only appears once you actually have folders, so it doesn't clutter the row if you don't use them.
+  - **Picking a folder includes everything nested inside it**, so filtering to an outer folder shows its sub-folders' entries too rather than just the entries sitting directly in it.
+  - **Folder headers stay while you filter**, so you keep the structure and can still collapse things — folders left with nothing simply drop out of view, the same way they do during a search.
+  - **A tucked folder opens itself while a filter is on**, so filtering to a folder you'd shut doesn't just show you an empty header.
+  - **Each folder in the menu shows how many entries it holds**, counting everything nested inside it, so the number matches what picking it will show you.
+  - **Deleting a folder you'd filtered to brings the whole list back** instead of leaving you staring at an empty screen.
+  - **On mobile** the folder options live inside the existing **Filter ▾** popover alongside the type checkboxes, so nothing new crowds the top of the screen.
+  - **In reference mode the filter only touches the lorebook you're editing.** Folders belong to one lorebook, so filtering by them leaves the reference pane beside it showing its full list. Swapping which book is active clears the filter rather than pointing it at the wrong book.
+  - Filtering by folder still works under the **"cross-book matches"** sorts, even though those hide folder headers — you get that folder's entries as a flat list, still split into matched and unmatched.
+
+### Fixes
+
+- **A → Z and Z → A now put folders in alphabetical order too.** Previously a folder was positioned by the first entry inside it, so a folder named "Zeta" holding an entry called "Apple" could sit above a loose entry called "Beta" — the list didn't read alphabetically even though that's what you'd asked for. Folders and entries now sort together in one alphabetical run, by the folder's own name. Sorting by **Last modified** is unchanged: a folder still appears wherever its most recently edited entry lands, which is what that sort is for.
+
+---
+
 ## 2026-07-25
 
 ### Additions

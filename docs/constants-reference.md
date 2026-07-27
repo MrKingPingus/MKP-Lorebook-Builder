@@ -7,8 +7,8 @@
 - `storage-keys.js` — all localStorage key strings
 - `defaults.js` — default shapes for new entries, lorebooks, settings, window size
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
-- `sort-modes.js` — which sort modes suppress a grouping layer (`group-by-type`, folders) because they impose their own ordering
-- `folders.js` — folder swatch palette, `MAX_FOLDER_DEPTH`, the collapse cycles (`COLLAPSE_CYCLES.three` / `.two`, chosen by the `folderCollapseStages` setting) (`FOLDER_COLORS`) and the collapse-state vocabulary (`full` / `condensed` / `tucked`)
+- `sort-modes.js` — which sort modes suppress a grouping layer (`group-by-type`, folders) because they impose their own ordering, plus `folderOrderFor()` — how folder rows order themselves against sibling entries (`position` by default, `name-asc`/`name-desc` under the alpha sorts)
+- `folders.js` — folder swatch palette, `MAX_FOLDER_DEPTH`, the collapse cycles (`COLLAPSE_CYCLES.three` / `.two`, chosen by the `folderCollapseStages` setting) (`FOLDER_COLORS`) and the collapse-state vocabulary (`full` / `condensed` / `tucked`); `UNFILED_FILTER_ID` is the folder-filter sentinel for "in no folder" (a `__`-wrapped literal, so it can never collide with a `uid()` folder id)
 
 ## CSS / Theming
 

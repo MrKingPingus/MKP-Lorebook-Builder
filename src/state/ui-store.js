@@ -13,6 +13,10 @@ export const useUiStore = create((set) => ({
                             //   committed in a batch via Apply Staged Types. Cleared on exit
                             //   select mode, on deselect of an entry, and on apply.
   typeFilter:  [],          // empty = show all
+  folderFilter: [],         // folder ids (plus the UNFILED_FILTER_ID sentinel); empty = show all.
+                            //   Active-book only — folder ids are per-book, so the reference
+                            //   pane ignores this. Stale ids are pruned on read, which is what
+                            //   makes a deleted folder or a crosstalk role swap harmless.
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
   bulkExpanded:     false,   // last bulk action was Expand All — drives the Expand/Collapse All button label only
@@ -135,6 +139,17 @@ export const useUiStore = create((set) => ({
   openExportMenuCentered:   ()                      => set({ exportMenuAnchor: 'center' }),
   setPendingSettingsSection: (pendingSettingsSection) => set({ pendingSettingsSection }),
   openSettingsSection:      (section)                => set({ activeMenuPanel: 'settings', pendingSettingsSection: section }),
+
+  setFolderFilter: (folderFilter) => set({ folderFilter }),
+  toggleFolderFilter: (folderId) =>
+    set((state) => {
+      const active = state.folderFilter;
+      return {
+        folderFilter: active.includes(folderId)
+          ? active.filter((f) => f !== folderId)
+          : [...active, folderId],
+      };
+    }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

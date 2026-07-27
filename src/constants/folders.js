@@ -83,5 +83,14 @@ export const COLLAPSE_SEVERITY = {
 
 export const TOP_LEVEL_LABEL = 'Top level';
 
+// Folder filter vocabulary. `UNFILED_FILTER_ID` is a sentinel, not a folder id —
+// it selects every entry sitting outside any folder, which is the "what haven't
+// I organized yet" view. It can never collide with a real folder id because
+// those come from `uid()`.
+export const UNFILED_FILTER_ID    = '__unfiled__';
+export const UNFILED_FILTER_LABEL = 'Unfiled entries';
+export const ALL_FOLDERS_LABEL    = 'All folders';
+export const FOLDER_FILTER_LABEL  = 'Folder';
+
 // Label for the pseudo-target that clears an entry's folder assignment.
 export const NO_FOLDER_LABEL = 'No folder';

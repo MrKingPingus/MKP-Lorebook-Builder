@@ -10,13 +10,16 @@ import { useFolders }    from '../../hooks/use-folders.js';
 import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { useUi }         from '../../hooks/use-ui.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
+import { useFolderFilter } from '../../hooks/use-folder-filter.js';
 import { buildRenderItems, effectiveCollapseState } from '../../services/folder-tree.js';
 import { ENTRY_TYPES }   from '../../constants/entry-types.js';
 import { COLLAPSE_STATES } from '../../constants/folders.js';
+import { folderOrderFor } from '../../constants/sort-modes.js';
 
 export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry, reorderEntriesById } = useEntries();
   const { folders } = useFolders();
+  const { filterActive } = useFolderFilter();
   const { displayChord } = useKeybindings();
   const isMobile    = useMobile();
   const sortMode    = useUi((s) => s.sortMode);
@@ -33,6 +36,11 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   }, []);
 
   const searchActive = searchQuery.trim().length > 0;
+  // A folder filter narrows the list the same way a search does, so it gets the
+  // same two concessions: folders left with nothing drop out instead of showing
+  // an empty header, and a tucked folder opens rather than hiding the very
+  // entries the filter was asked to surface.
+  const narrowed = searchActive || filterActive;
 
   // `showFolders` goes false under the cross-match sorts, where regrouping by
   // folder would break the matched/unmatched partition the sort exists to show.
@@ -41,7 +49,10 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     // An empty folder can't anchor to a member, so it would otherwise trail
     // every search as a row of noise. Hide those while a search is narrowing
     // the list; they come back the moment the query clears.
-    hideEmptyFolders: searchActive,
+    hideEmptyFolders: narrowed,
+    // Alpha sorts order folder rows by folder name; everything else anchors a
+    // folder at the earliest position in its subtree. See `folderOrderFor`.
+    orderBy: folderOrderFor(sortMode),
   });
 
   if (renderTree.length === 0) {
@@ -107,7 +118,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
       if (item.kind === 'folder') {
         const { folder } = item;
         const state  = effectiveCollapseState(inherited, folder.collapseState);
-        const tucked = state === COLLAPSE_STATES.TUCKED && !searchActive;
+        const tucked = state === COLLAPSE_STATES.TUCKED && !narrowed;
         const density = state === COLLAPSE_STATES.CONDENSED ? 'condensed' : 'full';
 
         out.push(
