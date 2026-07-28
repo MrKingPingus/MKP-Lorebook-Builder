@@ -25,7 +25,12 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The suite grew from ~25 scenarios to 45 during phase 11, and CI runs every
+    # fixed wait at 3x (VERIFY_WAIT_SCALE) to absorb a slow shared runner. A full
+    # run already takes over ten minutes locally at 1x, so 15 was no longer a
+    # safety margin — it was a coin flip. Raised rather than trimming the wait
+    # scale, which exists to stop timing flakes rather than to save wall clock.
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
