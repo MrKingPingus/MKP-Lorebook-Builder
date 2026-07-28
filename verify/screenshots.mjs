@@ -36,35 +36,17 @@ async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
     const ACCENT = '#ff5c8a';
     const legendRows = [];
     const missed = [];
-    let n = 0;
 
-    marks.forEach((m) => {
+    // Resolve every mark to a rect and a badge position FIRST, then number them
+    // in reading order — top to bottom, left to right within a row. Numbering in
+    // the order the marks happen to be written in the script produced badges
+    // that ran 3, 2, 1 down the image while the legend counted 1, 2, 3.
+    const resolved = [];
+    for (const m of marks) {
       const all = document.querySelectorAll(m.selector);
       const el = all[m.nth ?? 0];
       const r = el && el.getBoundingClientRect();
-      if (!el || (r.width === 0 && r.height === 0)) { missed.push(m.selector); return; }
-      n += 1;
-
-      // Ring around the target — skippable, because a ring drawn tight around a
-      // row sits exactly on top of the thin drop-indicator line and hides the
-      // very thing the annotation is pointing at.
-      if (m.ring !== false) {
-      const ring = document.createElement('div');
-      Object.assign(ring.style, {
-        position: 'fixed',
-        left: `${r.left - 3}px`, top: `${r.top - 3}px`,
-        width: `${r.width + 6}px`, height: `${r.height + 6}px`,
-        border: `2px solid ${ACCENT}`, borderRadius: '7px',
-        boxShadow: `0 0 0 3px rgba(255,92,138,0.18)`,
-      });
-      layer.appendChild(ring);
-      }
-
-      // Numbered badge, tucked just outside the ring so it never covers the
-      // control it is pointing at. Adjacent controls want 'top'/'bottom' —
-      // side placement would drop the badge straight onto its neighbour.
-      const badge = document.createElement('div');
-      badge.textContent = String(n);
+      if (!el || (r.width === 0 && r.height === 0)) { missed.push(m.selector); continue; }
       const place = m.place || 'left';
       const cx = r.left + r.width / 2 - 11;
       const cy = r.top + r.height / 2 - 11;
@@ -74,6 +56,38 @@ async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
         top:    { left: cx, top: r.top - 30 },
         bottom: { left: cx, top: r.bottom + 8 },
       }[place];
+      resolved.push({ m, r, pos });
+    }
+
+    // Band the y coordinate so two badges on the same visual row sort by x
+    // rather than by a couple of stray pixels of vertical difference.
+    resolved.sort((a, b) => {
+      const band = (v) => Math.round(v / 24);
+      return band(a.pos.top) - band(b.pos.top) || a.pos.left - b.pos.left;
+    });
+
+    resolved.forEach(({ m, r, pos }, i) => {
+      const n = i + 1;
+
+      // Ring around the target — skippable, because a ring drawn tight around a
+      // row sits exactly on top of the thin drop-indicator line and hides the
+      // very thing the annotation is pointing at.
+      if (m.ring !== false) {
+        const ring = document.createElement('div');
+        ring.className = 'shot-mark';
+        Object.assign(ring.style, {
+          position: 'fixed',
+          left: `${r.left - 3}px`, top: `${r.top - 3}px`,
+          width: `${r.width + 6}px`, height: `${r.height + 6}px`,
+          border: `2px solid ${ACCENT}`, borderRadius: '7px',
+          boxShadow: `0 0 0 3px rgba(255,92,138,0.18)`,
+        });
+        layer.appendChild(ring);
+      }
+
+      const badge = document.createElement('div');
+      badge.className = 'shot-mark';
+      badge.textContent = String(n);
       Object.assign(badge.style, {
         position: 'fixed',
         top: `${pos.top}px`,
@@ -144,7 +158,10 @@ async function shot(page, name) {
     let { left, top, right, bottom } = win;
     // Menus are portalled to <body> and can overhang the window edge; a clip of
     // the window alone would slice them in half.
-    for (const el of document.querySelectorAll('.type-filter-popover, .folder-nest-menu')) {
+    // Popovers are portalled to <body> and can overhang the window edge; badges
+    // and rings sit outside their targets by design and can overhang too. Both
+    // have to be inside the clip or the shot cuts an annotation in half.
+    for (const el of document.querySelectorAll('.type-filter-popover, .folder-nest-menu, .shot-mark')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0) continue;
       left = Math.min(left, r.left); top = Math.min(top, r.top);
@@ -287,7 +304,8 @@ async function main() {
   await settle(page, 350);
   await annotate(page, [
     { selector: '.folder-filter-btn', label: 'Folder ▾ — only appears once the book actually has folders', place: 'top' },
-    { selector: '.folder-filter-popover .type-filter-popover-row', nth: 1, label: 'Pick a folder to show only its entries, sub-folders included', place: 'right' },
+    // Left, so it does not stack against the count badge at the row's right edge.
+    { selector: '.folder-filter-popover .type-filter-popover-row', nth: 1, label: 'Pick a folder to show only its entries, sub-folders included', place: 'left' },
     { selector: '.folder-filter-count', label: 'The count matches exactly what picking it will show', place: 'right' },
     { selector: '.folder-filter-popover .type-filter-popover-row:last-child', label: 'Unfiled entries — everything you have not put away yet', place: 'right' },
   ], { title: 'Filter the list down to one folder' });
