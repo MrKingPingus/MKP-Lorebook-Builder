@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MKP Lorebook Builder — UI Overhaul Mockup (Footer + Title Menu)</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   Design tokens — copied verbatim from src/style.css :root (dark only).
+   This mockup is deliberately dark-theme-only and throwaway; do not
+   try to make it theme-aware.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg:       #0f172a;
+  --surface:  #111827;
+  --surface2: #1f2937;
+  --surface3: #1e293b;
+  --border:   #374151;
+  --border2:  #4b5563;
+  --text:     #e5e7eb;
+  --muted:    #6b7280;
+  --muted2:   #9ca3af;
+  --coral:    #f87171;
+  --green:    #34d399;
+  --yellow:   #f59e0b;
+  --red:      #ef4444;
+  --blue:     #60a5fa;
+  --gold:     #eab308;
+  --accent:   #ef4444;
+  --destructive: #ef4444;
+  --passive-agree: #60a5fa;
+  --focus-border: #a0b5d6;
+  --radius:   5px;
+  --radius-lg: 8px;
+  --shadow:   0 12px 40px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.5);
+  --font:     'Inter', system-ui, -apple-system, sans-serif;
+  --transition: 0.12s ease;
+  --ui-scale: 1;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #070b14;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 24px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input  { font-family: inherit; }
+
+/* ── Page chrome (not part of the app) ── */
+.page-head { max-width: 900px; width: 100%; text-align: center; }
+.page-title { font-size: 1.125rem; font-weight: 800; letter-spacing: .02em; }
+.page-sub { color: var(--muted2); font-size: .8125rem; margin-top: 4px; }
+
+.state-switcher {
+  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 8px;
+}
+.state-btn {
+  padding: 7px 14px; border-radius: var(--radius); font-size: .8125rem;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted2);
+  transition: all var(--transition); white-space: nowrap;
+}
+.state-btn:hover { background: var(--surface3); color: var(--text); }
+.state-btn--active { background: var(--passive-agree); border-color: var(--passive-agree); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   The fake floating window
+   ═══════════════════════════════════════════════════════════════════ */
+.floating-window {
+  position: relative;
+  width: 680px;              /* realistic desktop size; MIN_WINDOW_WIDTH is 480 */
+  height: 620px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Golden corner brackets — as in the real app */
+.corner { position: absolute; width: 14px; height: 14px; border-color: var(--gold); z-index: 5; pointer-events: none; }
+.corner--nw { top: 4px; left: 4px;  border-top: 2px solid; border-left: 2px solid; border-top-left-radius: 4px; }
+.corner--ne { top: 4px; right: 4px; border-top: 2px solid; border-right: 2px solid; border-top-right-radius: 4px; }
+.corner--sw { bottom: 4px; left: 4px;  border-bottom: 2px solid; border-left: 2px solid; border-bottom-left-radius: 4px; }
+.corner--se { bottom: 4px; right: 4px; border-bottom: 2px solid; border-right: 2px solid; border-bottom-right-radius: 4px; }
+
+/* ── Header ── */
+.window-header {
+  position: relative; display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.header-logo { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.logo-icon {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(140deg, #3b82f6, #1e293b 70%);
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.logo-text { font-size: .875rem; font-weight: 800; letter-spacing: .04em; color: var(--coral); white-space: nowrap; }
+
+/* NEW — the title becomes a clickable field, Pro-Q style.
+   Absolutely centred on the window, hover-highlighted, click opens the menu,
+   double-click renames in place. No arrows (dropped — see conversation). */
+.title-field-wrap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.title-field {
+  display: flex; align-items: center; gap: 8px;
+  min-width: 190px; max-width: 300px; justify-content: center;
+  padding: 4px 16px; border-radius: var(--radius);
+  border: 1px solid transparent; background: transparent;
+  font-size: .8125rem; color: var(--muted2);
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.title-field:hover { background: var(--surface2); border-color: var(--border2); color: var(--text); }
+.title-field--open { background: var(--surface2); border-color: var(--focus-border); color: var(--text); }
+.title-field-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title-field-caret { color: var(--muted); font-size: .625rem; }
+
+.header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+/* NEW — hamburger becomes a gear that goes straight to Settings (no dropdown) */
+.icon-btn {
+  width: 28px; height: 28px; border-radius: var(--radius); color: var(--muted);
+  font-size: 1.125rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.icon-btn:hover { background: var(--surface3); color: var(--text); }
+.icon-btn--close { font-size: 1.375rem; }
+
+/* ── Body / filter bar / entry list (rough — context only) ── */
+.window-body { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.global-filter-bar { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; }
+.fake-search { display: flex; gap: 6px; }
+.fake-search input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px 10px; font-size: .75rem; color: var(--text);
+}
+.fake-search input::placeholder { color: var(--muted); }
+.fake-btn {
+  padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: .6875rem; color: var(--muted2); white-space: nowrap;
+}
+.type-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.type-chip { padding: 3px 10px; border-radius: 20px; font-size: .625rem; border: 1px solid var(--border); color: var(--muted2); background: var(--surface2); }
+.type-chip--on { border-color: var(--passive-agree); color: var(--passive-agree); }
+
+.entry-list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.entry-card { display: flex; align-items: center; gap: 8px; padding: 9px 11px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.entry-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.entry-name { font-size: .8125rem; flex: 1; }
+.entry-num { color: var(--muted); font-size: .6875rem; }
+.entry-badges { display: flex; gap: 5px; }
+.entry-badge { font-size: .625rem; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ── Hotbar (unchanged) ── */
+.hotbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; background: var(--surface); border-top: 1px solid var(--border);
+  flex-shrink: 0; gap: 8px; position: relative;
+}
+.hotbar-group { display: flex; gap: 6px; align-items: center; }
+.footer-btn {
+  padding: 6px 14px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: .75rem; color: var(--text); white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition);
+}
+.footer-btn:hover { background: var(--surface3); border-color: var(--border2); }
+.footer-fab {
+  width: 54px; height: 54px; border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(239,68,68,.35);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEW — the status footer (Phase A)
+   Thin, always-visible, holds app state + view controls. Never content
+   actions (those stay in the hotbar).
+   Height is expressed off --ui-scale so it grows with the text-size
+   setting rather than clipping its own labels.
+   ═══════════════════════════════════════════════════════════════════ */
+.status-footer {
+  display: flex; align-items: center; gap: 10px;
+  height: calc(26px * var(--ui-scale));
+  padding: 0 6px 0 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: calc(.6875rem * var(--ui-scale));
+  color: var(--muted);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 6;
+}
+.status-left  { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.status-right { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.status-sep { color: var(--border2); }
+
+.status-save { display: flex; align-items: center; gap: 5px; color: var(--green); white-space: nowrap; }
+.status-save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.status-counts { white-space: nowrap; }
+.status-hidden { color: var(--yellow); }
+
+.status-item {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 4px; color: var(--muted);
+  font-size: inherit; line-height: 1; white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.status-item:hover { background: var(--surface3); color: var(--text); }
+.status-item--open { background: var(--surface3); color: var(--text); }
+.status-icon { width: 13px; height: 13px; display: block; }
+
+/* Storage ring, relocated from the header */
+.status-ring { width: 15px; height: 15px; display: block; }
+.status-ring circle { fill: none; stroke-width: 3.5; }
+.status-ring .ring-track { stroke: var(--border); }
+.status-ring .ring-fill  { stroke: var(--green); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+/* Resize grip lives IN the footer (Pro-Q solution) so the bar doesn't
+   swallow the bottom-edge / SE-corner resize hit zones. */
+.status-grip {
+  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+  color: var(--muted); cursor: nwse-resize; margin-left: 2px;
+}
+.status-grip:hover { color: var(--text); }
+
+/* ── Scaling menu — opens UPWARD from the footer, flyouts to the LEFT ── */
+.scale-menu {
+  position: absolute; bottom: calc(100% + 6px); right: 6px;
+  min-width: 210px; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); padding: 5px; z-index: 40;
+}
+.scale-menu-head {
+  font-size: .625rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); padding: 5px 9px 7px;
+}
+.scale-row {
+  display: flex; align-items: center; width: 100%; gap: 10px;
+  padding: 7px 9px; border-radius: var(--radius); font-size: .75rem;
+  color: var(--text); text-align: left; position: relative;
+  transition: background var(--transition);
+}
+.scale-row:hover, .scale-row--open { background: var(--surface3); }
+.scale-row-label { flex: 1; }
+.scale-row-value { color: var(--muted2); font-size: .6875rem; }
+.scale-row-arrow { color: var(--muted); font-size: .625rem; }
+.scale-menu-divider { height: 1px; background: var(--border); margin: 5px 4px; }
+.scale-row--reset { color: var(--muted2); }
+
+/* Flyout submenu — opens to the left because the footer button is at the
+   window's right edge and the window can be as narrow as 480px. */
+.scale-flyout {
+  position: absolute; right: calc(100% + 5px); top: -5px;
+  min-width: 170px; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); padding: 5px; z-index: 41;
+}
+.flyout-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 6px 9px; border-radius: var(--radius); font-size: .75rem;
+  color: var(--text); text-align: left; transition: background var(--transition);
+}
+.flyout-item:hover { background: var(--surface3); }
+.flyout-check { width: 12px; color: var(--green); flex-shrink: 0; font-size: .6875rem; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEW — the title dropdown (Phase C)
+   Dual column: lorebooks left, import/export right.
+   ═══════════════════════════════════════════════════════════════════ */
+.title-menu {
+  position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+  width: 560px; max-width: calc(680px - 24px);   /* clamps to window width */
+  max-height: 430px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  display: flex; overflow: hidden; z-index: 30;
+}
+.tm-col { display: flex; flex-direction: column; min-height: 0; }
+.tm-col--books { width: 46%; border-right: 1px solid var(--border); }
+.tm-col--io    { flex: 1; }
+.tm-col-head {
+  font-size: .625rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); padding: 10px 12px 7px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px;
+}
+.tm-col-head-count { color: var(--border2); }
+.tm-col-body { flex: 1; overflow-y: auto; padding: 0 7px 7px; min-height: 0; }
+
+/* Lorebook list — alphabetical (stable), NOT recency-ordered */
+.tm-book {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 9px; border-radius: var(--radius); text-align: left;
+  transition: background var(--transition);
+}
+.tm-book:hover { background: var(--surface3); }
+.tm-book--active { background: var(--surface3); box-shadow: inset 2px 0 0 var(--passive-agree); }
+.tm-book-name { flex: 1; font-size: .8125rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-book--active .tm-book-name { color: var(--passive-agree); font-weight: 600; }
+.tm-book-time { font-size: .625rem; color: var(--muted); white-space: nowrap; }
+.tm-book-del { color: var(--muted); font-size: .875rem; line-height: 1; padding: 0 2px; opacity: 0; }
+.tm-book:hover .tm-book-del { opacity: 1; }
+.tm-book-del:hover { color: var(--destructive); }
+.tm-new {
+  margin: 4px 7px 8px; padding: 7px; border-radius: var(--radius);
+  border: 1px dashed var(--border2); color: var(--muted2); font-size: .75rem;
+  width: calc(100% - 14px); transition: all var(--transition);
+}
+.tm-new:hover { border-color: var(--passive-agree); color: var(--passive-agree); }
+
+/* Import / export column */
+.tm-section { padding: 0 12px 12px; }
+.tm-section-label {
+  font-size: .625rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.tm-drop {
+  border: 1.5px dashed var(--border2); border-radius: var(--radius);
+  padding: 14px 10px; text-align: center; font-size: .6875rem; color: var(--muted2);
+  transition: all var(--transition); cursor: pointer;
+}
+.tm-drop:hover { border-color: var(--passive-agree); color: var(--passive-agree); background: rgba(96,165,250,.05); }
+.tm-filename-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.tm-filename-row label { font-size: .6875rem; color: var(--muted); flex-shrink: 0; }
+.tm-filename-row input {
+  flex: 1; min-width: 0; background: var(--surface3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 4px 7px; font-size: .6875rem; color: var(--text);
+}
+.tm-btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.tm-btn {
+  padding: 5px 10px; background: var(--surface3); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: .6875rem; color: var(--text); white-space: nowrap;
+  transition: all var(--transition);
+}
+.tm-btn:hover { background: var(--surface2); border-color: var(--border2); }
+.tm-btn--outline { background: transparent; color: var(--muted2); }
+.tm-btn--outline:hover { color: var(--text); }
+.tm-divider { height: 1px; background: var(--border); margin: 0 12px 12px; }
+
+/* ── Import takeover: books column collapses to a rail, I/O fills the menu ── */
+.tm-rail {
+  width: 34px; border-right: 1px solid var(--border); flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; padding-top: 9px;
+}
+.tm-rail-back {
+  width: 24px; height: 24px; border-radius: var(--radius); color: var(--muted);
+  display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  transition: background var(--transition), color var(--transition);
+}
+.tm-rail-back:hover { background: var(--surface3); color: var(--text); }
+.tm-rail-label {
+  writing-mode: vertical-rl; margin-top: 10px; font-size: .5625rem;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--border2);
+}
+
+.tm-import-head {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 10px 14px 8px; flex-shrink: 0;
+}
+.tm-import-title { font-size: .8125rem; font-weight: 600; color: var(--text); }
+.tm-import-sub { font-size: .6875rem; color: var(--muted); }
+
+.tm-warn {
+  margin: 0 14px 10px; padding: 7px 10px; border-radius: var(--radius);
+  background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.35);
+  font-size: .6875rem; color: var(--yellow);
+}
+
+.tm-disp-label { padding: 0 14px 7px; font-size: .75rem; color: var(--muted2); }
+/* 2×2 rather than 4-across — four buttons in a row does not fit at 480px.
+   Layout rule #1: fit on one line, or make the wrap a deliberate grid. */
+.tm-disp-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  padding: 0 14px 10px;
+}
+.tm-disp-btn {
+  padding: 9px 10px; border-radius: var(--radius); text-align: left;
+  background: var(--surface3); border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.tm-disp-btn:hover { border-color: var(--border2); background: var(--surface2); }
+.tm-disp-btn-title { display: block; font-size: .75rem; color: var(--text); margin-bottom: 2px; }
+.tm-disp-btn-hint  { display: block; font-size: .625rem; color: var(--muted); line-height: 1.35; }
+.tm-disp-btn--danger { border-color: rgba(239,68,68,.4); }
+.tm-disp-btn--danger .tm-disp-btn-title { color: var(--coral); }
+.tm-disp-note {
+  padding: 0 14px 12px; font-size: .625rem; color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.tm-disp-note-rule { flex: 1; height: 1px; background: var(--border); }
+
+/* Preview state */
+.tm-preview-banner {
+  margin: 0 14px 8px; padding: 7px 10px; border-radius: var(--radius);
+  background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.3);
+  font-size: .6875rem; color: var(--text);
+}
+.tm-preview-banner strong { color: var(--coral); }
+.tm-preview-list { flex: 1; overflow-y: auto; padding: 0 14px; min-height: 0; display: flex; flex-direction: column; gap: 4px; }
+.tm-preview-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+  background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.tm-preview-num  { font-size: .625rem; color: var(--muted); width: 18px; flex-shrink: 0; }
+.tm-preview-name { font-size: .75rem; flex: 1; }
+.tm-preview-trig { font-size: .625rem; color: var(--muted); white-space: nowrap; }
+.tm-preview-actions {
+  display: flex; gap: 6px; justify-content: flex-end; padding: 10px 14px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.tm-confirm {
+  padding: 6px 16px; border-radius: var(--radius); font-size: .75rem;
+  background: var(--destructive); color: #fff; border: 1px solid var(--destructive);
+}
+.tm-cancel {
+  padding: 6px 14px; border-radius: var(--radius); font-size: .75rem;
+  background: transparent; border: 1px solid var(--border); color: var(--muted2);
+}
+.tm-cancel:hover { color: var(--text); border-color: var(--border2); }
+
+/* Backdrop so an open menu reads as modal-ish without dimming the whole page */
+.menu-backdrop { position: absolute; inset: 0; z-index: 20; }
+
+/* ── Notes panel under the window ── */
+.notes {
+  max-width: 680px; width: 100%; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px;
+}
+.notes h3 { font-size: .8125rem; margin-bottom: 9px; color: var(--text); letter-spacing: .01em; }
+.notes ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.notes li { font-size: .75rem; color: var(--muted2); line-height: 1.55; padding-left: 15px; position: relative; }
+.notes li::before { content: '▸'; position: absolute; left: 0; color: var(--border2); }
+.notes li strong { color: var(--text); font-weight: 600; }
+.notes .note-warn { color: var(--yellow); }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="page-title">UI Overhaul — Footer Bar + Title Menu</div>
+  <div class="page-sub">Mockup only. Dark theme, fake data, no real behaviour. Window shown at 680&thinsp;px wide (min is 480).</div>
+</div>
+
+<div class="state-switcher">
+  <button class="state-btn state-btn--active" data-state="default">1 · Default</button>
+  <button class="state-btn" data-state="scale">2 · Scaling menu</button>
+  <button class="state-btn" data-state="title">3 · Title menu</button>
+  <button class="state-btn" data-state="import-disp">4 · Import — choose</button>
+  <button class="state-btn" data-state="import-prev">5 · Import — preview</button>
+</div>
+
+<div class="floating-window">
+  <span class="corner corner--nw"></span>
+  <span class="corner corner--ne"></span>
+  <span class="corner corner--sw"></span>
+  <span class="corner corner--se"></span>
+
+  <!-- ══ HEADER — decluttered: logo | title field | gear | × ══ -->
+  <div class="window-header">
+    <div class="header-logo">
+      <span class="logo-icon">🐟</span>
+      <span class="logo-text">LOREBOOK BUILDER</span>
+    </div>
+
+    <div class="title-field-wrap">
+      <button class="title-field" id="titleField">
+        <span class="title-field-name">Ashfall Chronicle</span>
+        <span class="title-field-caret">▼</span>
+      </button>
+
+      <!-- ══ TITLE MENU ══ -->
+      <div class="title-menu hidden" id="titleMenu">
+
+        <!-- Left: lorebooks (browse state) -->
+        <div class="tm-col tm-col--books" id="tmBooks">
+          <div class="tm-col-head">Lorebooks <span class="tm-col-head-count">· 6</span></div>
+          <div class="tm-col-body">
+            <button class="tm-book tm-book--active">
+              <span class="tm-book-name">Ashfall Chronicle</span>
+              <span class="tm-book-time">now</span>
+              <span class="tm-book-del">×</span>
+            </button>
+            <button class="tm-book">
+              <span class="tm-book-name">Blackwater Bay</span>
+              <span class="tm-book-time">2h ago</span>
+              <span class="tm-book-del">×</span>
+            </button>
+            <button class="tm-book">
+              <span class="tm-book-name">Coriolis Notes</span>
+              <span class="tm-book-time">1d ago</span>
+              <span class="tm-book-del">×</span>
+            </button>
+            <button class="tm-book">
+              <span class="tm-book-name">Grimoire of Ash</span>
+              <span class="tm-book-time">3d ago</span>
+              <span class="tm-book-del">×</span>
+            </button>
+            <button class="tm-book">
+              <span class="tm-book-name">Northreach</span>
+              <span class="tm-book-time">6d ago</span>
+              <span class="tm-book-del">×</span>
+            </button>
+            <button class="tm-book">
+              <span class="tm-book-name">Veil &amp; Thorn</span>
+              <span class="tm-book-time">12d ago</span>
+              <span class="tm-book-del">×</span>
+            </button>
+          </div>
+          <button class="tm-new">+ New lorebook</button>
+        </div>
+
+        <!-- Left: collapsed rail (import takeover state) -->
+        <div class="tm-rail hidden" id="tmRail">
+          <button class="tm-rail-back" id="tmBack" title="Back to lorebooks">‹</button>
+          <span class="tm-rail-label">Lorebooks</span>
+        </div>
+
+        <!-- Right: import/export quick actions (browse state) -->
+        <div class="tm-col tm-col--io" id="tmIo">
+          <div class="tm-col-head">Import / Export</div>
+          <div class="tm-col-body" style="overflow-y:auto">
+            <div class="tm-section">
+              <div class="tm-section-label">Import</div>
+              <div class="tm-drop" id="tmDrop">Drop a file or click to browse<br />TXT · DOCX · ODT · JSON</div>
+            </div>
+            <div class="tm-divider"></div>
+            <div class="tm-section">
+              <div class="tm-section-label">Export</div>
+              <div class="tm-filename-row">
+                <label>File</label>
+                <input value="Ashfall_Chronicle" spellcheck="false" />
+              </div>
+              <div class="tm-btn-row">
+                <button class="tm-btn">⬇ JSON</button>
+                <button class="tm-btn">⬇ TXT</button>
+                <button class="tm-btn">⬇ DOCX</button>
+                <button class="tm-btn tm-btn--outline">⎘ Copy</button>
+              </div>
+            </div>
+            <div class="tm-divider"></div>
+            <div class="tm-section">
+              <div class="tm-section-label">Templates</div>
+              <div class="tm-btn-row">
+                <button class="tm-btn tm-btn--outline">⬇ JSON</button>
+                <button class="tm-btn tm-btn--outline">⬇ TXT</button>
+                <button class="tm-btn tm-btn--outline">⬇ DOCX</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: import takeover — choose disposition -->
+        <div class="tm-col tm-col--io hidden" id="tmImportDisp">
+          <div class="tm-import-head">
+            <span class="tm-import-title">northreach_v3.json</span>
+            <span class="tm-import-sub">24 entries parsed</span>
+          </div>
+          <div class="tm-warn">⚠ 2 entries imported with missing fields (blank description)</div>
+          <div class="tm-disp-label">What should happen to &ldquo;Ashfall Chronicle&rdquo;?</div>
+          <div class="tm-disp-grid">
+            <button class="tm-disp-btn">
+              <span class="tm-disp-btn-title">Import as new</span>
+              <span class="tm-disp-btn-hint">Current book untouched</span>
+            </button>
+            <button class="tm-disp-btn">
+              <span class="tm-disp-btn-title">Append</span>
+              <span class="tm-disp-btn-hint">Add to the current book</span>
+            </button>
+            <button class="tm-disp-btn tm-disp-btn--danger">
+              <span class="tm-disp-btn-title">Replace</span>
+              <span class="tm-disp-btn-hint">Overwrites all 12 entries</span>
+            </button>
+            <button class="tm-disp-btn">
+              <span class="tm-disp-btn-title">Back up first</span>
+              <span class="tm-disp-btn-hint">Download, then replace</span>
+            </button>
+          </div>
+          <div class="tm-disp-note">
+            <span class="tm-disp-note-rule"></span>
+            <span>Autosave already saved your work — a backup is for keeping a copy outside the browser</span>
+            <span class="tm-disp-note-rule"></span>
+          </div>
+          <div class="tm-preview-actions">
+            <button class="tm-cancel" data-goto="title">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Right: import takeover — preview -->
+        <div class="tm-col tm-col--io hidden" id="tmImportPrev">
+          <div class="tm-import-head">
+            <span class="tm-import-title">northreach_v3.json</span>
+            <span class="tm-import-sub">24 entries</span>
+          </div>
+          <div class="tm-preview-banner">
+            Will <strong>replace</strong> &ldquo;Ashfall Chronicle&rdquo; with these entries.
+          </div>
+          <div class="tm-preview-list">
+            <div class="tm-preview-row"><span class="tm-preview-num">1</span><span class="tm-preview-name">Northreach Keep</span><span class="tm-preview-trig">4 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">2</span><span class="tm-preview-name">Marshal Enna Vok</span><span class="tm-preview-trig">6 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">3</span><span class="tm-preview-name">The Long Winter</span><span class="tm-preview-trig">3 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">4</span><span class="tm-preview-name">Thornwatch Company</span><span class="tm-preview-trig">5 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">5</span><span class="tm-preview-name">Sable Pass</span><span class="tm-preview-trig">2 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">6</span><span class="tm-preview-name">Oathbinding</span><span class="tm-preview-trig">7 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">7</span><span class="tm-preview-name">Cairn of Ninefold</span><span class="tm-preview-trig">3 triggers</span></div>
+            <div class="tm-preview-row"><span class="tm-preview-num">8</span><span class="tm-preview-name">Hask the Ferryman</span><span class="tm-preview-trig">4 triggers</span></div>
+          </div>
+          <div class="tm-preview-actions">
+            <button class="tm-cancel" data-goto="import-disp">Back</button>
+            <button class="tm-confirm">Replace 12 entries</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button class="icon-btn" title="Settings">⚙</button>
+      <button class="icon-btn icon-btn--close" title="Return to home">×</button>
+    </div>
+  </div>
+
+  <!-- ══ BODY ══ -->
+  <div class="window-body">
+    <div class="global-filter-bar">
+      <div class="fake-search">
+        <input placeholder="Search entries…" />
+        <button class="fake-btn">Sort ▾</button>
+        <button class="fake-btn">Folder ▾</button>
+      </div>
+      <div class="type-chips">
+        <span class="type-chip type-chip--on">All</span>
+        <span class="type-chip">Character</span>
+        <span class="type-chip">Location</span>
+        <span class="type-chip">Item</span>
+        <span class="type-chip">Lore</span>
+        <span class="type-chip">Event</span>
+      </div>
+    </div>
+
+    <div class="entry-list">
+      <div class="entry-card"><span class="entry-dot" style="background:#60a5fa"></span><span class="entry-num">#1</span><span class="entry-name">Marshal Enna Vok</span><span class="entry-badges"><span class="entry-badge">6 trig</span><span class="entry-badge">842</span></span></div>
+      <div class="entry-card"><span class="entry-dot" style="background:#34d399"></span><span class="entry-num">#2</span><span class="entry-name">Northreach Keep</span><span class="entry-badges"><span class="entry-badge">4 trig</span><span class="entry-badge">1204</span></span></div>
+      <div class="entry-card"><span class="entry-dot" style="background:#f59e0b"></span><span class="entry-num">#3</span><span class="entry-name">The Oathbinding Rite</span><span class="entry-badges"><span class="entry-badge">7 trig</span><span class="entry-badge">655</span></span></div>
+      <div class="entry-card"><span class="entry-dot" style="background:#60a5fa"></span><span class="entry-num">#4</span><span class="entry-name">Hask the Ferryman</span><span class="entry-badges"><span class="entry-badge">4 trig</span><span class="entry-badge">390</span></span></div>
+      <div class="entry-card"><span class="entry-dot" style="background:#f87171"></span><span class="entry-num">#5</span><span class="entry-name">Sable Pass</span><span class="entry-badges"><span class="entry-badge">2 trig</span><span class="entry-badge">511</span></span></div>
+      <div class="entry-card"><span class="entry-dot" style="background:#34d399"></span><span class="entry-num">#6</span><span class="entry-name">Cairn of the Ninefold</span><span class="entry-badges"><span class="entry-badge">3 trig</span><span class="entry-badge">728</span></span></div>
+    </div>
+  </div>
+
+  <!-- ══ HOTBAR — unchanged; still owns verbs-on-content ══ -->
+  <div class="hotbar">
+    <div class="hotbar-group">
+      <button class="footer-btn">↶ Undo</button>
+      <button class="footer-btn">☑ Select</button>
+      <button class="footer-btn">⬆ Import</button>
+    </div>
+    <button class="footer-fab">+</button>
+    <div class="hotbar-group">
+      <button class="footer-btn">⬇ Export</button>
+      <button class="footer-btn">↕ Expand</button>
+      <button class="footer-btn">📁 Folder</button>
+    </div>
+  </div>
+
+  <!-- ══ NEW: STATUS FOOTER — app state + view controls only ══ -->
+  <div class="status-footer">
+    <div class="status-left">
+      <span class="status-save"><span class="status-save-dot"></span>Saved</span>
+      <span class="status-sep">·</span>
+      <span class="status-counts">12 entries</span>
+      <span class="status-hidden">2 hidden</span>
+    </div>
+
+    <div class="status-right">
+      <button class="status-item" title="Report a bug">
+        <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M8 6a4 4 0 0 1 8 0M6 10h12v5a6 6 0 0 1-12 0zM3 12h3M18 12h3M4.5 7l2 1.5M19.5 7l-2 1.5M4.5 17.5l2-1.5M19.5 17.5l-2-1.5" />
+        </svg>
+      </button>
+      <button class="status-item" title="Request a feature">
+        <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
+          <circle cx="12" cy="12" r="3.2" />
+        </svg>
+      </button>
+      <button class="status-item" title="Storage: 3.1 MB of 10 MB">
+        <svg class="status-ring" viewBox="0 0 24 24">
+          <circle class="ring-track" cx="12" cy="12" r="9" />
+          <circle class="ring-fill"  cx="12" cy="12" r="9" stroke-dasharray="56.5" stroke-dashoffset="39" />
+        </svg>
+        <span>31%</span>
+      </button>
+
+      <!-- Scaling menu trigger — the Pro-Q bottom-right corner control -->
+      <button class="status-item" id="scaleBtn" title="Sizing &amp; scale">⤢ 100%</button>
+
+      <!-- Resize grip lives in the footer so the bar doesn't eat the SE corner -->
+      <span class="status-grip" title="Resize window">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path d="M11 5 5 11M11 9l-2 2" />
+        </svg>
+      </span>
+    </div>
+
+    <!-- ══ SCALING MENU — opens upward, flyouts to the left ══ -->
+    <div class="scale-menu hidden" id="scaleMenu">
+      <div class="scale-menu-head">Sizing &amp; scale</div>
+
+      <div class="scale-row scale-row--open" id="rowWindow" role="menuitem" tabindex="0">
+        <span class="scale-row-label">Window size</span>
+        <span class="scale-row-value">Medium</span>
+        <span class="scale-row-arrow">◀</span>
+        <div class="scale-flyout">
+          <button class="flyout-item"><span class="flyout-check"></span>Small &mdash; 480 × 600</button>
+          <button class="flyout-item"><span class="flyout-check">✓</span>Medium &mdash; 680 × 800</button>
+          <button class="flyout-item"><span class="flyout-check"></span>Large &mdash; 900 × 900</button>
+          <button class="flyout-item"><span class="flyout-check"></span>Full height</button>
+          <div class="scale-menu-divider"></div>
+          <button class="flyout-item">Custom…</button>
+          <button class="flyout-item">Reset to default</button>
+        </div>
+      </div>
+
+      <div class="scale-row" role="menuitem" tabindex="0">
+        <span class="scale-row-label">Text size</span>
+        <span class="scale-row-value">100%</span>
+        <span class="scale-row-arrow">◀</span>
+      </div>
+
+      <div class="scale-row" role="menuitem" tabindex="0">
+        <span class="scale-row-label">Entry header height</span>
+        <span class="scale-row-value">Default</span>
+        <span class="scale-row-arrow">◀</span>
+      </div>
+
+      <div class="scale-row" role="menuitem" tabindex="0">
+        <span class="scale-row-label">FAB button size</span>
+        <span class="scale-row-value">Medium</span>
+        <span class="scale-row-arrow">◀</span>
+      </div>
+
+      <div class="scale-menu-divider"></div>
+      <div class="scale-row scale-row--reset" role="menuitem" tabindex="0">
+        <span class="scale-row-label">Reset all sizing</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-backdrop hidden" id="backdrop"></div>
+</div>
+
+<!-- ══ NOTES ══ -->
+<div class="notes" id="notes"></div>
+
+<script>
+const NOTES = {
+  'default': {
+    title: 'State 1 — Default',
+    items: [
+      '<strong>Header is down to four things:</strong> logo, title field, gear, close. The storage ring and the bug/feature links moved to the footer; the entry and hidden counts moved with them.',
+      '<strong>The title is a field, not an input.</strong> Hover it — it highlights like Pro-Q\'s preset field. Click opens the menu; double-click renames in place.',
+      '<strong>The gear replaces the hamburger</strong> and goes straight to Settings with no intermediate dropdown — one less click than today.',
+      '<strong>The footer is ~26px</strong> and holds app state (saved / counts / storage) plus view controls (scaling). No content actions — those stay in the hotbar above it.',
+      '<strong>The resize grip sits in the footer</strong>, bottom-right, so the bar doesn\'t swallow the bottom-edge and SE-corner resize zones.',
+      'Footer height is <strong>calc(26px × --ui-scale)</strong> so it grows with the text-size setting instead of clipping its own labels.'
+    ]
+  },
+  'scale': {
+    title: 'State 2 — Scaling menu',
+    items: [
+      'Opens <strong>upward</strong> from the ⤢ control; submenus fly out <strong>left</strong>, because the trigger is at the right edge and the window can be as narrow as 480px.',
+      'Each row shows its <strong>current value inline</strong>, so the menu doubles as a readout — you can see your settings without opening anything.',
+      'These four controls currently live in <strong>three different Settings sections</strong>. Moving them here is what lets Settings collapse to four sections in Phase B.',
+      'Window size gets <strong>named presets plus Custom</strong> rather than raw width/height number inputs — the numbers stay reachable under Custom.',
+      '<span class="note-warn">Open question:</span> should "Reset all sizing" also reset text size? It\'s an accessibility setting, and wiping it from a general reset could be hostile. My instinct is no — leave text size out of the bulk reset.'
+    ]
+  },
+  'title': {
+    title: 'State 3 — Title menu (browse)',
+    items: [
+      '<strong>560px wide</strong>, clamped to the window. At the 480px minimum it clamps to ~456 and the columns tighten; nothing wraps.',
+      '<strong>Left column is alphabetical, not recency-ordered.</strong> The index promotes on switch, so a recency list reorders under you every time you pick something.',
+      '<strong>Right column is the full Import/Export surface</strong> — drop zone, filename override, three formats, copy, and templates. This replaces both menu-panel tabs.',
+      'Hovering a book reveals its <strong>×</strong>; double-click the name renames it — the same gesture as the title field itself.',
+      '<span class="note-warn">Note:</span> the switch-save prompt still fires when you click a book that isn\'t active. It needs to render inside this column — see state 4 for how a four-option prompt fits as a 2×2.'
+    ]
+  },
+  'import-disp': {
+    title: 'State 4 — Import takeover, choosing',
+    items: [
+      '<strong>The lorebook list collapses to a 34px rail</strong> the moment a file parses, giving the import flow the full menu width. The ‹ returns without discarding the parse.',
+      '<strong>Four options as a 2×2, not a row.</strong> Four buttons across does not fit at the 480px minimum — layout rule #1 says make the wrap a deliberate grid rather than letting it happen.',
+      '<strong>Each option says what it does to your data.</strong> Today\'s prompt reads "Skip → Replace" and "⬇ JSON", which describe the mechanism rather than the outcome.',
+      '<strong>Import-as-new leads.</strong> It\'s the only non-destructive option and, in practice, the one people usually want.',
+      'The footnote says the quiet part out loud: <strong>autosave already ran</strong>. The backup is for keeping a copy outside the browser, not for preventing loss.',
+      '<span class="note-warn">Behaviour:</span> while a parse is pending, clicking outside must not dismiss and discard. Escape needs a dismiss-stack priority that doesn\'t nuke the parse either.'
+    ]
+  },
+  'import-prev': {
+    title: 'State 5 — Import takeover, preview',
+    items: [
+      '<strong>The preview list scrolls inside the menu.</strong> This was the open question — whether the full import flow fits in a dropdown. At this width it does, with room to spare.',
+      '<strong>The destructive confirm names the cost:</strong> "Replace 12 entries", not "Confirm".',
+      '<strong>Back returns to the disposition step</strong> rather than dumping you out of the flow.',
+      'The red banner only appears on the replace path, matching today\'s behaviour in <em>ImportPreview</em>.',
+      '<span class="note-warn">If this feels cramped in practice</span>, the fallback is letting the menu grow to ~70% of window height in the takeover state only. Easy to adjust once it\'s real.'
+    ]
+  }
+};
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  titleMenu: $('titleMenu'), scaleMenu: $('scaleMenu'), backdrop: $('backdrop'),
+  titleField: $('titleField'), scaleBtn: $('scaleBtn'), notes: $('notes'),
+  tmBooks: $('tmBooks'), tmRail: $('tmRail'), tmIo: $('tmIo'),
+  tmImportDisp: $('tmImportDisp'), tmImportPrev: $('tmImportPrev'),
+};
+
+function show(el, on) { el.classList.toggle('hidden', !on); }
+
+function setState(state) {
+  const titleOpen  = state === 'title' || state === 'import-disp' || state === 'import-prev';
+  const takeover   = state === 'import-disp' || state === 'import-prev';
+  const scaleOpen  = state === 'scale';
+
+  show(els.titleMenu, titleOpen);
+  show(els.scaleMenu, scaleOpen);
+  show(els.backdrop,  titleOpen || scaleOpen);
+
+  show(els.tmBooks, titleOpen && !takeover);
+  show(els.tmRail,  takeover);
+  show(els.tmIo,    titleOpen && !takeover);
+  show(els.tmImportDisp, state === 'import-disp');
+  show(els.tmImportPrev, state === 'import-prev');
+
+  els.titleField.classList.toggle('title-field--open', titleOpen);
+  els.scaleBtn.classList.toggle('status-item--open', scaleOpen);
+
+  document.querySelectorAll('.state-btn').forEach((b) => {
+    b.classList.toggle('state-btn--active', b.dataset.state === state);
+  });
+
+  const n = NOTES[state];
+  els.notes.innerHTML = '<h3>' + n.title + '</h3><ul>' +
+    n.items.map((i) => '<li>' + i + '</li>').join('') + '</ul>';
+}
+
+document.querySelectorAll('.state-btn').forEach((b) => {
+  b.addEventListener('click', () => setState(b.dataset.state));
+});
+document.querySelectorAll('[data-goto]').forEach((b) => {
+  b.addEventListener('click', (e) => { e.stopPropagation(); setState(b.dataset.goto); });
+});
+
+els.titleField.addEventListener('click', () => {
+  setState(els.titleMenu.classList.contains('hidden') ? 'title' : 'default');
+});
+els.scaleBtn.addEventListener('click', () => {
+  setState(els.scaleMenu.classList.contains('hidden') ? 'scale' : 'default');
+});
+$('tmDrop').addEventListener('click', (e) => { e.stopPropagation(); setState('import-disp'); });
+$('tmBack').addEventListener('click', (e) => { e.stopPropagation(); setState('title'); });
+els.backdrop.addEventListener('click', () => setState('default'));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setState('default'); });
+
+// Disposition buttons advance to the preview so the flow is walkable
+document.querySelectorAll('.tm-disp-btn').forEach((b) => {
+  b.addEventListener('click', (e) => { e.stopPropagation(); setState('import-prev'); });
+});
+
+setState('default');
+</script>
+</body>
+</html>

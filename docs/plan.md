@@ -119,7 +119,33 @@ Still open: there is no "after this folder" band, so ordering is expressed purel
 - ~~**Drag has no folder semantics yet.**~~ **Closed in 11E** — a drop position now decides the folder, and the whole gesture is one undo.
 - **Entry-card footer is at four controls** (Entry History · Move to folder · Public/Private · Hide from Export). Fits one line at the desktop default; wraps in a narrow crosstalk pane. The footer-crowding revisit below is now live, not theoretical.
 
-### Settings reorganisation (queued, not yet scheduled)
+### Phase 13 — UI/UX Overhaul (status footer · settings reorg · title menu)
+
+**Planned 2026-07-28.** A deliberate pass on visibility, cleanliness, and discoverability, using the FabFilter Pro-Q 4 plugin as the reference: clean on its face, settings tucked out of the way but a click deep, advanced features nested so they're reachable for power users and ignorable for casual ones. Absorbs the previously-queued settings reorganisation as **13B**.
+
+**Locked decisions (2026-07-28):**
+1. **The hotbar and the footer split on word class.** Hotbar = verbs on content (add, undo, export, select). Footer = app state and view controls (saved, counts, storage, sizing). This is the rule for deciding where any future control goes; it's the same division Pro-Q's footer draws between plugin state and audio.
+2. **The status footer is desktop-only.** Mobile already burns ~490px of chrome before the first entry renders, and the footer's contents can't fit one line at 375px. Mobile gets its own bespoke UI session later; until then its scaling controls stay in Settings.
+3. **Footer height is expressed off `--ui-scale`.** A hardcoded height clips its own labels at 125% text scale — and the control that fixes text size lives *in* the footer, so the failure is self-inflicting.
+4. **The resize grip moves into the footer** (Pro-Q's solution). A bar pinned to the bottom edge otherwise swallows the bottom-edge and SE-corner hit zones owned by `ResizeHandles.jsx`, and dragging the footer would resize nothing.
+5. **Scaling settings move to the footer menu — not mirrored, no pointer left behind.** Window size, text size, entry header height and FAB size currently live in three different Settings sections; moving them is what lets 13B collapse to four sections rather than merely re-home the same volume. Accepted cost: existing users relearn one location.
+6. **Reference/crosstalk stays where it is.** Considered for a footer readout and rejected — the current placement is fine and the footer shouldn't become a dumping ground.
+7. **The lorebook title becomes a hover-highlighted field, not a live input.** Click opens the dual menu; double-click renames in place — the same gesture the menu's list already uses, so renaming is one gesture everywhere a lorebook name appears.
+8. **No `< >` prev/next arrows on the title field.** `switchLorebook` calls `promoteInIndex` (`use-lorebook.js:60`), which moves the switched-to book to the front of the index — and the index *is* the list order. Stepping with arrows would oscillate between two books forever. Fixable by giving arrows a separate stable order, but judged not worth the complexity.
+9. **The title menu's lorebook list sorts alphabetically**, not by recency, for the same reason: a list that reorders itself on every switch is disorienting to click through. Recency ordering stays on the lander, where it's actually useful.
+10. **The full import flow lives in the dropdown via a takeover.** When a file parses, the lorebook column collapses to a ~34px rail and the import flow claims the menu's full width. Escalating to a separate panel was rejected — the flow gets *more* room this way than it has today.
+11. **A pending parse is protected.** Outside-click must not dismiss-and-discard, and the dropdown's dismiss-stack priority must not let Escape destroy a parse.
+12. **Legacy Lorebooks / Import-Export panels are a frozen compatibility path.** Kept working, but no new features ported to them. Without this, every addition gets built twice and the two silently drift.
+13. **The hamburger becomes a gear whose icon follows the mode** — gear (straight to Settings, no intermediate dropdown) in the new system, hamburger in legacy, since a gear opening a three-item menu would be lying.
+14. **Verify routes through the new UI by default**, plus one scenario that flips the legacy setting and confirms the old panels still open. Cheap insurance for a path we've promised not to break but would otherwise never exercise.
+
+**Sub-phases, sequenced so nothing is built twice:** 13A footer shell + scaling menu (no header changes) · 13B settings reorg, *deleting* the scaling groups now living in the footer · 13C title field + dual dropdown + import takeover + gear, relocating the header's storage ring / feedback links / counts in the same pass that rebuilds the header.
+
+**Mockup:** `mockup-ui-overhaul.html` (repo root) covers 13A and 13C in five walkable states. Dark-theme only and throwaway — do not make it theme-aware. 13B was deliberately not mocked; an accordion with different contents is better reviewed as a written outline than as pixels.
+
+**Open at mockup time:** whether "Reset all sizing" should also reset text size (leaning no — it's an accessibility setting and wiping it from a general reset reads as hostile); and whether `AppendImportPanel` and the menu-panel `ImportPanel` retire once the dropdown carries the full flow, which takes import from five entry points down to three. Both deferred until the mockup has been reviewed.
+
+**13B — Settings reorganisation.**
 
 **Raised 2026-07-27 from user testing.** Settings has accreted section by section as features landed, and options are now in places that make sense only historically. Finding a given setting means guessing which section it grew up in rather than which one it belongs to.
 
@@ -130,6 +156,17 @@ Concrete examples of the drift:
 - Density and sizing controls are split across three sections (*Editing & Entries*, *Window & Layout*, *Appearance*) with no obvious rule for which lands where.
 
 Worth doing as a deliberate pass rather than incrementally: decide the grouping principle first (by *what you are changing* — content, layout, appearance, behaviour — rather than by which feature introduced it), then move everything at once. `pendingSettingsSection` deep-links and the `openSettingsSection` verify helper both key off section titles, so a rename or re-home has to update those together. Purely a re-organisation — no setting should change meaning or default.
+
+**Target shape (2026-07-28): six sections down to four**, grouped by what you're changing rather than by which feature introduced it.
+
+1. **Editing & Entries** — suggestions default, thesaurus, tiered counters + thresholds, stats badges, private markers, entry history. History moves to the *bottom* of the section: it's the tallest block in Settings and a per-book opt-in a user sets once, so leading with it is the clearest inversion of the ordering principle.
+2. **Appearance & Accessibility** — theme + custom colors, text size, reduce motion, high contrast, funny fish. The word "Accessibility" stays in the title deliberately; folding it silently under "Appearance" would be a real discoverability regression for the people who search for that word.
+3. **Layout & Controls** — window defaults, hotbar slots, FAB quick menu, folder collapse stages, condensed-row stats, keep-menu-open-after-import, reference panel + swap mode, legacy-menus toggle.
+4. **Advanced** — keyboard shortcuts, browser storage limit.
+
+Plus **sub-dividers within sections** (thin "History" / "Counters" labels) so ordering has a visible logic rather than an implied one, and a **filter box** at the top of the panel — the highest-value addition to a panel this dense, since it makes "which section is it in?" stop mattering. A filter match must force its section open, or it surfaces nothing.
+
+**Migration surface:** section titles are load-bearing. `verify/driver.mjs:128`'s `openSettingsSection(page, title)` matches on title text, with call sites in `verify/checks.mjs` for `Folders`, `Editing & Entries`, and `Reference & Crosstalk`, plus `verify/screenshots.mjs`. `pendingSettingsSection` deep-links by section id and `KeyboardHelpOverlay.jsx:23` hardcodes `'accessibility'`. All of it moves in the same commit or the suite goes red.
 
 ### Phase 12 — Entry Templates (GitHub #114)
 
