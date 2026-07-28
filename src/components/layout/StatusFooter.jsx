@@ -13,19 +13,67 @@ import { useSaveStatus }   from '../../hooks/use-save-status.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
 import { ScaleMenu }       from '../feature/ScaleMenu.jsx';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
+import { SCALE_MENU_OPEN_MS, SCALE_MENU_CLOSE_MS } from '../../constants/scaling.js';
 
 export function StatusFooter() {
   const { label, title, fresh } = useSaveStatus();
+
+  // Two independent states, FabFilter-style: hovering surfaces the menu and
+  // moving away dismisses it, but a click pins it open until clicked again.
   const [scaleOpen, setScaleOpen]   = useState(false);
+  const [pinned, setPinned]         = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
+
   const scaleBtnRef = useRef(null);
+  const openTimer   = useRef(null);
+  const closeTimer  = useRef(null);
 
-  useDismissLayer('footer:scale-menu', scaleOpen, DISMISS_PRIORITY.popover, () => setScaleOpen(false));
+  const clearTimers = useCallback(() => {
+    clearTimeout(openTimer.current);
+    clearTimeout(closeTimer.current);
+  }, []);
 
-  const openMenu = useCallback(() => {
+  const close = useCallback(() => {
+    clearTimers();
+    setScaleOpen(false);
+    setPinned(false);
+  }, [clearTimers]);
+
+  useDismissLayer('footer:scale-menu', scaleOpen, DISMISS_PRIORITY.popover, close);
+
+  useEffect(() => clearTimers, [clearTimers]);
+
+  const open = useCallback(() => {
     setAnchorRect(scaleBtnRef.current?.getBoundingClientRect() ?? null);
     setScaleOpen(true);
   }, []);
+
+  function hoverOpen() {
+    clearTimeout(closeTimer.current);
+    if (scaleOpen) return;
+    clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(open, SCALE_MENU_OPEN_MS);
+  }
+
+  // A pinned menu ignores the pointer leaving — that is the whole point of the
+  // pin. The delay covers the gap between the button and the menu above it.
+  function hoverClose() {
+    clearTimeout(openTimer.current);
+    if (pinned) return;
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setScaleOpen(false), SCALE_MENU_CLOSE_MS);
+  }
+
+  function handleClick() {
+    clearTimers();
+    if (pinned) {
+      setPinned(false);
+      setScaleOpen(false);
+      return;
+    }
+    setPinned(true);
+    if (!scaleOpen) open();
+  }
 
   // The menu and its flyouts are portalled to document.body (they have to
   // escape .floating-window's overflow:hidden to open rightward), so an
@@ -36,21 +84,20 @@ export function StatusFooter() {
     function onMouseDown(e) {
       if (scaleBtnRef.current?.contains(e.target)) return;
       if (e.target.closest?.('.scale-menu, .scale-flyout')) return;
-      setScaleOpen(false);
+      close();
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [scaleOpen]);
+  }, [scaleOpen, close]);
 
   // A portalled menu is positioned from a rect captured at open time, so it
   // would drift if the window moved or resized underneath it. Cheaper and
   // steadier to close it than to re-measure on every frame of a drag.
   useEffect(() => {
     if (!scaleOpen) return undefined;
-    const close = () => setScaleOpen(false);
     window.addEventListener('resize', close);
     return () => window.removeEventListener('resize', close);
-  }, [scaleOpen]);
+  }, [scaleOpen, close]);
 
   return (
     <div className="status-footer">
@@ -65,9 +112,11 @@ export function StatusFooter() {
         <button
           ref={scaleBtnRef}
           type="button"
-          className={`status-item${scaleOpen ? ' status-item--open' : ''}`}
-          onClick={() => (scaleOpen ? setScaleOpen(false) : openMenu())}
-          title="Sizing & scale"
+          className={`status-item${scaleOpen ? ' status-item--open' : ''}${pinned ? ' status-item--pinned' : ''}`}
+          onClick={handleClick}
+          onMouseEnter={hoverOpen}
+          onMouseLeave={hoverClose}
+          title={pinned ? 'Sizing & scale — click to unpin' : 'Sizing & scale — click to keep open'}
           aria-label="Sizing and scale"
           aria-haspopup="menu"
           aria-expanded={scaleOpen}
@@ -76,7 +125,13 @@ export function StatusFooter() {
           Size
         </button>
 
-        {scaleOpen && <ScaleMenu anchorRect={anchorRect} />}
+        {scaleOpen && (
+          <ScaleMenu
+            anchorRect={anchorRect}
+            onMouseEnter={() => clearTimeout(closeTimer.current)}
+            onMouseLeave={hoverClose}
+          />
+        )}
       </div>
     </div>
   );

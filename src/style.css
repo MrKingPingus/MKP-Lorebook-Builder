@@ -921,6 +921,12 @@ img.logo-icon {
   border-color: var(--border2);
   color: var(--text);
 }
+/* Pinned by a click — stays put until clicked again, so it reads as latched
+   rather than merely hovered. */
+.status-item--pinned {
+  border-color: var(--passive-agree);
+  color: var(--passive-agree);
+}
 .status-item-icon { font-size: 0.875rem; line-height: 1; }
 
 /* ── Sizing menu ──
@@ -1026,36 +1032,59 @@ img.logo-icon {
    ============================================================ */
 /* §LOREBOOK-TAB */
 
-/* Vertically centred and short so it clears the 14px corner resize handles at
-   both ends of the right edge. Sits flush INSIDE the right edge rather than
-   protruding — .floating-window sets overflow:hidden, so anything hanging off
-   the frame is simply clipped away. */
-.lorebook-tab {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+/* Row shell so the tab can be a real right-edge column rather than an overlay
+   sitting on top of entry rows and the scrollbar. */
+.window-shell {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.window-stack {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The whole strip is the button — it IS the window's right edge, full height,
+   so it never overlaps content and stays put at any size including full
+   screen. The corner resize handles sit above it (z-index 150) and keep
+   working where they overlap. */
+.lorebook-tab {
+  flex: 0 0 auto;
+  width: 30px;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  width: 22px;
-  padding: 12px 0;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-right: none;
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  justify-content: center;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
   color: var(--muted2);
-  z-index: 120;
   transition: background var(--transition), color var(--transition);
 }
 .lorebook-tab:hover { background: var(--surface3); color: var(--text); }
 .lorebook-tab--open { background: var(--surface3); color: var(--passive-agree); }
-.lorebook-tab-arrow { font-size: 0.8125rem; line-height: 1; }
+.lorebook-tab:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+
+.lorebook-tab-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.lorebook-tab-arrow { font-size: 1rem; line-height: 1; }
+
+/* Upright glyphs stacked down the strip — vertical-rl alone lays the word on
+   its side, which is the hard-to-read version. text-orientation keeps every
+   letter the right way up, so it reads top-to-bottom like a spine. */
 .lorebook-tab-label {
   writing-mode: vertical-rl;
-  font-size: 0.5625rem;
-  letter-spacing: 0.14em;
+  text-orientation: upright;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 

@@ -53,6 +53,15 @@ export const WINDOW_PRESET_TOLERANCE = 2;
 export const FLYOUT_OPEN_MS  = 150;
 export const FLYOUT_CLOSE_MS = 320;
 
+/**
+ * Hover grace for the ⤢ Size button itself. Hovering surfaces the menu and
+ * moving away dismisses it, but a click pins it open until clicked again —
+ * the way FabFilter's footer controls behave. The close delay has to cover the
+ * gap between the button and the menu floating above it.
+ */
+export const SCALE_MENU_OPEN_MS  = 180;
+export const SCALE_MENU_CLOSE_MS = 300;
+
 /** Gap between a menu row and its flyout, and the viewport margin both respect. */
 export const FLYOUT_GAP_PX      = 6;
 export const FLYOUT_VIEWPORT_PAD = 8;

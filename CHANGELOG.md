@@ -12,7 +12,7 @@
   - **Window size has named presets** — Small, Medium, Large and Full height — plus **Custom…** if you want to type exact numbers. **Save as default** makes the current size the one **Reset to default** returns to.
   - **Reset all sizing** puts the window, entry headers and FAB back to normal. It deliberately **leaves your text size alone**, since that's an accessibility setting you may be relying on.
 
-- **A pull tab on the right edge of the window opens your lorebook list.** Click it and the window widens to fit a side panel — so the list appears *beside* your entries rather than on top of them, and nothing you were reading gets covered. Click it again to tuck it away.
+- **A pull tab forms the right edge of the window and opens your lorebook list.** Click it and the window widens to fit a side panel — so the list appears *beside* your entries rather than on top of them, and nothing you were reading gets covered. Click it again to tuck it away. The tab runs the full height of the window as part of its frame, so it never sits over your entries or the scrollbar and stays put at any size, including full screen. Its label reads top-to-bottom with the letters upright.
 
 ### Adjustments
 
@@ -20,6 +20,7 @@
 - **Text size is the exception — it's in both places.** You'll find it in the `⤢ Size` menu for convenience, but it also stays where it was under Settings → Accessibility, because that's where people who rely on it go looking. Change it in either place and the other follows.
 - **The default window is much bigger — 1200×900, up from 760×620.** The old default was cramped, especially with the reference panel open. If you never picked a size of your own, yours updates automatically; if you did, your choice is left exactly as you set it.
 - **The status bar and its `⤢ Size` button are larger and easier to read.** The first pass made them too small to comfortably hit.
+- **The `⤢ Size` button surfaces on hover and pins on click.** Hover it and the menu appears; move away and it goes. Click it and it stays put until you click again — the same way FabFilter's footer controls behave. A pinned button is outlined so you can tell which mode you're in.
 - **The size menu's submenus now open to the right**, and they no longer appear and vanish the instant your pointer crosses them — there's a short grace period on the way in and a longer one on the way out, so brushing past a row doesn't fire it and reaching across to a submenu doesn't lose it.
 - **"Entry header" is now "Entry height"**, which reads better.
 

@@ -127,7 +127,7 @@ function Flyout({ anchorEl, onMouseEnter, onMouseLeave, children }) {
   );
 }
 
-function ScaleRow({ id, label, value, openRow, onHoverRow, onLeaveRow, onToggleRow, children }) {
+function ScaleRow({ id, label, value, openRow, onHoverRow, onLeaveRow, onToggleRow, onMenuEnter, onMenuLeave, children }) {
   const open = openRow === id;
   const rowRef = useRef(null);
 
@@ -155,8 +155,8 @@ function ScaleRow({ id, label, value, openRow, onHoverRow, onLeaveRow, onToggleR
       {open && (
         <Flyout
           anchorEl={rowRef.current}
-          onMouseEnter={() => onHoverRow(id, true)}
-          onMouseLeave={onLeaveRow}
+          onMouseEnter={() => { onHoverRow(id, true); onMenuEnter?.(); }}
+          onMouseLeave={(e) => { onLeaveRow(); onMenuLeave?.(e); }}
         >
           {children}
         </Flyout>
@@ -181,7 +181,7 @@ function FlyoutItem({ checked, detail, onClick, children }) {
   );
 }
 
-export function ScaleMenu({ anchorRect }) {
+export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
   const [openRow, setOpenRow]       = useState(null);
   const [customOpen, setCustomOpen] = useState(false);
   const openTimer  = useRef(null);
@@ -250,7 +250,14 @@ export function ScaleMenu({ anchorRect }) {
     setOpenRow(null);
   }
 
-  const rowProps = { openRow, onHoverRow: hoverRow, onLeaveRow: leaveRow, onToggleRow: toggleRow };
+  const rowProps = {
+    openRow,
+    onHoverRow: hoverRow,
+    onLeaveRow: leaveRow,
+    onToggleRow: toggleRow,
+    onMenuEnter: onMouseEnter,
+    onMenuLeave: onMouseLeave,
+  };
 
   return createPortal(
     <div
@@ -262,7 +269,8 @@ export function ScaleMenu({ anchorRect }) {
         bottom: window.innerHeight - anchorRect.top + FLYOUT_GAP_PX,
         right:  Math.max(FLYOUT_VIEWPORT_PAD, window.innerWidth - anchorRect.right),
       } : undefined}
-      onMouseLeave={leaveRow}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={(e) => { leaveRow(); onMouseLeave?.(e); }}
     >
       <div className="scale-menu-head">Sizing &amp; scale</div>
 

@@ -62,6 +62,13 @@ export function FloatingWindow() {
         </div>
       ) : (
         <>
+          {/* Row shell: the app stack, then the pull tab as a real right-edge
+              column. The tab used to be absolutely positioned over the content,
+              which put it on top of entry rows and the scrollbar; as a flex
+              column it insets everything instead and reads as part of the
+              window frame at any size. */}
+          <div className="window-shell">
+          <div className="window-stack">
           <WindowHeader />
 
           <div className="window-body">
@@ -95,10 +102,12 @@ export function FloatingWindow() {
               contents can't fit one line at 375px; mobile keeps these controls
               in Settings until its own UI pass. */}
           {!isMobile && <StatusFooter />}
+          </div>
 
           {/* Pull tab for the Lorebooks side panel — desktop only, since the
               panel is a full-screen overlay on mobile and reached from the menu. */}
           {!isMobile && <LorebookTab />}
+          </div>
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}

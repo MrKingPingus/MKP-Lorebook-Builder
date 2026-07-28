@@ -1610,6 +1610,40 @@ const SCENARIOS = [
 
     await closeScaleMenu(page);
     check('Escape closes the sizing menu', await page.locator('.scale-menu').count(), 0);
+
+    // Hover surfaces, leaving dismisses, a click pins — FabFilter's model.
+    const sizeBtn = page.locator('.status-footer .status-item').first();
+    await sizeBtn.hover();
+    await page.waitForTimeout(90);   // under SCALE_MENU_OPEN_MS
+    check('a brief pass over Size does not open the menu',
+      await page.locator('.scale-menu').count(), 0);
+    await page.waitForTimeout(260);
+    check('hovering Size surfaces the menu without a click',
+      await page.locator('.scale-menu').count(), 1);
+
+    await page.mouse.move(500, 300);
+    await page.waitForTimeout(600);
+    check('moving away dismisses an unpinned menu',
+      await page.locator('.scale-menu').count(), 0);
+
+    await sizeBtn.click();
+    await page.locator('.scale-menu').waitFor({ timeout: 3000 });
+    check('a click pins the menu',
+      (await sizeBtn.getAttribute('class')).includes('status-item--pinned'), true);
+    await page.mouse.move(500, 300);
+    await page.waitForTimeout(700);
+    check('a pinned menu survives the pointer leaving',
+      await page.locator('.scale-menu').count(), 1);
+
+    await sizeBtn.click();
+    await settle(page, 250);
+    check('clicking again unpins and closes it',
+      await page.locator('.scale-menu').count(), 0);
+    // The pointer is still on the button — it must not re-surface from the
+    // hover already in progress, or a click could never dismiss it.
+    await page.waitForTimeout(400);
+    check('it stays shut while the pointer sits on the button post-click',
+      await page.locator('.scale-menu').count(), 0);
   }, { width: 1900, height: 1100 }),
 
   scenario('Sizing menu: custom size commits on Enter rather than clamping per keystroke', async (page, check) => {
@@ -1657,16 +1691,37 @@ const SCENARIOS = [
     const tab = page.locator('.lorebook-tab');
     check('pull tab renders on the right edge', await tab.count(), 1);
 
-    // Must sit inside the frame (overflow:hidden would clip it) and clear the
-    // 14px corner resize handles at both ends of that edge.
+    // The tab IS the window's right edge: a full-height flex column, flush with
+    // the frame, so nothing can run underneath it at any window size.
     const tabBox = await tab.boundingBox();
     const frame  = await page.locator('.floating-window').boundingBox();
-    const ne     = await page.locator('.resize-handle--ne').boundingBox();
-    const se     = await page.locator('.resize-handle--se').boundingBox();
-    check('tab is inside the window frame',
-      tabBox.x + tabBox.width <= frame.x + frame.width + 0.5, true);
-    check('tab clears both right-edge resize handles',
-      tabBox.y > ne.y + ne.height && tabBox.y + tabBox.height < se.y, true);
+    check('tab is flush with the window right edge',
+      Math.abs((tabBox.x + tabBox.width) - (frame.x + frame.width)) <= 2, true);
+    check('tab spans the full window height',
+      tabBox.height >= frame.height - 4, true);
+
+    const underneath = await page.evaluate(() => {
+      const t = document.querySelector('.lorebook-tab').getBoundingClientRect();
+      return [...document.querySelectorAll('.entry-card, .entry-list, .window-body')]
+        .filter((el) => el.getBoundingClientRect().right > t.left + 1).length;
+    });
+    check('no entry-list content runs under the tab', underneath, 0);
+
+    // It spans the corners now, so the resize handles have to win on z-index.
+    const ne = await page.locator('.resize-handle--ne').boundingBox();
+    const atNE = await page.evaluate(([x, y]) =>
+      document.elementFromPoint(x, y)?.className.toString() ?? '',
+      [ne.x + ne.width / 2, ne.y + ne.height / 2]);
+    check('NE resize handle still wins the hit test over the tab',
+      atNE.includes('resize-handle'), true);
+
+    // Upright stacked glyphs — vertical-rl alone lays the word on its side.
+    const label = await page.locator('.lorebook-tab-label').evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { mode: cs.writingMode, orientation: cs.textOrientation };
+    });
+    check('label flows vertically', label.mode.startsWith('vertical'), true);
+    check('label glyphs stay upright', label.orientation, 'upright');
 
     const widthBefore = frame.width;
     await tab.click();
