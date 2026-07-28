@@ -145,13 +145,67 @@ Open the **Settings** tab to configure:
 
 ---
 
-## Local Development
+## Running It Yourself
+
+You don't need to do any of this to *use* the app — the link at the top is the whole product. This section is for anyone who wants to run it on their own machine or host their own copy.
+
+### What you need first
+
+- **[Node.js](https://nodejs.org/)** — version **20.19 or newer**, or **22.12 or newer**. Vite 7 won't run on anything older. Check what you have with `node --version`.
+- **npm** — comes bundled with Node, nothing extra to install.
+- **[Git](https://git-scm.com/)** — only needed for the clone step. You can also download the repo as a ZIP from GitHub and skip it.
+
+There is no database, no server, and no API key to set up. Nothing to configure before the first run.
+
+### Getting it running
 
 ```bash
+git clone https://github.com/MrKingPingus/MKP-Lorebook-Builder.git
+cd MKP-Lorebook-Builder
 npm install
-npm run dev      # dev server with hot reload
-npm run build    # production build → dist/
-npm run preview  # serve the production build locally
+npm run dev
 ```
 
-The app deploys automatically to GitHub Pages via `.github/workflows/main.yml` on push to `main`.
+`npm run dev` prints a local address — usually **http://localhost:5173** — open that in your browser and the app is live. Edits to files under `src/` reload in the browser instantly.
+
+Press **Ctrl+C** in the terminal to stop the server.
+
+### The other commands
+
+| Command | What it does |
+|---|---|
+| `npm install` | Downloads dependencies into `node_modules/`. Run once after cloning, and again whenever `package.json` changes. |
+| `npm run dev` | Starts the development server with hot reload on port 5173. This is the one you want day to day. |
+| `npm run build` | Compiles a production bundle into `dist/`. That folder is plain static files — it can be hosted anywhere. |
+| `npm run preview` | Serves the contents of `dist/` on port 4173 so you can check the real production build. Run `npm run build` first. |
+| `npm run verify` | Runs the automated browser checks. Optional — see below. |
+
+### Where your data lives
+
+Everything you create runs entirely in your browser and is stored in that browser's `localStorage`. Nothing is uploaded anywhere and no account exists. A local copy keeps its own separate storage from the hosted version, so lorebooks you made on the live site won't appear in your local one — move them across with Export and Import.
+
+### Running the automated checks (optional)
+
+`npm run verify` drives the real app in a headless browser to check features end to end. It needs a Chromium build that Playwright can find, which is a one-time extra install:
+
+```bash
+npx playwright install --with-deps chromium
+npm run verify
+```
+
+A full run launches a fresh browser per scenario and takes several minutes. To run just a slice of it, pass a name substring:
+
+```bash
+npm run verify -- folders
+```
+
+See `verify/README.md` for what the suite covers.
+
+### Hosting your own copy
+
+Push to `main` and `.github/workflows/main.yml` builds the app and deploys it to GitHub Pages. Two things to know:
+
+1. **Pages has to be turned on first.** In your repository, go to **Settings → Pages** and set the source to **GitHub Actions**. Until you do, the workflow runs, notices Pages is off, and exits cleanly without deploying — so a green check doesn't necessarily mean a live site.
+2. **The base path takes care of itself.** `vite.config.js` reads the repository name from the Actions environment, so the build works under `https://<user>.github.io/<repo-name>/` no matter what the repository is called. You don't need to edit anything after forking or renaming.
+
+For any other host, run `npm run build` and upload the `dist/` folder. It's static — no Node runtime required on the server.

@@ -2,6 +2,14 @@
 
 ---
 
+## 2026-07-28
+
+### Additions
+
+- **The README now explains how to run the app on your own machine.** The old four-line command list has been replaced with a full walkthrough: which version of Node you need and how to check it, the clone-and-install steps, what address the dev server opens on, and what each command actually does. It also covers running the automated browser checks, and how to host your own copy on GitHub Pages — including the easily-missed step of switching Pages on before the deploy workflow will publish anything.
+
+---
+
 ## 2026-07-27
 
 ### Additions
