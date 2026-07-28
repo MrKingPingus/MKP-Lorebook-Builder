@@ -1,4 +1,5 @@
-// Filter bar: type pills, Group by type toggle (mobile inline), Expand All (desktop only).
+// Filter bar: type pills, Group by type toggle (mobile inline), Expand All and
+// New Folder (desktop only).
 // On mobile the type pills + Group-by-type are collapsed into a single "Filter ▾"
 // button that opens a popover with checkboxes — saves two rows of vertical chrome.
 import { useState, useRef, useEffect } from 'react';
@@ -7,6 +8,9 @@ import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { useTypeFilter }   from '../../hooks/use-type-filter.js';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useMobile }       from '../../hooks/use-mobile.js';
+import { useFolders }      from '../../hooks/use-folders.js';
+import { useFolderFilter }  from '../../hooks/use-folder-filter.js';
+import { FolderFilterButton, FolderFilterRows } from './FolderFilterButton.jsx';
 
 export function TypeFilterBar({ entries }) {
   const { typeFilter, toggleTypeFilter, clearFilter } = useTypeFilter(entries);
@@ -16,6 +20,8 @@ export function TypeFilterBar({ entries }) {
   const collapseAllEntries = useUi((s) => s.collapseAllEntries);
   const setGroupByType     = useUi((s) => s.setGroupByType);
   const isMobile           = useMobile();
+  const { createFolder, foldersSuppressed, hasFolders, allFoldersTucked, toggleAllFolders } = useFolders();
+  const { folderFilter, hasFolders: hasFoldersToFilter } = useFolderFilter();
 
   function handleTypeClick(e, typeId) {
     if (e.shiftKey) {
@@ -51,7 +57,11 @@ export function TypeFilterBar({ entries }) {
   }
 
   if (isMobile) {
-    const filterCount = typeFilter.length;
+    // Two counts: the button badge sums both dimensions, but the "All types"
+    // row must reflect the type filter alone or a folder selection would
+    // wrongly un-check it.
+    const typeCount   = typeFilter.length;
+    const filterCount = typeCount + folderFilter.length;
     const summary = filterCount === 0
       ? (groupByType ? 'Filter · Grouped' : 'Filter')
       : `Filter (${filterCount})${groupByType ? ' · Grouped' : ''}`;
@@ -81,11 +91,11 @@ export function TypeFilterBar({ entries }) {
             >
               <div className="type-filter-popover-section">
                 <button
-                  className={`type-filter-popover-row${filterCount === 0 ? ' type-filter-popover-row--active' : ''}`}
+                  className={`type-filter-popover-row${typeCount === 0 ? ' type-filter-popover-row--active' : ''}`}
                   onClick={clearFilter}
                   type="button"
                 >
-                  <span className="type-filter-popover-check">{filterCount === 0 ? '✓' : ''}</span>
+                  <span className="type-filter-popover-check">{typeCount === 0 ? '✓' : ''}</span>
                   <span className="type-filter-popover-label">All types</span>
                 </button>
                 {ENTRY_TYPES.map((t) => {
@@ -104,6 +114,14 @@ export function TypeFilterBar({ entries }) {
                   );
                 })}
               </div>
+              {hasFoldersToFilter && (
+                <>
+                  <div className="type-filter-popover-divider" />
+                  <div className="type-filter-popover-section">
+                    <FolderFilterRows />
+                  </div>
+                </>
+              )}
               <div className="type-filter-popover-divider" />
               <div className="type-filter-popover-section">
                 <button
@@ -159,6 +177,9 @@ export function TypeFilterBar({ entries }) {
         Group by type
       </button>
 
+      {/* Folder ▾ — self-hiding until the book has folders */}
+      <FolderFilterButton />
+
       {/* Expand All / Collapse All — desktop only (mobile uses slide-in detail panel) */}
       {!isMobile && (
         <button
@@ -166,6 +187,33 @@ export function TypeFilterBar({ entries }) {
           onClick={bulkExpanded ? collapseAllEntries : expandAllEntries}
         >
           {bulkExpanded ? 'Collapse All' : 'Expand All'}
+        </button>
+      )}
+
+      {/* Global folder collapse — only worth a slot once folders exist */}
+      {!isMobile && hasFolders && !foldersSuppressed && (
+        <button
+          className="filter-action-btn"
+          onClick={toggleAllFolders}
+          title={allFoldersTucked
+            ? 'Open every folder back to full size'
+            : 'Tuck every folder shut'}
+        >
+          {allFoldersTucked ? 'Open Folders' : 'Collapse Folders'}
+        </button>
+      )}
+
+      {/* New folder — desktop only; folders on mobile are a separate design */}
+      {!isMobile && (
+        <button
+          className="filter-action-btn"
+          onClick={() => createFolder()}
+          disabled={foldersSuppressed}
+          title={foldersSuppressed
+            ? 'Folders are hidden while sorting by cross-book matches — switch sort to use them'
+            : "Create an empty folder — drop entries into it from a card's Move to folder button or a select-mode bulk move"}
+        >
+          ＋ Folder
         </button>
       )}
     </div>

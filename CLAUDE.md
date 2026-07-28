@@ -14,8 +14,10 @@ npm run dev       # start Vite dev server (hot reload)
 npm run build     # production build → dist/
 npm run preview   # serve the production build locally
 npm run verify    # browser-driven behavioural checks (Playwright) — see verify/README.md
+npm run verify -- folders          # only scenarios whose name matches (a full run takes minutes)
+node verify/screenshots.mjs        # annotated feature screenshots for release notes
 ```
-No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`.
+No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`. Pass a name substring to run a subset — a full run launches a fresh browser per scenario and takes several minutes. Set `VERIFY_URL` to test a production build (`vite preview`) rather than the dev server; CI does this.
 
 ## Architecture
 Browser-only SPA (React 18 + Vite 7). No backend, no database, no authentication. All persistence is `localStorage` via `storage-service.js`.

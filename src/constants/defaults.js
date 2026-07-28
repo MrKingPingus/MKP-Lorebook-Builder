@@ -1,6 +1,7 @@
 // Default shapes for new entries, lorebook, settings, and window size/position
 import { DEFAULT_TYPE } from './entry-types.js';
 import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
+import { DEFAULT_COLLAPSE_STAGES } from './folders.js';
 
 export const DEFAULT_WINDOW = { width: 760, height: 620, x: 60, y: 40 };
 export const DEFAULT_WINDOW_FRACTION = 2 / 3;
@@ -45,6 +46,14 @@ export const DEFAULT_SETTINGS = {
   fabQuickMenuEnabled:      true,
   // Desktop: keep the menu panel open after importing a lorebook (mobile always closes)
   keepMenuOpenAfterImport:  false,
+  // Which sizes a folder's header button cycles through, as an array of
+  // collapse states. 'full' is always included. Only changes the cycle — a
+  // folder already condensed keeps its stored state and simply renders at the
+  // nearest offered size until touched, so switching back restores it.
+  folderCollapseStages:     DEFAULT_COLLAPSE_STAGES,
+  // Show the trigger/char stats on condensed rows, at a smaller size. Off by
+  // default: condensed exists to shed chrome.
+  condensedShowStats:       false,
   // Show the read-only reference panel beside the active panel for cross-book search/find-replace
   crosstalkEnabled:         false,
   // Crosstalk pane behaviour:
@@ -74,13 +83,29 @@ export const DEFAULT_ENTRY = {
   ignoreLimitWarnings: { description: false, triggers: false },
   isPublic:            false,  // CharSnap visibility flag — mirrors CharSnap's private-by-default; round-trips through JSON import/export
   hiddenFromExport:    false,  // when true, entry remains in builder but is excluded from all export formats
+  folderId:            null,   // builder-only folder assignment; null = top level. Never exported.
+                               //   An id with no matching folder renders top-level, so a history
+                               //   undo that removes a folder can never orphan an entry.
   snapshots:           [], // [{ name, type, description, triggers, timestamp, label }]
+};
+
+// A builder-only folder. `parentId` is carried from the start so nesting can
+// land later without a data migration; `order` breaks ties between folders
+// whose first member sits at the same place in entries[].
+export const DEFAULT_FOLDER = {
+  id:            '',
+  name:          '',
+  color:         '',
+  parentId:      null,
+  collapseState: '',
+  order:         0,
 };
 
 export const DEFAULT_LOREBOOK = {
   id:              '',
   name:            'New Lorebook',
   entries:         [],
+  folders:         [], // builder-only organization layer — see DEFAULT_FOLDER. Never exported.
   allowedOverlaps: [], // lowercase trigger strings acknowledged as intentional overlaps
   rollback:        { enabled: false, snapshotCount: 3, autoSnapshot: true },
 };

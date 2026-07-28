@@ -33,6 +33,8 @@ export const KEYBINDINGS = [
   // Entries & selection
   { id: 'toggle_select',       label: 'Toggle select mode',       category: 'selection', defaultChord: 'Alt+S', wired: true },
   { id: 'expand_collapse_all', label: 'Expand / collapse all',    category: 'selection', defaultChord: 'Alt+A', wired: true },
+  { id: 'select_all_visible',  label: 'Select all visible',       category: 'selection', defaultChord: 'Alt+V', wired: true },
+  { id: 'deselect_all',        label: 'Deselect all',             category: 'selection', defaultChord: 'Alt+D', wired: true },
 
   // Find & navigate
   { id: 'focus_search',        label: 'Focus search',             category: 'navigate',  defaultChord: '/',     wired: true },

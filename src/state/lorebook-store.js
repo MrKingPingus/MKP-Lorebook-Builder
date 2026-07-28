@@ -77,6 +77,36 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  // Builder-only folder layer. Kept as its own action (rather than folded into
+  // updateActiveEntries) because most folder work — rename, recolour, collapse —
+  // touches no entries at all.
+  updateActiveFolders: (folders) =>
+    set((state) => {
+      const id = state.activeLorebookId;
+      if (!id) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: { ...state.lorebooks[id], folders },
+        },
+      };
+    }),
+
+  // Single atomic write for the ops that move entries between folders — the
+  // entries[] splice and the folders[] change have to land together or the
+  // list renders a half-applied move for a frame.
+  updateActiveEntriesAndFolders: (entries, folders) =>
+    set((state) => {
+      const id = state.activeLorebookId;
+      if (!id) return {};
+      return {
+        lorebooks: {
+          ...state.lorebooks,
+          [id]: { ...state.lorebooks[id], entries, folders },
+        },
+      };
+    }),
+
   updateEntry: (id, patch) =>
     set((state) => {
       const activeId = state.activeLorebookId;

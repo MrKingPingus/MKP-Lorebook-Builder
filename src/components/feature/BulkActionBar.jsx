@@ -5,7 +5,9 @@ import { useBulkActions }          from '../../hooks/use-bulk-actions.js';
 import { useReferenceLorebook }    from '../../hooks/use-reference-lorebook.js';
 import { useMobile }               from '../../hooks/use-mobile.js';
 import { usePickFromReference }    from '../../hooks/use-pick-from-reference.js';
+import { useFolders }              from '../../hooks/use-folders.js';
 import { ENTRY_TYPES }             from '../../constants/entry-types.js';
+import { NO_FOLDER_LABEL, NEW_FOLDER_NAME } from '../../constants/folders.js';
 
 export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   const {
@@ -18,8 +20,13 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     selectAllVisible,
     exitSelectMode,
   } = useSelection();
-  const { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected, setPublicForSelected } = useBulkActions();
+  const {
+    applyTypeChange, applyStagedTypes, copyToOtherPanel,
+    setHiddenForSelected, setPublicForSelected,
+    moveSelectedToFolder, moveSelectedToNewFolder,
+  } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
+  const { folders, foldersSuppressed } = useFolders();
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
@@ -85,6 +92,16 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     setOpenPicker(null);
   }
 
+  function onApplyFolder(folderId) {
+    moveSelectedToFolder(folderId);
+    setOpenPicker(null);
+  }
+
+  function onApplyNewFolder() {
+    moveSelectedToNewFolder();
+    setOpenPicker(null);
+  }
+
   function onApplyStaged() {
     applyStagedTypes();
     setOpenPicker(null);
@@ -140,6 +157,19 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
         title="Hide the selected entries from export, or show them again"
       >
         Hide from Export… {openPicker === 'hide' ? '▴' : '▾'}
+      </button>
+
+      <button
+        className="bulk-action-apply bulk-action-apply--secondary"
+        onClick={() => togglePicker('folder')}
+        disabled={!hasSelection || selectionSide === 'reference' || foldersSuppressed}
+        title={selectionSide === 'reference'
+          ? 'Folders belong to the active lorebook — swap this book into the active slot to file its entries'
+          : foldersSuppressed
+            ? 'Folders are hidden while sorting by cross-book matches — switch sort to use them'
+            : 'Move the selected entries into a folder'}
+      >
+        Move to folder… {openPicker === 'folder' ? '▴' : '▾'}
       </button>
 
       {hasStaged && (
@@ -246,6 +276,37 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
             title="Mark the selected entries Private on CharSnap"
           >
             Private
+          </button>
+        </div>
+      )}
+
+      {openPicker === 'folder' && (
+        <div className="bulk-action-chips">
+          <button
+            className="bulk-type-chip"
+            style={{ '--type-color': 'var(--muted2)' }}
+            onClick={() => onApplyFolder(null)}
+            title="Take the selected entries out of any folder"
+          >
+            {NO_FOLDER_LABEL}
+          </button>
+          {folders.map((f) => (
+            <button
+              key={f.id}
+              className="bulk-type-chip bulk-type-chip--folder"
+              style={{ '--type-color': f.color }}
+              onClick={() => onApplyFolder(f.id)}
+              title={`Move the selected entries into "${f.name || NEW_FOLDER_NAME}"`}
+            >
+              {f.name || NEW_FOLDER_NAME}
+            </button>
+          ))}
+          <button
+            className="bulk-type-chip bulk-type-chip--new-folder"
+            onClick={onApplyNewFolder}
+            title="Create a folder and move the selected entries into it"
+          >
+            ＋ New folder
           </button>
         </div>
       )}

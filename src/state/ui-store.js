@@ -9,10 +9,16 @@ export const useUiStore = create((set) => ({
   selectedIds: new Set(),   // Set<entryId> — entries selected while searchMode === 'select'
   selectionSide: null,      // 'active' | 'reference' | null — which side the current selection
                             //   was clicked from. Locks "Copy to other panel" semantics.
+  selectionAnchorId: null,  // entry id a shift+click range measures from. Set by every
+                            //   modifier+click, cleared whenever the selection is.
   stagedTypes: new Map(),   // Map<entryId, typeId> — per-row staged type changes in select mode,
                             //   committed in a batch via Apply Staged Types. Cleared on exit
                             //   select mode, on deselect of an entry, and on apply.
   typeFilter:  [],          // empty = show all
+  folderFilter: [],         // folder ids (plus the UNFILED_FILTER_ID sentinel); empty = show all.
+                            //   Active-book only — folder ids are per-book, so the reference
+                            //   pane ignores this. Stale ids are pruned on read, which is what
+                            //   makes a deleted folder or a crosstalk role swap harmless.
   windowPos:   { x: DEFAULT_WINDOW.x, y: DEFAULT_WINDOW.y },
   windowSize:  { width: DEFAULT_WINDOW.width, height: DEFAULT_WINDOW.height },
   bulkExpanded:     false,   // last bulk action was Expand All — drives the Expand/Collapse All button label only
@@ -27,6 +33,7 @@ export const useUiStore = create((set) => ({
   activeEntryId:        null,  // mobile entry detail panel — id of the entry being edited, or null
   searchFocusedId:      null,  // entry id forced-expanded by search navigation; null = no override
   pendingFocusEntryId:       null,   // id of newly-created entry that should receive auto-focus; cleared once consumed
+  pendingFocusFolderId:      null,   // id of newly-created folder whose header should open its rename input; cleared once consumed
   pendingFocusLorebookName:  false,  // true after new lorebook created; WindowHeader focuses name input then resets
   activeSide: 'left',          // 'left' | 'right' — which physical slot holds the active lorebook in crosstalk mode.
                                //   swapReference flips roles AND this flag so the clicked panel stays put.
@@ -36,6 +43,8 @@ export const useUiStore = create((set) => ({
   crossFlashId:          null,  // entry id currently flashing as the target of a cross-pane "in both books" jump; auto-clears on a timer
   compareEntryId:        null,  // active-side entry id currently in side-by-side compare mode against its same-named reference counterpart; null = not comparing
   keyboardHelpOpen:      false,  // true when the keyboard-shortcuts cheat-sheet overlay is open
+  selectAllVisibleNonce: 0,      // bumped by the select-all-visible hotkey; GlobalFilterBar owns the
+                                 //   visible-id lists for both panes, so it services the request there
   searchFocusNonce:      0,      // bumped by the focus-search hotkey; SearchBar focuses its input on change
   findFocusNonce:        0,      // bumped by the find/replace hotkey; SearchBar enters find-replace mode + focuses the find field
   pendingImportPick:     false,  // set by the import hotkey; AppendImportPanel switches to file mode + opens the OS picker, then clears
@@ -48,17 +57,32 @@ export const useUiStore = create((set) => ({
       // Leaving select mode clears any lingering selection (and its side) and
       // any pending staged type changes.
       if (state.searchMode === 'select' && searchMode !== 'select') {
-        return { searchMode, selectedIds: new Set(), selectionSide: null, stagedTypes: new Map() };
+        return {
+          searchMode,
+          selectedIds: new Set(),
+          selectionSide: null,
+          stagedTypes: new Map(),
+          selectionAnchorId: null,
+        };
       }
       return { searchMode };
     }),
   toggleSelected: (id, side) =>
     set((state) => {
+      // A plain click re-anchors too (`selectionAnchorId` below), so a
+      // click-then-shift+click reads as one gesture rather than measuring from
+      // something the user has long forgotten clicking.
+      //
       // Switching sides mid-selection: clear the existing selection and start
       // a fresh one on the side the user just clicked. Staged types reset too
       // since they only make sense for the current selection.
       if (state.selectionSide && side && state.selectionSide !== side) {
-        return { selectedIds: new Set([id]), selectionSide: side, stagedTypes: new Map() };
+        return {
+          selectedIds: new Set([id]),
+          selectionSide: side,
+          stagedTypes: new Map(),
+          selectionAnchorId: id,
+        };
       }
       const next = new Set(state.selectedIds);
       const stagedNext = new Map(state.stagedTypes);
@@ -72,9 +96,25 @@ export const useUiStore = create((set) => ({
         selectedIds: next,
         selectionSide: next.size === 0 ? null : (state.selectionSide ?? side ?? null),
         stagedTypes: stagedNext,
+        selectionAnchorId: id,
       };
     }),
-  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null, stagedTypes: new Map() }),
+  clearSelection:   ()    => set({ selectedIds: new Set(), selectionSide: null, stagedTypes: new Map(), selectionAnchorId: null }),
+  setSelectionAnchor: (selectionAnchorId) => set({ selectionAnchorId }),
+  // Take ids back out of the selection (ctrl+click and ctrl+shift+click). Any
+  // staged type change for a deselected entry goes with it, matching what
+  // toggleSelected already does on a single deselect.
+  deselectIds: (ids) =>
+    set((state) => {
+      const next       = new Set(state.selectedIds);
+      const stagedNext = new Map(state.stagedTypes);
+      for (const id of ids) { next.delete(id); stagedNext.delete(id); }
+      return {
+        selectedIds: next,
+        stagedTypes: stagedNext,
+        selectionSide: next.size === 0 ? null : state.selectionSide,
+      };
+    }),
   setStagedType:    (id, typeId) =>
     set((state) => {
       const next = new Map(state.stagedTypes);
@@ -115,6 +155,7 @@ export const useUiStore = create((set) => ({
   closeExportMenu: ()     => set({ exportMenuAnchor: null }),
   setActiveEntryId:        (activeEntryId)        => set({ activeEntryId }),
   setPendingFocusEntryId:       (pendingFocusEntryId)       => set({ pendingFocusEntryId }),
+  setPendingFocusFolderId:      (pendingFocusFolderId)      => set({ pendingFocusFolderId }),
   setPendingFocusLorebookName:  (pendingFocusLorebookName)  => set({ pendingFocusLorebookName }),
   toggleActiveSide: () => set((s) => ({ activeSide: s.activeSide === 'left' ? 'right' : 'left' })),
   setPeekReferenceEntryId: (peekReferenceEntryId) => set({ peekReferenceEntryId }),
@@ -124,6 +165,10 @@ export const useUiStore = create((set) => ({
   setCompareEntryId:        (compareEntryId)        => set({ compareEntryId }),
   setKeyboardHelpOpen:      (keyboardHelpOpen)      => set({ keyboardHelpOpen }),
   toggleKeyboardHelp:       ()                      => set((s) => ({ keyboardHelpOpen: !s.keyboardHelpOpen })),
+  requestSelectAllVisible:  ()                      => set((s) => ({
+    searchMode: 'select',
+    selectAllVisibleNonce: s.selectAllVisibleNonce + 1,
+  })),
   requestSearchFocus:       ()                      => set((s) => ({ searchFocusNonce: s.searchFocusNonce + 1 })),
   requestFindFocus:         ()                      => set((s) => ({ findFocusNonce: s.findFocusNonce + 1 })),
   // Open the Import overlay and flag it to jump straight to the file picker.
@@ -133,6 +178,17 @@ export const useUiStore = create((set) => ({
   openExportMenuCentered:   ()                      => set({ exportMenuAnchor: 'center' }),
   setPendingSettingsSection: (pendingSettingsSection) => set({ pendingSettingsSection }),
   openSettingsSection:      (section)                => set({ activeMenuPanel: 'settings', pendingSettingsSection: section }),
+
+  setFolderFilter: (folderFilter) => set({ folderFilter }),
+  toggleFolderFilter: (folderId) =>
+    set((state) => {
+      const active = state.folderFilter;
+      return {
+        folderFilter: active.includes(folderId)
+          ? active.filter((f) => f !== folderId)
+          : [...active, folderId],
+      };
+    }),
 
   toggleTypeFilter: (typeId) =>
     set((state) => {

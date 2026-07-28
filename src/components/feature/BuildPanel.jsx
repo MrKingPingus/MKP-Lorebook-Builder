@@ -19,7 +19,7 @@ import { LorebookRoleBar }      from './LorebookRoleBar.jsx';
 
 export function BuildPanel() {
   const { entries }                              = useEntries();
-  const { displayEntries, effectiveGroupByType } = useDisplayEntries(entries);
+  const { displayEntries, effectiveGroupByType, effectiveFolders } = useDisplayEntries(entries);
   const isMobile                                 = useMobile();
   const { activeLorebook }                       = useLorebook();
   const { items, switchLorebook }                = useLorebookSwitcher();
@@ -83,7 +83,7 @@ export function BuildPanel() {
         </div>
       )}
 
-      <EntryList entries={displayEntries} groupByType={effectiveGroupByType} />
+      <EntryList entries={displayEntries} groupByType={effectiveGroupByType} showFolders={effectiveFolders} />
     </div>
   );
 }

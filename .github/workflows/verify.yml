@@ -1,0 +1,89 @@
+# Runs `npm run verify` — the pure-logic checks plus the Playwright behavioural
+# suite — on every pull request and every push to main.
+#
+# This REPORTS ONLY, by design. It never gates the Pages deploy in main.yml and
+# never blocks a merge — a red run can't leave anyone with a site that won't
+# update or a PR that won't merge. The project's real test loop is a preview
+# deploy plus a human looking at it; this suite is the safety net underneath,
+# for the classes of bug eyeballs don't catch.
+#
+# Fixed waits are scaled by VERIFY_WAIT_SCALE (3x on CI) so a slower shared
+# runner doesn't produce failures that mean nothing.
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to the same branch makes an in-flight run obsolete.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # The suite grew from ~25 scenarios to 45 during phase 11, and CI runs every
+    # fixed wait at 3x (VERIFY_WAIT_SCALE) to absorb a slow shared runner. A full
+    # run already takes over ten minutes locally at 1x, so 15 was no longer a
+    # safety margin — it was a coin flip. Raised rather than trimming the wait
+    # scale, which exists to stop timing flakes rather than to save wall clock.
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The container this project is usually developed in ships its own
+      # Chromium; a GitHub runner does not, so fetch the one Playwright wants.
+      # --with-deps pulls the shared libraries headless Chromium needs.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # The fixture is generated, so a stale committed copy would silently
+      # invalidate every count the crosstalk scenarios assert. Regenerate and
+      # fail if it differs from what's checked in.
+      - name: Check the derived fixture is up to date
+        run: |
+          node fixtures/build-variant-book.mjs
+          if ! git diff --quiet -- fixtures/reika-test-book-variant.json; then
+            echo "::error ::fixtures/reika-test-book-variant.json is stale. Run 'node fixtures/build-variant-book.mjs' and commit the result."
+            git diff -- fixtures/reika-test-book-variant.json
+            exit 1
+          fi
+
+      - name: Build
+        run: npm run build
+
+      # Serve the *built* artifact and test that, not the dev server. What ships
+      # to Pages is the production bundle, so that is what the suite should be
+      # exercising — a dev-only pass would miss anything the build itself
+      # changes. run.mjs reuses a server already listening on VERIFY_URL.
+      - name: Serve the production build
+        run: |
+          npx vite preview --port 4173 --strictPort > /tmp/preview.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:4173/; then ready=1; break; fi
+            sleep 1
+          done
+          if [ -z "$ready" ]; then
+            echo "::error ::vite preview did not come up on port 4173"
+            cat /tmp/preview.log
+            exit 1
+          fi
+
+      - name: Verify
+        env:
+          VERIFY_URL: http://127.0.0.1:4173/
+        run: npm run verify

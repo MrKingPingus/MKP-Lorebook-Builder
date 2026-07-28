@@ -9,6 +9,13 @@ import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import {
+  COLLAPSE_STAGE_ORDER,
+  COLLAPSE_STAGE_LABELS,
+  COLLAPSE_STAGE_HINTS,
+  COLLAPSE_STATES,
+  normalizeCollapseStages,
+} from '../../constants/folders.js';
+import {
   MIN_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
   ROLLBACK_SNAPSHOT_WARN,
@@ -68,6 +75,10 @@ export function SettingsPanel() {
     setKeepMenuOpenAfterImport,
     crosstalkEnabled,
     setCrosstalkEnabled,
+    folderCollapseStages,
+    setFolderCollapseStages,
+    condensedShowStats,
+    setCondensedShowStats,
     crosstalkSwapMode,
     setCrosstalkSwapMode,
     thesaurusEnabled,
@@ -326,6 +337,69 @@ export function SettingsPanel() {
           </label>
           <div className="settings-hint">
             Taller entry rows on desktop, so a long lorebook is easier to scan when many entries at once feels overwhelming.
+          </div>
+        </div>
+
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          Folders
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="folders" title="Folders" openSet={openSet} toggleSection={toggleSection}>
+
+        <div className="settings-group">
+          <div className="settings-label">Collapse stages</div>
+          {(() => {
+            const active = normalizeCollapseStages(folderCollapseStages);
+            const toggle = (state) => {
+              const next = active.includes(state)
+                ? active.filter((s2) => s2 !== state)
+                : [...active, state];
+              setFolderCollapseStages(normalizeCollapseStages(next));
+            };
+            return COLLAPSE_STAGE_ORDER.map((state) => {
+              const checked = active.includes(state);
+              // Full is the size every folder returns to, so it is never
+              // optional. Beyond that, one more stage has to stay on or the
+              // header button would have nothing to cycle to — so the last
+              // remaining optional stage locks until the other is turned on.
+              const locked = state === COLLAPSE_STATES.FULL || (checked && active.length <= 2);
+              return (
+                <label key={state} className="settings-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={locked}
+                    onChange={() => toggle(state)}
+                  />
+                  <span className="settings-checkbox-label">
+                    {COLLAPSE_STAGE_LABELS[state]}
+                    <span className="settings-checkbox-hint">{COLLAPSE_STAGE_HINTS[state]}</span>
+                  </span>
+                </label>
+              );
+            });
+          })()}
+          <div className="settings-hint">
+            Which sizes the button on a folder&rsquo;s header cycles through. Turning a stage
+            off is never destructive — a folder already set to it keeps that setting and
+            simply renders at the nearest size you do have on, so turning it back on
+            restores everything exactly as it was.
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Show entry stats on condensed rows</span>
+            <input
+              type="checkbox"
+              checked={condensedShowStats}
+              onChange={(e) => setCondensedShowStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Condensed rows normally shed the trigger and character counts to stay compact.
+            Turn this on to keep them, rendered smaller to fit the row.
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
+import { MoveToFolderButton } from './MoveToFolderButton.jsx';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useMobile }      from '../../hooks/use-mobile.js';
 import { useUi }          from '../../hooks/use-ui.js';
@@ -63,12 +64,12 @@ function ExportOffIcon() {
   );
 }
 
-export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown }) {
+export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, onSelectionClick, density = 'full' }) {
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
-  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize } = useSettings();
+  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -109,6 +110,11 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     ? true
     : (isSearchFocused ? false : localCollapsed);
 
+  // Condensed is a header-only density, and only while the card is shut. Expand
+  // a condensed card and it gets its full chrome back for as long as it's open,
+  // so an expanded card is never a half-sized hybrid.
+  const isCondensed = density === 'condensed' && collapsed;
+
   // Expand All / Collapse All pulses — commit the bulk action into this card's
   // own state. Guarded on nonce > 0 so the initial mount doesn't fire.
   useEffect(() => {
@@ -117,6 +123,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   useEffect(() => {
     if (collapseAllNonce > 0) setLocalCollapsed(true);
   }, [collapseAllNonce]);
+
+  // Entering condensed shuts a card the user had open, so condensing a folder
+  // visibly does something to every row in it. Leaving condensed doesn't
+  // re-open anything — that stays the user's call.
+  useEffect(() => {
+    if (density === 'condensed') setLocalCollapsed(true);
+  }, [density]);
 
   // Desktop: auto-expand and focus name input when a new entry is created
   useEffect(() => {
@@ -284,8 +297,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   // Desktop: double-click header (skip if clicking a button or badge)
   function onHeaderDoubleClick(e) {
+    // A quick pair of shift+clicks building a selection also fires dblclick;
+    // collapsing the card underneath the user mid-gesture is pure noise.
+    if (e.shiftKey || e.ctrlKey || e.metaKey) return;
     if (e.target.closest('button, .stats-badge')) return;
     toggleCollapse();
+  }
+
+  // Modifier+click runs on the header only. An expanded card's body is a live
+  // editor, and shift+click inside a textarea is a real text-selection gesture
+  // that must not be hijacked. Capture phase so a macro click never reaches the
+  // Expand/Remove buttons sitting inside the header.
+  function onHeaderClickCapture(e) {
+    if (onSelectionClick?.(e)) e.stopPropagation();
   }
 
   // ── Mobile card — slim tap-to-open row ──────────────────────────────────────
@@ -367,17 +391,26 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   return (
     <div
       id={`entry-${entry.id}`}
-      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}`}
+      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}${isCondensed ? ' entry-card--condensed' : ''}`}
       style={{ '--type-color': typeColor }}
       onClick={isSelectMode ? () => toggleSelected(entry.id, 'active') : undefined}
     >
       {/* ── Card header ── */}
       <div
-        className={`entry-card-header${entryHeaderSize && entryHeaderSize !== 'default' ? ` entry-card-header--${entryHeaderSize}` : ''}`}
+        className={`entry-card-header${isCondensed ? ' entry-card-header--condensed' : (entryHeaderSize && entryHeaderSize !== 'default' ? ` entry-card-header--${entryHeaderSize}` : '')}`}
+        onClickCapture={onHeaderClickCapture}
         onDoubleClick={isSelectMode ? undefined : onHeaderDoubleClick}
       >
-        {!isSelectMode && (
-          <span className="drag-handle" title="Drag to reorder" onMouseDown={onDragHandleMouseDown}>⠿</span>
+        {/* The handle stays in select mode: a selection only exists there, so
+            hiding it would make multi-entry drag unreachable. Clicking the row
+            still toggles selection — only the handle starts a drag. */}
+        {!isCondensed && (
+          <span
+            className="drag-handle"
+            title={isSelectMode ? 'Drag to move every selected entry' : 'Drag to reorder'}
+            onMouseDown={onDragHandleMouseDown}
+            onClick={(e) => e.stopPropagation()}
+          >⠿</span>
         )}
 
         <TypeColorDot type={entry.type} />
@@ -411,10 +444,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             ))}
           </CyclingSelect>
         )}
-        {entry.isPublic === true && <PublicEyeIcon />}
-        {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
-        {entry.hiddenFromExport && <ExportOffIcon />}
-        {sameNameRefId && (
+        {!isCondensed && entry.isPublic === true && <PublicEyeIcon />}
+        {!isCondensed && entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
+        {!isCondensed && entry.hiddenFromExport && <ExportOffIcon />}
+        {!isCondensed && sameNameRefId && (
           <button
             className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
             onClick={onBadgeClick}
@@ -431,7 +464,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           </button>
         )}
         <div className="entry-card-header-right">
-          {!hideEntryStats && (
+          {!hideEntryStats && (!isCondensed || condensedShowStats) && (
             <StatsBadge
               triggerCount={entry.triggers.length}
               charCount={entry.description.length}
@@ -681,6 +714,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 ? `↺ Entry History${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`
                 : 'Enable entry history?'}
             </button>
+            <MoveToFolderButton entry={entry} />
             <button
               className={`entry-public-btn${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
               onClick={() => update({ isPublic: entry.isPublic !== true }, true)}

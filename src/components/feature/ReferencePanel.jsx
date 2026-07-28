@@ -75,7 +75,7 @@ export function ReferencePanel() {
   // Apply the same search/filter/sort/group pipeline the active side uses, so
   // the hoisted GlobalFilterBar drives both panels in parallel.
   const referenceEntries = referenceLorebook?.entries ?? [];
-  const { displayEntries } = useDisplayEntries(referenceEntries);
+  const { displayEntries } = useDisplayEntries(referenceEntries, { isReference: true });
 
   // Picker options: every saved lorebook except the currently active one.
   const pickerItems = items.filter((item) => !item.isActive);

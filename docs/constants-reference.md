@@ -7,6 +7,10 @@
 - `storage-keys.js` — all localStorage key strings
 - `defaults.js` — default shapes for new entries, lorebooks, settings, window size
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
+- `drag.js` — drop-target vocabulary (`DROP_KINDS`, `DROP_EDGES`, `DRAG_KINDS`), the spring-open delay for tucked folders, and the auto-scroll zone/speed
+- `selection.js` — modifier+click semantics (`SELECTION_ACTIONS`) and the gesture list the keyboard help overlay renders (`SELECTION_GESTURES`), kept beside the behaviour they describe so the two can't drift
+- `sort-modes.js` — which sort modes suppress a grouping layer (`group-by-type`, folders) because they impose their own ordering, plus `folderOrderFor()` — how folder rows order themselves against sibling entries (`position` by default, `name-asc`/`name-desc` under the alpha sorts)
+- `folders.js` — folder swatch palette, `MAX_FOLDER_DEPTH`, the collapse cycles (`COLLAPSE_CYCLES.three` / `.two`, chosen by the `folderCollapseStages` setting) (`FOLDER_COLORS`) and the collapse-state vocabulary (`full` / `condensed` / `tucked`) with `normalizeCollapseStages()` — the tolerant read that turns a stored stage set (or a legacy `'three'`/`'two'` string) into a usable cycle, always `full` plus at least one more; `UNFILED_FILTER_ID` is the folder-filter sentinel for "in no folder" (a `__`-wrapped literal, so it can never collide with a `uid()` folder id)
 
 ## CSS / Theming
 

@@ -33,6 +33,12 @@ Use this to identify which file to look at based on what's visible on screen.
 | The row of type filter pills (Character, Location, etc.) | `src/components/feature/TypeFilterBar.jsx` |
 | An entry card (collapsed or expanded, with name/type/triggers/description) | `src/components/feature/EntryCard.jsx` |
 | The scrollable list of all entry cards | `src/components/feature/EntryList.jsx` |
+| A folder header row in the entry list (collapse, colour, name, count, delete) | `src/components/feature/FolderHeader.jsx` |
+| The `Folder ▾` filter button and its checkbox menu (also supplies the rows TypeFilterBar drops into the mobile `Filter ▾` popover) | `src/components/feature/FolderFilterButton.jsx` |
+| Folder filter state — selection, menu options, and the predicate that narrows a list. Active-book only; prunes stale ids on read | `src/hooks/use-folder-filter.js` |
+| Drag-and-drop state machine (drop target, spring-loaded folders, auto-scroll, single-snapshot commit) — wired in `EntryList.jsx`; the folder header is the drag source for a folder | `src/hooks/use-entry-drag.js` |
+| Modifier+click selection (shift/ctrl ranges) — wired in `EntryList.jsx` (owns the display-ordered id list) and handled on the capture phase in `EntryCard.jsx` / `FolderHeader.jsx` headers | `src/hooks/use-selection-macros.js` |
+| The "Move to folder" button + menu in an entry card's footer | `src/components/feature/MoveToFolderButton.jsx` |
 | The entry name field inside a card | `src/components/feature/EntryName.jsx` |
 | The description textarea and its char counter | `src/components/feature/DescriptionArea.jsx` |
 | The highlighted text overlay on descriptions (search matches) | `src/components/feature/DescriptionHighlight.jsx` |

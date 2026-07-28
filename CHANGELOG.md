@@ -2,12 +2,98 @@
 
 ---
 
+## 2026-07-27
+
+### Additions
+
+- **Reorder folders by dragging.** Drop a folder onto the **top edge** of another folder's header and it becomes that folder's sibling, sitting just above it — including moving a folder above whichever one is currently first. Dropping onto the middle of a header still files inside it, as before. A blue line across the top of the header shows which one you'll get.
+- **Folder headers follow the entry header height setting.** Setting roomier rows in Settings → Editing & Entries now sizes the folder headers to match, instead of leaving them at the original height.
+
+### Fixes
+
+- **The buttons on a folder header are much bigger.** Add-entry, nest and delete were tiny and hard to hit; they're now proper 24px targets with a hover background, matching the collapse button.
+
+- **Add an entry straight into a folder** with the **＋** button on its header, instead of making one and then moving it.
+- **Two new keyboard shortcuts** — **Alt+V** selects everything currently visible (turning on Select mode if it isn't already), and **Alt+D** clears the selection. "Visible" honours whatever search, type filter or folder filter is active, so you can filter down and grab exactly that set. Both are rebindable in Settings like every other shortcut.
+- **Folder collapse stages are now yours to pick.** Settings → Folders has a checkbox for each size — Full, Condensed and Hidden — so you can have a folder button that's simply open-or-shut, or one that stops at a condensed middle step on the way. **The new default is open-or-shut**; turn Condensed on if you want the middle stage back. Full is always on, and one other stage has to stay on, since a button with only one size to show wouldn't do anything.
+
+### Fixes
+
+- **A folder you open by hovering during a drag now closes again if you don't use it.** Resting a dragged entry over a closed folder still opens it so you can drop inside, but if you carry on and drop somewhere else, the folder goes back to how you left it. The folder you actually drop into stays open.
+- **Turning off a collapse stage no longer leaves folders stuck in it.** A folder set to Condensed now correctly falls back to full size when you turn the Condensed stage off, and returns to condensed if you turn it back on — previously the header button updated but the entries underneath stayed condensed.
+
+- **Drag entries into and out of folders.** Dragging now understands folders: where you drop something decides where it belongs.
+  - **Drop between two entries inside a folder** and it joins that folder. **Drop between two top-level entries** and it comes out of whatever folder it was in. **Drop straight onto a folder's header** and it files inside.
+  - **A drop zone appears under the list while you drag** — drop there to pull something out of every folder and send it to the end.
+  - **A blue line shows exactly where the entry will land** before you let go, and it won't appear anywhere a drop isn't allowed.
+  - **Drag several entries at once.** Select the ones you want, then drag any of them by its handle and the whole selection travels together, landing as one block in the order you had them. Grabbing an entry that *isn't* selected drags just that one and leaves your selection alone.
+  - **Drag a whole folder** by the handle on its header, to reorder it or to drop it inside another folder — everything inside comes with it. Folders can't be dropped inside themselves, and the three-level nesting limit still applies.
+  - **The list scrolls itself** when you drag near the top or bottom edge, so you can move an entry somewhere off screen.
+  - **Hold a dragged entry over a closed folder** and it opens after a moment so you can drop it exactly where you want inside.
+  - **Condensed entries can be dragged too**, from anywhere on the row.
+  - Dragging still works while the list is filtered or searched — drop between two rows you can see and it goes exactly where it looks like it will.
+
+### Fixes
+
+- **Undoing a drag now takes one press of Ctrl+Z.** Previously every entry you dragged *past* was recorded as its own separate step, so dragging an entry ten rows down took ten presses to undo — and quietly used up ten slots of your 50-step undo history. A drag is now a single step, and a drag that ends up back where it started doesn't take a step at all.
+- **Entries inside a folder can now be dragged.** They couldn't be — starting a drag on one was cancelled immediately.
+
+- **Filter the list by folder.** A **Folder ▾** button in the filter row lets you narrow the list to one folder, several at once, or **Unfiled entries** — everything you haven't put away yet. It only appears once you actually have folders, so it doesn't clutter the row if you don't use them.
+  - **Picking a folder includes everything nested inside it**, so filtering to an outer folder shows its sub-folders' entries too rather than just the entries sitting directly in it.
+  - **Folder headers stay while you filter**, so you keep the structure and can still collapse things — folders left with nothing simply drop out of view, the same way they do during a search.
+  - **A tucked folder opens itself while a filter is on**, so filtering to a folder you'd shut doesn't just show you an empty header.
+  - **Each folder in the menu shows how many entries it holds**, counting everything nested inside it, so the number matches what picking it will show you.
+  - **Deleting a folder you'd filtered to brings the whole list back** instead of leaving you staring at an empty screen.
+  - **On mobile** the folder options live inside the existing **Filter ▾** popover alongside the type checkboxes, so nothing new crowds the top of the screen.
+  - **In reference mode the filter only touches the lorebook you're editing.** Folders belong to one lorebook, so filtering by them leaves the reference pane beside it showing its full list. Swapping which book is active clears the filter rather than pointing it at the wrong book.
+  - Filtering by folder still works under the **"cross-book matches"** sorts, even though those hide folder headers — you get that folder's entries as a flat list, still split into matched and unmatched.
+
+- **Select entries with Shift and Ctrl, like a file manager.** You no longer have to turn Select mode on first — **Shift+click any entry** and it opens Select mode with that entry already picked. From there:
+  - **Shift+click** another entry to grab **everything between the two**, so a run of twenty entries takes two clicks instead of twenty.
+  - **Ctrl+click** (Cmd on a Mac) to **drop one entry** back out of the selection you've built.
+  - **Ctrl+Shift+click** to **drop a whole range** back out.
+  - **Shift+click a folder's header** to select **everything inside it**, sub-folders included; Ctrl+click the header gives it all back.
+  - Adding and removing are always what they say — nothing you've selected is ever silently thrown away by the next click.
+  - **A range reaches into a collapsed folder.** Entries tucked out of sight still sit between the two entries you clicked, so they come along — and the folder's header shows how many of its hidden entries are selected, so the count is never a mystery.
+  - **Your open entries are safe.** These shortcuts only work on an entry's header row, so Shift+clicking inside a description box still selects text the way it always has.
+  - All of it is listed under **Selecting with the mouse** in the keyboard shortcuts overlay (press **?**).
+
+### Fixes
+
+- **A → Z and Z → A now put folders in alphabetical order too.** Previously a folder was positioned by the first entry inside it, so a folder named "Zeta" holding an entry called "Apple" could sit above a loose entry called "Beta" — the list didn't read alphabetically even though that's what you'd asked for. Folders and entries now sort together in one alphabetical run, by the folder's own name. Sorting by **Last modified** is unchanged: a folder still appears wherever its most recently edited entry lands, which is what that sort is for.
+
+---
+
 ## 2026-07-25
 
 ### Additions
 
+- **Folders** — you can now group entries into colored folders, purely for your own organization inside the builder. Folders are **never exported** and have nothing to do with entry types: your JSON, TXT, DOCX and ZIP exports come out exactly as before, whether an entry is filed or not.
+  - **Make one** with the **＋ Folder** button in the filter row, or straight from a selection with **Move to folder… → ＋ New folder** in Select mode.
+  - **File entries** two ways: pick **Move to folder** in an entry's footer for one entry at a time, or select several entries and use **Move to folder…** to move the whole batch at once.
+  - **Collapse a folder in stages.** The button on its header cycles through three sizes: full entries, **condensed** (each entry shrinks to a single line — type dot, name, and Expand/Remove), and **tucked** (entries hidden entirely, with the header showing how many are inside). Click round again to return to full size.
+  - **Folders can go inside folders**, up to three levels deep. Use the **⇥** button on a folder's header to move it into another one, back out to the top level, or **＋ New folder** to create a fresh folder and drop this one straight inside it. The limit exists because each level indents the rows, and past three there isn't enough width left to read entry names — especially beside a reference lorebook.
+  - **Collapsing a folder collapses what's inside it.** Tucking a folder hides everything below it, sub-folders included; condensing one shrinks its whole contents. Opening it back up restores whatever each inner folder was set to — collapsing a parent never overwrites your choices for the folders inside.
+  - **Collapse Folders** in the filter row tucks every folder at once, and turns into **Open Folders** to bring them all back. It only appears once you actually have folders.
+  - **Deleting a folder never deletes what's in it** — entries move back out, and any folders inside it move up to wherever the deleted folder was.
+  - **Group by type works inside folders** — turn it on and each folder's entries are grouped under type headers, just like the main list.
+  - **You can still open one entry inside a condensed folder** — hit Expand on any condensed row and that entry opens at full size with everything on it, while the rest of the folder stays compact.
+  - **Rename** by clicking a folder's name, and **recolor** by clicking its dot to pick from eight pastel colors, deliberately kept distinct from the entry-type colors so a folder stripe never reads as a type. An entry filed into a folder shows that folder's name and color on its own footer button, so you can always tell where it lives.
+  - **Undo works on all of it** — creating, deleting, renaming, recoloring, and moving entries in or out are all undoable with Ctrl+Z. Collapsing a folder isn't undoable, since it's just a view.
+  - Folders appear in the list wherever their first entry sits, and unfiled entries stay right where they were around them, so nothing gets shuffled into separate piles. A brand-new empty folder sits at the **top** of the list until you put something in it, so it's right where you're looking after making one.
+  - **Settings → Folders** has two options: **Collapse stages** lets you drop the middle "condensed" step if you'd rather a folder was simply open or shut, and **Show entry stats on condensed rows** puts the trigger and character counts back on condensed entries, sized down to fit. Changing the collapse stages never loses anything — a folder you'd already condensed keeps that setting and just renders full-size until you touch it.
+  - **In reference mode**, folders belong to the lorebook you're actively editing — the reference pane beside it still shows a plain list, and the folder buttons explain themselves rather than doing nothing. Copying an entry between two lorebooks drops its folder, so it arrives loose in the destination instead of remembering a folder that isn't there.
+  - **Naming is immediate** — a folder is created with its name field already open and selected, so you can type the name straight away instead of hunting for it.
+  - **Searching reaches inside collapsed folders** — if a match is filed in a folder you've tucked shut, the folder opens itself for the duration of the search and closes again when you clear it.
+  - The two **"cross-book matches"** sort modes hide folders while they're on, since their whole job is to split the list into matched and unmatched — regrouping by folder would undo that. The folder buttons grey out with a note while that sort is active.
+
 - **Synonyms have a backup source** — when the main dictionary has no synonyms for a word (which used to just show "No synonyms found"), the thesaurus popover now falls back to a broader "related words" list so you're less likely to hit a dead end. These related words are looser than the dictionary's curated synonyms — handy, but eyeball them before adding. The backup only kicks in when there's nothing else to show, so it never slows down words that already have good synonyms.
 - **Widen any trigger with "＋ Related terms"** — the synonyms popover now has a **＋ Related terms** button. When a trigger returns only a handful of dictionary synonyms (or you just want a wider net), it pulls in looser related words on demand — **grouped by part of speech** (nouns / verbs / adjectives / …) and trimmed of rare, obscure words, so the extras come organised instead of as a random pile. It only fetches when you ask, so it never slows down the normal popover.
+
+### Fixes
+
+- **Filing entries now clears the selection** — after moving a batch of selected entries into a folder, they stay selected no longer, so you can go straight on to picking the next batch for a different folder.
+- **Drag-to-reorder moved the wrong entry** — dragging an entry while a search was active, or while **Group by type** was on, would silently reorder two *different* entries elsewhere in the list instead of the one you dragged. Reordering now always follows the entry you actually picked up.
 
 ### Adjustments
 

@@ -5,6 +5,9 @@ import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { runAllChecks } from './checks.mjs';
 import { runKeychordChecks } from './keychord-checks.mjs';
+import { runFolderTreeChecks } from './folder-tree-checks.mjs';
+import { runSelectionRangeChecks } from './selection-range-checks.mjs';
+import { runDragDropChecks } from './drag-drop-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -16,9 +19,19 @@ async function serverUp() {
   }
 }
 
-// Pure-logic checks first — no browser needed, and they cover the platform
-// paths (macOS Option key) the Linux-only browser suite can't reach.
-const keychordOk = runKeychordChecks();
+// Pure-logic checks first — no browser needed. They cover the platform paths
+// (macOS Option key) the Linux-only browser suite can't reach, and the folder
+// maths, which is far cheaper to exercise exhaustively here than through the UI.
+// `npm run verify -- folders` runs only the scenarios whose names contain
+// "folders". The pure-logic checks are milliseconds, so they always run.
+const only = process.argv.slice(2).find((a) => !a.startsWith('-')) || process.env.VERIFY_ONLY || '';
+
+const pureOk = [
+  runKeychordChecks(),
+  runFolderTreeChecks(),
+  runSelectionRangeChecks(),
+  runDragDropChecks(),
+].every(Boolean);
 
 let child = null;
 if (await serverUp()) {
@@ -36,8 +49,8 @@ if (await serverUp()) {
 
 let ok = false;
 try {
-  ok = await runAllChecks();
+  ok = await runAllChecks(only);
 } finally {
   if (child) child.kill('SIGTERM');
 }
-process.exit(ok && keychordOk ? 0 : 1);
+process.exit(ok && pureOk ? 0 : 1);

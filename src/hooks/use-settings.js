@@ -21,6 +21,8 @@ export function useSettings() {
   const triggerDelimiter         = useSettingsStore((s) => s.triggerDelimiter);
   const hotbarSlots              = useSettingsStore((s) => s.hotbarSlots);
   const entryHeaderSize          = useSettingsStore((s) => s.entryHeaderSize);
+  const folderCollapseStages     = useSettingsStore((s) => s.folderCollapseStages);
+  const condensedShowStats       = useSettingsStore((s) => s.condensedShowStats);
   const fabSize                  = useSettingsStore((s) => s.fabSize);
   const fabCustomSize            = useSettingsStore((s) => s.fabCustomSize);
   const fabQuickMenuEnabled      = useSettingsStore((s) => s.fabQuickMenuEnabled);
@@ -52,6 +54,8 @@ export function useSettings() {
       triggerDelimiter,
       hotbarSlots,
       entryHeaderSize,
+      folderCollapseStages,
+      condensedShowStats,
       fabSize,
       fabCustomSize,
       fabQuickMenuEnabled,
@@ -92,6 +96,8 @@ export function useSettings() {
     triggerDelimiter,
     hotbarSlots,
     entryHeaderSize,
+    folderCollapseStages,
+    condensedShowStats,
     fabSize,
     fabCustomSize,
     fabQuickMenuEnabled,
@@ -118,6 +124,8 @@ export function useSettings() {
     setTriggerDelimiter:         (v) => updateSetting('triggerDelimiter', v),
     setHotbarSlots:              (v) => updateSetting('hotbarSlots', v),
     setEntryHeaderSize:          (v) => updateSetting('entryHeaderSize', v),
+    setFolderCollapseStages:     (v) => updateSetting('folderCollapseStages', v),
+    setCondensedShowStats:       (v) => updateSetting('condensedShowStats', v),
     setFabSize:                  (v) => updateSetting('fabSize', v),
     setFabCustomSize:            (v) => updateSetting('fabCustomSize', v),
     setFabQuickMenuEnabled:      (v) => updateSetting('fabQuickMenuEnabled', v),

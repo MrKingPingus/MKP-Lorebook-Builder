@@ -4,6 +4,7 @@ import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { changeTypeForIds } from '../services/find-replace.js';
 import { cloneEntry }       from '../services/entry-factory.js';
+import { createFolder, assignEntriesToFolder, foldersOf } from '../services/folder-tree.js';
 
 export function useBulkActions() {
   const lorebooks           = useLorebookStore((s) => s.lorebooks);
@@ -18,7 +19,11 @@ export function useBulkActions() {
   const clearSelection      = useUiStore((s) => s.clearSelection);
   const clearStagedTypes    = useUiStore((s) => s.clearStagedTypes);
 
-  const entries = activeLorebookId ? lorebooks[activeLorebookId]?.entries ?? [] : [];
+  const updateActiveEntriesAndFolders = useLorebookStore((s) => s.updateActiveEntriesAndFolders);
+
+  const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
+  const entries = activeLorebook?.entries ?? [];
+  const folders = foldersOf(activeLorebook);
 
   // Bulk apply-to-all path. Select mode and selection persist after apply so
   // the user can chain further actions on the same set.
@@ -87,6 +92,43 @@ export function useBulkActions() {
     updateActiveEntries(updated);
   }
 
+  // File the selection into a folder (folderId === null unfiles them). No-op
+  // means no snapshot, as with the other bulk ops. The snapshot carries folders
+  // too because the assignment also repositions entries[] around the folder.
+  function moveSelectedToFolder(folderId) {
+    if (selectedIds.size === 0 || selectionSide === 'reference') return;
+    const target = folderId ?? null;
+    const hasWork = entries.some((e) => selectedIds.has(e.id) && (e.folderId ?? null) !== target);
+    if (!hasWork) return;
+    pushSnapshot({ entries: [...entries], folders: [...folders] });
+    updateActiveEntriesAndFolders(assignEntriesToFolder(entries, selectedIds, target), folders);
+    // Unlike the type/visibility bulk ops, filing is a "that batch is done"
+    // action — the next move is almost always a *different* set of entries into
+    // a *different* folder, so holding the selection just gets in the way.
+    // Matches copyToOtherPanel, which clears for the same reason.
+    clearSelection();
+  }
+
+  // "Move to new folder…" — one snapshot covering both the new folder and the
+  // entries filed into it. Folders live on the active book, so a selection made
+  // on the reference side has nothing to file here: without this guard it would
+  // create an empty folder in the active book and move nothing.
+  function moveSelectedToNewFolder() {
+    if (selectedIds.size === 0 || selectionSide === 'reference') return;
+    if (!entries.some((e) => selectedIds.has(e.id))) return;
+    pushSnapshot({ entries: [...entries], folders: [...folders] });
+    const folder = createFolder(folders);
+    updateActiveEntriesAndFolders(
+      assignEntriesToFolder(entries, selectedIds, folder.id),
+      [...folders, folder]
+    );
+    clearSelection();
+    // A folder born from a selection always needs naming — send the header
+    // straight into its rename input.
+    useUiStore.getState().setPendingFocusFolderId(folder.id);
+    return folder;
+  }
+
   // Copy the selected entries from the side they were clicked on to the other
   // panel's lorebook. Clones get fresh ids and zeroed snapshots. We only push
   // a history snapshot when the destination is the active book, since the
@@ -121,5 +163,13 @@ export function useBulkActions() {
     clearSelection();
   }
 
-  return { applyTypeChange, applyStagedTypes, copyToOtherPanel, setHiddenForSelected, setPublicForSelected };
+  return {
+    applyTypeChange,
+    applyStagedTypes,
+    copyToOtherPanel,
+    setHiddenForSelected,
+    setPublicForSelected,
+    moveSelectedToFolder,
+    moveSelectedToNewFolder,
+  };
 }

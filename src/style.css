@@ -1799,6 +1799,27 @@ img.logo-icon {
   flex: 1;
 }
 
+/* Folder filter menu. Wider than the type menu because folder names are
+   user-written and indent by nesting depth, and it caps its height so a book
+   with a lot of folders scrolls the menu instead of running off screen. */
+.folder-filter-popover {
+  min-width: 240px;
+  max-width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.folder-filter-popover .type-filter-popover-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-filter-count {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
 .filter-hint {
   font-size: 0.6875rem;
   color: var(--muted);
@@ -1822,7 +1843,8 @@ img.logo-icon {
   white-space: nowrap;
   transition: background var(--transition);
 }
-.filter-action-btn:hover { background: var(--surface3); }
+.filter-action-btn:hover:not(:disabled) { background: var(--surface3); }
+.filter-action-btn:disabled { opacity: 0.4; cursor: default; }
 .filter-action-btn--active {
   background: var(--surface3);
   border-color: var(--accent);
@@ -1871,6 +1893,369 @@ img.logo-icon {
   text-align: center;
   padding: 40px 20px;
 }
+
+/* ============================================================
+   Folders (builder-only organization layer)
+   ============================================================ */
+/* §FOLDERS */
+/* A folder block is the header plus its indented entries. The colour rail on
+   the left runs the height of the block so nesting reads at a glance, the way
+   Reaper's track folders do. */
+.folder-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  padding: 5px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--folder-color, var(--border2));
+  border-radius: var(--radius);
+}
+.folder-header { min-height: 34px; }
+.folder-header--medium { padding-top: 11px; padding-bottom: 11px; min-height: 46px; }
+.folder-header--large  { padding-top: 18px; padding-bottom: 18px; min-height: 60px; }
+
+.folder-header--tucked {
+  background: var(--surface);
+  border-style: dashed;
+  border-left-style: solid;
+}
+
+.folder-collapse-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.folder-collapse-btn:hover {
+  background: var(--border);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.folder-swatch {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--folder-color, var(--border2));
+  cursor: pointer;
+  padding: 0;
+}
+
+.folder-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 2px 2px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+.folder-name:hover { color: var(--text); text-decoration: underline dotted; }
+
+.folder-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.folder-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--surface3);
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  text-align: center;
+  cursor: default;
+}
+
+.folder-delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+.folder-delete-btn:hover { color: var(--accent); background: var(--surface3); }
+
+/* Colour picker — anchored under the swatch it was opened from */
+.folder-color-picker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 24px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 16px);
+  gap: 5px;
+  padding: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.folder-color-option {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.folder-color-option--active { border-color: var(--text); }
+
+/* The indent. The rail is the folder's own colour at low opacity so a stack of
+   folders stays readable without shouting. */
+.folder-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 10px;
+  padding-left: 8px;
+  border-left: 3px solid var(--folder-color, var(--border));
+  opacity: 1;
+}
+/* The rail is the folder's own colour, dimmed so a stack of folders reads as
+   structure rather than as a wall of saturated lines. */
+.folder-block > .folder-entries { border-left-color: color-mix(in srgb, var(--folder-color, var(--border)) 75%, transparent); }
+
+/* ---- Condensed rows (folder collapseState === 'condensed') ----
+   A single line carrying only what identifies the entry — type dot, index +
+   name — plus Expand and Remove. Drag handle, stats, and status badges are all
+   one Expand away. The row deliberately ignores the global entry-header-height
+   preference: that setting asks for roomier rows everywhere, condensing a
+   folder asks for tighter ones right here. */
+/* Selectors are doubled up (.entry-card--condensed .entry-card-header rather
+   than the modifier alone) so they outrank the base .entry-card-header rules,
+   which are defined further down this file. */
+.entry-card--condensed {
+  border-left-width: 3px;
+}
+.entry-card--condensed .entry-card-header {
+  gap: 6px;
+  padding: 2px 8px;
+  min-height: 26px;
+}
+.entry-card--condensed .entry-card-header .entry-label {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.entry-card--condensed .entry-card-header .card-action-btn {
+  padding: 1px 6px;
+  font-size: 0.625rem;
+}
+/* Opt-in stats on a condensed row: present, but scaled to the row. */
+.entry-card--condensed .entry-card-header .stats-badge {
+  font-size: 0.5625rem;
+  white-space: nowrap;
+}
+/* Tighter stack for condensed members — the gap that reads as breathing room
+   between full cards is most of the saved height at this size. */
+.folder-entries:has(.entry-card--condensed) {
+  gap: 3px;
+}
+
+/* ---- Nesting ----
+   Depth is capped (see MAX_FOLDER_DEPTH) because each level costs 21px of
+   indent and a crosstalk pane is only ~360px wide. */
+.folder-nest-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+.folder-nest-btn:hover { color: var(--text); background: var(--surface3); }
+
+.folder-nest-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 4px;
+  z-index: 20;
+  min-width: 160px;
+  max-width: 240px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.folder-nest-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.folder-nest-item:hover { background: var(--surface3); }
+.folder-nest-item--active { color: var(--blue); }
+.folder-nest-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.folder-nest-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+.folder-nest-empty {
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+/* A nested folder block sits inside its parent's indent rail, so it needs no
+   extra margin of its own — the rail already carries the offset. */
+.folder-entries > .folder-block { margin-left: 0; }
+
+/* ---- Per-entry "Move to folder" control (entry card footer) ---- */
+.move-to-folder { position: relative; }
+
+.move-to-folder-btn {
+  max-width: 140px;
+  padding: 3px 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.move-to-folder-btn:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.move-to-folder-btn:disabled { opacity: 0.4; cursor: default; }
+/* The folder colour rides on the border only — a pastel has nowhere near the
+   contrast to be label text, least of all on the light theme. */
+.move-to-folder-btn--filed {
+  border-color: var(--folder-color, var(--border2));
+  color: var(--text);
+}
+
+.move-to-folder-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 150px;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.move-to-folder-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.move-to-folder-item:hover { background: var(--surface3); }
+.move-to-folder-item--active { color: var(--blue); }
+.move-to-folder-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.move-to-folder-divider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
+.bulk-type-chip--new-folder {
+  border-left-color: var(--border2);
+  border-style: dashed;
+}
+/* Folder chips fill with a pastel on hover, so their label flips to dark ink
+   rather than the #fff the type chips use. */
+.bulk-type-chip--folder:hover { color: #1f2430; }
 
 /* ============================================================
    Entry Card
@@ -4535,6 +4920,7 @@ kbd {
 .rollback-footer {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   padding-top: 4px;
   border-top: 1px solid var(--border);
@@ -5875,3 +6261,139 @@ kbd {
   transition: color var(--transition), background var(--transition);
 }
 .storage-usage-refresh-btn:hover { color: var(--text); background: var(--border); }
+
+/* Count of selected-but-hidden entries on a tucked folder header. A shift+click
+   range runs straight through a collapsed folder, so this is what keeps those
+   entries from being invisible members of the selection. */
+.folder-selected-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Drag and drop ────────────────────────────────────────────────────────────
+   The insertion indicator is a pseudo-element line rather than a real element,
+   so showing it never changes layout — a shifting list under a moving cursor
+   makes a drop target impossible to aim at. */
+.entry-list-item { position: relative; }
+.entry-list-item--drop-before::before,
+.entry-list-item--drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--blue);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 3;
+}
+.entry-list-item--drop-before::before { top: -4px; }
+.entry-list-item--drop-after::after   { bottom: -4px; }
+
+/* What's in hand fades but keeps its space, so the list doesn't reflow mid-drag. */
+.entry-list-item--dragging,
+.folder-block--dragging {
+  opacity: 0.4;
+}
+
+/* Hovering a folder header means "into this folder". */
+.folder-header--drop-into,
+.folder-block--drop-into > .folder-header {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+
+.folder-drag-handle {
+  cursor: grab;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.folder-drag-handle:active { cursor: grabbing; }
+
+/* Run-off zone below the last row. Collapsed to nothing until a drag starts, so
+   it costs no space in normal use. */
+/* No height transition: the zone must be at its final size the instant a drag
+   starts, or you spend the first moments aiming at a target that is still
+   growing underneath the cursor. */
+.entry-list-tail {
+  height: 0;
+  flex-shrink: 0;
+}
+.entry-list-tail--armed {
+  height: 46px;
+  margin-top: 4px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.entry-list-tail--active {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 10%, transparent);
+}
+
+/* Checkbox rows in Settings, for options that are a set rather than a choice. */
+.settings-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+.settings-checkbox-row input[disabled] { cursor: not-allowed; }
+.settings-checkbox-row:has(input[disabled]) { cursor: not-allowed; opacity: 0.75; }
+.settings-checkbox-label { display: flex; flex-direction: column; gap: 1px; }
+.settings-checkbox-hint { font-size: 0.6875rem; color: var(--muted); }
+
+/* Add-an-entry-here button on a folder header. Matches the nest button's
+   metrics so the header's trailing controls read as one group. */
+.folder-add-entry-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+.folder-add-entry-btn:hover { color: var(--blue); background: var(--surface3); }
+
+/* "Before this folder" — a line across the header's leading edge, drawn as a
+   pseudo-element so showing it never changes layout. A drop target that resizes
+   the list shifts every row out from under the cursor mid-drag. */
+.folder-header--drop-before::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -3px;
+  height: 3px;
+  background: var(--blue);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
