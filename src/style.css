@@ -1049,23 +1049,24 @@ img.logo-icon {
   min-height: 0;
 }
 
-/* The whole strip is the button — it IS the window's right edge, full height,
-   so it never overlaps content and stays put at any size including full
-   screen. The corner resize handles sit above it (z-index 150) and keep
-   working where they overlap. */
+/* The column reserves the gutter so nothing can run underneath, but the
+   visible chrome is the original short pill centred in it — a full-height
+   painted strip read as too heavy. The button is the whole column (a generous
+   hit target); .lorebook-tab-inner carries the look.
+   The corner resize handles sit above it (z-index 150) and keep working.
+   Background stays transparent: .window-body and the entry list have none of
+   their own, so the gutter inherits --surface from .floating-window and blends
+   into the content beside it instead of reading as a stripe. */
 .lorebook-tab {
   flex: 0 0 auto;
   width: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface);
-  border-left: 1px solid var(--border);
-  color: var(--muted2);
-  transition: background var(--transition), color var(--transition);
+  background: transparent;
+  border: none;
+  padding: 0;
 }
-.lorebook-tab:hover { background: var(--surface3); color: var(--text); }
-.lorebook-tab--open { background: var(--surface3); color: var(--passive-agree); }
 .lorebook-tab:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
 
 .lorebook-tab-inner {
@@ -1073,7 +1074,18 @@ img.logo-icon {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  padding: 15px 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-right: none;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  color: var(--muted2);
+  transition: background var(--transition), color var(--transition);
 }
+.lorebook-tab:hover .lorebook-tab-inner { background: var(--surface3); color: var(--text); }
+.lorebook-tab--open .lorebook-tab-inner { background: var(--surface3); color: var(--passive-agree); }
+
 .lorebook-tab-arrow { font-size: 1rem; line-height: 1; }
 
 /* Upright glyphs stacked down the strip — vertical-rl alone lays the word on

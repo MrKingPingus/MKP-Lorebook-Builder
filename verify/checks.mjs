@@ -1691,14 +1691,27 @@ const SCENARIOS = [
     const tab = page.locator('.lorebook-tab');
     check('pull tab renders on the right edge', await tab.count(), 1);
 
-    // The tab IS the window's right edge: a full-height flex column, flush with
-    // the frame, so nothing can run underneath it at any window size.
+    // The tab is a full-height flex column so it reserves the gutter and
+    // nothing can run underneath it at any window size — but the visible
+    // chrome is a short pill centred in that column, not a painted strip.
     const tabBox = await tab.boundingBox();
+    const pill   = await page.locator('.lorebook-tab-inner').boundingBox();
     const frame  = await page.locator('.floating-window').boundingBox();
-    check('tab is flush with the window right edge',
-      Math.abs((tabBox.x + tabBox.width) - (frame.x + frame.width)) <= 2, true);
-    check('tab spans the full window height',
+    check('tab column spans the full window height',
       tabBox.height >= frame.height - 4, true);
+    check('the visible pill is a short chip, not a full-height strip',
+      pill.height < tabBox.height * 0.4, true);
+    check('pill is vertically centred in the column',
+      Math.abs((pill.y + pill.height / 2) - (tabBox.y + tabBox.height / 2)) <= 2, true);
+    check('pill is flush with the window right edge',
+      Math.abs((pill.x + pill.width) - (frame.x + frame.width)) <= 2, true);
+
+    const corners = await page.locator('.lorebook-tab-inner').evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { left: parseFloat(cs.borderTopLeftRadius), right: parseFloat(cs.borderTopRightRadius) };
+    });
+    check('pill is rounded on its left side only',
+      corners.left > 0 && corners.right === 0, true);
 
     const underneath = await page.evaluate(() => {
       const t = document.querySelector('.lorebook-tab').getBoundingClientRect();

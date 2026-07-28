@@ -12,7 +12,7 @@
   - **Window size has named presets** — Small, Medium, Large and Full height — plus **Custom…** if you want to type exact numbers. **Save as default** makes the current size the one **Reset to default** returns to.
   - **Reset all sizing** puts the window, entry headers and FAB back to normal. It deliberately **leaves your text size alone**, since that's an accessibility setting you may be relying on.
 
-- **A pull tab forms the right edge of the window and opens your lorebook list.** Click it and the window widens to fit a side panel — so the list appears *beside* your entries rather than on top of them, and nothing you were reading gets covered. Click it again to tuck it away. The tab runs the full height of the window as part of its frame, so it never sits over your entries or the scrollbar and stays put at any size, including full screen. Its label reads top-to-bottom with the letters upright.
+- **A pull tab forms the right edge of the window and opens your lorebook list.** Click it and the window widens to fit a side panel — so the list appears *beside* your entries rather than on top of them, and nothing you were reading gets covered. Click it again to tuck it away. It sits in its own gutter down the right side, so it never covers your entries or the scrollbar and stays put at any size, including full screen. Its label reads top-to-bottom with the letters upright.
 
 ### Adjustments
 
