@@ -7,6 +7,7 @@ import { useSettings }          from '../../hooks/use-settings.js';
 import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { StatusFooter }      from './StatusFooter.jsx';
+import { LorebookTab }       from './LorebookTab.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
@@ -94,6 +95,10 @@ export function FloatingWindow() {
               contents can't fit one line at 375px; mobile keeps these controls
               in Settings until its own UI pass. */}
           {!isMobile && <StatusFooter />}
+
+          {/* Pull tab for the Lorebooks side panel — desktop only, since the
+              panel is a full-screen overlay on mobile and reached from the menu. */}
+          {!isMobile && <LorebookTab />}
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}

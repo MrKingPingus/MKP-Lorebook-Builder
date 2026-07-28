@@ -3,7 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 // `launch` overrides let a scenario run somewhere other than the default
@@ -1384,7 +1384,7 @@ const SCENARIOS = [
     // Entry header height moved out of Settings into the footer's ⤢ Size menu
     // in Phase 13A — it is a sizing control, and the three that were scattered
     // across different Settings sections now share one home.
-    await setScaleOption(page, 'Entry header', 'Large');
+    await setScaleOption(page, 'Entry height', 'Large');
     await closeScaleMenu(page);
     await settle(page, 350);
 
@@ -1555,43 +1555,172 @@ const SCENARIOS = [
     await openScaleMenu(page);
     const rows = await page.locator('.scale-menu .scale-row[aria-haspopup] .scale-row-label').allInnerTexts();
     check('all four sizing rows present',
-      ['Window size', 'Text size', 'Entry header', 'FAB button size'].every((r) => rows.includes(r)), true);
+      ['Window size', 'Text size', 'Entry height', 'FAB button size'].every((r) => rows.includes(r)), true);
 
     // Menu opens upward — it hangs off a bar at the base of the window.
     const menuBox = await page.locator('.scale-menu').boundingBox();
     const footBox = await page.locator('.status-footer').boundingBox();
     check('sizing menu opens above the footer', menuBox.y + menuBox.height <= footBox.y + 2, true);
 
-    // A window preset actually resizes the window.
-    await setScaleOption(page, 'Window size', 'Small');
-    const win = await page.locator('.floating-window').boundingBox();
-    check('Small preset applies 480 width', Math.abs(win.width - 480) <= 3, true);
+    // "Reset to default" is the 1200x900 working size, not the old 760x620.
+    await setScaleOption(page, 'Window size', 'Reset to default');
+    const def = await page.locator('.floating-window').boundingBox();
+    check('default window is 1200x900',
+      Math.abs(def.width - 1200) <= 3 && Math.abs(def.height - 900) <= 3, true);
 
-    // Worst case: minimum window width at the largest text scale. The window
-    // clips overflow, so anything escaping its box is invisible and unclickable.
+    // Menu and flyouts are portalled to body specifically so a flyout can open
+    // RIGHT — .floating-window clips overflow, so an in-window flyout could
+    // only ever fold back left over the menu.
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'Text size' }).hover();
+    await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+    await settle(page, 250);
+    const menu2 = await page.locator('.scale-menu').boundingBox();
+    const fly   = await page.locator('.scale-flyout').boundingBox();
+    check('flyout opens to the right of the menu', fly.x >= menu2.x + menu2.width - 2, true);
+
+    const vp = page.viewportSize();
+    check('flyout stays inside the viewport',
+      fly.x >= 0 && fly.x + fly.width <= vp.width
+      && fly.y >= 0 && fly.y + fly.height <= vp.height, true);
+
+    // Hover grace: a quick pass must not unfurl a flyout (FLYOUT_OPEN_MS).
+    await closeScaleMenu(page);
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'FAB button size' }).hover();
+    await page.waitForTimeout(60);
+    check('a 60ms pass over a row does not open its flyout',
+      await page.locator('.scale-flyout').count(), 0);
+    await page.waitForTimeout(220);
+    check('the flyout opens once the pointer settles',
+      await page.locator('.scale-flyout').count(), 1);
+
+    // …and survives the gap between row and flyout (FLYOUT_CLOSE_MS).
+    await page.mouse.move(4, 4);
+    await page.waitForTimeout(80);
+    check('flyout survives briefly after the pointer leaves',
+      await page.locator('.scale-flyout').count(), 1);
+
     await setScaleOption(page, 'Text size', '125%');
     const scaled = await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim());
     check('125% reaches --ui-scale', parseFloat(scaled), 1.25);
-
     const grown = await page.locator('.status-footer').boundingBox();
     check('footer height grew with the text scale', grown.height > footBox.height, true);
 
+    await closeScaleMenu(page);
+    check('Escape closes the sizing menu', await page.locator('.scale-menu').count(), 0);
+  }, { width: 1900, height: 1100 }),
+
+  scenario('Sizing menu: custom size commits on Enter rather than clamping per keystroke', async (page, check) => {
+    await openBuilderWithFixture(page);
     await openScaleMenu(page);
     await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
     await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
-    await settle(page, 150);
-    const frame = await page.locator('.floating-window').boundingBox();
-    const fly   = await page.locator('.scale-flyout').boundingBox();
-    check('flyout stays inside the window at 480px / 125%',
-      fly.x >= frame.x - 0.5
-      && fly.x + fly.width  <= frame.x + frame.width  + 0.5
-      && fly.y >= frame.y - 0.5
-      && fly.y + fly.height <= frame.y + frame.height + 0.5, true);
+    await settle(page, 250);
+    if ((await page.locator('.flyout-custom').count()) === 0) {
+      await page.locator('.scale-flyout .flyout-item', { hasText: 'Custom' }).first().click();
+      await settle(page, 200);
+    }
 
-    await closeScaleMenu(page);
-    check('Escape closes the sizing menu', await page.locator('.scale-menu').count(), 0);
-  }),
+    // The field is bound to a draft, not to the clamped live size. Bound
+    // directly, the first digit of "1360" clamps back to the minimum before
+    // the second arrives and the value can never be typed.
+    const w = page.locator('.flyout-custom-field input').first();
+    await w.click();
+    await w.press('Control+a');
+    await w.type('1360', { delay: 40 });
+    check('field holds the typed value mid-edit', await w.inputValue(), '1360');
+
+    await w.press('Enter');
+    await settle(page, 350);
+    const sized = await page.locator('.floating-window').boundingBox();
+    check('Enter applies the typed width', Math.abs(sized.width - 1360) <= 3, true);
+
+    // Clamping still happens — on commit, not on keystroke.
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
+    await settle(page, 250);
+    const w2 = page.locator('.flyout-custom-field input').first();
+    await w2.click();
+    await w2.press('Control+a');
+    await w2.type('100', { delay: 30 });
+    await w2.press('Enter');
+    await settle(page, 300);
+    const clamped = await page.locator('.floating-window').boundingBox();
+    check('a below-minimum value clamps on commit', Math.abs(clamped.width - 480) <= 3, true);
+  }, { width: 1900, height: 1100 }),
+
+  scenario('Lorebook pull tab opens the side panel without covering the entry list', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    const tab = page.locator('.lorebook-tab');
+    check('pull tab renders on the right edge', await tab.count(), 1);
+
+    // Must sit inside the frame (overflow:hidden would clip it) and clear the
+    // 14px corner resize handles at both ends of that edge.
+    const tabBox = await tab.boundingBox();
+    const frame  = await page.locator('.floating-window').boundingBox();
+    const ne     = await page.locator('.resize-handle--ne').boundingBox();
+    const se     = await page.locator('.resize-handle--se').boundingBox();
+    check('tab is inside the window frame',
+      tabBox.x + tabBox.width <= frame.x + frame.width + 0.5, true);
+    check('tab clears both right-edge resize handles',
+      tabBox.y > ne.y + ne.height && tabBox.y + tabBox.height < se.y, true);
+
+    const widthBefore = frame.width;
+    await tab.click();
+    await page.locator('.menu-panel').waitFor({ timeout: 4000 });
+    await settle(page, 400);
+    check('tab opens the lorebook list', await page.locator('.switcher-list').count(), 1);
+
+    // The whole point: the window widens to fit the panel rather than the
+    // panel taking space from the entry list.
+    const opened = await page.locator('.floating-window').boundingBox();
+    check('window widened for the panel', opened.width > widthBefore, true);
+
+    await tab.click();
+    await settle(page, 400);
+    const closed = await page.locator('.floating-window').boundingBox();
+    check('clicking again closes it and restores the width',
+      Math.abs(closed.width - widthBefore) <= 3, true);
+  }, { width: 1700, height: 1000 }),
+
+  scenario('Default window size: legacy 760x620 migrates, a chosen size does not', async (page, check) => {
+    // Settings persist and win over the constant, so raising DEFAULT_WINDOW
+    // alone would never reach an existing user. Bootstrap rewrites the stored
+    // pair only when it still matches the old default exactly.
+    // Seeded as plain JSON — storage-service reads that fine (it only re-saves
+    // compressed), so there's no need to drive the UI to set it up.
+    async function defaultSizeAfterBoot(seed) {
+      await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+      await page.evaluate(([s]) => {
+        localStorage.setItem('mkp_settings', JSON.stringify(s));
+      }, [seed]);
+      await openBuilderWithFixture(page);
+      await settle(page, 400);
+      await openScaleMenu(page);
+      await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
+      await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+      await settle(page, 250);
+      await page.locator('.scale-flyout .flyout-item', { hasText: 'Reset to default' }).click();
+      await settle(page, 400);
+      const b = await page.locator('.floating-window').boundingBox();
+      return { width: Math.round(b.width), height: Math.round(b.height) };
+    }
+
+    const migrated = await defaultSizeAfterBoot({ defaultWindowWidth: 760, defaultWindowHeight: 620 });
+    check('untouched legacy default is raised to 1200x900',
+      Math.abs(migrated.width - 1200) <= 3 && Math.abs(migrated.height - 900) <= 3, true);
+
+    const chosen = await defaultSizeAfterBoot({ defaultWindowWidth: 1000, defaultWindowHeight: 800 });
+    check('a size the user chose survives untouched',
+      Math.abs(chosen.width - 1000) <= 3 && Math.abs(chosen.height - 800) <= 3, true);
+
+    const partial = await defaultSizeAfterBoot({ defaultWindowWidth: 760, defaultWindowHeight: 900 });
+    check('a partial match counts as chosen, not legacy',
+      Math.abs(partial.width - 760) <= 3 && Math.abs(partial.height - 900) <= 3, true);
+  }, { width: 1700, height: 1000 }),
 
   scenario('Status footer: absent on mobile', async (page, check) => {
     await openBuilderWithFixture(page);

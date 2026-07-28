@@ -858,38 +858,38 @@ img.logo-icon {
 /* §STATUS-FOOTER */
 
 /* Height scales with the text-size setting rather than being fixed. A hard
-   26px clips its own labels at 125%, and the control that fixes text size
+   height clips its own labels at 125%, and the control that fixes text size
    lives in this bar — so the failure would be self-inflicting.
    padding-right clears the 14px SE resize handle and the gold corner bracket. */
 .status-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: calc(26px * var(--ui-scale));
-  padding: 0 20px 0 12px;
+  gap: 12px;
+  height: calc(32px * var(--ui-scale));
+  padding: 0 22px 0 14px;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  font-size: 0.6875rem;
-  color: var(--muted);
+  font-size: 0.75rem;
+  color: var(--muted2);
   flex-shrink: 0;
   position: relative;
   /* Below .resize-handle's z-index 150 so the corner handles stay grabbable. */
   z-index: 6;
 }
 
-.status-left  { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.status-right { display: flex; align-items: center; gap: 4px; margin-left: auto; position: relative; }
+.status-left  { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.status-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 
 .status-save {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
-  color: var(--muted);
+  color: var(--muted2);
 }
 .status-save-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--border2);
   flex-shrink: 0;
@@ -901,42 +901,47 @@ img.logo-icon {
 .status-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  color: var(--muted);
-  font-size: inherit;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  color: var(--muted2);
+  font-size: 0.75rem;
   line-height: 1;
   white-space: nowrap;
-  transition: background var(--transition), color var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
-.status-item:hover { background: var(--surface3); color: var(--text); }
-.status-item--open { background: var(--surface3); color: var(--text); }
+.status-item:hover {
+  background: var(--surface3);
+  border-color: var(--border);
+  color: var(--text);
+}
+.status-item--open {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+.status-item-icon { font-size: 0.875rem; line-height: 1; }
 
-/* ── Sizing menu — opens upward from the footer ── */
-/* Widths scale with --ui-scale for the same reason the footer height does:
-   the labels are rem-sized, so a fixed min-width wraps them at 125%.
-   The budget is tight and deliberate — at the 480px minimum window width, menu
-   + flyout + gap must still fit inside .floating-window, which clips overflow.
-   196 + 150 + 5 = 351 → 439 at 125%, against 460 of usable width. */
+/* ── Sizing menu ──
+   Portalled to document.body and positioned `fixed` from the trigger's rect,
+   so it escapes .floating-window's overflow:hidden. That is what lets flyouts
+   open to the RIGHT instead of folding back over the menu. */
 .scale-menu {
-  position: absolute;
-  bottom: calc(100% + 7px);
-  right: 0;
-  min-width: calc(196px * var(--ui-scale));
+  min-width: calc(216px * var(--ui-scale));
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  padding: 5px;
-  z-index: 200;
+  padding: 6px;
+  z-index: 400;
 }
 .scale-menu-head {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 5px 9px 7px;
+  padding: 6px 10px 8px;
 }
 .scale-menu-divider { height: 1px; background: var(--border); margin: 5px 4px; }
 
@@ -944,49 +949,51 @@ img.logo-icon {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 10px;
-  padding: 7px 9px;
+  gap: 12px;
+  padding: 9px 10px;
   border-radius: var(--radius);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text);
   text-align: left;
   position: relative;
+  cursor: pointer;
   transition: background var(--transition);
 }
 .scale-row:hover,
 .scale-row--open { background: var(--surface3); }
 .scale-row:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
 .scale-row-label { flex: 1; white-space: nowrap; }
-.scale-row-value { color: var(--muted2); font-size: 0.6875rem; white-space: nowrap; }
-.scale-row-arrow { color: var(--muted); font-size: 0.5625rem; }
-.scale-row--reset { color: var(--muted2); cursor: pointer; }
-.scale-row-note { color: var(--muted); font-size: 0.625rem; }
+.scale-row-value { color: var(--muted2); font-size: 0.75rem; white-space: nowrap; }
+.scale-row-arrow { color: var(--muted); font-size: 0.625rem; }
+.scale-row--reset { color: var(--muted2); }
+.scale-row-note { color: var(--muted); font-size: 0.6875rem; }
 
-/* Flyouts open LEFT — the trigger is at the window's right edge and the
-   window can be as narrow as MIN_WINDOW_WIDTH (480px).
-   They also grow UPWARD (anchored bottom, not top): the whole menu hangs off a
-   bar at the base of the window, so a tall flyout anchored to its row's top
-   runs off the bottom edge and .floating-window clips it away. */
+/* Flyouts are portalled too and positioned in JS (right by default, flipped
+   left only when the viewport can't fit them — see ScaleMenu.jsx).
+   The fade is the visual half of the hover grace: FLYOUT_OPEN_MS keeps a
+   flyout from unfurling on a passing pointer, this keeps the arrival soft. */
 .scale-flyout {
-  position: absolute;
-  right: calc(100% + 5px);
-  bottom: -5px;
-  min-width: calc(150px * var(--ui-scale));
+  min-width: calc(164px * var(--ui-scale));
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  padding: 5px;
-  z-index: 201;
+  padding: 6px;
+  z-index: 401;
+  animation: scale-flyout-in 0.13s ease-out;
+}
+@keyframes scale-flyout-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 .flyout-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   width: 100%;
-  padding: 6px 9px;
+  padding: 8px 10px;
   border-radius: var(--radius);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text);
   text-align: left;
   transition: background var(--transition);
@@ -994,20 +1001,62 @@ img.logo-icon {
 .flyout-item:hover { background: var(--surface3); }
 .flyout-item:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
 .flyout-item--action { color: var(--muted2); }
-.flyout-check { width: 12px; flex-shrink: 0; color: var(--green); font-size: 0.6875rem; }
+.flyout-check { width: 13px; flex-shrink: 0; color: var(--green); font-size: 0.75rem; }
 .flyout-item-label { flex: 1; white-space: nowrap; }
-.flyout-item-detail { color: var(--muted); font-size: 0.625rem; }
+.flyout-item-detail { color: var(--muted); font-size: 0.6875rem; }
 
-.flyout-custom { display: flex; gap: 6px; padding: 4px 9px 7px; }
-.flyout-custom-field { display: flex; align-items: center; gap: 5px; font-size: 0.625rem; color: var(--muted); }
+.flyout-custom { display: flex; gap: 8px; padding: 5px 10px 8px; }
+.flyout-custom-field { display: flex; align-items: center; gap: 6px; font-size: 0.6875rem; color: var(--muted); }
 .flyout-custom-field input {
-  width: 62px;
+  width: 68px;
   background: var(--surface3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 3px 6px;
-  font-size: 0.6875rem;
+  padding: 5px 7px;
+  font-size: 0.75rem;
   color: var(--text);
+}
+.flyout-custom-field input:focus {
+  border-color: var(--focus-border);
+  outline: none;
+}
+
+/* ============================================================
+   Lorebook Pull Tab  (right edge — see LorebookTab.jsx)
+   ============================================================ */
+/* §LOREBOOK-TAB */
+
+/* Vertically centred and short so it clears the 14px corner resize handles at
+   both ends of the right edge. Sits flush INSIDE the right edge rather than
+   protruding — .floating-window sets overflow:hidden, so anything hanging off
+   the frame is simply clipped away. */
+.lorebook-tab {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 22px;
+  padding: 12px 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-right: none;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  color: var(--muted2);
+  z-index: 120;
+  transition: background var(--transition), color var(--transition);
+}
+.lorebook-tab:hover { background: var(--surface3); color: var(--text); }
+.lorebook-tab--open { background: var(--surface3); color: var(--passive-agree); }
+.lorebook-tab-arrow { font-size: 0.8125rem; line-height: 1; }
+.lorebook-tab-label {
+  writing-mode: vertical-rl;
+  font-size: 0.5625rem;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
 }
 
 /* ============================================================

@@ -30,9 +30,9 @@ export const ENTRY_HEADER_SIZE_OPTIONS = [
  * height" means the same thing on any display.
  */
 export const WINDOW_SIZE_PRESETS = [
-  { id: 'small',  label: 'Small',       width: 480,  height: 600 },
-  { id: 'medium', label: 'Medium',      width: 680,  height: 800 },
-  { id: 'large',  label: 'Large',       width: 900,  height: 900 },
+  { id: 'small',  label: 'Small',       width: 800,  height: 700 },
+  { id: 'medium', label: 'Medium',      width: 1200, height: 900, isDefault: true },
+  { id: 'large',  label: 'Large',       width: 1600, height: 1000 },
   { id: 'tall',   label: 'Full height', width: null, height: 'viewport' },
 ];
 
@@ -42,3 +42,17 @@ export const WINDOW_SIZE_PRESETS = [
  * so an exact comparison would drop the checkmark on a 1px rounding difference.
  */
 export const WINDOW_PRESET_TOLERANCE = 2;
+
+/**
+ * Hover grace for the sizing menu's flyouts. Without the open delay, dragging
+ * the pointer diagonally toward a flyout unfurls every row it crosses; without
+ * the close delay, the gap between a row and its flyout is enough to lose it.
+ * Deliberately longer on close than open — same asymmetry the FAB quick-menu
+ * uses (HOVER_OPEN_MS / HOVER_CLOSE_MS in Hotbar.jsx).
+ */
+export const FLYOUT_OPEN_MS  = 150;
+export const FLYOUT_CLOSE_MS = 320;
+
+/** Gap between a menu row and its flyout, and the viewport margin both respect. */
+export const FLYOUT_GAP_PX      = 6;
+export const FLYOUT_VIEWPORT_PAD = 8;

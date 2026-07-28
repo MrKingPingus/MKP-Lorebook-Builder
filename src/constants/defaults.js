@@ -3,7 +3,20 @@ import { DEFAULT_TYPE } from './entry-types.js';
 import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
 import { DEFAULT_COLLAPSE_STAGES } from './folders.js';
 
-export const DEFAULT_WINDOW = { width: 760, height: 620, x: 60, y: 40 };
+// 1200×900 is the "healthy" working size: wide enough for a comfortable entry
+// list and for the crosstalk two-pane split, tall enough to show a useful run
+// of entries. The old 760×620 predated both. Clamped to the viewport on apply,
+// so a smaller screen still gets a sane window.
+export const DEFAULT_WINDOW = { width: 1200, height: 900, x: 60, y: 40 };
+
+/**
+ * The pre-13A default. Settings persist, so raising DEFAULT_WINDOW alone would
+ * never reach anyone who had already launched the app — their stored 760×620
+ * would win forever. Bootstrap rewrites a stored value that still matches this
+ * exactly (i.e. the user never chose a size of their own) and leaves any
+ * customised value alone.
+ */
+export const LEGACY_DEFAULT_WINDOW = { width: 760, height: 620 };
 export const DEFAULT_WINDOW_FRACTION = 2 / 3;
 
 export const DEFAULT_SETTINGS = {

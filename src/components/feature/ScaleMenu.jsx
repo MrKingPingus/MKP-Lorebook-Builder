@@ -1,10 +1,17 @@
 // The footer's sizing menu — Pro-Q's bottom-right scaling control.
 //
-// Four rows, each with a flyout: window size, text size, entry header height,
-// FAB size. Every row shows its current value inline so the closed menu doubles
-// as a readout. Flyouts open to the LEFT because the trigger sits at the
-// window's right edge and the window can be as narrow as 480px.
-import { useState } from 'react';
+// Four rows, each with a flyout: window size, text size, entry height, FAB
+// size. Every row shows its current value inline so the closed menu doubles as
+// a readout.
+//
+// Menu and flyouts are portalled to document.body and positioned `fixed` from
+// their anchor's rect, the same way ExportMenu / LorebookSwitchPopover already
+// escape the window. That matters here: .floating-window sets overflow:hidden,
+// so an in-window flyout could only open LEFT (back over the menu) without
+// being clipped. Portalled, flyouts open RIGHT into the page and flip left only
+// when the viewport genuinely has no room.
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { createPortal }   from 'react-dom';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useWindowScale } from '../../hooks/use-window-scale.js';
 import { UI_SCALE_STEPS, DEFAULT_UI_SCALE } from '../../constants/accessibility.js';
@@ -14,31 +21,146 @@ import {
   FAB_CUSTOM_MAX,
   ENTRY_HEADER_SIZE_OPTIONS,
   WINDOW_SIZE_PRESETS,
+  FLYOUT_OPEN_MS,
+  FLYOUT_CLOSE_MS,
+  FLYOUT_GAP_PX,
+  FLYOUT_VIEWPORT_PAD,
 } from '../../constants/scaling.js';
 import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../../constants/limits.js';
 
-function ScaleRow({ id, label, value, openRow, setOpenRow, children }) {
+/**
+ * A number field that keeps its own draft while focused and only commits on
+ * blur or Enter.
+ *
+ * A controlled input bound straight to the clamped value is unusable: typing
+ * the first digit of "1200" into a field showing "480" produces 1, which
+ * clamps back to 480 before the second digit arrives, so the field snaps to a
+ * bound on every keystroke and the value can never be typed.
+ */
+function CommitNumberInput({ value, min, max, onCommit, ariaLabel }) {
+  const [draft, setDraft] = useState(String(value));
+  const [editing, setEditing] = useState(false);
+
+  // Track external changes (a preset click) unless the user is mid-edit.
+  useEffect(() => {
+    if (!editing) setDraft(String(value));
+  }, [value, editing]);
+
+  function commit() {
+    setEditing(false);
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed) || draft.trim() === '') {
+      setDraft(String(value));
+      return;
+    }
+    const clamped = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, Math.round(parsed)));
+    setDraft(String(clamped));
+    onCommit(clamped);
+  }
+
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={min}
+      max={max}
+      aria-label={ariaLabel}
+      value={draft}
+      onFocus={() => setEditing(true)}
+      onChange={(e) => { setEditing(true); setDraft(e.target.value); }}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter')  { e.preventDefault(); e.currentTarget.blur(); }
+        if (e.key === 'Escape') { e.preventDefault(); setEditing(false); setDraft(String(value)); e.currentTarget.blur(); }
+      }}
+    />
+  );
+}
+
+/** Portalled flyout, positioned from its row. Opens right; flips left only if the viewport can't fit it. */
+function Flyout({ anchorEl, onMouseEnter, onMouseLeave, children }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !anchorEl) return;
+    const row  = anchorEl.getBoundingClientRect();
+    const box  = el.getBoundingClientRect();
+    const padd = FLYOUT_VIEWPORT_PAD;
+
+    // Prefer right. Flip only when the flyout genuinely will not fit.
+    let left = row.right + FLYOUT_GAP_PX;
+    if (left + box.width > window.innerWidth - padd) {
+      const flipped = row.left - box.width - FLYOUT_GAP_PX;
+      left = flipped >= padd ? flipped : Math.max(padd, window.innerWidth - box.width - padd);
+    }
+
+    // Bottom-anchored: the menu hangs off a bar at the base of the window, so
+    // flyouts grow upward. Clamp to the viewport's top edge for tall ones.
+    let top = row.bottom - box.height;
+    if (top < padd) top = padd;
+    if (top + box.height > window.innerHeight - padd) {
+      top = Math.max(padd, window.innerHeight - box.height - padd);
+    }
+
+    setPos({ left, top });
+  }, [anchorEl, children]);
+
+  return createPortal(
+    <div
+      ref={ref}
+      className="scale-flyout"
+      role="menu"
+      style={{
+        position: 'fixed',
+        left: pos?.left ?? -9999,
+        top:  pos?.top  ?? -9999,
+        visibility: pos ? 'visible' : 'hidden',
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
+function ScaleRow({ id, label, value, openRow, onHoverRow, onLeaveRow, onToggleRow, children }) {
   const open = openRow === id;
+  const rowRef = useRef(null);
+
   return (
     <div
+      ref={rowRef}
       className={`scale-row${open ? ' scale-row--open' : ''}`}
       role="menuitem"
       tabIndex={0}
       aria-haspopup="true"
       aria-expanded={open}
-      onMouseEnter={() => setOpenRow(id)}
-      onFocus={() => setOpenRow(id)}
+      onMouseEnter={() => onHoverRow(id)}
+      onMouseLeave={onLeaveRow}
+      onFocus={() => onHoverRow(id, true)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          setOpenRow(open ? null : id);
+          onToggleRow(id);
         }
       }}
     >
       <span className="scale-row-label">{label}</span>
       <span className="scale-row-value">{value}</span>
-      <span className="scale-row-arrow" aria-hidden="true">◀</span>
-      {open && <div className="scale-flyout" role="menu">{children}</div>}
+      <span className="scale-row-arrow" aria-hidden="true">▶</span>
+      {open && (
+        <Flyout
+          anchorEl={rowRef.current}
+          onMouseEnter={() => onHoverRow(id, true)}
+          onMouseLeave={onLeaveRow}
+        >
+          {children}
+        </Flyout>
+      )}
     </div>
   );
 }
@@ -59,9 +181,11 @@ function FlyoutItem({ checked, detail, onClick, children }) {
   );
 }
 
-export function ScaleMenu() {
+export function ScaleMenu({ anchorRect }) {
   const [openRow, setOpenRow]       = useState(null);
   const [customOpen, setCustomOpen] = useState(false);
+  const openTimer  = useRef(null);
+  const closeTimer = useRef(null);
 
   const {
     uiScale, setUiScale,
@@ -74,6 +198,38 @@ export function ScaleMenu() {
     windowSize, activePresetId, applySize, applyPreset,
     resetWindow, saveCurrentAsDefault,
   } = useWindowScale();
+
+  useEffect(() => () => {
+    clearTimeout(openTimer.current);
+    clearTimeout(closeTimer.current);
+  }, []);
+
+  // Hover grace. Opening is delayed so a pointer travelling diagonally across
+  // the menu doesn't unfurl every row it crosses; closing is delayed longer so
+  // the gap between a row and its flyout doesn't drop it mid-reach.
+  function hoverRow(id, immediate = false) {
+    clearTimeout(closeTimer.current);
+    clearTimeout(openTimer.current);
+    if (immediate || openRow !== null) {
+      // Once a flyout is already showing, moving between rows should track the
+      // pointer without a second delay.
+      setOpenRow(id);
+      return;
+    }
+    openTimer.current = setTimeout(() => setOpenRow(id), FLYOUT_OPEN_MS);
+  }
+
+  function leaveRow() {
+    clearTimeout(openTimer.current);
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpenRow(null), FLYOUT_CLOSE_MS);
+  }
+
+  function toggleRow(id) {
+    clearTimeout(openTimer.current);
+    clearTimeout(closeTimer.current);
+    setOpenRow((cur) => (cur === id ? null : id));
+  }
 
   const scaleLabel  = UI_SCALE_STEPS.find((s) => s.value === uiScale)?.label ?? `${Math.round(uiScale * 100)}%`;
   const headerLabel = ENTRY_HEADER_SIZE_OPTIONS.find((o) => o.value === entryHeaderSize)?.label ?? 'Default';
@@ -94,16 +250,23 @@ export function ScaleMenu() {
     setOpenRow(null);
   }
 
-  return (
+  const rowProps = { openRow, onHoverRow: hoverRow, onLeaveRow: leaveRow, onToggleRow: toggleRow };
+
+  return createPortal(
     <div
       className="scale-menu"
       role="menu"
       aria-label="Sizing and scale"
-      onMouseLeave={() => setOpenRow(null)}
+      style={anchorRect ? {
+        position: 'fixed',
+        bottom: window.innerHeight - anchorRect.top + FLYOUT_GAP_PX,
+        right:  Math.max(FLYOUT_VIEWPORT_PAD, window.innerWidth - anchorRect.right),
+      } : undefined}
+      onMouseLeave={leaveRow}
     >
       <div className="scale-menu-head">Sizing &amp; scale</div>
 
-      <ScaleRow id="window" label="Window size" value={windowLabel} openRow={openRow} setOpenRow={setOpenRow}>
+      <ScaleRow id="window" label="Window size" value={windowLabel} {...rowProps}>
         {WINDOW_SIZE_PRESETS.map((preset) => (
           <FlyoutItem
             key={preset.id}
@@ -131,20 +294,20 @@ export function ScaleMenu() {
           <div className="flyout-custom">
             <label className="flyout-custom-field">
               <span>W</span>
-              <input
-                type="number"
-                min={MIN_WINDOW_WIDTH}
+              <CommitNumberInput
+                ariaLabel="Window width"
                 value={windowSize.width}
-                onChange={(e) => applySize(Number(e.target.value), windowSize.height)}
+                min={MIN_WINDOW_WIDTH}
+                onCommit={(w) => applySize(w, windowSize.height)}
               />
             </label>
             <label className="flyout-custom-field">
               <span>H</span>
-              <input
-                type="number"
-                min={MIN_WINDOW_HEIGHT}
+              <CommitNumberInput
+                ariaLabel="Window height"
                 value={windowSize.height}
-                onChange={(e) => applySize(windowSize.width, Number(e.target.value))}
+                min={MIN_WINDOW_HEIGHT}
+                onCommit={(h) => applySize(windowSize.width, h)}
               />
             </label>
           </div>
@@ -160,7 +323,7 @@ export function ScaleMenu() {
         </button>
       </ScaleRow>
 
-      <ScaleRow id="text" label="Text size" value={scaleLabel} openRow={openRow} setOpenRow={setOpenRow}>
+      <ScaleRow id="text" label="Text size" value={scaleLabel} {...rowProps}>
         {UI_SCALE_STEPS.map((step) => (
           <FlyoutItem
             key={step.value}
@@ -173,7 +336,7 @@ export function ScaleMenu() {
         ))}
       </ScaleRow>
 
-      <ScaleRow id="header" label="Entry header" value={headerLabel} openRow={openRow} setOpenRow={setOpenRow}>
+      <ScaleRow id="header" label="Entry height" value={headerLabel} {...rowProps}>
         {ENTRY_HEADER_SIZE_OPTIONS.map((option) => (
           <FlyoutItem
             key={option.value}
@@ -185,7 +348,7 @@ export function ScaleMenu() {
         ))}
       </ScaleRow>
 
-      <ScaleRow id="fab" label="FAB button size" value={fabLabel} openRow={openRow} setOpenRow={setOpenRow}>
+      <ScaleRow id="fab" label="FAB button size" value={fabLabel} {...rowProps}>
         {FAB_SIZE_OPTIONS.map((option) => (
           <FlyoutItem
             key={option.value}
@@ -200,14 +363,12 @@ export function ScaleMenu() {
           <div className="flyout-custom">
             <label className="flyout-custom-field">
               <span>px</span>
-              <input
-                type="number"
+              <CommitNumberInput
+                ariaLabel="FAB size in pixels"
+                value={fabCustomSize}
                 min={FAB_CUSTOM_MIN}
                 max={FAB_CUSTOM_MAX}
-                value={fabCustomSize}
-                onChange={(e) => setFabCustomSize(
-                  Math.min(FAB_CUSTOM_MAX, Math.max(FAB_CUSTOM_MIN, Number(e.target.value))),
-                )}
+                onCommit={setFabCustomSize}
               />
             </label>
           </div>
@@ -220,6 +381,7 @@ export function ScaleMenu() {
         <span className="scale-row-label">Reset all sizing</span>
         <span className="scale-row-note">Text size kept</span>
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }
