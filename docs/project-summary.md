@@ -1,6 +1,6 @@
 # MKP Lorebook Builder — Project Summary
 
-> This file is for pasting into a regular Claude chat to provide project context when planning features. Last updated: 2026-04-13.
+> This file is for pasting into a regular Claude chat to provide project context when planning features. Last updated: 2026-07-27.
 
 ## What It Is
 
@@ -15,8 +15,9 @@ The app has one main interface: a **floating window** (dark themed, with golden 
 - **Header bar** — left to right: logo (book emoji + "LOREBOOK BUILDER"), editable lorebook name (desktop), hamburger menu button, close button (desktop). No minimize button — the close button returns to the landing page.
 - **Lorebook switcher** — accessed via the menu dropdown under "Lorebooks"; opens a dropdown listing saved lorebooks with timestamps, inline rename (double-click), delete with confirmation, and a "+ New lorebook" button
 - **Search bar** — has a mode dropdown (Search / Find-Replace / Select), a sort button (Default, A-Z, Z-A, Last Modified), a match counter, and a results dropdown with location tags. Find-Replace and Select modes swap the bar for different UIs.
-- **Type filter pills** — "All" pill, one pill per entry type, a "Group by type" toggle pill, and an "Expand All / Collapse All" button (desktop only)
-- **Entry cards** — the main content; desktop collapsed shows a drag handle, colored type dot, entry label (#N: name), stats badge, expand/collapse button, and remove button; expanded adds name/type fields, trigger chips, suggestions tray, and description textarea; mobile has a different compact layout
+- **Type filter pills** — "All" pill, one pill per entry type, a "Group by type" toggle pill, an "Expand All / Collapse All" button (desktop only), and — once the book has folders — a "Folder ▾" filter, "Collapse Folders" toggle and "＋ Folder" button
+- **Folders** — a builder-only organisation layer that groups entries in the list. Coloured, renameable, nestable three levels deep, and **never exported**: they are stripped from every export format, so filing entries can't change what an AI sees. A folder header carries a collapse button (open / shut, with an optional "condensed" middle size), a colour swatch, the name, a count of everything inside, and buttons to add an entry, re-nest, or delete. Entries are filed by drag, by a per-card "Move to folder" button, or by a Select-mode bulk move
+- **Entry cards** — the main content; drag the handle to reorder, to move a card in or out of a folder, or (with several selected) to move the whole selection at once. Desktop collapsed shows a drag handle, colored type dot, entry label (#N: name), stats badge, expand/collapse button, and remove button; expanded adds name/type fields, trigger chips, suggestions tray, and description textarea; mobile has a different compact layout
 - **Hotbar** — bottom toolbar with 3 configurable action slots on the left, a central "+" button for adding a new entry, and 3 configurable action slots on the right
 - **Menu panel** — opened via the hamburger button dropdown; contains three sections: Lorebooks, Import/Export, and Settings (one visible at a time)
 - **Landing page** — shown when no lorebook is open; has a logo, title, tagline, "Start Building" button, template download buttons (TXT/DOCX), a "How It Works" guide, and a "Tips" section with a GitHub readme link
@@ -28,6 +29,13 @@ The app has one main interface: a **floating window** (dark themed, with golden 
 - Item (blue) — objects, weapons, artifacts
 - Plot Event (red) — story events, quests, arcs
 - Other (teal) — anything that doesn't fit the above
+
+### Selecting and dragging
+
+- **Select mode** (search-bar dropdown, or `Alt+S`) turns clicks into selection and reveals a bulk action bar
+- **Shift+click** an entry starts a selection without entering Select mode first, and a second Shift+click takes the range between them; **Ctrl/Cmd+click** removes one, **Ctrl+Shift+click** removes a range. Shift+click a folder header takes everything inside it
+- `Alt+V` selects everything currently visible (honouring search and filters); `Alt+D` clears the selection
+- **Dragging** shows an insertion line and commits once on release, so a whole drag is one undo step. Where you drop decides the parent: between rows inside a folder joins it, between top-level rows leaves it, onto a header files into it, past the end unfiles. Dragging is disabled on mobile and under any non-default sort
 
 ## Tech Stack
 
