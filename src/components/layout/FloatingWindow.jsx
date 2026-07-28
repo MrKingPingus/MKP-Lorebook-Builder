@@ -6,6 +6,7 @@ import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
+import { StatusFooter }      from './StatusFooter.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
@@ -87,6 +88,12 @@ export function FloatingWindow() {
           </div>
 
           <Hotbar />
+
+          {/* Status footer — desktop only. Mobile already spends ~490px of the
+              viewport on chrome before the first entry renders, and this bar's
+              contents can't fit one line at 375px; mobile keeps these controls
+              in Settings until its own UI pass. */}
+          {!isMobile && <StatusFooter />}
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}

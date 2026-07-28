@@ -7,6 +7,7 @@
 - `storage-keys.js` — all localStorage key strings
 - `defaults.js` — default shapes for new entries, lorebooks, settings, window size
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
+- `scaling.js` — the option sets behind the footer's `⤢ Size` menu: `FAB_SIZES` (the px map `Hotbar.jsx` renders from), `FAB_SIZE_OPTIONS`, `ENTRY_HEADER_SIZE_OPTIONS`, and `WINDOW_SIZE_PRESETS` (`width: null` keeps the current width, `height: 'viewport'` resolves at apply time). `WINDOW_PRESET_TOLERANCE` is the px slop that keeps a preset's checkmark lit after re-centring rounds a dimension
 - `drag.js` — drop-target vocabulary (`DROP_KINDS`, `DROP_EDGES`, `DRAG_KINDS`), the spring-open delay for tucked folders, and the auto-scroll zone/speed
 - `selection.js` — modifier+click semantics (`SELECTION_ACTIONS`) and the gesture list the keyboard help overlay renders (`SELECTION_GESTURES`), kept beside the behaviour they describe so the two can't drift
 - `sort-modes.js` — which sort modes suppress a grouping layer (`group-by-type`, folders) because they impose their own ordering, plus `folderOrderFor()` — how folder rows order themselves against sibling entries (`position` by default, `name-asc`/`name-desc` under the alpha sorts)

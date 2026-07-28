@@ -138,6 +138,38 @@ export async function openSettingsSection(page, title) {
   return section;
 }
 
+// Open the status footer's ⤢ Size menu (desktop only). No-op if already open.
+// Phase 13A moved window size, entry header height and FAB size out of Settings
+// and into this menu, so scenarios that used to drive a Settings <select> for
+// any of those come through here instead.
+export async function openScaleMenu(page) {
+  if ((await page.locator('.scale-menu').count()) > 0) return;
+  await page.locator('.status-footer .status-item').first().click();
+  await page.locator('.scale-menu').waitFor({ timeout: 4000 });
+}
+
+// Pick a value from one of the ⤢ Size menu's flyouts, e.g.
+//   setScaleOption(page, 'Entry header', 'Large')
+//
+// `rowLabel` is matched against the four flyout-bearing rows only — the
+// "Reset all sizing" row carries a note reading "Text size kept", so an
+// unqualified hasText match on "Text size" hits two rows.
+export async function setScaleOption(page, rowLabel, optionLabel) {
+  await openScaleMenu(page);
+  await page.locator('.scale-row[aria-haspopup]', { hasText: rowLabel }).hover();
+  await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+  await settle(page, 120);
+  await page.locator('.scale-flyout .flyout-item', { hasText: optionLabel }).first().click();
+  await settle(page, 250);
+}
+
+// Close the ⤢ Size menu the way a user would.
+export async function closeScaleMenu(page) {
+  if ((await page.locator('.scale-menu').count()) === 0) return;
+  await page.keyboard.press('Escape');
+  await settle(page, 200);
+}
+
 // Click entry cards to select them, in select mode.
 //
 // Always clicks the card's `.entry-label`, never the card's own centre: in

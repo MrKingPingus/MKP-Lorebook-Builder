@@ -3,21 +3,24 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
-function scenario(name, fn) {
-  return { name, fn };
+// `launch` overrides let a scenario run somewhere other than the default
+// desktop viewport — e.g. `{ mobile: true, width: 390, height: 780 }` for the
+// checks that assert a desktop-only surface is absent on a phone.
+function scenario(name, fn, launchOptions = {}) {
+  return { name, fn, launchOptions };
 }
 
-async function runScenario({ name, fn }) {
+async function runScenario({ name, fn, launchOptions = {} }) {
   const results = [];
   const check = (label, got, want) => {
     const ok = got === want;
     results.push(ok);
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}: ${JSON.stringify(got)} (expect ${JSON.stringify(want)})`);
   };
-  const { browser, page } = await launch();
+  const { browser, page } = await launch(launchOptions);
   console.log(`\n▶ ${name}`);
   try {
     await fn(page, check);
@@ -1378,14 +1381,11 @@ const SCENARIOS = [
     const header = page.locator('.folder-header').first();
     const before = (await header.boundingBox()).height;
 
-    await openSettings(page);
-    // "Entry header height" lives under Editing & Entries, not Window & Layout —
-    // one of the placements the Settings-reorganisation note in plan.md covers.
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    await editing.locator('.settings-label', { hasText: 'Entry header height' })
-      .locator('select').selectOption('large');
-    await settle(page, 300);
-    await page.locator('.menu-panel-close').first().click();
+    // Entry header height moved out of Settings into the footer's ⤢ Size menu
+    // in Phase 13A — it is a sizing control, and the three that were scattered
+    // across different Settings sections now share one home.
+    await setScaleOption(page, 'Entry header', 'Large');
+    await closeScaleMenu(page);
     await settle(page, 350);
 
     const after = (await header.boundingBox()).height;
@@ -1534,6 +1534,70 @@ const SCENARIOS = [
     check('marker present on 10 reference entries',
       await page.locator('.reference-entry-card').count(), 10);
   }),
+
+  scenario('Status footer: save readout, sizing menu, and worst-case geometry', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    check('footer renders on desktop', await page.locator('.status-footer').count(), 1);
+    check('save readout has text',
+      (await page.locator('.status-save').innerText()).trim().length > 0, true);
+
+    // The footer sits along the bottom edge, where the SE resize handle lives.
+    // If the bar wins the hit test, the corner stops resizing the window.
+    const se = await page.locator('.resize-handle--se').boundingBox();
+    const atCorner = await page.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y);
+      return el ? el.className.toString() : '';
+    }, [se.x + se.width / 2, se.y + se.height / 2]);
+    check('SE resize handle still wins the hit test over the footer',
+      atCorner.includes('resize-handle'), true);
+
+    await openScaleMenu(page);
+    const rows = await page.locator('.scale-menu .scale-row[aria-haspopup] .scale-row-label').allInnerTexts();
+    check('all four sizing rows present',
+      ['Window size', 'Text size', 'Entry header', 'FAB button size'].every((r) => rows.includes(r)), true);
+
+    // Menu opens upward — it hangs off a bar at the base of the window.
+    const menuBox = await page.locator('.scale-menu').boundingBox();
+    const footBox = await page.locator('.status-footer').boundingBox();
+    check('sizing menu opens above the footer', menuBox.y + menuBox.height <= footBox.y + 2, true);
+
+    // A window preset actually resizes the window.
+    await setScaleOption(page, 'Window size', 'Small');
+    const win = await page.locator('.floating-window').boundingBox();
+    check('Small preset applies 480 width', Math.abs(win.width - 480) <= 3, true);
+
+    // Worst case: minimum window width at the largest text scale. The window
+    // clips overflow, so anything escaping its box is invisible and unclickable.
+    await setScaleOption(page, 'Text size', '125%');
+    const scaled = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim());
+    check('125% reaches --ui-scale', parseFloat(scaled), 1.25);
+
+    const grown = await page.locator('.status-footer').boundingBox();
+    check('footer height grew with the text scale', grown.height > footBox.height, true);
+
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
+    await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+    await settle(page, 150);
+    const frame = await page.locator('.floating-window').boundingBox();
+    const fly   = await page.locator('.scale-flyout').boundingBox();
+    check('flyout stays inside the window at 480px / 125%',
+      fly.x >= frame.x - 0.5
+      && fly.x + fly.width  <= frame.x + frame.width  + 0.5
+      && fly.y >= frame.y - 0.5
+      && fly.y + fly.height <= frame.y + frame.height + 0.5, true);
+
+    await closeScaleMenu(page);
+    check('Escape closes the sizing menu', await page.locator('.scale-menu').count(), 0);
+  }),
+
+  scenario('Status footer: absent on mobile', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    check('no status footer on mobile', await page.locator('.status-footer').count(), 0);
+  }, { mobile: true, width: 390, height: 780 }),
 ];
 
 // A full run launches a fresh browser per scenario, so it costs minutes. When

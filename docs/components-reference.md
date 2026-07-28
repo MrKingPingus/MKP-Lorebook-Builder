@@ -21,6 +21,10 @@ Use this to identify which file to look at based on what's visible on screen.
 | The floating window itself (dark bordered frame with golden corners) | `src/components/layout/FloatingWindow.jsx` |
 | The top bar with lorebook name, minimize, and close buttons | `src/components/layout/WindowHeader.jsx` |
 | The bottom toolbar with action icons (add entry, undo, redo, etc.) | `src/components/layout/Hotbar.jsx` |
+| The thin status bar below the hotbar (save state, `⤢ Size`) — desktop only. Holds app state and view controls; content actions belong in the hotbar | `src/components/layout/StatusFooter.jsx` |
+| The `⤢ Size` menu and its flyouts (window size, text size, entry header, FAB size) | `src/components/feature/ScaleMenu.jsx` |
+| Window preset maths — apply a named size, report which one is live, re-centre and clamp | `src/hooks/use-window-scale.js` |
+| The footer's "Saved / 4m ago" readout, derived from `ui-store.savedAt` | `src/hooks/use-save-status.js` |
 | The hamburger menu button (top-left of header) | `src/components/layout/MenuButton.jsx` |
 | The slide-out menu panel (import, export, settings, etc.) | `src/components/layout/MenuPanel.jsx` |
 | The resize handles on window edges/corners | `src/components/layout/ResizeHandles.jsx` |

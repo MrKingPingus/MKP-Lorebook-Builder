@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-07-28
+
+### Additions
+
+- **A new status bar runs along the very bottom of the window.** It's deliberately thin and sits below the hotbar. The hotbar stays what it always was — things you *do* to your lorebook. The new bar is for things that are simply *true* about the app: whether your work is saved, and how big everything is drawn. Desktop only for now; the phone layout gets its own pass later.
+- **Your work now tells you it's saved.** The bottom-left corner reads **Saved** the moment a save lands, then ages into **Saved 4m ago** so you can tell at a glance that nothing is stuck. Hover it for the exact time.
+- **One place for every size setting — the `⤢ Size` button in the bottom-right corner.** Window size, text size, entry header height and FAB button size all live here now, each showing its current value right in the menu so you can read your settings without opening anything.
+  - **Window size has named presets** — Small, Medium, Large and Full height — plus **Custom…** if you want to type exact numbers. **Save as default** makes the current size the one **Reset to default** returns to.
+  - **Reset all sizing** puts the window, entry headers and FAB back to normal. It deliberately **leaves your text size alone**, since that's an accessibility setting you may be relying on.
+
+### Adjustments
+
+- **Three settings have moved out of Settings.** Window size, entry header height and FAB button size used to be scattered across three different Settings sections; they live in the `⤢ Size` menu now. Same settings, same behaviour, one findable place.
+- **Text size is the exception — it's in both places.** You'll find it in the `⤢ Size` menu for convenience, but it also stays where it was under Settings → Accessibility, because that's where people who rely on it go looking. Change it in either place and the other follows.
+
+---
+
 ## 2026-07-27
 
 ### Additions

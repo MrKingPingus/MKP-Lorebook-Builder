@@ -16,8 +16,6 @@ import {
   normalizeCollapseStages,
 } from '../../constants/folders.js';
 import {
-  MIN_WINDOW_WIDTH,
-  MIN_WINDOW_HEIGHT,
   ROLLBACK_SNAPSHOT_WARN,
   ROLLBACK_MAX_CUSTOM,
   STORAGE_QUOTA_PROFILE_WEBKIT,
@@ -45,29 +43,18 @@ function SettingsSection({ id, title, openSet, toggleSection, children }) {
 export function SettingsPanel() {
   const {
     counterTiers,
-    defaultWindowWidth,
-    defaultWindowHeight,
     tieredCounterEnabled,
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
     hotbarSlots,
-    entryHeaderSize,
-    fabSize,
-    fabCustomSize,
     fabQuickMenuEnabled,
-    resetWindow,
     setCounterTiers,
-    setDefaultWindowWidth,
-    setDefaultWindowHeight,
     setTieredCounterEnabled,
     setHideSuggestionsByDefault,
     setHideEntryStats,
     setMarkPrivateEntries,
     setHotbarSlots,
-    setEntryHeaderSize,
-    setFabSize,
-    setFabCustomSize,
     setFabQuickMenuEnabled,
     rollbackDefaultEnabled,
     setRollbackDefaultEnabled,
@@ -322,24 +309,6 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        {/* Entry card header height (desktop) */}
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Entry header height</span>
-            <select
-              value={entryHeaderSize}
-              onChange={(e) => setEntryHeaderSize(e.target.value)}
-            >
-              <option value="default">Default</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-          </label>
-          <div className="settings-hint">
-            Taller entry rows on desktop, so a long lorebook is easier to scan when many entries at once feels overwhelming.
-          </div>
-        </div>
-
       </SettingsSection>
 
       {/* ════════════════════════════════════════════════════════════
@@ -465,59 +434,6 @@ export function SettingsPanel() {
           <div className="settings-hint">
             When on, the menu panel stays open after a successful import. On mobile the menu always closes (full-screen overlay).
           </div>
-        </div>
-
-        <div className="settings-group">
-          <div className="settings-label">Default window size</div>
-          <div className="settings-row">
-            <label>
-              Width
-              <input
-                type="number"
-                min={MIN_WINDOW_WIDTH}
-                value={defaultWindowWidth}
-                onChange={(e) => setDefaultWindowWidth(Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Height
-              <input
-                type="number"
-                min={MIN_WINDOW_HEIGHT}
-                value={defaultWindowHeight}
-                onChange={(e) => setDefaultWindowHeight(Number(e.target.value))}
-              />
-            </label>
-          </div>
-          <button className="settings-reset-btn" onClick={resetWindow}>
-            Reset window to default size
-          </button>
-        </div>
-
-        <div className="settings-group">
-          <div className="settings-label">FAB button size</div>
-          <select
-            className="hotbar-slot-select"
-            value={fabSize}
-            onChange={(e) => setFabSize(e.target.value)}
-          >
-            <option value="small">Small (44px)</option>
-            <option value="medium">Medium (54px)</option>
-            <option value="large">Large (64px)</option>
-            <option value="custom">Custom</option>
-          </select>
-          {fabSize === 'custom' && (
-            <div className="fab-custom-size-row">
-              <input
-                type="number"
-                min={32}
-                max={100}
-                value={fabCustomSize}
-                onChange={(e) => setFabCustomSize(Number(e.target.value))}
-              />
-              <span className="fab-custom-size-label">px</span>
-            </div>
-          )}
         </div>
 
         <div className="settings-group">

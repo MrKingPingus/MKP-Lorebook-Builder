@@ -853,6 +853,164 @@ img.logo-icon {
 }
 
 /* ============================================================
+   Status Footer  (desktop only — see StatusFooter.jsx)
+   ============================================================ */
+/* §STATUS-FOOTER */
+
+/* Height scales with the text-size setting rather than being fixed. A hard
+   26px clips its own labels at 125%, and the control that fixes text size
+   lives in this bar — so the failure would be self-inflicting.
+   padding-right clears the 14px SE resize handle and the gold corner bracket. */
+.status-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: calc(26px * var(--ui-scale));
+  padding: 0 20px 0 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  position: relative;
+  /* Below .resize-handle's z-index 150 so the corner handles stay grabbable. */
+  z-index: 6;
+}
+
+.status-left  { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.status-right { display: flex; align-items: center; gap: 4px; margin-left: auto; position: relative; }
+
+.status-save {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.status-save-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+.status-save--fresh { color: var(--green); }
+.status-save--fresh .status-save-dot { background: var(--green); }
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: inherit;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.status-item:hover { background: var(--surface3); color: var(--text); }
+.status-item--open { background: var(--surface3); color: var(--text); }
+
+/* ── Sizing menu — opens upward from the footer ── */
+/* Widths scale with --ui-scale for the same reason the footer height does:
+   the labels are rem-sized, so a fixed min-width wraps them at 125%.
+   The budget is tight and deliberate — at the 480px minimum window width, menu
+   + flyout + gap must still fit inside .floating-window, which clips overflow.
+   196 + 150 + 5 = 351 → 439 at 125%, against 460 of usable width. */
+.scale-menu {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  right: 0;
+  min-width: calc(196px * var(--ui-scale));
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 5px;
+  z-index: 200;
+}
+.scale-menu-head {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 5px 9px 7px;
+}
+.scale-menu-divider { height: 1px; background: var(--border); margin: 5px 4px; }
+
+.scale-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+  text-align: left;
+  position: relative;
+  transition: background var(--transition);
+}
+.scale-row:hover,
+.scale-row--open { background: var(--surface3); }
+.scale-row:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+.scale-row-label { flex: 1; white-space: nowrap; }
+.scale-row-value { color: var(--muted2); font-size: 0.6875rem; white-space: nowrap; }
+.scale-row-arrow { color: var(--muted); font-size: 0.5625rem; }
+.scale-row--reset { color: var(--muted2); cursor: pointer; }
+.scale-row-note { color: var(--muted); font-size: 0.625rem; }
+
+/* Flyouts open LEFT — the trigger is at the window's right edge and the
+   window can be as narrow as MIN_WINDOW_WIDTH (480px).
+   They also grow UPWARD (anchored bottom, not top): the whole menu hangs off a
+   bar at the base of the window, so a tall flyout anchored to its row's top
+   runs off the bottom edge and .floating-window clips it away. */
+.scale-flyout {
+  position: absolute;
+  right: calc(100% + 5px);
+  bottom: -5px;
+  min-width: calc(150px * var(--ui-scale));
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 5px;
+  z-index: 201;
+}
+.flyout-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--transition);
+}
+.flyout-item:hover { background: var(--surface3); }
+.flyout-item:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+.flyout-item--action { color: var(--muted2); }
+.flyout-check { width: 12px; flex-shrink: 0; color: var(--green); font-size: 0.6875rem; }
+.flyout-item-label { flex: 1; white-space: nowrap; }
+.flyout-item-detail { color: var(--muted); font-size: 0.625rem; }
+
+.flyout-custom { display: flex; gap: 6px; padding: 4px 9px 7px; }
+.flyout-custom-field { display: flex; align-items: center; gap: 5px; font-size: 0.625rem; color: var(--muted); }
+.flyout-custom-field input {
+  width: 62px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3px 6px;
+  font-size: 0.6875rem;
+  color: var(--text);
+}
+
+/* ============================================================
    Resize Handles
    ============================================================ */
 /* §RESIZE-HANDLES */
