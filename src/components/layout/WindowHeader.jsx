@@ -4,33 +4,29 @@ import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
-import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { FeedbackLinks }        from './FeedbackLinks.jsx';
 import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
-import { LorebookSwitchPopover }  from '../feature/LorebookSwitchPopover.jsx';
+import { TitleMenu }              from '../feature/TitleMenu.jsx';
 import logoUrl from '../../assets/Sacabambaspis2.png';
 
 export function WindowHeader() {
   const isMobile                           = useMobile();
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
-  const { crosstalkEnabled }               = useReferenceLorebook();
   const { funnyFishEnabled }               = useSettings();
   const setShowLander                      = useUi((s) => s.setShowLander);
   const hiddenBtnRef                       = useRef(null);
   const [hiddenOpen, setHiddenOpen]        = useState(false);
   const [hiddenAnchor, setHiddenAnchor]    = useState(null);
-  const switchBtnRef                       = useRef(null);
-  const [switchOpen, setSwitchOpen]        = useState(false);
-  const [switchAnchor, setSwitchAnchor]    = useState(null);
+  const titleBtnRef                        = useRef(null);
+  const [titleOpen, setTitleOpen]          = useState(false);
+  const [titleAnchor, setTitleAnchor]      = useState(null);
+  const [renaming, setRenaming]            = useState(false);
 
   const hiddenEntries = activeLorebook?.entries.filter((e) => e.hiddenFromExport) ?? [];
-  // Only surface the switch affordance in solo mode on desktop — crosstalk
-  // has per-pane pickers and mobile routes switching through the menu panel.
-  const showSwitchButton = !crosstalkEnabled && !isMobile;
 
   function toggleHidden() {
     if (hiddenOpen) {
@@ -41,13 +37,21 @@ export function WindowHeader() {
     setHiddenOpen(true);
   }
 
-  function toggleSwitch() {
-    if (switchOpen) {
-      setSwitchOpen(false);
+  function toggleTitleMenu() {
+    if (titleOpen) {
+      setTitleOpen(false);
       return;
     }
-    setSwitchAnchor(switchBtnRef.current?.getBoundingClientRect() ?? null);
-    setSwitchOpen(true);
+    setTitleAnchor(titleBtnRef.current?.getBoundingClientRect() ?? null);
+    setTitleOpen(true);
+  }
+
+  // Double-click renames in place. The first of the two clicks has already
+  // opened the menu, so close it on the way into the input — otherwise the
+  // menu would sit over the field being typed into.
+  function startRename() {
+    setTitleOpen(false);
+    setRenaming(true);
   }
 
   return (
@@ -64,21 +68,43 @@ export function WindowHeader() {
         <span className="logo-text">LOREBOOK BUILDER</span>
       </div>
 
-      {/* Lorebook name — desktop only; on mobile it lives in the build panel.
-          The input is absolutely centred in the window (see CSS); the count and
-          switch live in an aside anchored to the input's right edge so they
-          never shift the input off-centre. */}
+      {/* Lorebook title — desktop only; on mobile it lives in the build panel.
+          The field is absolutely centred in the window (see CSS); the count
+          lives in an aside anchored to its right edge so it never shifts the
+          field off-centre. Click opens the dual-column menu, double-click
+          renames in place. */}
       {!isMobile && (
         <div className="lorebook-name-sizer">
-          <input
-            className="lorebook-name-input"
-            value={activeLorebook?.name ?? ''}
-            onChange={(e) => renameLorebook(e.target.value)}
-            placeholder="Lorebook name…"
-            size={Math.max(10, (activeLorebook?.name?.length ?? 0) + 2)}
-            onPointerDown={(e) => e.stopPropagation()}
-            spellCheck={false}
-          />
+          {renaming ? (
+            <input
+              className="lorebook-name-input"
+              value={activeLorebook?.name ?? ''}
+              onChange={(e) => renameLorebook(e.target.value)}
+              placeholder="Lorebook name…"
+              size={Math.max(10, (activeLorebook?.name?.length ?? 0) + 2)}
+              onPointerDown={(e) => e.stopPropagation()}
+              onBlur={() => setRenaming(false)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setRenaming(false); }}
+              autoFocus
+              spellCheck={false}
+            />
+          ) : (
+            <button
+              ref={titleBtnRef}
+              className={`title-field${titleOpen ? ' title-field--open' : ''}`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={toggleTitleMenu}
+              onDoubleClick={startRename}
+              title="Lorebooks, import and export — double-click to rename"
+              aria-haspopup="dialog"
+              aria-expanded={titleOpen}
+            >
+              <span className="title-field-name">
+                {activeLorebook?.name || 'Untitled lorebook'}
+              </span>
+              <span className="title-field-caret" aria-hidden="true">▾</span>
+            </button>
+          )}
           <span className="lorebook-name-aside">
             {activeLorebook && (
               <span className="lorebook-entry-count" title="Total entries in this lorebook">
@@ -96,23 +122,11 @@ export function WindowHeader() {
                 · {hiddenEntries.length} hidden
               </button>
             )}
-            {showSwitchButton && (
-              <button
-                ref={switchBtnRef}
-                className="lorebook-switch-btn"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={toggleSwitch}
-                title="Switch to another lorebook"
-                aria-label="Switch lorebook"
-              >
-                Switch ▾
-              </button>
-            )}
           </span>
-          {switchOpen && (
-            <LorebookSwitchPopover
-              anchorRect={switchAnchor}
-              onClose={() => setSwitchOpen(false)}
+          {titleOpen && (
+            <TitleMenu
+              anchorRect={titleAnchor}
+              onClose={() => setTitleOpen(false)}
             />
           )}
           {hiddenOpen && (

@@ -3,7 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
 // `launch` overrides let a scenario run somewhere other than the default
@@ -1895,6 +1895,67 @@ const SCENARIOS = [
     await settle(page, 300);
     check('no status footer on mobile', await page.locator('.status-footer').count(), 0);
   }, { mobile: true, width: 390, height: 780 }),
+
+  scenario('Title menu: both columns, alphabetical books, switch and rename', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+
+    const field = page.locator('.title-field');
+    check('the header carries a title field, not a bare name input',
+      await field.count(), 1);
+    check('and the old name input is gone from the resting header',
+      await page.locator('.window-header .lorebook-name-input').count(), 0);
+
+    await field.click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+
+    // Both halves are present in one menu — this is the whole point of 13C.
+    const heads = await page.locator('.tm-col-head').allInnerTexts();
+    // innerText reflects the CSS `text-transform: uppercase` on column heads.
+    check('two columns: lorebooks and import/export',
+      heads.map((h) => h.split('·')[0].trim()).join(' | '),
+      'LOREBOOKS | IMPORT / EXPORT');
+
+    // Alphabetical, not recency-ordered — the stored index promotes the active
+    // book on every switch, so a recency list would reshuffle under the cursor.
+    const names = await page.locator('.tm-book-name').allInnerTexts();
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    check('books are listed alphabetically', names.join('|'), sorted.join('|'));
+    check('the active book is marked', await page.locator('.tm-book--active').count(), 1);
+
+    // Menu escapes the window's `overflow: hidden` — it is portaled to body, so
+    // it must not be a descendant of .floating-window.
+    check('the menu is portaled out of the clipped window',
+      await page.locator('.floating-window .title-menu').count(), 0);
+
+    // Switching from the menu changes the active book and closes the menu.
+    const activeName = (await page.locator('.tm-book--active .tm-book-name').innerText()).trim();
+    const other = names.map((n) => n.trim()).find((n) => n !== activeName);
+    await page.locator('.tm-book', { hasText: other }).first().click();
+    await settle(page, 500);
+    check('picking a book closes the menu', await page.locator('.title-menu').count(), 0);
+    check('and switches to it', (await field.innerText()).includes(other), true);
+
+    // Escape dismisses without switching.
+    await field.click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('Escape closes the menu', await page.locator('.title-menu').count(), 0);
+
+    // Rename still exists — it moved from an always-live input to double-click.
+    await field.dblclick();
+    await settle(page, 300);
+    const input = page.locator('.window-header .lorebook-name-input');
+    check('double-click swaps the field for a rename input', await input.count(), 1);
+    check('and the menu is not left open behind it',
+      await page.locator('.title-menu').count(), 0);
+    await input.fill('Renamed From Title');
+    await page.keyboard.press('Enter');
+    await settle(page, 400);
+    check('the rename sticks', (await field.innerText()).includes('Renamed From Title'), true);
+  }),
 ];
 
 // A full run launches a fresh browser per scenario, so it costs minutes. When
