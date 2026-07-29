@@ -140,7 +140,7 @@ Still open: there is no "after this folder" band, so ordering is expressed purel
 13. **The hamburger becomes a gear whose icon follows the mode** — gear (straight to Settings, no intermediate dropdown) in the new system, hamburger in legacy, since a gear opening a three-item menu would be lying.
 14. **Verify routes through the new UI by default**, plus one scenario that flips the legacy setting and confirms the old panels still open. Cheap insurance for a path we've promised not to break but would otherwise never exercise.
 
-**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu (no header changes)~~ **shipped 2026-07-28** · 13B settings reorg · 13C title field + dual dropdown + import takeover + gear, relocating the header's storage ring / feedback links / counts in the same pass that rebuilds the header.
+**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu (no header changes)~~ **shipped 2026-07-28** · ~~13B settings reorg~~ **shipped 2026-07-28** · 13C title field + dual dropdown + import takeover + gear, relocating the header's storage ring / feedback links / counts in the same pass that rebuilds the header.
 
 **13A notes (shipped 2026-07-28).** `StatusFooter.jsx` (layout) + `ScaleMenu.jsx` (feature), `use-window-scale.js`, `use-save-status.js`, `constants/scaling.js`. Three things the build settled that the plan had guessed at:
 
@@ -171,7 +171,31 @@ Scaling settings left Settings in this phase rather than 13B — leaving them in
 
 **Open at mockup time:** whether "Reset all sizing" should also reset text size (leaning no — it's an accessibility setting and wiping it from a general reset reads as hostile); and whether `AppendImportPanel` and the menu-panel `ImportPanel` retire once the dropdown carries the full flow, which takes import from five entry points down to three. Both deferred until the mockup has been reviewed.
 
-**13B — Settings reorganisation.**
+**13B — Settings reorganisation. Shipped 2026-07-28.**
+
+Final grouping (six sections → four), by *what you are changing*:
+
+| Section | Contents |
+|---|---|
+| **Editing & Entries** | writing aids · counters · entry badges · entry history |
+| **Appearance & Accessibility** | theme + custom colors · accessibility · funny fish |
+| **Layout & Controls** | keyboard shortcuts · hotbar · FAB menu · folders · reference panel · menus |
+| **System** | browser storage limit |
+
+Decisions taken during the build:
+
+- **Keyboard shortcuts left Accessibility for the top of Layout & Controls**, beside the other input surfaces. This reverses 10D's placement. `KeyboardHelpOverlay`'s deep-link travels with them (`openSettingsSection('controls')`) — that link, not browsing, is how keyboard users actually reach the editor. The section name was the sticking point, not the section: "Advanced" and "Miscellaneous" are both names nobody searches, which is why System ended up holding one setting rather than absorbing shortcuts to justify itself.
+- **Entry history dropped to the foot of its section.** Tallest block in Settings and a set-once, per-book opt-in — leading with it was the clearest inversion of the ordering principle.
+- **Condensed-row stats moved to Editing & Entries**, filed as an entry-badge setting that merely happens to apply inside folders.
+- **Every section starts collapsed.** Opening Settings shows four headings, so the panel reads as a menu you choose from.
+- **The filter box matches a keyword index, not visible labels** (`constants/settings-search.js`). "hotkey" has to find Keyboard shortcuts and "dark mode" the theme picker, which label text alone cannot do. The index lives in constants because two callers need it — the group deciding whether to render, and the section deciding whether to render at all. Terms are ANDed so extra words narrow. Sections force open while filtering; dividers hide, since the runs they label are no longer intact. `ThemeSettings` / `AccessibilitySettings` are wrapped as groups so they filter individually rather than travelling together.
+- **The box is sticky.** The keybinding table alone is taller than the panel, so a filter that scrolled away would vanish exactly when it is most needed.
+
+**Verify note.** Section titles are load-bearing — all eight `openSettingsSection` call sites moved. Two existing scenarios failed *correctly* and were fixed rather than adjusted around: one relied on Editing & Entries being open by default, and one was aimed at the wrong new section by a blanket `Folders` → `Layout & Controls` rename (condensed-row stats went to Editing & Entries instead). A blanket rename across a re-home needs checking per call site, not per string.
+
+---
+
+**Original diagnosis (2026-07-27), kept for context.**
 
 **Raised 2026-07-27 from user testing.** Settings has accreted section by section as features landed, and options are now in places that make sense only historically. Finding a given setting means guessing which section it grew up in rather than which one it belongs to.
 
