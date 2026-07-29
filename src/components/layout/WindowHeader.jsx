@@ -7,9 +7,7 @@ import { useUi }                from '../../hooks/use-ui.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
-import { FeedbackLinks }        from './FeedbackLinks.jsx';
-import { HiddenEntriesPopover }   from '../feature/HiddenEntriesPopover.jsx';
-import { TitleMenu }              from '../feature/TitleMenu.jsx';
+import { TitleMenu }            from '../feature/TitleMenu.jsx';
 import logoUrl from '../../assets/Sacabambaspis2.png';
 
 export function WindowHeader() {
@@ -18,24 +16,10 @@ export function WindowHeader() {
   const { activeLorebook, renameLorebook } = useLorebook();
   const { funnyFishEnabled }               = useSettings();
   const setShowLander                      = useUi((s) => s.setShowLander);
-  const hiddenBtnRef                       = useRef(null);
-  const [hiddenOpen, setHiddenOpen]        = useState(false);
-  const [hiddenAnchor, setHiddenAnchor]    = useState(null);
   const titleBtnRef                        = useRef(null);
   const [titleOpen, setTitleOpen]          = useState(false);
   const [titleAnchor, setTitleAnchor]      = useState(null);
   const [renaming, setRenaming]            = useState(false);
-
-  const hiddenEntries = activeLorebook?.entries.filter((e) => e.hiddenFromExport) ?? [];
-
-  function toggleHidden() {
-    if (hiddenOpen) {
-      setHiddenOpen(false);
-      return;
-    }
-    setHiddenAnchor(hiddenBtnRef.current?.getBoundingClientRect() ?? null);
-    setHiddenOpen(true);
-  }
 
   function toggleTitleMenu() {
     if (titleOpen) {
@@ -105,35 +89,10 @@ export function WindowHeader() {
               <span className="title-field-caret" aria-hidden="true">▾</span>
             </button>
           )}
-          <span className="lorebook-name-aside">
-            {activeLorebook && (
-              <span className="lorebook-entry-count" title="Total entries in this lorebook">
-                · {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
-              </span>
-            )}
-            {activeLorebook && hiddenEntries.length > 0 && (
-              <button
-                ref={hiddenBtnRef}
-                className="lorebook-hidden-count"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={toggleHidden}
-                title="Entries excluded from JSON export — click to view and manage"
-              >
-                · {hiddenEntries.length} hidden
-              </button>
-            )}
-          </span>
           {titleOpen && (
             <TitleMenu
               anchorRect={titleAnchor}
               onClose={() => setTitleOpen(false)}
-            />
-          )}
-          {hiddenOpen && (
-            <HiddenEntriesPopover
-              anchorRect={hiddenAnchor}
-              hiddenEntries={hiddenEntries}
-              onClose={() => setHiddenOpen(false)}
             />
           )}
         </div>
@@ -142,13 +101,11 @@ export function WindowHeader() {
       {/* Right-side controls — pushed to the right edge; the centred name floats
           over the gap between the logo and these. */}
       <div className="header-right">
-        {/* Feedback links (desktop only) — bug report + feature request */}
-        {!isMobile && <FeedbackLinks />}
+        {/* The storage ring lives in the status footer on desktop. Mobile has no
+            footer, so it stays in the header there. */}
+        {isMobile && <StorageUsageRing />}
 
-        {/* Storage usage ring */}
-        <StorageUsageRing />
-
-        {/* Menu button — opens slide tray on both desktop and mobile */}
+        {/* Gear → Settings, or the legacy ☰ menu if the user turned it back on */}
         <MenuButton />
 
         {/* Close — returns to lander; hidden on mobile */}

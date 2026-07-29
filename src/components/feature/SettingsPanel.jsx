@@ -87,6 +87,7 @@ export function SettingsPanel() {
     markPrivateEntries,
     hotbarSlots,
     fabQuickMenuEnabled,
+    legacyMenus,
     setCounterTiers,
     setTieredCounterEnabled,
     setHideSuggestionsByDefault,
@@ -94,6 +95,7 @@ export function SettingsPanel() {
     setMarkPrivateEntries,
     setHotbarSlots,
     setFabQuickMenuEnabled,
+    setLegacyMenus,
     rollbackDefaultEnabled,
     setRollbackDefaultEnabled,
     keepMenuOpenAfterImport,
@@ -502,6 +504,24 @@ export function SettingsPanel() {
           </label>
           <div className="settings-hint">
             Hover (desktop) or long-press (touch) the + button to open a popover with the hotbar actions. Tap the FAB itself to add an entry. Turn off to keep the FAB strictly Add-Entry.
+          </div>
+        </SettingsGroup>
+
+        <SettingsDivider label="Navigation" query={query} />
+
+        <SettingsGroup id="legacyMenus" query={query}>
+          <label className="settings-label">
+            <span>Legacy menus</span>
+            <input
+              type="checkbox"
+              checked={legacyMenus}
+              onChange={(e) => setLegacyMenus(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            The header button is a gear that opens Settings directly, because the lorebook
+            title now opens a menu carrying lorebooks and import / export. Turn this on to
+            get the ☰ menu back, with Lorebooks and Import / Export as side panels.
           </div>
         </SettingsGroup>
 

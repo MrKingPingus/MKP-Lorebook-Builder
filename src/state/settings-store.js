@@ -31,6 +31,7 @@ export const useSettingsStore = create((set) => ({
   setCrosstalkSwapMode:        (crosstalkSwapMode)        => set({ crosstalkSwapMode }),
   setFunnyFishEnabled:         (funnyFishEnabled)         => set({ funnyFishEnabled }),
   setStorageQuotaProfile:      (storageQuotaProfile)      => set({ storageQuotaProfile }),
+  setLegacyMenus:              (legacyMenus)              => set({ legacyMenus }),
 
   applySettings: (settings) => set(settings),
 }));

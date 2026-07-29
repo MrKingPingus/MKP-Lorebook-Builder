@@ -33,6 +33,7 @@ export function useSettings() {
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const funnyFishEnabled         = useSettingsStore((s) => s.funnyFishEnabled);
   const storageQuotaProfile      = useSettingsStore((s) => s.storageQuotaProfile);
+  const legacyMenus              = useSettingsStore((s) => s.legacyMenus);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -66,6 +67,7 @@ export function useSettings() {
       thesaurusEnabled,
       funnyFishEnabled,
       storageQuotaProfile,
+      legacyMenus,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -108,6 +110,7 @@ export function useSettings() {
     thesaurusEnabled,
     funnyFishEnabled,
     storageQuotaProfile,
+    legacyMenus,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -142,5 +145,6 @@ export function useSettings() {
     setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
     setFunnyFishEnabled:         (v) => updateSetting('funnyFishEnabled', v),
     setStorageQuotaProfile:      (v) => updateSetting('storageQuotaProfile', v),
+    setLegacyMenus:              (v) => updateSetting('legacyMenus', v),
   };
 }

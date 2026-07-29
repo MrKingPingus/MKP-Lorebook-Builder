@@ -217,7 +217,16 @@ export function countPrivate(book) {
 }
 
 // Open the Settings panel via the header ☰ menu.
+// 13C turned the header ☰ into a gear that opens Settings in one click. The
+// legacy ☰ dropdown is still reachable behind a setting, so handle both: if the
+// gear is present, click it; otherwise fall back to the two-step menu.
 export async function openSettings(page) {
+  const gear = page.locator('.menu-btn--gear');
+  if (await gear.count()) {
+    await gear.click();
+    await settle(page, 300);
+    return;
+  }
   await page.locator('.menu-btn').click();
   await settle(page, 150);
   await page.getByText('Settings', { exact: true }).first().click();

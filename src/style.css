@@ -445,6 +445,9 @@ img.logo-icon {
 }
 .menu-btn:hover,
 .menu-btn--open { background: var(--surface3); color: var(--text); }
+/* The gear is an SVG rather than a glyph, so it needs no font-size and would
+   otherwise inherit the ☰'s 1.375rem line box. */
+.menu-btn--gear { font-size: 0; }
 
 .menu-dropdown {
   position: absolute;
@@ -914,6 +917,38 @@ img.logo-icon {
 }
 .status-save--fresh { color: var(--green); }
 .status-save--fresh .status-save-dot { background: var(--green); }
+
+/* Entry counts, moved down from the header in 13C. Separated by rules rather
+   than the old leading "·" — a bullet reads as a continuation of the save
+   status, which these are not. */
+.status-count {
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.status-count--btn {
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.status-count--btn:hover { color: var(--text); }
+
+/* The feedback links and storage ring are 28px squares in the header; the
+   footer is a 32px strip that scales with the text, so they come down a size
+   and scale with it. */
+.status-right .header-icon-btn,
+.status-right .storage-usage-ring {
+  width:  calc(24px * var(--ui-scale));
+  height: calc(24px * var(--ui-scale));
+}
+.status-right .header-icon-svg {
+  width:  calc(16px * var(--ui-scale));
+  height: calc(16px * var(--ui-scale));
+}
 
 .status-item {
   display: flex;

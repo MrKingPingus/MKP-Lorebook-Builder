@@ -5,18 +5,36 @@
 // export), this bar holds app state and view controls. Nothing here changes a
 // lorebook.
 //
-// Phase 13A ships the shell plus the sizing menu. The storage ring, feedback
-// links and entry counts join it in 13C, when the header is being rebuilt
-// anyway — moving them now would mean editing WindowHeader twice.
+// 13C moved the storage ring, feedback links and entry counts down here from
+// the window header, which left the header as logo | title | gear | close.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSaveStatus }   from '../../hooks/use-save-status.js';
+import { useLorebook }     from '../../hooks/use-lorebook.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
-import { ScaleMenu }       from '../feature/ScaleMenu.jsx';
+import { ScaleMenu }            from '../feature/ScaleMenu.jsx';
+import { HiddenEntriesPopover } from '../feature/HiddenEntriesPopover.jsx';
+import { StorageUsageRing }     from './StorageUsageRing.jsx';
+import { FeedbackLinks }        from './FeedbackLinks.jsx';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import { SCALE_MENU_OPEN_MS, SCALE_MENU_CLOSE_MS } from '../../constants/scaling.js';
 
 export function StatusFooter() {
   const { label, title, fresh } = useSaveStatus();
+  const { activeLorebook }      = useLorebook();
+
+  const hiddenBtnRef                    = useRef(null);
+  const [hiddenOpen, setHiddenOpen]     = useState(false);
+  const [hiddenAnchor, setHiddenAnchor] = useState(null);
+  const hiddenEntries = activeLorebook?.entries.filter((e) => e.hiddenFromExport) ?? [];
+
+  function toggleHidden() {
+    if (hiddenOpen) {
+      setHiddenOpen(false);
+      return;
+    }
+    setHiddenAnchor(hiddenBtnRef.current?.getBoundingClientRect() ?? null);
+    setHiddenOpen(true);
+  }
 
   // Two independent states, FabFilter-style: hovering surfaces the menu and
   // moving away dismisses it, but a click pins it open until clicked again.
@@ -106,9 +124,37 @@ export function StatusFooter() {
           <span className="status-save-dot" aria-hidden="true" />
           {label}
         </span>
+
+        {activeLorebook && (
+          <span className="status-count" title="Total entries in this lorebook">
+            {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
+          </span>
+        )}
+
+        {hiddenEntries.length > 0 && (
+          <button
+            ref={hiddenBtnRef}
+            type="button"
+            className="status-count status-count--btn"
+            onClick={toggleHidden}
+            title="Entries excluded from JSON export — click to view and manage"
+          >
+            {hiddenEntries.length} hidden
+          </button>
+        )}
+
+        {hiddenOpen && (
+          <HiddenEntriesPopover
+            anchorRect={hiddenAnchor}
+            hiddenEntries={hiddenEntries}
+            onClose={() => setHiddenOpen(false)}
+          />
+        )}
       </div>
 
       <div className="status-right">
+        <FeedbackLinks />
+        <StorageUsageRing />
         <button
           ref={scaleBtnRef}
           type="button"

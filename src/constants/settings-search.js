@@ -33,6 +33,7 @@ export const SETTINGS_GROUP_KEYWORDS = {
   keybindings:      'keyboard shortcuts hotkeys keys rebind chord bindings controls',
   hotbar:           'hotbar slots buttons toolbar actions footer bar',
   fabQuickMenu:     'fab quick action menu plus button add entry popover',
+  legacyMenus:      'legacy menus hamburger gear settings header title dropdown navigation old classic',
   folderStages:     'folders collapse stages full condensed tucked hidden cycle',
   referencePanel:   'reference panel crosstalk pair second lorebook compare',
   crosstalkSwap:    'crosstalk swap behavior behaviour columns active reference fixed',
@@ -47,7 +48,7 @@ export const SETTINGS_SECTION_GROUPS = {
   editing:    ['suggestions', 'thesaurus', 'tieredCounters', 'counterThresholds',
                'statsBadges', 'condensedStats', 'privateMarker', 'entryHistory', 'historyDefault'],
   appearance: ['theme', 'accessibility', 'funnyFish'],
-  controls:   ['keybindings', 'hotbar', 'fabQuickMenu', 'folderStages',
+  controls:   ['keybindings', 'hotbar', 'fabQuickMenu', 'legacyMenus', 'folderStages',
                'referencePanel', 'crosstalkSwap', 'keepMenuOpen'],
   system:     ['storageQuota'],
 };

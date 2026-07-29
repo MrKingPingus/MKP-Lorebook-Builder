@@ -84,6 +84,12 @@ export const DEFAULT_SETTINGS = {
   // documented per-engine localStorage cap. null on first boot; bootstrap UA-detects and
   // persists, then the user can override via Settings → Window & Layout.
   storageQuotaProfile:      null,
+  // When on, the header button stays a ☰ menu offering Lorebooks / Import-Export /
+  // Settings as side panels — the pre-13C arrangement. When off (default), it is a
+  // gear that goes straight to Settings, because the title dropdown now carries
+  // lorebooks and import/export. The side panels themselves are never removed;
+  // this only decides whether the header still offers a route to them.
+  legacyMenus:              false,
 };
 
 export const DEFAULT_ENTRY = {

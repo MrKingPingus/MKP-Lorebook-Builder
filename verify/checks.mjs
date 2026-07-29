@@ -1956,6 +1956,50 @@ const SCENARIOS = [
     await settle(page, 400);
     check('the rename sticks', (await field.innerText()).includes('Renamed From Title'), true);
   }),
+
+  scenario('Header: gear opens Settings, and the legacy menu can be restored', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // The header is down to logo | title | gear | close. Everything else moved
+    // to the status footer.
+    check('the header button is a gear, not a hamburger',
+      await page.locator('.menu-btn--gear').count(), 1);
+    check('feedback links left the header',
+      await page.locator('.window-header .header-feedback').count(), 0);
+    check('the storage ring left the header',
+      await page.locator('.window-header .storage-usage-ring').count(), 0);
+    check('and the entry count left the header',
+      await page.locator('.window-header .lorebook-entry-count').count(), 0);
+
+    // …and landed in the footer.
+    check('feedback links are in the footer',
+      await page.locator('.status-right .header-icon-btn').count(), 2);
+    check('the storage ring is in the footer',
+      await page.locator('.status-right .storage-usage-ring').count(), 1);
+    check('the entry count is in the footer',
+      (await page.locator('.status-count').first().innerText()).trim(), '34 entries');
+
+    // One click, no dropdown in between.
+    await page.locator('.menu-btn--gear').click();
+    await settle(page, 400);
+    check('the gear opens Settings directly',
+      await page.locator('.settings-panel').isVisible(), true);
+
+    // Legacy menus put the ☰ and its three destinations back.
+    const controls = await openSettingsSection(page, 'Layout & Controls');
+    await controls.locator('.settings-label', { hasText: 'Legacy menus' })
+      .locator('input[type="checkbox"]').check();
+    await settle(page, 400);
+    check('the gear is replaced by the ☰',
+      await page.locator('.menu-btn--gear').count(), 0);
+
+    await page.locator('.menu-btn').click();
+    await settle(page, 250);
+    check('and the dropdown offers all three panels again',
+      (await page.locator('.menu-dropdown-item').allInnerTexts()).join(' | '),
+      'Lorebooks | Import / Export | Settings');
+  }),
 ];
 
 // A full run launches a fresh browser per scenario, so it costs minutes. When
