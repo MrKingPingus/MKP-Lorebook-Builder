@@ -2,6 +2,26 @@
 
 ---
 
+## 2026-07-29
+
+### Additions
+
+- **The lorebook title at the top of the window is now a menu.** Click it and a panel drops down with two columns: every lorebook you've saved on the left, and import / export on the right. Switching books, making a new one, deleting one, downloading a copy and grabbing a template are all in one place, one click from the title — instead of two clicks into a side panel.
+- **Your lorebooks are listed alphabetically**, and they stay that way. The old list re-sorted itself by which book you touched last, so the book you wanted was never in the same place twice.
+
+### Adjustments
+
+- **The header button is now a gear, and it opens Settings straight away.** No dropdown in between — with lorebooks and import / export moved to the title menu, Settings was the only thing that menu still had to offer.
+- **The window header is down to four things:** the logo, the lorebook title, the gear, and the close button.
+- **The storage ring, the bug-report and feature-request icons, and your entry counts moved down to the status bar.** They're all things that are simply *true* about your lorebook rather than things you *do* to it, which is what the bottom bar is for.
+- **Renaming a lorebook is now a double-click on the title.** It used to be a text field that was always live, which made it easy to edit by accident and made a poor menu button. Double-click it, type, press Enter.
+
+### Settings
+
+- **Layout & Controls → Navigation → Legacy menus.** Turn this on to bring back the old **☰** menu with Lorebooks, Import / Export and Settings as side panels. The side panels never went away — this just decides whether the header still offers a route to them.
+
+---
+
 ## 2026-07-28
 
 ### Additions
