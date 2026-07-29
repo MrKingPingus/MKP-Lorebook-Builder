@@ -4,6 +4,12 @@ import { DEFAULT_WINDOW } from '../constants/defaults.js';
 
 export const useUiStore = create((set) => ({
   activeMenuPanel:  null,     // null | 'lorebooks' | 'import-export' | 'settings' — slide tray panel
+  // True only while the side panel is sliding open or shut. The floating
+  // window's left/width are inline styles driven from this store, and dragging
+  // or resizing rewrites them on every pointermove — so a permanent CSS
+  // transition on them would make both gestures rubber-band. Everything that
+  // animates with the panel opts in on this flag and off again straight after.
+  panelAnimating:   false,
   searchQuery: '',
   searchMode:  'search',    // 'search' | 'find-replace' | 'select'
   selectedIds: new Set(),   // Set<entryId> — entries selected while searchMode === 'select'
@@ -51,6 +57,7 @@ export const useUiStore = create((set) => ({
   pendingSettingsSection: null,  // accordion section id to auto-open next time the Settings panel mounts (deep-link); cleared once consumed
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
+  setPanelAnimating: (panelAnimating) => set({ panelAnimating }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
   setSearchMode:  (searchMode)  =>
     set((state) => {

@@ -62,6 +62,22 @@ export const FLYOUT_CLOSE_MS = 320;
 export const SCALE_MENU_OPEN_MS  = 180;
 export const SCALE_MENU_CLOSE_MS = 300;
 
+/**
+ * How long the side panel takes to slide open or shut.
+ *
+ * Three things animate over this window and they MUST share it exactly: the
+ * floating window's width/left, the pull tab's left, and the panel's own width.
+ * The panel and the window have to grow by the same amount at the same rate or
+ * the entry list lurches — `.menu-panel` is a fixed 320px against a `flex: 1`
+ * slot, so a panel that arrives at full width before the window has grown steals
+ * 320px from the list and then hands it back.
+ *
+ * Paired with the `220ms` in style.css (`.floating-window--animating`,
+ * `.lorebook-tab--animating`, `.menu-panel`) and the shared `--panel-ease`.
+ * Change one, change all four.
+ */
+export const MENU_PANEL_ANIM_MS = 220;
+
 /** Gap between a menu row and its flyout, and the viewport margin both respect. */
 export const FLYOUT_GAP_PX      = 6;
 export const FLYOUT_VIEWPORT_PAD = 8;

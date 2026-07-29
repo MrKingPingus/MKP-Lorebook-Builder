@@ -49,6 +49,10 @@
   --font:     'Inter', system-ui, -apple-system, sans-serif;
   --mono:     'JetBrains Mono', 'Fira Code', monospace;
   --transition: 0.12s ease;
+  /* Shared by everything that moves when the side panel opens: the window's
+     width/left, the pull tab's left, and the panel's own width. They have to
+     use one curve or they visibly disagree mid-slide. */
+  --panel-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ui-scale: 1; /* accessibility text-scale multiplier (see accessibility-service.js) */
 }
 
@@ -238,6 +242,12 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   min-width: 480px;
   min-height: 360px;
   z-index: 100;
+}
+/* left/width are inline styles rewritten on every pointermove of a drag or
+   resize, so this transition is opt-in for the duration of a panel slide only —
+   applied permanently it would rubber-band both gestures. */
+.floating-window--animating {
+  transition: width 220ms var(--panel-ease), left 220ms var(--panel-ease);
 }
 
 /* ── Corner bracket decorations ── */
@@ -1141,6 +1151,12 @@ img.logo-icon {
   cursor: pointer;
 }
 .lorebook-tab:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+/* Same opt-in, same curve. The window animates `left` and `width` on one curve,
+   so its right edge follows that curve as well — matching it here keeps the tab
+   welded to the frame instead of jumping ahead to the final position. */
+.lorebook-tab--animating {
+  transition: left 220ms var(--panel-ease);
+}
 
 /* Mirrored from the old inboard pill: open edge and square corners now face
    left, into the window, so the tab looks attached to the frame's outside. */
@@ -5678,13 +5694,38 @@ kbd {
    Menu Panel (desktop side panel)
    ============================================================ */
 /* §MENU-PANEL */
+/* Animates open/shut in lockstep with the floating window's width — see
+   MENU_PANEL_ANIM_MS in constants/scaling.js for why the two must match. The
+   resting state is collapsed so there is a zero width to grow from; MenuPanel
+   adds --expanded on the frame after laying the panel out.
+   The border collapses too, otherwise a 1px rule sits in the layout while the
+   panel is nominally zero-width. */
 .menu-panel {
-  width: 320px;
+  width: 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border);
+  border-left: 0 solid var(--border);
   overflow: hidden;
+  /* `visibility`, not `display`. The panel has to stay in layout at zero width
+     or the width transition has no start value to animate from — a panel
+     arriving via display:none jumps straight to 320px however many frames you
+     wait, because the browser has never laid out the collapsed state. visibility
+     still removes it from the focus order, so a zero-width panel can't be tabbed
+     into. Delayed to the end of the close so it stays visible while collapsing,
+     and instant on open (see --expanded). */
+  visibility: hidden;
+  transition: width 220ms var(--panel-ease),
+              border-left-width 220ms var(--panel-ease),
+              visibility 0s linear 220ms;
+}
+.menu-panel--expanded {
+  width: 320px;
+  border-left-width: 1px;
+  visibility: visible;
+  transition: width 220ms var(--panel-ease),
+              border-left-width 220ms var(--panel-ease),
+              visibility 0s;
 }
 
 .menu-panel-header {

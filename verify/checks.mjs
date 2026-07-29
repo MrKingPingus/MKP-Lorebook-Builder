@@ -1774,6 +1774,84 @@ const SCENARIOS = [
       Math.abs(closed.width - widthBefore) <= 3, true);
   }, { width: 1700, height: 1000 }),
 
+  scenario('Side panel slides open without the entry list lurching', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // Sampled in-page with rAF: a Playwright round trip per sample is ~3ms and
+    // was slow enough to miss the first frames of the slide entirely, which is
+    // exactly where the bug this guards against shows up.
+    const sample = async (act) => {
+      await page.evaluate(() => {
+        window.__s = [];
+        window.__go = true;
+        const tick = () => {
+          if (!window.__go) return;
+          const slot  = document.querySelector('.pane-split-slot').getBoundingClientRect();
+          const frame = document.querySelector('.floating-window').getBoundingClientRect();
+          const tab   = document.querySelector('.lorebook-tab').getBoundingClientRect();
+          window.__s.push({
+            slot: Math.round(slot.width),
+            frameW: Math.round(frame.width),
+            gap: Math.round(tab.left - frame.right),
+          });
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      await act();
+      await settle(page, 600);
+      const all = await page.evaluate(() => { window.__go = false; return window.__s; });
+      return all.filter((x, i) => i > 0 && x.frameW !== all[i - 1].frameW);
+    };
+
+    const tab = page.locator('.lorebook-tab');
+
+    // The window grows by 320 and the panel grows by 320, so the list between
+    // them must not move at all. `.menu-panel` is a fixed width against a
+    // `flex: 1` slot — animate only the window and the list gets robbed of 320px
+    // for the duration, then handed it back.
+    const opening = await sample(() => tab.click());
+    check('the slide actually animates rather than snapping',
+      opening.length >= 3, true);
+    const openSlots = opening.map((x) => x.slot);
+    check('entry list holds its width while the panel opens',
+      Math.max(...openSlots) - Math.min(...openSlots) <= 2, true);
+    // The tab is positioned from the same store values the window uses, so it
+    // has to carry the same easing or it jumps to the final spot immediately.
+    check('the tab stays welded to the frame edge throughout the open',
+      opening.every((x) => Math.abs(x.gap + 1) <= 2), true);
+
+    const closing = await sample(() => tab.click());
+    const closeSlots = closing.map((x) => x.slot);
+    check('entry list holds its width while the panel closes',
+      Math.max(...closeSlots) - Math.min(...closeSlots) <= 2, true);
+    check('and the tab stays welded through the close',
+      closing.every((x) => Math.abs(x.gap + 1) <= 2), true);
+
+    // Dragging rewrites left/width every pointermove. If the transition were
+    // permanent rather than opt-in, both drag and resize would rubber-band.
+    const frame = await page.locator('.floating-window').boundingBox();
+    await page.mouse.move(frame.x + 300, frame.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(frame.x + 150, frame.y + 60, { steps: 5 });
+    const dragging = await page.evaluate(() => {
+      const el = document.querySelector('.floating-window');
+      return {
+        animating: el.className.includes('--animating'),
+        duration: getComputedStyle(el).transitionDuration,
+      };
+    });
+    await page.mouse.up();
+    check('dragging the window is not animated', dragging.animating, false);
+    check('so it has no transition duration mid-drag', dragging.duration, '0s');
+
+    // A zero-width panel is still in the DOM, so it must not be tab-reachable.
+    const reachable = await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.menu-panel')).visibility);
+    check('the collapsed panel is hidden, not merely zero-width', reachable, 'hidden');
+  }, { width: 1400, height: 950 }),
+
   scenario('Window width leaves the pull tab its margin outside the frame', async (page, check) => {
     await openBuilderWithFixture(page);
     await settle(page, 300);

@@ -25,13 +25,15 @@ export function LorebookTab() {
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
   const windowPos          = useUi((s) => s.windowPos);
   const windowSize         = useUi((s) => s.windowSize);
+  const panelAnimating     = useUi((s) => s.panelAnimating);
 
   const open = activeMenuPanel === 'lorebooks';
 
   return createPortal(
     <button
       type="button"
-      className={`lorebook-tab${open ? ' lorebook-tab--open' : ''}`}
+      className={`lorebook-tab${open ? ' lorebook-tab--open' : ''}`
+        + (panelAnimating ? ' lorebook-tab--animating' : '')}
       style={{
         // The 1px overlap tucks the tab's left edge under the window's border so
         // the two read as one object instead of two shapes touching.

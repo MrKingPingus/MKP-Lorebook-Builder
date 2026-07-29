@@ -3,11 +3,25 @@ import { useEffect, useRef } from 'react';
 import { useUiStore }        from '../state/ui-store.js';
 import { useMobile }         from './use-mobile.js';
 import { MENU_PANEL_WIDTH, maxWindowWidth }  from '../constants/limits.js';
+import { MENU_PANEL_ANIM_MS }                 from '../constants/scaling.js';
 
 export function useMenuPanel() {
   const isMobile        = useMobile();
   const activeMenuPanel = useUiStore((s) => s.activeMenuPanel);
   const savedWRef       = useRef(null); // build-only width saved before panel opened
+  const animTimer       = useRef(null);
+
+  // Only raised around an actual resize, and lowered immediately after — the
+  // window's left/width are rewritten on every pointermove of a drag or resize,
+  // so anything transitioning them permanently would rubber-band those gestures.
+  function beginAnimation() {
+    const { setPanelAnimating } = useUiStore.getState();
+    setPanelAnimating(true);
+    clearTimeout(animTimer.current);
+    animTimer.current = setTimeout(() => setPanelAnimating(false), MENU_PANEL_ANIM_MS);
+  }
+
+  useEffect(() => () => clearTimeout(animTimer.current), []);
 
   useEffect(() => {
     if (isMobile) return;
@@ -17,6 +31,7 @@ export function useMenuPanel() {
     if (activeMenuPanel !== null && savedWRef.current === null) {
       // Opening: save current build width, expand window, re-center
       savedWRef.current = windowSize.width;
+      beginAnimation();
       const totalW = Math.min(windowSize.width + MENU_PANEL_WIDTH, maxWindowWidth());
       const newX   = Math.max(0, (window.innerWidth - totalW) / 2);
       setWindowSize({ width: totalW, height: windowSize.height });
@@ -29,6 +44,7 @@ export function useMenuPanel() {
       // wider than window.innerWidth — content stretches off the right edge.
       const restoredW = Math.min(savedWRef.current, maxWindowWidth());
       savedWRef.current = null;
+      beginAnimation();
       const { windowPos: currentPos, windowSize: currentSize } = useUiStore.getState();
       const restoredH = Math.min(currentSize.height, window.innerHeight);
       const newX = Math.max(0, (window.innerWidth  - restoredW) / 2);
@@ -37,6 +53,7 @@ export function useMenuPanel() {
       setWindowPos({ x: newX, y: newY });
     }
     // Switching between open panels (null→id handled above, id→same-id is a toggle→null,
-    // id→different-id: savedWRef is set so neither branch fires — no resize needed)
+    // id→different-id: savedWRef is set so neither branch fires — no resize, and
+    // therefore deliberately no animation flag either)
   }, [activeMenuPanel, isMobile]);
 }

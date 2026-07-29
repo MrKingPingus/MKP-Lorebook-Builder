@@ -27,6 +27,7 @@ export function FloatingWindow() {
   const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
   const activeSide       = useUi((s) => s.activeSide);
+  const panelAnimating   = useUi((s) => s.panelAnimating);
   const { crosstalkEnabled } = useReferenceLorebook();
   const { crosstalkSwapMode } = useSettings();
 
@@ -49,7 +50,11 @@ export function FloatingWindow() {
   };
 
   return (
-    <div className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`} style={style}>
+    <div
+      className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`
+        + (panelAnimating ? ' floating-window--animating' : '')}
+      style={style}
+    >
       {/* Golden corner bracket decorations — hidden on mobile via CSS */}
       <span className="corner corner--nw" />
       <span className="corner corner--ne" />

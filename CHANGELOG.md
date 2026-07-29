@@ -23,6 +23,8 @@
 - **The hotbar's Import button no longer asks you to pick a mode first.** It used to open with a three-way choice — paste, entries from a file, or a whole book — before you'd even chosen a file. Now you pick your file (or paste), and *then* decide what happens to your current book.
 - **A backup taken before a replace is always JSON.** You could previously pick TXT, which loses your triggers — a poor thing to discover about a backup after you've already overwritten the original.
 - **The status bar's icons are bigger, spaced further apart, and separated into groups** so they read as three separate controls instead of one cluster.
+- **The side panel now slides open and shut instead of appearing instantly.** The window, the panel and the pull tab all ease together over about a fifth of a second, and your entry list holds perfectly still while it happens — it doesn't shuffle sideways to make room. Dragging and resizing the window are deliberately left unanimated, so they still track your cursor exactly. If you have reduced motion turned on (in Settings or in your OS), the slide is skipped.
+- **The pull tab hangs off the outside of the window now.** It used to sit in a channel just inside the border, which meant your entry rows stopped short of the frame. They reach it now, and the tab sticks out past it. Its old footprint is spent on the outside instead: the window stops about 30px short of the screen edge so the tab always has somewhere to sit, even at full size.
 
 ### Fixes
 
