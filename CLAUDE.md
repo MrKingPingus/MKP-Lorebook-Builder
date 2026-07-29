@@ -81,6 +81,27 @@ GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions enviro
 
 When an exploratory or design discussion includes multiple decisions to make, finish the message with a numbered list of the specific clarifications you need from the user — one decision per item, with the options enumerated `(a)/(b)/(c)`. Lay out reasoning and tradeoffs in prose above the list as usual, but the trailing list should be self-contained enough that the user can reply with `1. a, 2. b, 3. yes` and unambiguously approve the path forward.
 
+### Moving from discussion to implementation requires a firm Yes
+
+**Only an explicit, unambiguous approval starts implementation work.** A clear "yes", "do it", "go ahead", "build it", or a direct answer selecting an option (`1. a, 2. b`) is approval. Nothing else is.
+
+**Anything in the middle means the user wants to keep discussing** — not that Claude should pick the most reasonable option and proceed. Treat all of these as "still discussing":
+
+- "I'm unsure", "I'm torn", "maybe", "I could see that"
+- "I like X, but…" / "that's interesting, though…"
+- Thinking out loud, or floating an alternative without settling on it
+- Answering some items in a decision list while leaving others open
+- Silence on a question that was asked
+
+When the reply lands in the middle, the correct next move is to **help resolve the specific thing the user is stuck on** — sharpen the tradeoff, offer a recommendation with reasoning, propose a tiebreaker — and then ask again. Do not begin editing files.
+
+Two failure modes to avoid specifically:
+
+1. **Do not treat a recommendation as pre-approved because it is cheap to reverse.** "Easy to change later" is not the same as "mine to decide". The user's call is the user's call regardless of how reversible it is.
+2. **Do not treat partial approval as total approval.** If the user approves a structure but leaves one placement open, the unresolved item blocks the work that depends on it — build nothing that assumes an answer.
+
+This applies to the *start* of implementation. Once work is genuinely approved, the ordinary judgement calls inside it (naming a variable, picking a selector, choosing where a helper lives) do not each need re-approval.
+
 ## Token Cost Warnings
 
 Some actions consume a disproportionate number of tokens. Claude should warn the user **before** performing any of the following:
