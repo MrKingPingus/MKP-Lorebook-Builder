@@ -11,13 +11,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
+import { useImportFlow }       from '../../hooks/use-import-flow.js';
 import { useLorebook }         from '../../hooks/use-lorebook.js';
 import { useEntries }          from '../../hooks/use-entries.js';
 import { useExport }           from '../../hooks/use-export.js';
-import { useUi }               from '../../hooks/use-ui.js';
 import { useDismissLayer }     from '../../hooks/use-dismiss-layer.js';
+import { ImportFlow }          from './ImportFlow.jsx';
 import { DISMISS_PRIORITY }    from '../../services/dismiss-stack.js';
 import { DUPE_FLASH_MS }       from '../../constants/limits.js';
+import { IMPORT_STAGE }        from '../../constants/import-flow.js';
 import {
   TITLE_MENU_WIDTH_PX,
   TITLE_MENU_STACK_BELOW_PX,
@@ -44,7 +46,11 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
   const { items, createLorebook, switchLorebook, deleteLorebook } = useLorebookSwitcher();
   const { activeLorebook } = useLorebook();
   const { entries }        = useEntries();
-  const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
+  // Importing takes the menu over rather than handing off to a side panel —
+  // clicking Import in a dropdown and having a panel open elsewhere was the
+  // thing that made the first pass feel like a detour.
+  const flow = useImportFlow({ onDone: onClose });
+  const takingOver = flow.stage !== IMPORT_STAGE.source;
   const {
     exportJson, exportTxt, exportDocx, copyJsonToClipboard,
     downloadJsonTemplate, downloadTxtTemplate, downloadDocxTemplate,
@@ -104,11 +110,6 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
     onClose();
   }
 
-  function openImportPanel() {
-    setActiveMenuPanel('import-export');
-    onClose();
-  }
-
   async function copyJson() {
     try {
       await copyJsonToClipboard(activeLorebook);
@@ -143,7 +144,21 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* ── Left: lorebooks ── */}
+      {/* ── Left: lorebooks, or a rail back to them while importing ── */}
+      {takingOver ? (
+        <div className="tm-rail">
+          <button
+            type="button"
+            className="tm-rail-back"
+            onClick={flow.cancel}
+            title="Back to lorebooks"
+            aria-label="Back to lorebooks"
+          >
+            ‹
+          </button>
+          <span className="tm-rail-label">Lorebooks</span>
+        </div>
+      ) : (
       <div className="tm-col tm-col--books">
         <div className="tm-col-head">
           Lorebooks <span className="tm-col-head-count">· {items.length}</span>
@@ -200,17 +215,21 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
           + New lorebook
         </button>
       </div>
+      )}
 
-      {/* ── Right: import / export ── */}
+      {/* ── Right: import / export, or the import flow once it takes over ── */}
       <div className="tm-col tm-col--io">
+        {takingOver ? (
+          <div className="tm-col-body tm-col-body--flow">
+            <ImportFlow flow={flow} />
+          </div>
+        ) : (
+        <>
         <div className="tm-col-head">Import / Export</div>
         <div className="tm-col-body">
           <div className="tm-section">
             <div className="tm-section-label">Import</div>
-            <button type="button" className="tm-drop" onClick={openImportPanel}>
-              Import a file…
-              <span className="tm-drop-hint">TXT · DOCX · ODT · JSON</span>
-            </button>
+            <ImportFlow flow={flow} />
           </div>
 
           <div className="tm-divider" />
@@ -254,6 +273,8 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>,
     document.body,

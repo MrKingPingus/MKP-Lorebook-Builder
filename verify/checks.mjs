@@ -155,12 +155,14 @@ const SCENARIOS = [
     await page.keyboard.press('Alt+i');
     await settle(page, 250);
     check('Alt+I opens import overlay', await page.locator('.append-import-overlay').count(), 1);
-    check('Alt+I lands in file mode', await page.locator('.append-file-picker').count(), 1);
-    // After picking a file, offer Append vs Import-as-New (not auto-append).
-    await page.locator('.append-file-picker input[type=file]').setInputFiles(FIXTURE);
+    check('Alt+I lands on the drop zone', await page.locator('.append-import-panel .drop-zone').count(), 1);
+    // After picking a file the shared flow asks what to do — it never commits to
+    // a disposition on the user's behalf.
+    await page.locator('.append-import-panel .drop-zone input[type=file]').setInputFiles(FIXTURE);
     await settle(page, 400);
-    check('Append option offered', await page.locator('.append-book-actions button', { hasText: 'Append to' }).count(), 1);
-    check('Import-as-New option offered', await page.locator('.append-book-actions button', { hasText: 'Import as New' }).count(), 1);
+    const opts = await page.locator('.import-flow-opt-title').allInnerTexts();
+    check('all four dispositions offered', opts.join(' | '),
+      'Import as new | Append | Replace | Back up first');
   }),
 
   scenario('Hotkeys in fields + find focus + export + help-close', async (page, check) => {
@@ -1993,6 +1995,109 @@ const SCENARIOS = [
     await page.mouse.move(700, 600);
     await settle(page, 700);
     check('a pinned menu survives the pointer leaving', await menu.count(), 1);
+  }),
+
+  scenario('Import takeover: the dropdown imports in place, never handing off', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    const before = await page.locator('.entry-card').count();
+
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+
+    // The drop zone is in the menu itself. The first pass opened the
+    // Import/Export side panel from here, which was a detour to another surface.
+    await page.locator('.title-menu .drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
+    await page.locator('.import-flow-grid').waitFor({ timeout: 6000 });
+    check('no side panel was opened', await page.locator('.menu-panel:visible').count(), 0);
+    check('the menu is still the surface', await page.locator('.title-menu').count(), 1);
+
+    // Books column collapses to a rail so the flow gets the menu's width.
+    check('the books column collapses to a rail',
+      await page.locator('.title-menu .tm-rail').count(), 1);
+    check('and the book list is gone while importing',
+      await page.locator('.title-menu .tm-book').count(), 0);
+
+    check('all four dispositions are offered',
+      (await page.locator('.import-flow-opt-title').allInnerTexts()).join(' | '),
+      'Import as new | Append | Replace | Back up first');
+
+    // Append, so the assertion is about entry count rather than a book switch.
+    await page.locator('.import-flow-opt', { hasText: 'Append' }).click();
+    await settle(page, 300);
+    check('the preview says what will happen',
+      (await page.locator('.import-flow-banner').innerText()).includes('append'), true);
+
+    // Back keeps the parse — nobody should have to re-pick a file to change
+    // their mind about the disposition.
+    await page.locator('.import-flow-cancel', { hasText: 'Back' }).click();
+    await settle(page, 300);
+    check('Back returns to the grid with the parse intact',
+      await page.locator('.import-flow-grid').count(), 1);
+
+    await page.locator('.import-flow-opt', { hasText: 'Append' }).click();
+    await settle(page, 300);
+    await page.locator('.import-flow-confirm').click();
+    await settle(page, 600);
+    check('confirming closes the menu', await page.locator('.title-menu').count(), 0);
+    check('and the entries landed', (await page.locator('.entry-card').count()) > before, true);
+  }),
+
+  scenario('Import: all three surfaces offer the same flow', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // Before 13C each surface had its own subset — the side panel had a backup
+    // step but no paste, the hotbar had paste but no backup. Parity is the point.
+    //
+    // Every locator here is scoped to one surface on purpose. MenuPanel keeps
+    // all three of its sections mounted (display:none) so panel state survives a
+    // tab switch, which means the side panel's flow is in the DOM at all times —
+    // an unscoped `.drop-zone` would reach into whichever came first.
+    const expected = 'Import as new,Append,Replace,Back up first';
+    const dispositionsIn = async (surface) => {
+      await surface.locator('.drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
+      await surface.locator('.import-flow-grid').waitFor({ timeout: 6000 });
+      const opts = (await surface.locator('.import-flow-opt-title').allInnerTexts()).join(',');
+      await surface.locator('.import-flow-cancel', { hasText: 'Cancel' }).click();
+      await settle(page, 400);
+      return opts;
+    };
+
+    await page.locator('.title-field').click();
+    const titleMenu = page.locator('.title-menu');
+    await titleMenu.waitFor({ timeout: 4000 });
+    check('the title dropdown offers all four', await dispositionsIn(titleMenu), expected);
+
+    const openHotbarImport = async () => {
+      await page.locator('.hotbar').locator('button', { hasText: 'Import' }).first().click();
+      const panel = page.locator('.append-import-panel');
+      await panel.waitFor({ timeout: 4000 });
+      return panel;
+    };
+    check('the hotbar overlay offers all four',
+      await dispositionsIn(await openHotbarImport()), expected);
+
+    const panel = await openHotbarImport();
+    check('the old three-mode segmented control is gone',
+      await panel.locator('.append-import-mode-btn').count(), 0);
+
+    // Paste is reachable from the shared flow, behind a link rather than a
+    // segmented control — it's the niche path.
+    await panel.locator('.import-flow-swap', { hasText: 'paste' }).click();
+    await settle(page, 250);
+    check('paste swaps the drop zone for a textarea',
+      await panel.locator('.import-flow-textarea').count(), 1);
+    check('and the drop zone steps aside', await panel.locator('.drop-zone').count(), 0);
+
+    // Pasted entries get the same four dispositions a file does — they used to
+    // be append-only.
+    await panel.locator('.import-flow-textarea').fill(
+      'Name: Pasted Keep\nTriggers: keep\nDescription: A hold above the pass.');
+    await panel.locator('.import-flow-parse-btn').click();
+    await settle(page, 400);
+    check('pasted entries reach the same disposition grid',
+      (await panel.locator('.import-flow-opt-title').allInnerTexts()).join(','), expected);
   }),
 
   scenario('Storage ring: the footer popover opens upward, not off-screen', async (page, check) => {

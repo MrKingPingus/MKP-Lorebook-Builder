@@ -1,8 +1,13 @@
-// Drag-and-drop file target that also opens the OS file picker on click — emits file via callback
+// Drag-and-drop file target that also opens the OS file picker on click — emits file via callback.
+//
+// `inputRef` lets a parent reach the hidden input and click it directly, which
+// is how the Import hotkey opens the OS picker without the user first having to
+// click the zone. When it isn't passed, the zone keeps its own ref as before.
 import { useRef, useState } from 'react';
 
-export function DropZone({ onFile, accept, children }) {
-  const inputRef  = useRef(null);
+export function DropZone({ onFile, accept, children, inputRef: externalRef }) {
+  const ownRef    = useRef(null);
+  const inputRef  = externalRef ?? ownRef;
   const [over, setOver] = useState(false);
 
   function handleDrop(e) {

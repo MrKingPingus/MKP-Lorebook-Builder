@@ -3246,6 +3246,251 @@ img.logo-icon {
 .tm-btn--outline { background: transparent; color: var(--muted2); }
 .tm-btn--outline:hover { color: var(--text); }
 
+/* Import takeover: the books column collapses to a rail so the flow gets the
+   whole menu, but the way back stays visible. */
+.tm-rail {
+  width: calc(34px * var(--ui-scale));
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 9px;
+}
+.tm-rail-back {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.tm-rail-back:hover { background: var(--surface3); color: var(--text); }
+.tm-rail-label {
+  writing-mode: vertical-rl;
+  margin-top: 10px;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--border2);
+}
+.title-menu--stacked .tm-rail {
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-right: none;
+  border-bottom: 1px solid var(--border);
+}
+.title-menu--stacked .tm-rail-label { writing-mode: horizontal-tb; margin-top: 0; }
+
+.tm-col-body--flow { padding: 0 0 10px; }
+
+/* ── The shared import flow ────────────────────────────────────────────────
+   One set of styles for all three surfaces (title dropdown, side panel,
+   hotbar overlay), so the flow can't drift apart between them again. */
+.import-flow-source { display: flex; flex-direction: column; gap: 7px; }
+.import-flow-formats {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.625rem;
+  color: var(--muted);
+}
+/* Paste is the niche path — a link, not a segmented control competing with the
+   drop zone for half the surface. */
+.import-flow-swap {
+  align-self: center;
+  padding: 2px 4px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  text-decoration: underline;
+  text-decoration-color: var(--border2);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.import-flow-swap:hover { color: var(--text); }
+.import-flow-textarea {
+  width: 100%;
+  min-height: calc(110px * var(--ui-scale));
+  padding: 8px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.import-flow-textarea:focus { border-color: var(--focus-border); }
+.import-flow-source-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.import-flow-parse-btn {
+  padding: 6px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.import-flow-parse-btn:hover:not(:disabled) { background: var(--surface2); }
+.import-flow-parse-btn:disabled { opacity: 0.4; cursor: default; }
+
+.import-flow-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  flex-shrink: 0;
+}
+.import-flow-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.import-flow-sub { font-size: 0.6875rem; color: var(--muted); white-space: nowrap; }
+
+.import-flow-warn {
+  margin: 0 14px 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--yellow) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yellow) 35%, transparent);
+  font-size: 0.6875rem;
+  color: var(--yellow);
+}
+.import-flow-warn-list {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  color: var(--muted2);
+}
+.import-flow-backed-up {
+  margin: 0 14px 8px;
+  font-size: 0.6875rem;
+  color: var(--green);
+}
+
+.import-flow-question {
+  padding: 0 14px 7px;
+  font-size: 0.75rem;
+  color: var(--muted2);
+}
+/* 2×2 rather than four across — four buttons in a row does not fit the
+   dropdown's column at 480px, and a wrap that isn't a deliberate grid reads as
+   a bug. */
+.import-flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 14px 10px;
+}
+.import-flow-opt {
+  padding: 9px 10px;
+  text-align: left;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.import-flow-opt:hover { background: var(--surface2); border-color: var(--border2); }
+.import-flow-opt--danger { border-color: color-mix(in srgb, var(--destructive) 40%, transparent); }
+.import-flow-opt--danger .import-flow-opt-title { color: var(--destructive); }
+.import-flow-opt-title {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.import-flow-opt-hint {
+  display: block;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.import-flow-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px 12px;
+  font-size: 0.625rem;
+  color: var(--muted);
+}
+.import-flow-note-rule { flex: 1; height: 1px; background: var(--border); }
+
+.import-flow-banner {
+  margin: 0 14px 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  font-size: 0.6875rem;
+  color: var(--muted2);
+}
+.import-flow-banner strong { color: var(--text); }
+
+.import-flow-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 14px 0;
+  flex-shrink: 0;
+}
+.import-flow-cancel {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.import-flow-cancel:hover { color: var(--text); border-color: var(--border2); }
+.import-flow-confirm {
+  padding: 6px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.import-flow-confirm:hover { background: var(--surface2); }
+/* Replace is the one irreversible choice in the flow, so it is the one button
+   that is coloured for it. */
+.import-flow-confirm--danger {
+  background: var(--destructive);
+  border-color: var(--destructive);
+  color: #fff;
+}
+.import-flow-confirm--danger:hover { background: var(--destructive-hover); }
+
+.import-panel-info {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .lorebook-switch-popover {
   min-width: 200px;
   max-width: 260px;

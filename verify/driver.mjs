@@ -77,10 +77,13 @@ export async function openBuilderWithFixture(page, fixturePath = FIXTURE) {
 export async function importBookAsNew(page, fixturePath) {
   await page.locator('.hotbar').locator('button', { hasText: 'Import' }).first().click();
   await page.locator('.append-import-panel').waitFor({ timeout: 4000 });
-  await page.locator('.append-import-mode-btn', { hasText: 'Whole book from file' }).click();
-  await page.locator('.append-file-picker input[type="file"]').setInputFiles(fixturePath);
-  await page.locator('.import-save-btn--new').waitFor({ timeout: 6000 });
-  await page.locator('.import-save-btn--new').click();
+  // 13C put every surface on the shared import flow: drop a file, pick a
+  // disposition, confirm. The old segmented mode control is gone.
+  await page.locator('.append-import-panel .drop-zone input[type="file"]').setInputFiles(fixturePath);
+  await page.locator('.import-flow-grid').waitFor({ timeout: 6000 });
+  await page.locator('.import-flow-opt', { hasText: 'Import as new' }).click();
+  await page.locator('.import-flow-confirm').waitFor({ timeout: 4000 });
+  await page.locator('.import-flow-confirm').click();
   await page.locator('.append-import-panel').waitFor({ state: 'detached', timeout: 4000 });
 }
 
