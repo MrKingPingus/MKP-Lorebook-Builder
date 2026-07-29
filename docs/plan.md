@@ -140,7 +140,7 @@ Still open: there is no "after this folder" band, so ordering is expressed purel
 13. **The hamburger becomes a gear whose icon follows the mode** — gear (straight to Settings, no intermediate dropdown) in the new system, hamburger in legacy, since a gear opening a three-item menu would be lying.
 14. **Verify routes through the new UI by default**, plus one scenario that flips the legacy setting and confirms the old panels still open. Cheap insurance for a path we've promised not to break but would otherwise never exercise.
 
-**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu (no header changes)~~ **shipped 2026-07-28** · ~~13B settings reorg~~ **shipped 2026-07-28** · 13C title field + dual dropdown + import takeover + gear, relocating the header's storage ring / feedback links / counts in the same pass that rebuilds the header.
+**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu~~ **shipped 2026-07-28** · ~~13B settings reorg~~ **shipped 2026-07-28** · ~~13C title field + dual dropdown + import takeover + gear~~ **shipped 2026-07-29**.
 
 **13A notes (shipped 2026-07-28).** `StatusFooter.jsx` (layout) + `ScaleMenu.jsx` (feature), `use-window-scale.js`, `use-save-status.js`, `constants/scaling.js`. Three things the build settled that the plan had guessed at:
 
@@ -169,7 +169,36 @@ Scaling settings left Settings in this phase rather than 13B — leaving them in
 
 **Mockup:** `mockup-ui-overhaul.html` (repo root) covers 13A and 13C in five walkable states. Dark-theme only and throwaway — do not make it theme-aware. 13B was deliberately not mocked; an accordion with different contents is better reviewed as a written outline than as pixels.
 
-**Open at mockup time:** whether "Reset all sizing" should also reset text size (leaning no — it's an accessibility setting and wiping it from a general reset reads as hostile); and whether `AppendImportPanel` and the menu-panel `ImportPanel` retire once the dropdown carries the full flow, which takes import from five entry points down to three. Both deferred until the mockup has been reviewed.
+**Open at mockup time:** whether "Reset all sizing" should also reset text size (leaning no — it's an accessibility setting and wiping it from a general reset reads as hostile). The `AppendImportPanel` / `ImportPanel` question was **resolved in 13C**: neither retires, and all three surfaces share one flow instead — see below.
+
+**13C — Header rebuild + shared import flow. Shipped 2026-07-29.**
+
+Landed in four passes: title field + dual dropdown · gear + header declutter · feedback polish · shared import flow.
+
+Decisions and findings from the build:
+
+- **The book list is alphabetical, not recency-ordered.** `promoteInIndex` (`use-lorebook.js`) moves the active book to the front of the stored index on every switch, so a recency list would reshuffle itself under the cursor the moment it was used — you'd never find the same book in the same place twice. This is the same store behaviour that killed the `< >` arrows at planning time.
+- **Rename moved from an always-live input to double-click.** An input that is permanently focusable makes a poor menu button, and a name you can edit by accident is worse than one you edit deliberately. It's covered by a check so it can't quietly rot.
+- **The header's Switch button is gone** — the title field does that job. `LorebookSwitchPopover` stays; the crosstalk role bar still uses it.
+- **Open/close orchestration lives in `WindowHeader`, not `TitleMenu`**, mirroring how `StatusFooter` owns it for the sizing menu. Hover/pin/outside-click/resize all sit beside the trigger, and the menu only renders and asks to close.
+- **A portaled menu's outside-click test must exclude its own anchor.** Without it, `mousedown` closes the menu and the click that follows reopens it — so a second click on the trigger appears to do nothing. This is a general trap for every portaled-menu-plus-trigger pair, and it's why clicking the title twice was broken on first ship.
+- **The title needed an accent ring at rest.** A borderless title read as text; testers didn't know it was clickable. It uses `--accent`, the FAB's token, so the app's two "this is a thing you press" cues stay congruous under a themed accent.
+- **Popovers anchored with a hard `top: anchorRect.bottom` break when their trigger moves.** Both storage popovers were written when the ring sat under the title bar; moving it to the footer pushed them off the bottom of the screen. `use-anchored-position.js` flips to a `bottom` anchor when the trigger is in the lower half of the viewport, which grows the popover upward with no measurement pass — the same trick the sizing flyouts use. **Any new anchored popover should use it rather than hardcoding a side.**
+- **The legacy-menus setting is narrower than the plan implied.** It only decides whether the header button is a gear (straight to Settings) or the ☰ with three destinations. The side panels always exist; nothing about the title menu or the relocated footer items is conditional on it. A wider dual path would have doubled the surface area of the header for no benefit anyone asked for.
+
+**The import flow is now one thing (`use-import-flow.js` + `ImportFlow.jsx`).** This resolves the question deferred at mockup time — neither old panel retires, they share a flow instead. What made that necessary rather than merely tidy: each surface had a *different subset* of the same feature. The side panel offered backup-before-replace but couldn't take pasted text; the hotbar overlay took pasted text but had no backup, and shipped "open the Import / Export tab" nudges for the flows it couldn't do. Which surface you happened to open decided what you were allowed to do, and the nudges were the code admitting it.
+
+- **The dropdown takes over rather than handing off.** The first pass routed Import to the side panel, which meant clicking Import in a menu opened a different surface elsewhere. The books column collapses to a rail (`.tm-rail`, back button visible) and the flow gets the menu's width.
+- **The hotbar's three-mode segmented control is gone.** It existed only because that surface could only append, forcing paste / entries-from-file / whole-book to be picked before a file was even chosen.
+- **Paste sits behind a link, not a segmented control** — it's the niche path and shouldn't cost the drop zone half its surface. Pasted entries now reach all four dispositions; they used to be append-only.
+- **Backups are JSON only.** TXT is a lossy export; as a pre-overwrite backup it's the wrong artefact, and offering it invites someone to pick it and lose their triggers.
+- **Back from the preview keeps the parse.** Changing your mind about a disposition shouldn't cost re-picking the file.
+- **"Replace with 29 entries", not "Replace 29 entries"** — the latter reads as though 29 are being deleted. The count is always what's arriving.
+- `use-append-import.js` deleted (sole consumer was the overlay). `DropZone` gained an optional `inputRef` so the Import hotkey can click the hidden input directly. The export-filename sanitiser moved to `services/export-filename.js`; **it is still copy-pasted in five other call sites** and converting them is an open cheap cleanup.
+
+**Verify note.** `MenuPanel` keeps all three of its sections mounted (`display: none`) so panel state survives a tab switch — which means the side panel's import flow is in the DOM *at all times*. An unscoped `.drop-zone` or `.import-flow-*` locator therefore reaches into whichever surface comes first in the DOM. The parity scenario scopes every locator to one surface; the first draft did not, and was silently measuring the wrong one. **Scope to a surface whenever more than one can render the same component.**
+
+---
 
 **13B — Settings reorganisation. Shipped 2026-07-28.**
 

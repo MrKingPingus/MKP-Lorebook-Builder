@@ -8,6 +8,9 @@
 
 - **The lorebook title at the top of the window is now a menu.** Click it and a panel drops down with two columns: every lorebook you've saved on the left, and import / export on the right. Switching books, making a new one, deleting one, downloading a copy and grabbing a template are all in one place, one click from the title — instead of two clicks into a side panel.
 - **Your lorebooks are listed alphabetically**, and they stay that way. The old list re-sorted itself by which book you touched last, so the book you wanted was never in the same place twice.
+- **You can import a file straight from the title menu, without leaving it.** Drop a file on the menu (or click to browse) and the lorebook list slides aside so the import gets the whole panel — pick what should happen, check the preview, confirm. Nothing opens anywhere else.
+- **Every import now offers the same four choices, wherever you start it:** *Import as new*, *Append*, *Replace*, and *Back up first* (which downloads a copy of your current book, then replaces it). Previously the side panel had the backup option but couldn't take pasted text, and the hotbar's Import button took pasted text but had no backup option — so which one you happened to open decided what you were allowed to do.
+- **Pasted entries can do anything a file can.** Paste used to only ever add to the book you had open. Now it reaches the same four choices. It lives behind an **or paste entries instead** link next to the drop zone.
 
 ### Adjustments
 
@@ -15,6 +18,16 @@
 - **The window header is down to four things:** the logo, the lorebook title, the gear, and the close button.
 - **The storage ring, the bug-report and feature-request icons, and your entry counts moved down to the status bar.** They're all things that are simply *true* about your lorebook rather than things you *do* to it, which is what the bottom bar is for.
 - **Renaming a lorebook is now a double-click on the title.** It used to be a text field that was always live, which made it easy to edit by accident and made a poor menu button. Double-click it, type, press Enter.
+- **The title has a ring around it** in the same colour as the **+** button, so it reads as something you can press rather than as plain text.
+- **The title menu opens on hover and pins on click**, the same way the `⤢ Size` button in the status bar works. Brush past it and it appears; move away and it goes. Click it and it stays until you click again.
+- **The hotbar's Import button no longer asks you to pick a mode first.** It used to open with a three-way choice — paste, entries from a file, or a whole book — before you'd even chosen a file. Now you pick your file (or paste), and *then* decide what happens to your current book.
+- **A backup taken before a replace is always JSON.** You could previously pick TXT, which loses your triggers — a poor thing to discover about a backup after you've already overwritten the original.
+- **The status bar's icons are bigger, spaced further apart, and separated into groups** so they read as three separate controls instead of one cluster.
+
+### Fixes
+
+- **Clicking the lorebook title a second time closes the menu.** It used to do nothing at all.
+- **The storage-usage popovers open upwards.** Now that the storage ring lives in the status bar, hovering it used to push the readout off the bottom of the screen.
 
 ### Settings
 
