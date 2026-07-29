@@ -32,3 +32,7 @@ export const STORAGE_QUOTA_BYTES_BY_PROFILE = {
 };
 export const STORAGE_WARN_THRESHOLD       = 0.60;
 export const STORAGE_DANGER_THRESHOLD     = 0.85;
+
+// Anchored-popover geometry (see hooks/use-anchored-position.js)
+export const POPOVER_ANCHOR_GAP_PX = 6;  // breathing room between anchor and popover
+export const POPOVER_EDGE_PAD_PX   = 8;  // keep the popover clear of the viewport edges

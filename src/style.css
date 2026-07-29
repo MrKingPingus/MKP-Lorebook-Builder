@@ -381,22 +381,32 @@ img.logo-icon {
   max-width: calc(300px * var(--ui-scale));
   padding: 4px 16px;
   background: transparent;
-  border: 1px solid transparent;
+  /* An accent ring at rest, in the FAB's colour. A borderless title read as
+     text rather than a control — people didn't know it was clickable. Sharing
+     the FAB's token keeps the app's two "this is a thing you press" cues
+     congruous, and themed accents carry both together. */
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
   font-size: 0.8125rem;
   color: var(--muted2);
   cursor: pointer;
-  transition: background var(--transition), border-color var(--transition), color var(--transition);
+  transition: background var(--transition), border-color var(--transition),
+              color var(--transition), box-shadow var(--transition);
 }
 .title-field:hover {
   background: var(--surface2);
-  border-color: var(--border2);
   color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .title-field--open {
   background: var(--surface2);
-  border-color: var(--focus-border);
   color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+/* Pinned by a click — stays put until clicked again, so it reads as latched
+   rather than merely hovered. Mirrors .status-item--pinned in the footer. */
+.title-field--pinned {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .title-field-name {
   font-weight: 600;
@@ -898,7 +908,7 @@ img.logo-icon {
 }
 
 .status-left  { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.status-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.status-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
 .status-save {
   display: flex;
@@ -937,17 +947,28 @@ img.logo-icon {
 }
 .status-count--btn:hover { color: var(--text); }
 
-/* The feedback links and storage ring are 28px squares in the header; the
-   footer is a 32px strip that scales with the text, so they come down a size
-   and scale with it. */
+/* The feedback links and storage ring scale with the footer's text rather than
+   sitting at the header's fixed 28px. The first pass sized them down too far
+   and packed them together, which made three separate controls read as one
+   smudge — hence the roomier targets, the wider gaps, and the rules below. */
 .status-right .header-icon-btn,
 .status-right .storage-usage-ring {
-  width:  calc(24px * var(--ui-scale));
-  height: calc(24px * var(--ui-scale));
+  width:  calc(27px * var(--ui-scale));
+  height: calc(27px * var(--ui-scale));
 }
 .status-right .header-icon-svg {
-  width:  calc(16px * var(--ui-scale));
+  width:  calc(18px * var(--ui-scale));
+  height: calc(18px * var(--ui-scale));
+}
+.status-right .header-feedback { gap: 4px; }
+
+/* Rules between the footer's groups: feedback | storage | sizing. Without them
+   the icons crowd each other and none of them looks deliberate. */
+.status-divider {
+  width: 1px;
   height: calc(16px * var(--ui-scale));
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 .status-item {

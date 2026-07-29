@@ -154,7 +154,9 @@ export function StatusFooter() {
 
       <div className="status-right">
         <FeedbackLinks />
+        <span className="status-divider" aria-hidden="true" />
         <StorageUsageRing />
+        <span className="status-divider" aria-hidden="true" />
         <button
           ref={scaleBtnRef}
           type="button"

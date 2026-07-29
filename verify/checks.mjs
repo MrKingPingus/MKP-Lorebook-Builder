@@ -1957,6 +1957,66 @@ const SCENARIOS = [
     check('the rename sticks', (await field.innerText()).includes('Renamed From Title'), true);
   }),
 
+  scenario('Title field: hover surfaces, click pins, clicking again closes', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    const field = page.locator('.title-field');
+    const menu  = page.locator('.title-menu');
+
+    // A second click has to close. The portaled menu's outside-click handler
+    // has to exclude the field itself, or mousedown closes and the click that
+    // follows reopens — which looks like the click doing nothing at all.
+    await field.click();
+    await settle(page, 300);
+    check('first click opens', await menu.count(), 1);
+    check('and pins', await page.locator('.title-field--pinned').count(), 1);
+    await field.click();
+    await settle(page, 300);
+    check('second click closes', await menu.count(), 0);
+    check('and unpins', await page.locator('.title-field--pinned').count(), 0);
+
+    // Hover alone surfaces it, moving away dismisses it — the footer Size
+    // button's behaviour.
+    await page.mouse.move(700, 500);
+    await settle(page, 400);
+    await field.hover();
+    await settle(page, 500);
+    check('hover surfaces the menu without a click', await menu.count(), 1);
+    check('hovering does not pin', await page.locator('.title-field--pinned').count(), 0);
+    await page.mouse.move(700, 600);
+    await settle(page, 700);
+    check('moving away dismisses it', await menu.count(), 0);
+
+    // A pinned menu ignores the pointer leaving — that is what the pin is for.
+    await field.click();
+    await settle(page, 300);
+    await page.mouse.move(700, 600);
+    await settle(page, 700);
+    check('a pinned menu survives the pointer leaving', await menu.count(), 1);
+  }),
+
+  scenario('Storage ring: the footer popover opens upward, not off-screen', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // The ring used to sit in the header, where hanging downward was correct.
+    // In the footer the same style ran the popover off the bottom of the screen.
+    const ring = page.locator('.status-right .storage-usage-ring');
+    const rbox = await ring.boundingBox();
+    await ring.hover();
+    await settle(page, 400);
+
+    const hov = await page.locator('.storage-usage-hover-popover').boundingBox();
+    check('the hover summary sits above the ring', hov.y + hov.height <= rbox.y + 1, true);
+    check('and stays on screen', hov.y >= 0 && hov.y + hov.height <= 950, true);
+
+    await ring.click();
+    await settle(page, 400);
+    const det = await page.locator('.storage-usage-detail-popover').boundingBox();
+    check('the detail popover sits above the ring too', det.y + det.height <= rbox.y + 1, true);
+    check('and stays on screen', det.y >= 0 && det.y + det.height <= 950, true);
+  }, { width: 1400, height: 950 }),
+
   scenario('Header: gear opens Settings, and the legacy menu can be restored', async (page, check) => {
     await openBuilderWithFixture(page);
     await settle(page, 300);

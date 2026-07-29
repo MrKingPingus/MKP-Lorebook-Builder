@@ -34,7 +34,10 @@ function byName(a, b) {
   return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
 }
 
-export function TitleMenu({ anchorRect, onClose }) {
+// Open/close orchestration (hover, pin, outside click, resize) lives in
+// WindowHeader alongside the trigger, the same way StatusFooter owns it for the
+// sizing menu. This component only renders and reports that it wants to close.
+export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
   const menuRef = useRef(null);
   const [pos, setPos] = useState(null);
 
@@ -82,19 +85,6 @@ export function TitleMenu({ anchorRect, onClose }) {
     );
     setPos({ left, top, maxHeight });
   }, [anchorRect]);
-
-  // Outside click. Attached on a timeout so the click that opened the menu
-  // doesn't immediately close it again.
-  useEffect(() => {
-    function onDocClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) onClose();
-    }
-    const id = setTimeout(() => document.addEventListener('mousedown', onDocClick), 0);
-    return () => {
-      clearTimeout(id);
-      document.removeEventListener('mousedown', onDocClick);
-    };
-  }, [onClose]);
 
   const width = Math.min(TITLE_MENU_WIDTH_PX, window.innerWidth - TITLE_MENU_EDGE_PAD_PX * 2);
   const stacked = width < TITLE_MENU_STACK_BELOW_PX;
@@ -150,6 +140,8 @@ export function TitleMenu({ anchorRect, onClose }) {
       }}
       onPointerDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {/* ── Left: lorebooks ── */}
       <div className="tm-col tm-col--books">

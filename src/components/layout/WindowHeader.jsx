@@ -1,5 +1,5 @@
 // Window title bar — logo, lorebook name (desktop only), menu button, close button
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useDragWindow } from '../../hooks/use-drag-window.js';
 import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
@@ -8,6 +8,7 @@ import { useSettings }          from '../../hooks/use-settings.js';
 import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { TitleMenu }            from '../feature/TitleMenu.jsx';
+import { TITLE_MENU_OPEN_MS, TITLE_MENU_CLOSE_MS } from '../../constants/title-menu.js';
 import logoUrl from '../../assets/Sacabambaspis2.png';
 
 export function WindowHeader() {
@@ -16,25 +17,91 @@ export function WindowHeader() {
   const { activeLorebook, renameLorebook } = useLorebook();
   const { funnyFishEnabled }               = useSettings();
   const setShowLander                      = useUi((s) => s.setShowLander);
-  const titleBtnRef                        = useRef(null);
-  const [titleOpen, setTitleOpen]          = useState(false);
-  const [titleAnchor, setTitleAnchor]      = useState(null);
-  const [renaming, setRenaming]            = useState(false);
+  const [renaming, setRenaming] = useState(false);
 
-  function toggleTitleMenu() {
-    if (titleOpen) {
+  // Hover surfaces the menu, moving away dismisses it, a click pins it until
+  // clicked again — the same two-state behaviour as the footer's Size button.
+  const [titleOpen, setTitleOpen]     = useState(false);
+  const [pinned, setPinned]           = useState(false);
+  const [titleAnchor, setTitleAnchor] = useState(null);
+
+  const titleBtnRef = useRef(null);
+  const openTimer   = useRef(null);
+  const closeTimer  = useRef(null);
+
+  const clearTimers = useCallback(() => {
+    clearTimeout(openTimer.current);
+    clearTimeout(closeTimer.current);
+  }, []);
+
+  const closeTitleMenu = useCallback(() => {
+    clearTimers();
+    setTitleOpen(false);
+    setPinned(false);
+  }, [clearTimers]);
+
+  useEffect(() => clearTimers, [clearTimers]);
+
+  const openTitleMenu = useCallback(() => {
+    setTitleAnchor(titleBtnRef.current?.getBoundingClientRect() ?? null);
+    setTitleOpen(true);
+  }, []);
+
+  function hoverOpen() {
+    clearTimeout(closeTimer.current);
+    if (titleOpen) return;
+    clearTimeout(openTimer.current);
+    openTimer.current = setTimeout(openTitleMenu, TITLE_MENU_OPEN_MS);
+  }
+
+  // A pinned menu ignores the pointer leaving — that is the whole point of the
+  // pin. The delay covers the gap between the field and the menu below it.
+  function hoverClose() {
+    clearTimeout(openTimer.current);
+    if (pinned) return;
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setTitleOpen(false), TITLE_MENU_CLOSE_MS);
+  }
+
+  function handleTitleClick() {
+    clearTimers();
+    if (pinned) {
+      setPinned(false);
       setTitleOpen(false);
       return;
     }
-    setTitleAnchor(titleBtnRef.current?.getBoundingClientRect() ?? null);
-    setTitleOpen(true);
+    setPinned(true);
+    if (!titleOpen) openTitleMenu();
   }
 
+  // The menu is portaled to document.body, so an outside-click test that only
+  // knew about the header would fire the moment the pointer entered the menu.
+  // Excluding the field itself is what lets a second click close the menu —
+  // without it, mousedown closes and the click that follows reopens.
+  useEffect(() => {
+    if (!titleOpen) return undefined;
+    function onMouseDown(e) {
+      if (titleBtnRef.current?.contains(e.target)) return;
+      if (e.target.closest?.('.title-menu')) return;
+      closeTitleMenu();
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [titleOpen, closeTitleMenu]);
+
+  // Positioned from a rect captured at open time, so it would drift if the
+  // window moved or resized underneath it. Cheaper to close than to re-measure.
+  useEffect(() => {
+    if (!titleOpen) return undefined;
+    window.addEventListener('resize', closeTitleMenu);
+    return () => window.removeEventListener('resize', closeTitleMenu);
+  }, [titleOpen, closeTitleMenu]);
+
   // Double-click renames in place. The first of the two clicks has already
-  // opened the menu, so close it on the way into the input — otherwise the
-  // menu would sit over the field being typed into.
+  // opened and pinned the menu, so tear all of that down on the way into the
+  // input — otherwise the menu would sit over the field being typed into.
   function startRename() {
-    setTitleOpen(false);
+    closeTitleMenu();
     setRenaming(true);
   }
 
@@ -75,10 +142,12 @@ export function WindowHeader() {
           ) : (
             <button
               ref={titleBtnRef}
-              className={`title-field${titleOpen ? ' title-field--open' : ''}`}
+              className={`title-field${titleOpen ? ' title-field--open' : ''}${pinned ? ' title-field--pinned' : ''}`}
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={toggleTitleMenu}
+              onClick={handleTitleClick}
               onDoubleClick={startRename}
+              onMouseEnter={hoverOpen}
+              onMouseLeave={hoverClose}
               title="Lorebooks, import and export — double-click to rename"
               aria-haspopup="dialog"
               aria-expanded={titleOpen}
@@ -92,7 +161,9 @@ export function WindowHeader() {
           {titleOpen && (
             <TitleMenu
               anchorRect={titleAnchor}
-              onClose={() => setTitleOpen(false)}
+              onClose={closeTitleMenu}
+              onMouseEnter={() => clearTimeout(closeTimer.current)}
+              onMouseLeave={hoverClose}
             />
           )}
         </div>

@@ -21,7 +21,9 @@ export const TITLE_MENU_GAP_PX = 7;
 // Keep the menu clear of the viewport edges when the window sits near one.
 export const TITLE_MENU_EDGE_PAD_PX = 8;
 
-// Open/close transitions. Close runs longer than open so a menu dismissed by
-// mistake is still visible long enough to notice — matches the scaling menu.
-export const TITLE_MENU_OPEN_MS  = 160;
-export const TITLE_MENU_CLOSE_MS = 280;
+// Hover delays, matching the footer's sizing menu. Opening waits long enough
+// that dragging the window past the title doesn't fire it; closing waits longer
+// still, so crossing the gap between the field and the menu below doesn't lose
+// it. A click pins past both.
+export const TITLE_MENU_OPEN_MS  = 180;
+export const TITLE_MENU_CLOSE_MS = 300;
