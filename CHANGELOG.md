@@ -12,6 +12,7 @@
   - **Window size has named presets** — Small, Medium, Large and Full height — plus **Custom…** if you want to type exact numbers. **Save as default** makes the current size the one **Reset to default** returns to.
   - **Reset all sizing** puts the window, entry headers and FAB back to normal. It deliberately **leaves your text size alone**, since that's an accessibility setting you may be relying on.
 
+- **Settings has a filter box.** Type what you're after — `fab`, `shortcut`, `dark mode`, `storage` — and the panel narrows to just those controls, opening whichever section holds them. It matches words that aren't in the visible label too, so "hotkey" finds **Keyboard shortcuts** and "dark mode" finds the theme picker. It stays pinned to the top while you scroll, and clearing it puts everything back.
 - **A pull tab forms the right edge of the window and opens your lorebook list.** Click it and the window widens to fit a side panel — so the list appears *beside* your entries rather than on top of them, and nothing you were reading gets covered. Click it again to tuck it away. It sits in its own gutter down the right side, so it never covers your entries or the scrollbar and stays put at any size, including full screen. Its label reads top-to-bottom with the letters upright.
 
 ### Adjustments
@@ -26,7 +27,7 @@
 - **Keyboard shortcuts moved to Layout & Controls**, at the top, alongside the hotbar and FAB menu — they're all ways of driving the app. The **?** cheat sheet's "Edit shortcuts" link takes you straight there.
 - **Entry history moved to the bottom of Editing & Entries.** It's the tallest block in Settings and something you set once per lorebook, so it no longer greets you first.
 - **Three settings have moved out of Settings.** Window size, entry header height and FAB button size used to be scattered across three different Settings sections; they live in the `⤢ Size` menu now. Same settings, same behaviour, one findable place.
-- **Text size is the exception — it's in both places.** You'll find it in the `⤢ Size` menu for convenience, but it also stays where it was under Settings → Accessibility, because that's where people who rely on it go looking. Change it in either place and the other follows.
+- **Text size is the exception — it's in both places.** You'll find it in the `⤢ Size` menu for convenience, but it also stays under Settings → Appearance & Accessibility, because that's where people who rely on it go looking. Change it in either place and the other follows.
 - **The default window is much bigger — 1200×900, up from 760×620.** The old default was cramped, especially with the reference panel open. If you never picked a size of your own, yours updates automatically; if you did, your choice is left exactly as you set it.
 - **The status bar and its `⤢ Size` button are larger and easier to read.** The first pass made them too small to comfortably hit.
 - **The `⤢ Size` button surfaces on hover and pins on click.** Hover it and the menu appears; move away and it goes. Click it and it stays put until you click again — the same way FabFilter's footer controls behave. A pinned button is outlined so you can tell which mode you're in.

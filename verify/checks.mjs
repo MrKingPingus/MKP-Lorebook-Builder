@@ -1833,6 +1833,45 @@ const SCENARIOS = [
       await system.locator('.settings-label', { hasText: 'Browser storage limit' }).count(), 1);
   }),
 
+  scenario('Settings: the filter box narrows by keyword, not just by label', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    const box = page.locator('.settings-search-input');
+    await box.waitFor({ timeout: 4000 });
+    const type = async (q) => { await box.fill(q); await settle(page, 250); };
+
+    // "hotkey" appears in no visible label — the keyword index is the point.
+    await type('hotkey');
+    check('a keyword absent from every label still finds its setting',
+      (await page.locator('.settings-label').allInnerTexts()).some((l) => l.includes('Keyboard shortcuts')), true);
+    check('and non-matching sections drop out',
+      (await page.locator('.settings-section-title').allInnerTexts()).join(','), 'Layout & Controls');
+    // A filter that leaves its own hits collapsed would surface nothing.
+    check('the matching section force-opens',
+      await page.locator('.settings-section-body').count(), 1);
+    check('dividers hide while filtering',
+      await page.locator('.settings-divider').count(), 0);
+
+    // Extra terms have to narrow, not widen.
+    await type('storage');
+    const oneTerm = await page.locator('.settings-label').count();
+    await type('storage safari');
+    const twoTerm = await page.locator('.settings-label').count();
+    check('extra terms narrow rather than widen', twoTerm <= oneTerm && twoTerm === 1, true);
+
+    await type('zzzznope');
+    check('a no-match query says so instead of blanking',
+      await page.locator('.settings-search-empty').count(), 1);
+    check('and hides every section', await page.locator('.settings-section').count(), 0);
+
+    await page.locator('.settings-search-clear').click();
+    await settle(page, 300);
+    check('clearing restores all four sections',
+      await page.locator('.settings-section-title').count(), 4);
+    check('and returns them to collapsed',
+      await page.locator('.settings-section-body').count(), 0);
+  }),
+
   scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {
     await openBuilderWithFixture(page);
     await page.keyboard.press('?');
