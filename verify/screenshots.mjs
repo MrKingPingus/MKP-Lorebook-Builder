@@ -316,7 +316,7 @@ async function main() {
   // ── 5. condensed rows ─────────────────────────────────────────────────────
   await scene(page);
   await openSettings(page);
-  const fset = await openSettingsSection(page, 'Folders');
+  const fset = await openSettingsSection(page, 'Layout & Controls');
   await fset.locator('.settings-checkbox-row input').nth(1).check();
   await settle(page, 250);
   await page.locator('.menu-panel-close').first().click();
@@ -333,7 +333,7 @@ async function main() {
 
   // ── 6. collapse-stage settings ────────────────────────────────────────────
   await openSettings(page);
-  const stages = await openSettingsSection(page, 'Folders');
+  const stages = await openSettingsSection(page, 'Layout & Controls');
   // Shot 5 turned Condensed on. Put it back to the shipped default, or the
   // image would contradict its own caption.
   const condensedBox = stages.locator('.settings-checkbox-row input').nth(1);

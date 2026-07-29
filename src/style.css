@@ -4137,6 +4137,32 @@ img.logo-icon {
   padding: 14px 12px;
 }
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
+
+/* Labelled rule between groups inside a section. Gives the ordering a visible
+   logic instead of an implied one, so a long section reads as a few short
+   lists rather than one undifferentiated run. Negative margins pull it tighter
+   to the group below than the section-body gap would otherwise allow. */
+.settings-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 -8px;
+}
+.settings-divider:first-child { margin-top: -2px; }
+.settings-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.settings-divider-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
 .settings-label { font-size: 0.75rem; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .settings-hint { font-size: 0.6875rem; color: var(--muted); line-height: 1.6; }
 .settings-row { display: flex; gap: 12px; }

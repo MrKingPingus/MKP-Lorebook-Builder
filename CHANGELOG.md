@@ -16,6 +16,15 @@
 
 ### Adjustments
 
+- **Settings has been reorganised from six sections down to four**, grouped by *what you're changing* rather than by whichever feature happened to introduce the setting. Nothing changed meaning or default — everything is in a more sensible place.
+  - **Editing & Entries** — writing aids, counters, entry badges, and entry history.
+  - **Appearance & Accessibility** — themes, text size, motion, contrast, and the Funny Fish.
+  - **Layout & Controls** — keyboard shortcuts, hotbar, FAB menu, folders, the reference panel, and menu behaviour.
+  - **System** — the browser storage limit.
+- **Every section now starts closed.** Opening Settings shows you the four headings and nothing else, so you pick where you're going instead of scrolling past a wall of controls.
+- **Sections are split into labelled runs** — *Writing aids*, *Counters*, *Entry badges* and so on — so a long section reads as a few short lists.
+- **Keyboard shortcuts moved to Layout & Controls**, at the top, alongside the hotbar and FAB menu — they're all ways of driving the app. The **?** cheat sheet's "Edit shortcuts" link takes you straight there.
+- **Entry history moved to the bottom of Editing & Entries.** It's the tallest block in Settings and something you set once per lorebook, so it no longer greets you first.
 - **Three settings have moved out of Settings.** Window size, entry header height and FAB button size used to be scattered across three different Settings sections; they live in the `⤢ Size` menu now. Same settings, same behaviour, one findable place.
 - **Text size is the exception — it's in both places.** You'll find it in the `⤢ Size` menu for convenience, but it also stays where it was under Settings → Accessibility, because that's where people who rely on it go looking. Change it in either place and the other follows.
 - **The default window is much bigger — 1200×900, up from 760×620.** The old default was cramped, especially with the reference panel open. If you never picked a size of your own, yours updates automatically; if you did, your choice is left exactly as you set it.

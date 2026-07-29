@@ -98,7 +98,7 @@ export async function pairCrosstalk(page) {
   // sections don't render their children, so the section has to be opened
   // before its controls exist in the DOM.
   await openSettings(page);
-  await openSettingsSection(page, 'Reference & Crosstalk');
+  await openSettingsSection(page, 'Layout & Controls');
   const toggle = page.locator('label:has-text("Show reference panel") input[type="checkbox"]');
   await toggle.waitFor({ timeout: 4000 });
   await toggle.check();
@@ -275,7 +275,7 @@ export async function scrollListToBottom(page) {
 // scenario exercising condensed rows has to enable it first.
 export async function enableCondensedStage(page) {
   await openSettings(page);
-  const folders = await openSettingsSection(page, 'Folders');
+  const folders = await openSettingsSection(page, 'Layout & Controls');
   const condensed = folders.locator('.settings-checkbox-row input').nth(1);
   if (!(await condensed.isChecked())) {
     await condensed.check();

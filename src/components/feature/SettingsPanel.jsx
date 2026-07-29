@@ -1,5 +1,10 @@
 // Settings tab content — all user preference controls, grouped into
 // collapsible categories so the panel stops being one long scroll.
+//
+// Phase 13B regrouped six sections into four, by *what you are changing*
+// rather than by which feature introduced the setting. Sub-dividers inside a
+// section give the ordering a visible logic instead of an implied one, and
+// within each section the most-reached-for controls lead.
 import { useState, useEffect } from 'react';
 import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
@@ -7,6 +12,7 @@ import { useMobile }         from '../../hooks/use-mobile.js';
 import { useUi }             from '../../hooks/use-ui.js';
 import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
+import { KeybindingSettings }    from './KeybindingSettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import {
   COLLAPSE_STAGE_ORDER,
@@ -36,6 +42,15 @@ function SettingsSection({ id, title, openSet, toggleSection, children }) {
         <span className="settings-section-title">{title}</span>
       </button>
       {isOpen && <div className="settings-section-body">{children}</div>}
+    </div>
+  );
+}
+
+/** Labelled rule between groups inside a section — structure, not a control. */
+function SettingsDivider({ label }) {
+  return (
+    <div className="settings-divider" role="presentation">
+      <span className="settings-divider-label">{label}</span>
     </div>
   );
 }
@@ -87,9 +102,10 @@ export function SettingsPanel() {
 
   const isMobile = useMobile();
 
-  // Editing is open by default — most users land in Settings to tweak it.
-  // Other sections collapsed so the panel reads as a short menu.
-  const [openSet, setOpenSet] = useState(() => new Set(['editing']));
+  // Everything starts collapsed, so opening Settings shows the four section
+  // titles and nothing else — the panel reads as a menu you choose from rather
+  // than a wall of controls you have to scroll past.
+  const [openSet, setOpenSet] = useState(() => new Set());
 
   // Deep-link: another surface (e.g. the keyboard-help overlay's "Edit
   // shortcuts") can request a specific accordion section be opened. Consume and
@@ -121,11 +137,142 @@ export function SettingsPanel() {
     <div className="settings-panel">
 
       {/* ════════════════════════════════════════════════════════════
-          Editing & Entries
+          1 — Editing & Entries: what happens as you write
           ════════════════════════════════════════════════════════════ */}
       <SettingsSection id="editing" title="Editing & Entries" openSet={openSet} toggleSection={toggleSection}>
 
-        {/* Rollback (this lorebook) */}
+        <SettingsDivider label="Writing aids" />
+
+        {/* Suggestions tray */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Suggestions collapsed by default</span>
+            <input
+              type="checkbox"
+              checked={hideSuggestionsByDefault}
+              onChange={(e) => setHideSuggestionsByDefault(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Start every entry's suggestion tray in the collapsed state.
+          </div>
+        </div>
+
+        {/* Thesaurus */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Look up synonyms via the dictionary API</span>
+            <input
+              type="checkbox"
+              checked={thesaurusEnabled}
+              onChange={(e) => setThesaurusEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            {isMobile
+              ? 'Long-press a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, tap synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'
+              : 'Hover a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, click synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'}
+          </div>
+        </div>
+
+        <SettingsDivider label="Counters" />
+
+        {/* Tiered counter colours */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Tiered counter colors (description &amp; triggers)</span>
+            <input
+              type="checkbox"
+              checked={tieredCounterEnabled}
+              onChange={(e) => setTieredCounterEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Character count thresholds</div>
+          <div className="settings-row">
+            <label>
+              Yellow at
+              <input
+                type="number"
+                min={0}
+                value={counterTiers.yellow}
+                onChange={(e) =>
+                  setCounterTiers({ ...counterTiers, yellow: Number(e.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Red at
+              <input
+                type="number"
+                min={0}
+                value={counterTiers.red}
+                onChange={(e) =>
+                  setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
+                }
+              />
+            </label>
+          </div>
+        </div>
+
+        <SettingsDivider label="Entry badges" />
+
+        {/* Stats badges */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Hide entry stats badges</span>
+            <input
+              type="checkbox"
+              checked={hideEntryStats}
+              onChange={(e) => setHideEntryStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Hides the trigger count and character count badges in entry headers.
+          </div>
+        </div>
+
+        {/* Condensed-row stats — an entry-badge setting that happens to apply
+            inside folders, so it is filed by what it changes. */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Show entry stats on condensed rows</span>
+            <input
+              type="checkbox"
+              checked={condensedShowStats}
+              onChange={(e) => setCondensedShowStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Condensed rows normally shed the trigger and character counts to stay compact.
+            Turn this on to keep them, rendered smaller to fit the row.
+          </div>
+        </div>
+
+        {/* Private-entry marker */}
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>Mark private entries</span>
+            <input
+              type="checkbox"
+              checked={markPrivateEntries}
+              onChange={(e) => setMarkPrivateEntries(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Shows a crossed-out eye on entries that are Private on CharSnap. Public entries always show an eye; since entries default to Private, this off-by-default marker is for when you want private entries flagged too.
+          </div>
+        </div>
+
+        <SettingsDivider label="Entry history" />
+
+        {/* Rollback (this lorebook) — last in its section deliberately: the
+            tallest block in Settings, and a per-book opt-in you set once. */}
         <div className="settings-group">
           <label className="settings-label">
             <span>Entry history (this lorebook)</span>
@@ -204,117 +351,97 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        {/* Suggestions tray */}
+      </SettingsSection>
+
+      {/* ════════════════════════════════════════════════════════════
+          2 — Appearance & Accessibility: how it looks
+          "Accessibility" stays in the title on purpose — people who need
+          those settings search for that word.
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="appearance" title="Appearance & Accessibility" openSet={openSet} toggleSection={toggleSection}>
+
+        <ThemeSettings />
+
+        <SettingsDivider label="Accessibility" />
+
+        <AccessibilitySettings />
+
+        <SettingsDivider label="Fun" />
+
         <div className="settings-group">
           <label className="settings-label">
-            <span>Suggestions collapsed by default</span>
+            <span>Toggle Funny Fish</span>
             <input
               type="checkbox"
-              checked={hideSuggestionsByDefault}
-              onChange={(e) => setHideSuggestionsByDefault(e.target.checked)}
+              checked={funnyFishEnabled}
+              onChange={(e) => setFunnyFishEnabled(e.target.checked)}
             />
           </label>
           <div className="settings-hint">
-            Start every entry's suggestion tray in the collapsed state.
-          </div>
-        </div>
-
-        {/* Thesaurus */}
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Look up synonyms via the dictionary API</span>
-            <input
-              type="checkbox"
-              checked={thesaurusEnabled}
-              onChange={(e) => setThesaurusEnabled(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            {isMobile
-              ? 'Long-press a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, tap synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'
-              : 'Hover a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, click synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'}
-          </div>
-        </div>
-
-        {/* Stats badges */}
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Hide entry stats badges</span>
-            <input
-              type="checkbox"
-              checked={hideEntryStats}
-              onChange={(e) => setHideEntryStats(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Hides the trigger count and character count badges in entry headers.
-          </div>
-        </div>
-
-        {/* Private-entry marker */}
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Mark private entries</span>
-            <input
-              type="checkbox"
-              checked={markPrivateEntries}
-              onChange={(e) => setMarkPrivateEntries(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Shows a crossed-out eye on entries that are Private on CharSnap. Public entries always show an eye; since entries default to Private, this off-by-default marker is for when you want private entries flagged too.
-          </div>
-        </div>
-
-        {/* Tiered counter colours */}
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Tiered counter colors (description &amp; triggers)</span>
-            <input
-              type="checkbox"
-              checked={tieredCounterEnabled}
-              onChange={(e) => setTieredCounterEnabled(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
-          </div>
-        </div>
-
-        <div className="settings-group">
-          <div className="settings-label">Character count thresholds</div>
-          <div className="settings-row">
-            <label>
-              Yellow at
-              <input
-                type="number"
-                min={0}
-                value={counterTiers.yellow}
-                onChange={(e) =>
-                  setCounterTiers({ ...counterTiers, yellow: Number(e.target.value) })
-                }
-              />
-            </label>
-            <label>
-              Red at
-              <input
-                type="number"
-                min={0}
-                value={counterTiers.red}
-                onChange={(e) =>
-                  setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
-                }
-              />
-            </label>
+            Swap the title-bar logo between the Sacabambaspis portrait and the original 📖 book emoji.
           </div>
         </div>
 
       </SettingsSection>
 
       {/* ════════════════════════════════════════════════════════════
-          Folders
+          3 — Layout & Controls: how you drive the app, and how the
+          workspace is arranged
           ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="folders" title="Folders" openSet={openSet} toggleSection={toggleSection}>
+      <SettingsSection id="controls" title="Layout & Controls" openSet={openSet} toggleSection={toggleSection}>
+
+        <SettingsDivider label="Controls" />
+
+        {/* Keyboard shortcuts lead the section — the most substantial of the
+            three input surfaces and the most looked-for. */}
+        <div className="settings-group">
+          <div className="settings-label">Keyboard shortcuts</div>
+          <KeybindingSettings />
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-label">Hotbar slots</div>
+          <div className="settings-hint">
+            6 slots flank the + button (3 left, 3 right). Choose an action or leave empty.
+          </div>
+          <div className="hotbar-slot-config">
+            {hotbarSlots.map((slotId, i) => (
+              <label key={i} className="hotbar-slot-row">
+                <span className="hotbar-slot-label">
+                  {i < 3 ? `Left ${i + 1}` : `Right ${i - 2}`}
+                </span>
+                <select
+                  className="hotbar-slot-select"
+                  value={slotId ?? ''}
+                  onChange={(e) => updateSlot(i, e.target.value)}
+                >
+                  <option value="">(empty)</option>
+                  {HOTBAR_ACTIONS.map((action) => (
+                    <option key={action.id} value={action.id}>
+                      {action.icon} {action.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="settings-group">
+          <label className="settings-label">
+            <span>FAB quick-action menu</span>
+            <input
+              type="checkbox"
+              checked={fabQuickMenuEnabled}
+              onChange={(e) => setFabQuickMenuEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Hover (desktop) or long-press (touch) the + button to open a popover with the hotbar actions. Tap the FAB itself to add an entry. Turn off to keep the FAB strictly Add-Entry.
+          </div>
+        </div>
+
+        <SettingsDivider label="Folders" />
 
         <div className="settings-group">
           <div className="settings-label">Collapse stages</div>
@@ -357,27 +484,7 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Show entry stats on condensed rows</span>
-            <input
-              type="checkbox"
-              checked={condensedShowStats}
-              onChange={(e) => setCondensedShowStats(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Condensed rows normally shed the trigger and character counts to stay compact.
-            Turn this on to keep them, rendered smaller to fit the row.
-          </div>
-        </div>
-
-      </SettingsSection>
-
-      {/* ════════════════════════════════════════════════════════════
-          Reference / Crosstalk
-          ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="reference" title="Reference & Crosstalk" openSet={openSet} toggleSection={toggleSection}>
+        <SettingsDivider label="Reference panel" />
 
         <div className="settings-group">
           <label className="settings-label">
@@ -415,12 +522,7 @@ export function SettingsPanel() {
           </div>
         )}
 
-      </SettingsSection>
-
-      {/* ════════════════════════════════════════════════════════════
-          Window & Layout
-          ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="layout" title="Window & Layout" openSet={openSet} toggleSection={toggleSection}>
+        <SettingsDivider label="Menus" />
 
         <div className="settings-group">
           <label className="settings-label">
@@ -436,47 +538,12 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>FAB quick-action menu</span>
-            <input
-              type="checkbox"
-              checked={fabQuickMenuEnabled}
-              onChange={(e) => setFabQuickMenuEnabled(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Hover (desktop) or long-press (touch) the + button to open a popover with the hotbar actions. Tap the FAB itself to add an entry. Turn off to keep the FAB strictly Add-Entry.
-          </div>
-        </div>
+      </SettingsSection>
 
-        <div className="settings-group">
-          <div className="settings-label">Hotbar slots</div>
-          <div className="settings-hint">
-            6 slots flank the + button (3 left, 3 right). Choose an action or leave empty.
-          </div>
-          <div className="hotbar-slot-config">
-            {hotbarSlots.map((slotId, i) => (
-              <label key={i} className="hotbar-slot-row">
-                <span className="hotbar-slot-label">
-                  {i < 3 ? `Left ${i + 1}` : `Right ${i - 2}`}
-                </span>
-                <select
-                  className="hotbar-slot-select"
-                  value={slotId ?? ''}
-                  onChange={(e) => updateSlot(i, e.target.value)}
-                >
-                  <option value="">(empty)</option>
-                  {HOTBAR_ACTIONS.map((action) => (
-                    <option key={action.id} value={action.id}>
-                      {action.icon} {action.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
-        </div>
+      {/* ════════════════════════════════════════════════════════════
+          4 — System
+          ════════════════════════════════════════════════════════════ */}
+      <SettingsSection id="system" title="System" openSet={openSet} toggleSection={toggleSection}>
 
         <div className="settings-group">
           <div className="settings-label">Browser storage limit</div>
@@ -497,34 +564,6 @@ export function SettingsPanel() {
           </div>
         </div>
 
-        <div className="settings-group">
-          <label className="settings-label">
-            <span>Toggle Funny Fish</span>
-            <input
-              type="checkbox"
-              checked={funnyFishEnabled}
-              onChange={(e) => setFunnyFishEnabled(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Swap the title-bar logo between the Sacabambaspis portrait and the original 📖 book emoji.
-          </div>
-        </div>
-
-      </SettingsSection>
-
-      {/* ════════════════════════════════════════════════════════════
-          Appearance
-          ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="appearance" title="Appearance" openSet={openSet} toggleSection={toggleSection}>
-        <ThemeSettings />
-      </SettingsSection>
-
-      {/* ════════════════════════════════════════════════════════════
-          Accessibility (text scale, motion, contrast, keyboard shortcuts)
-          ════════════════════════════════════════════════════════════ */}
-      <SettingsSection id="accessibility" title="Accessibility" openSet={openSet} toggleSection={toggleSection}>
-        <AccessibilitySettings />
       </SettingsSection>
 
     </div>

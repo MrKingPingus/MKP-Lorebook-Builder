@@ -1,8 +1,12 @@
-// Settings → Accessibility: text scale, reduced motion, a high-contrast
-// shortcut, and the relocated keyboard-shortcut editor.
+// Settings → Appearance & Accessibility: text scale, reduced motion, and a
+// high-contrast shortcut.
+//
+// The keyboard-shortcut editor lived here between 10D and 13B. It now sits
+// under Layout & Controls with the other input surfaces (hotbar, FAB), grouped
+// by what it changes. The `?` cheat sheet deep-links straight to it, which is
+// how keyboard users actually reach it.
 import { useSettings } from '../../hooks/use-settings.js';
 import { UI_SCALE_STEPS } from '../../constants/accessibility.js';
-import { KeybindingSettings } from './KeybindingSettings.jsx';
 
 export function AccessibilitySettings() {
   const {
@@ -54,13 +58,8 @@ export function AccessibilitySettings() {
           />
         </label>
         <div className="settings-hint">
-          A maximum-contrast palette. You can also pick it — and other themes — under Appearance.
+          A maximum-contrast palette. You can also pick it — and other themes — just above.
         </div>
-      </div>
-
-      <div className="settings-group">
-        <div className="settings-label">Keyboard shortcuts</div>
-        <KeybindingSettings />
       </div>
     </div>
   );

@@ -112,7 +112,8 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     check('private badges default off', await page.locator('.entry-private-icon').count(), 0);
     await openSettings(page);
-    const cb = page.locator('label:has-text("Mark private entries") input[type="checkbox"]');
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const cb = editing.locator('label:has-text("Mark private entries") input[type="checkbox"]');
     await cb.waitFor({ timeout: 4000 });
     await cb.check();
     await settle(page, 150);
@@ -235,8 +236,7 @@ const SCENARIOS = [
     const cards = page.locator('.entry-card');
     const before = await cards.count();
     await openSettings(page);
-    await page.locator('.settings-section-header', { hasText: 'Accessibility' }).click();
-    await settle(page, 150);
+    await openSettingsSection(page, 'Layout & Controls');
     const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
     const captureBtn = row.locator('.kbd-capture-btn');
     await captureBtn.click();
@@ -328,8 +328,15 @@ const SCENARIOS = [
     await settle(page, 100);
     check('high-contrast theme toggles on', await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'high-contrast');
 
-    // Hotkeys relocated under Accessibility.
-    check('keybinding table lives here now', (await page.locator('.kbd-settings-row').count()) > 0, true);
+    // 13B moved the keybinding table out to Layout & Controls, with the other
+    // input surfaces. Prove it left here and prove it arrived there — a bare
+    // "it exists somewhere" check would pass even if the move never happened.
+    const a11ySection = await openSettingsSection(page, 'Appearance & Accessibility');
+    check('keybinding table no longer sits under Accessibility',
+      await a11ySection.locator('.kbd-settings-row').count(), 0);
+    const controls = await openSettingsSection(page, 'Layout & Controls');
+    check('keybinding table lives under Layout & Controls',
+      (await controls.locator('.kbd-settings-row').count()) > 0, true);
 
     // Text scale survives reload (applied pre-render).
     await page.reload({ waitUntil: 'networkidle' });
@@ -673,7 +680,7 @@ const SCENARIOS = [
 
     // Turn the condensed stage back off while the folder is sitting in it.
     await openSettings(page);
-    const folderSettings = await openSettingsSection(page, 'Folders');
+    const folderSettings = await openSettingsSection(page, 'Layout & Controls');
     await folderSettings.locator('.settings-checkbox-row input').nth(1).uncheck();
     await settle(page, 200);
     await page.locator('.menu-panel-close').first().click();
@@ -686,7 +693,7 @@ const SCENARIOS = [
 
     // Turn it back on: the folder was never rewritten, so it is condensed again.
     await openSettings(page);
-    const again = await openSettingsSection(page, 'Folders');
+    const again = await openSettingsSection(page, 'Layout & Controls');
     await again.locator('.settings-checkbox-row input').nth(1).check();
     await settle(page, 200);
     await page.locator('.menu-panel-close').first().click();
@@ -712,8 +719,8 @@ const SCENARIOS = [
       await page.locator('.entry-card--condensed .stats-badge').count(), 0);
 
     await openSettings(page);
-    const folderSettings = await openSettingsSection(page, 'Folders');
-    await folderSettings.locator('label:has-text("Show entry stats on condensed rows") input').check();
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    await editing.locator('label:has-text("Show entry stats on condensed rows") input').check();
     await settle(page, 200);
     await page.keyboard.press('Escape');
     await settle(page, 350);
@@ -1302,7 +1309,7 @@ const SCENARIOS = [
 
     // Turn the condensed stage on and the cycle gains its middle step.
     await openSettings(page);
-    const folders = await openSettingsSection(page, 'Folders');
+    const folders = await openSettingsSection(page, 'Layout & Controls');
     const boxes = folders.locator('.settings-checkbox-row input');
     check('three stage checkboxes', await boxes.count(), 3);
     check('full is locked on', await boxes.nth(0).isDisabled(), true);
@@ -1789,6 +1796,60 @@ const SCENARIOS = [
     check('a partial match counts as chosen, not legacy',
       Math.abs(partial.width - 760) <= 3 && Math.abs(partial.height - 900) <= 3, true);
   }, { width: 1700, height: 1000 }),
+
+  scenario('Settings: four sections, all collapsed, dividers inside', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+
+    const titles = await page.locator('.settings-section-title').allInnerTexts();
+    check('exactly four sections', titles.length, 4);
+    check('sections are the 13B set',
+      titles.join(' | '),
+      'Editing & Entries | Appearance & Accessibility | Layout & Controls | System');
+
+    // Nothing opens by default — the panel reads as a menu of four choices.
+    check('every section starts collapsed',
+      await page.locator('.settings-section-header[aria-expanded="true"]').count(), 0);
+    check('no section body is rendered while collapsed',
+      await page.locator('.settings-section-body').count(), 0);
+
+    // Sub-dividers give each section a visible internal order.
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const editingDividers = await editing.locator('.settings-divider-label').allInnerTexts();
+    check('Editing & Entries is divided into four runs',
+      editingDividers.join(',').toLowerCase(), 'writing aids,counters,entry badges,entry history');
+
+    // Entry history is the tallest block and a set-once, per-book opt-in, so it
+    // deliberately trails its section rather than leading it.
+    const groupOrder = await editing.evaluate((sec) =>
+      [...sec.querySelectorAll('.settings-divider-label, .settings-label')]
+        .map((el) => el.textContent.trim()));
+    check('suggestions lead the section',
+      groupOrder.indexOf('Suggestions collapsed by default') < groupOrder.indexOf('Entry history (this lorebook)'), true);
+
+    // The storage limit is alone in System for now, by design.
+    const system = await openSettingsSection(page, 'System');
+    check('System holds the browser storage limit',
+      await system.locator('.settings-label', { hasText: 'Browser storage limit' }).count(), 1);
+  }),
+
+  scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.keyboard.press('?');
+    await page.locator('.kbd-help-panel').waitFor({ timeout: 4000 });
+    await page.locator('.kbd-help-edit').click();
+    await settle(page, 400);
+
+    // 13B moved shortcuts from Accessibility to Layout & Controls; the overlay
+    // hardcodes the target section, so it has to travel with them.
+    const controls = page.locator('.settings-section', {
+      has: page.locator('.settings-section-title', { hasText: 'Layout & Controls' }),
+    }).first();
+    check('the deep-link opens Layout & Controls',
+      await controls.locator('.settings-section-header[aria-expanded="true"]').count(), 1);
+    check('and the keybinding table is rendered',
+      (await controls.locator('.kbd-settings-row').count()) > 0, true);
+  }),
 
   scenario('Status footer: absent on mobile', async (page, check) => {
     await openBuilderWithFixture(page);
