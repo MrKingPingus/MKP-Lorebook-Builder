@@ -19,6 +19,14 @@ export const THESAURUS_RELATED_MIN_FREQ = 0.5; // drop related words below this 
 export const THESAURUS_RELATED_PER_POS  = 12;  // cap on related words shown per part-of-speech group
 export const DUPE_FLASH_MS            = 1500;
 export const MENU_PANEL_WIDTH         = 320;
+// The lorebook pull tab hangs off the OUTSIDE of the window's right edge, so
+// the window can never occupy the last strip of the viewport — the tab needs
+// that margin to live in. Same total footprint as reserving a gutter inside the
+// frame; it just sits on the far side of the border, which is the point.
+export const LOREBOOK_TAB_WIDTH_PX    = 30;
+export function maxWindowWidth() {
+  return Math.max(MIN_WINDOW_WIDTH, window.innerWidth - LOREBOOK_TAB_WIDTH_PX);
+}
 export const SAVE_STATUS_FRESH_MS     = 5000;  // status footer reads a plain "Saved" for this long after a write, then starts ageing
 export const SAVE_STATUS_TICK_MS      = 30000; // how often the footer re-renders so "2m ago" ages without a save happening
 export const ROLLBACK_SNAPSHOT_WARN   = 5;   // storage warning threshold in settings UI

@@ -1700,42 +1700,53 @@ const SCENARIOS = [
     const tab = page.locator('.lorebook-tab');
     check('pull tab renders on the right edge', await tab.count(), 1);
 
-    // The tab is a full-height flex column so it reserves the gutter and
-    // nothing can run underneath it at any window size — but the visible
-    // chrome is a short pill centred in that column, not a painted strip.
+    // The tab hangs off the OUTSIDE of the frame. It reserved a gutter inside
+    // the border through three earlier passes — first clipped by
+    // `overflow: hidden`, then an overlay sitting on entry rows, then a real
+    // flex column that cost 30px of interior width. Portaling to document.body
+    // and positioning from the window's own rect is what finally put it out
+    // there, so these checks pin down "outside", not "at the edge".
     const tabBox = await tab.boundingBox();
-    const pill   = await page.locator('.lorebook-tab-inner').boundingBox();
     const frame  = await page.locator('.floating-window').boundingBox();
-    check('tab column spans the full window height',
-      tabBox.height >= frame.height - 4, true);
-    check('the visible pill is a short chip, not a full-height strip',
-      pill.height < tabBox.height * 0.4, true);
-    check('pill is vertically centred in the column',
-      Math.abs((pill.y + pill.height / 2) - (tabBox.y + tabBox.height / 2)) <= 2, true);
-    check('pill is flush with the window right edge',
-      Math.abs((pill.x + pill.width) - (frame.x + frame.width)) <= 2, true);
+    check('the tab is portaled out of the clipped frame',
+      await page.locator('.floating-window .lorebook-tab').count(), 0);
+    check('the tab starts at or past the frame right edge',
+      tabBox.x >= frame.x + frame.width - 2, true);
+    check('it is a short chip, not a full-height strip',
+      tabBox.height < frame.height * 0.4, true);
+    check('vertically centred on the window',
+      Math.abs((tabBox.y + tabBox.height / 2) - (frame.y + frame.height / 2)) <= 2, true);
 
+    // Mirrored from the old inboard pill: the open edge and square corners now
+    // face left, into the window, so the tab reads as growing out of the frame.
     const corners = await page.locator('.lorebook-tab-inner').evaluate((el) => {
       const cs = getComputedStyle(el);
       return { left: parseFloat(cs.borderTopLeftRadius), right: parseFloat(cs.borderTopRightRadius) };
     });
-    check('pill is rounded on its left side only',
-      corners.left > 0 && corners.right === 0, true);
+    check('the chip is rounded on its right side only',
+      corners.right > 0 && corners.left === 0, true);
 
-    const underneath = await page.evaluate(() => {
-      const t = document.querySelector('.lorebook-tab').getBoundingClientRect();
-      return [...document.querySelectorAll('.entry-card, .entry-list, .window-body')]
-        .filter((el) => el.getBoundingClientRect().right > t.left + 1).length;
+    // The whole point: interior width is no longer spent on the tab.
+    const reachesEdge = await page.evaluate(() => {
+      const f = document.querySelector('.floating-window').getBoundingClientRect();
+      const row = document.querySelector('.entry-card')?.getBoundingClientRect();
+      return row ? f.right - row.right : 999;
     });
-    check('no entry-list content runs under the tab', underneath, 0);
+    check('entry rows now reach the frame edge instead of stopping at a gutter',
+      reachesEdge < 20, true);
 
-    // It spans the corners now, so the resize handles have to win on z-index.
-    const ne = await page.locator('.resize-handle--ne').boundingBox();
-    const atNE = await page.evaluate(([x, y]) =>
-      document.elementFromPoint(x, y)?.className.toString() ?? '',
-      [ne.x + ne.width / 2, ne.y + ne.height / 2]);
-    check('NE resize handle still wins the hit test over the tab',
-      atNE.includes('resize-handle'), true);
+    // Positioned from windowPos/windowSize, which use-drag-window writes on every
+    // pointermove — so it tracks the window live rather than after the fact.
+    await page.mouse.move(frame.x + 300, frame.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(frame.x + 180, frame.y + 70, { steps: 6 });
+    const draggedFrame = await page.locator('.floating-window').boundingBox();
+    const draggedTab   = await tab.boundingBox();
+    check('the tab tracks the window mid-drag',
+      Math.abs(draggedTab.x - (draggedFrame.x + draggedFrame.width - 1)) <= 2, true);
+    await page.mouse.up();
+    await settle(page, 300);
+
 
     // Upright stacked glyphs — vertical-rl alone lays the word on its side.
     const label = await page.locator('.lorebook-tab-label').evaluate((el) => {
@@ -1762,6 +1773,32 @@ const SCENARIOS = [
     check('clicking again closes it and restores the width',
       Math.abs(closed.width - widthBefore) <= 3, true);
   }, { width: 1700, height: 1000 }),
+
+  scenario('Window width leaves the pull tab its margin outside the frame', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // The tab hangs outside the frame, so the window can never occupy the last
+    // strip of the viewport — otherwise the tab would be pushed off-screen at
+    // full width, which is the one thing it must never do.
+    const viewport = await page.evaluate(() => window.innerWidth);
+
+    const se = await page.locator('.resize-handle--se').boundingBox();
+    await page.mouse.move(se.x + se.width / 2, se.y + se.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(viewport * 3, 2000, { steps: 10 });
+    await page.mouse.up();
+    await settle(page, 400);
+
+    const frame = await page.locator('.floating-window').boundingBox();
+    const tab   = await page.locator('.lorebook-tab').boundingBox();
+    check('dragged past the edge, the frame still stops short of it',
+      frame.x + frame.width < viewport, true);
+    check('and the tab lands fully on screen',
+      Math.round(tab.x + tab.width) <= viewport, true);
+    check('the reserved margin is exactly the tab width',
+      Math.round(viewport - (frame.x + frame.width)), 30);
+  }, { width: 1280, height: 900 }),
 
   scenario('Default window size: legacy 760x620 migrates, a chosen size does not', async (page, check) => {
     // Settings persist and win over the constant, so raising DEFAULT_WINDOW

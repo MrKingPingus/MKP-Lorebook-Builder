@@ -12,7 +12,7 @@ import {
   WINDOW_SIZE_PRESETS,
   WINDOW_PRESET_TOLERANCE,
 } from '../constants/scaling.js';
-import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../constants/limits.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, maxWindowWidth } from '../constants/limits.js';
 
 /** Fill a preset's open fields from the live window; 'viewport' means "as tall as the screen". */
 function resolvePreset(preset, current) {
@@ -24,7 +24,7 @@ function resolvePreset(preset, current) {
 
 function clampSize(width, height) {
   return {
-    width:  Math.max(MIN_WINDOW_WIDTH,  Math.min(Math.round(width),  window.innerWidth)),
+    width:  Math.max(MIN_WINDOW_WIDTH,  Math.min(Math.round(width),  maxWindowWidth())),
     height: Math.max(MIN_WINDOW_HEIGHT, Math.min(Math.round(height), window.innerHeight)),
   };
 }

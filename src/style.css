@@ -1122,26 +1122,28 @@ img.logo-icon {
   min-height: 0;
 }
 
-/* The column reserves the gutter so nothing can run underneath, but the
-   visible chrome is the original short pill centred in it — a full-height
-   painted strip read as too heavy. The button is the whole column (a generous
-   hit target); .lorebook-tab-inner carries the look.
-   The corner resize handles sit above it (z-index 150) and keep working.
-   Background stays transparent: .window-body and the entry list have none of
-   their own, so the gutter inherits --surface from .floating-window and blends
-   into the content beside it instead of reading as a stripe. */
+/* Portaled to document.body and positioned `fixed` from the window's rect, so
+   it hangs off the OUTSIDE of the frame rather than reserving a gutter inside
+   it. z-index sits just under .floating-window (100) so the tab's left edge
+   tucks behind the window's border — the two read as one object, and the corner
+   resize handles are no longer competing with it for the frame edge at all.
+   Vertically centred by translateY, since `top` is the window's midpoint. */
 .lorebook-tab {
-  flex: 0 0 auto;
-  width: 30px;
+  position: fixed;
+  z-index: 99;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
   padding: 0;
+  cursor: pointer;
 }
 .lorebook-tab:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
 
+/* Mirrored from the old inboard pill: open edge and square corners now face
+   left, into the window, so the tab looks attached to the frame's outside. */
 .lorebook-tab-inner {
   display: flex;
   flex-direction: column;
@@ -1151,8 +1153,8 @@ img.logo-icon {
   padding: 15px 0;
   background: var(--surface2);
   border: 1px solid var(--border2);
-  border-right: none;
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border-left: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   color: var(--muted2);
   transition: background var(--transition), color var(--transition);
 }

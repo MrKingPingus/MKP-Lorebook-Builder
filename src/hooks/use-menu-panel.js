@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useUiStore }        from '../state/ui-store.js';
 import { useMobile }         from './use-mobile.js';
-import { MENU_PANEL_WIDTH }  from '../constants/limits.js';
+import { MENU_PANEL_WIDTH, maxWindowWidth }  from '../constants/limits.js';
 
 export function useMenuPanel() {
   const isMobile        = useMobile();
@@ -17,7 +17,7 @@ export function useMenuPanel() {
     if (activeMenuPanel !== null && savedWRef.current === null) {
       // Opening: save current build width, expand window, re-center
       savedWRef.current = windowSize.width;
-      const totalW = Math.min(windowSize.width + MENU_PANEL_WIDTH, window.innerWidth);
+      const totalW = Math.min(windowSize.width + MENU_PANEL_WIDTH, maxWindowWidth());
       const newX   = Math.max(0, (window.innerWidth - totalW) / 2);
       setWindowSize({ width: totalW, height: windowSize.height });
       setWindowPos({ x: newX, y: windowPos.y });
@@ -27,7 +27,7 @@ export function useMenuPanel() {
       // open (e.g. user changed browser zoom). Without the clamp, we'd
       // restore the pre-open width verbatim and the window would end up
       // wider than window.innerWidth — content stretches off the right edge.
-      const restoredW = Math.min(savedWRef.current, window.innerWidth);
+      const restoredW = Math.min(savedWRef.current, maxWindowWidth());
       savedWRef.current = null;
       const { windowPos: currentPos, windowSize: currentSize } = useUiStore.getState();
       const restoredH = Math.min(currentSize.height, window.innerHeight);
