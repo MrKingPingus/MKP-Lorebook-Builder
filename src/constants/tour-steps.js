@@ -22,6 +22,15 @@
  */
 export const TOUR_RELEASE = '0.9.0';
 
+/**
+ * Device scale factor the images are captured at. Shared with
+ * verify/screenshots.mjs so one number governs both ends: the generator
+ * captures at this ratio, and the enlarged view divides by it to display a
+ * screenshot at the builder's true on-screen size rather than at raw pixels —
+ * which reads as zoomed far too far in.
+ */
+export const TOUR_CAPTURE_SCALE = 2;
+
 export const TOUR_STEPS = [
   {
     id:    'title-menu',

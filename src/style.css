@@ -7500,7 +7500,11 @@ kbd {
 .tour-panel {
   display: flex;
   flex-direction: column;
-  width: min(760px, 100%);
+  /* Sized to what the captures actually render at, not to their full width.
+     They are portrait and height-constrained, so at 68vh they come out roughly
+     600-850px wide — a 1240px panel left wide empty margins either side. This
+     also keeps the caption to a readable measure rather than one long line. */
+  width: min(880px, 100%);
   max-height: 100%;
   background: var(--surface2);
   border: 1px solid var(--border2);
@@ -7551,7 +7555,7 @@ kbd {
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 52vh;
+  max-height: 68vh;
 }
 .tour-zoom-hint {
   position: absolute;
@@ -7566,11 +7570,19 @@ kbd {
 }
 .tour-shot:hover .tour-zoom-hint { opacity: 1; }
 
+/* The caption carries the step — the image only supports it — but as plain
+   text under a large screenshot it was being skipped entirely. Given a panel of
+   its own with an accent edge so the eye lands on it. */
 .tour-body {
-  margin: 12px 18px 0;
-  font-size: 0.8125rem;
+  margin: 14px 18px 0;
+  padding: 11px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
   line-height: 1.6;
-  color: var(--muted2);
+  color: var(--text);
   flex-shrink: 0;
 }
 
@@ -7632,6 +7644,10 @@ kbd {
   height: auto;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  /* Width is set inline from naturalWidth / TOUR_CAPTURE_SCALE so the shot
+     appears at the size the builder actually is. Left to max-width alone it
+     rendered at close to raw capture pixels — about twice life size. */
+  flex-shrink: 0;
 }
 .tour-zoom-close {
   position: fixed;
@@ -7659,4 +7675,12 @@ kbd {
   cursor: pointer;
   transition: color var(--transition), border-color var(--transition);
 }
-.lander-tour-btn:hover { color: var(--text); border-color: var(--accent); }
+.lander-tour-btn {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 55%, transparent);
+}
+.lander-tour-btn:hover {
+  color: var(--bg);
+  background: var(--green);
+  border-color: var(--green);
+}

@@ -13,7 +13,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDismissLayer }  from '../../hooks/use-dismiss-layer.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
-import { TOUR_STEPS, TOUR_RELEASE } from '../../constants/tour-steps.js';
+import { TOUR_STEPS, TOUR_RELEASE, TOUR_CAPTURE_SCALE } from '../../constants/tour-steps.js';
 
 // Built from BASE_URL rather than a bare absolute path: the deployed site lives
 // under /<repo-name>/ on Pages, where "/screenshots/…" would 404.
@@ -24,6 +24,11 @@ function imageUrl(file) {
 export function FeatureTour({ onClose }) {
   const [index, setIndex]    = useState(0);
   const [zoomed, setZoomed]  = useState(false);
+  // Natural width of the current image, so the enlarged view can render it at
+  // the builder's true on-screen size. Captures are at TOUR_CAPTURE_SCALE, so
+  // showing them at raw pixel width reads as roughly 2x zoomed — well past
+  // being readable as a screenshot of an interface.
+  const [naturalWidth, setNaturalWidth] = useState(0);
   const nextRef = useRef(null);
 
   const step  = TOUR_STEPS[index];
@@ -49,6 +54,7 @@ export function FeatureTour({ onClose }) {
 
   function go(delta) {
     setZoomed(false);
+    setNaturalWidth(0);
     setIndex((i) => Math.min(TOUR_STEPS.length - 1, Math.max(0, i + delta)));
   }
 
@@ -90,7 +96,11 @@ export function FeatureTour({ onClose }) {
           onClick={() => setZoomed(true)}
           title="Click to enlarge"
         >
-          <img src={imageUrl(step.file)} alt={step.alt} />
+          <img
+            src={imageUrl(step.file)}
+            alt={step.alt}
+            onLoad={(e) => setNaturalWidth(e.currentTarget.naturalWidth)}
+          />
           <span className="tour-zoom-hint" aria-hidden="true">Click to enlarge</span>
         </button>
 
@@ -135,7 +145,11 @@ export function FeatureTour({ onClose }) {
           role="dialog"
           aria-label={`${step.title} — enlarged`}
         >
-          <img src={imageUrl(step.file)} alt={step.alt} />
+          <img
+            src={imageUrl(step.file)}
+            alt={step.alt}
+            style={naturalWidth ? { width: naturalWidth / TOUR_CAPTURE_SCALE } : undefined}
+          />
           <span className="tour-zoom-close">Click anywhere to close</span>
         </div>
       )}

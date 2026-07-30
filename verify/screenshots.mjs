@@ -15,12 +15,12 @@ import {
   openSettings, openSettingsSection, importBookAsNew, openScaleMenu,
   VARIANT_FIXTURE, FIXTURE,
 } from './driver.mjs';
-import { TOUR_RELEASE, TOUR_STEPS } from '../src/constants/tour-steps.js';
+import { TOUR_RELEASE, TOUR_STEPS, TOUR_CAPTURE_SCALE } from '../src/constants/tour-steps.js';
 
 // Straight into public/ so the built site serves them, namespaced by release:
 // the 0.9.0 images stay correct for 0.9.0 even after the UI moves on.
 const OUT = process.argv[2] || join(process.cwd(), 'public', 'screenshots', TOUR_RELEASE);
-const SCALE = 2;
+const SCALE = TOUR_CAPTURE_SCALE;
 
 // ── annotation layer ────────────────────────────────────────────────────────
 // `marks` is [{ selector, label, place }]; place is where the badge sits
@@ -323,7 +323,7 @@ async function main() {
   for (const id of missingScene) console.log(`!! tour step "${id}" has no scene — no image will be written`);
   for (const id of orphanScene)  console.log(`!! scene "${id}" is not in TOUR_STEPS — its image is unused`);
 
-  const { browser, page } = await launch({ width: 1120, height: 880, deviceScaleFactor: SCALE });
+  const { browser, page } = await launch({ width: 1500, height: 1150, deviceScaleFactor: SCALE });
 
   for (const step of TOUR_STEPS) {
     const build = SCENES[step.id];
