@@ -1,15 +1,25 @@
 // Lorebook list as a first-class panel — always-expanded version of the switcher dropdown for the menu panel
 import { useState, useRef, useEffect } from 'react';
-import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
+import { useSortedLorebooks }   from '../../hooks/use-sorted-lorebooks.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useExport }            from '../../hooks/use-export.js';
 import { useMobile }            from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { LOREBOOK_SORT_OPTIONS } from '../../constants/sort-modes.js';
 
 export function LorebookPanel() {
-  const { items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } = useLorebookSwitcher();
+  // This panel is always mounted (MenuPanel keeps its sections alive so their
+  // state survives a tab switch), so it can't use mounting as the "list opened"
+  // signal the way TitleMenu does — it has to watch activeMenuPanel instead.
+  // That matters here more than anywhere: this is the one surface that stays on
+  // screen through a switch, so a live re-sort would rearrange the list under
+  // the pointer at the exact moment it was clicked.
+  const panelOpen = useUi((s) => s.activeMenuPanel) === 'lorebooks';
+  const { crosstalkEnabled, setCrosstalkEnabled, lorebookSort, setLorebookSort } = useSettings();
+  const { items, sorted, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } =
+    useSortedLorebooks({ mode: lorebookSort, open: panelOpen });
   const [pendingId, setPendingId]             = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingId, setEditingId]             = useState(null);
@@ -19,7 +29,6 @@ export function LorebookPanel() {
   const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
   const isMobile           = useMobile();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
-  const { crosstalkEnabled, setCrosstalkEnabled } = useSettings();
   const { referenceLorebook, setReferenceLorebookId } = useReferenceLorebook();
 
   // Mobile-only reference picker: lives directly under the toggle so
@@ -141,11 +150,30 @@ export function LorebookPanel() {
         </div>
       )}
 
+      {/* Same control as the title menu's column head — one preference, both
+          surfaces, set wherever you happen to be looking at the list. */}
+      {items.length > 1 && (
+        <div className="lorebook-panel-sort" role="group" aria-label="Sort lorebooks">
+          {LOREBOOK_SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`tm-sort-btn${lorebookSort === opt.id ? ' tm-sort-btn--on' : ''}`}
+              onClick={() => setLorebookSort(opt.id)}
+              title={opt.title}
+              aria-pressed={lorebookSort === opt.id}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="switcher-list">
         {items.length === 0 && (
           <div className="switcher-empty">No lorebooks yet</div>
         )}
-        {items.map((item) => (
+        {sorted.map((item) => (
           <div key={item.id}>
             <div
               className={`switcher-item${item.isActive ? ' switcher-item--active' : ''}`}

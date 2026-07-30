@@ -3059,6 +3059,33 @@ img.logo-icon {
 }
 .tm-col-head-count { color: var(--border2); }
 
+/* Sort toggle in the Lorebooks column head. In-context rather than buried in
+   Settings: it is a view preference for this specific list, and a user who
+   wants it alphabetical is looking at the list when they decide that. */
+.tm-sort {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tm-sort-btn {
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+.tm-sort-btn:hover { color: var(--text); background: var(--surface3); }
+.tm-sort-btn--on {
+  color: var(--passive-agree);
+  border-color: color-mix(in srgb, var(--passive-agree) 45%, transparent);
+}
+
 /* Shrink-to-content rather than fill: with two or three lorebooks saved, a
    filling body would strand "+ New lorebook" at the bottom of an empty column.
    The menu's own max-height still forces this to scroll once the list is long. */
@@ -7438,4 +7465,12 @@ kbd {
 .update-notice-btn--primary:hover {
   background: color-mix(in srgb, var(--accent) 82%, #000);
   border-color: color-mix(in srgb, var(--accent) 82%, #000);
+}
+
+/* Sort toggle above the side-panel lorebook list — mirrors the title menu's. */
+.lorebook-panel-sort {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0 2px 6px;
 }

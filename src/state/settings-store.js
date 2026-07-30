@@ -32,6 +32,7 @@ export const useSettingsStore = create((set) => ({
   setFunnyFishEnabled:         (funnyFishEnabled)         => set({ funnyFishEnabled }),
   setStorageQuotaProfile:      (storageQuotaProfile)      => set({ storageQuotaProfile }),
   setLegacyMenus:              (legacyMenus)              => set({ legacyMenus }),
+  setLorebookSort:             (lorebookSort)             => set({ lorebookSort }),
 
   applySettings: (settings) => set(settings),
 }));

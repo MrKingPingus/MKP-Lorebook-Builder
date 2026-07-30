@@ -90,6 +90,9 @@ export const DEFAULT_SETTINGS = {
   // lorebooks and import/export. The side panels themselves are never removed;
   // this only decides whether the header still offers a route to them.
   legacyMenus:              false,
+  // Order of the lorebook list in the title menu and the pull-tab panel.
+  // 'recent' (default) | 'alpha' — see constants/sort-modes.js.
+  lorebookSort:             'recent',
 };
 
 export const DEFAULT_ENTRY = {

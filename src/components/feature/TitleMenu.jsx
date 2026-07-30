@@ -10,8 +10,9 @@
 // edge. Same reason ScaleMenu and LorebookSwitchPopover portal.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useLorebookSwitcher } from '../../hooks/use-lorebook-switcher.js';
+import { useSortedLorebooks }  from '../../hooks/use-sorted-lorebooks.js';
 import { useImportFlow }       from '../../hooks/use-import-flow.js';
+import { useSettings }         from '../../hooks/use-settings.js';
 import { useLorebook }         from '../../hooks/use-lorebook.js';
 import { useEntries }          from '../../hooks/use-entries.js';
 import { useExport }           from '../../hooks/use-export.js';
@@ -20,6 +21,7 @@ import { ImportFlow }          from './ImportFlow.jsx';
 import { DISMISS_PRIORITY }    from '../../services/dismiss-stack.js';
 import { DUPE_FLASH_MS }       from '../../constants/limits.js';
 import { IMPORT_STAGE }        from '../../constants/import-flow.js';
+import { LOREBOOK_SORT_OPTIONS } from '../../constants/sort-modes.js';
 import {
   TITLE_MENU_WIDTH_PX,
   TITLE_MENU_STACK_BELOW_PX,
@@ -28,14 +30,6 @@ import {
   TITLE_MENU_EDGE_PAD_PX,
 } from '../../constants/title-menu.js';
 
-// Alphabetical, not recency-ordered. The stored index promotes the active book
-// to the front on every switch (`promoteInIndex`), so a recency-ordered menu
-// would reshuffle itself under the cursor the moment you used it — you'd never
-// find the same book in the same place twice.
-function byName(a, b) {
-  return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
-}
-
 // Open/close orchestration (hover, pin, outside click, resize) lives in
 // WindowHeader alongside the trigger, the same way StatusFooter owns it for the
 // sizing menu. This component only renders and reports that it wants to close.
@@ -43,7 +37,11 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
   const menuRef = useRef(null);
   const [pos, setPos] = useState(null);
 
-  const { items, createLorebook, switchLorebook, deleteLorebook } = useLorebookSwitcher();
+  const { lorebookSort, setLorebookSort } = useSettings();
+  // `open` is constant here: TitleMenu only exists while the menu is open, so
+  // mounting is the "list opened" moment the snapshot keys off.
+  const { items, sorted, createLorebook, switchLorebook, deleteLorebook } =
+    useSortedLorebooks({ mode: lorebookSort, open: true });
   const { activeLorebook } = useLorebook();
   const { entries }        = useEntries();
   // Importing takes the menu over rather than handing off to a side panel —
@@ -95,7 +93,6 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
   const width = Math.min(TITLE_MENU_WIDTH_PX, window.innerWidth - TITLE_MENU_EDGE_PAD_PX * 2);
   const stacked = width < TITLE_MENU_STACK_BELOW_PX;
 
-  const sorted = [...items].sort(byName);
   const confirmDeleteName = confirmDeleteId
     ? (items.find((i) => i.id === confirmDeleteId)?.name || '(unnamed)')
     : '';
@@ -162,6 +159,20 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
       <div className="tm-col tm-col--books">
         <div className="tm-col-head">
           Lorebooks <span className="tm-col-head-count">· {items.length}</span>
+          <span className="tm-sort" role="group" aria-label="Sort lorebooks">
+            {LOREBOOK_SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`tm-sort-btn${lorebookSort === opt.id ? ' tm-sort-btn--on' : ''}`}
+                onClick={() => setLorebookSort(opt.id)}
+                title={opt.title}
+                aria-pressed={lorebookSort === opt.id}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </span>
         </div>
         <div className="tm-col-body">
           {sorted.map((item) => (

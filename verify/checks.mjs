@@ -1774,6 +1774,71 @@ const SCENARIOS = [
       Math.abs(closed.width - widthBefore) <= 3, true);
   }, { width: 1700, height: 1000 }),
 
+  scenario('Lorebook list: recency by default, A–Z on request, stable while open', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+
+    const menuNames = async () =>
+      (await page.locator('.tm-book-name').allInnerTexts()).map((t) => t.trim());
+
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+
+    // Recency, not alphabetical: you are far likelier to want the book you were
+    // just in than the one starting with "A".
+    check('Recent is the default mode',
+      (await page.locator('.title-menu .tm-sort-btn--on').innerText()).trim(), 'RECENT');
+    check('the most recently opened book leads',
+      (await page.locator('.tm-book').first().getAttribute('class')).includes('tm-book--active'), true);
+
+    const recent = await menuNames();
+    await page.locator('.title-menu .tm-sort-btn', { hasText: 'A–Z' }).click();
+    await settle(page, 300);
+    const alpha = await menuNames();
+    check('A–Z reorders the list',
+      alpha.join('|'), [...recent].sort((a, b) => a.localeCompare(b)).join('|'));
+    check('and it is a different order than recency here',
+      alpha.join('|') !== recent.join('|'), true);
+
+    await page.locator('.title-menu .tm-sort-btn', { hasText: 'Recent' }).click();
+    await settle(page, 300);
+    check('switching back restores recency', (await menuNames()).join('|'), recent.join('|'));
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    // The side panel is the surface that stays on screen through a switch, so
+    // it is the one where a live re-sort would rearrange rows under the pointer
+    // at the moment they were clicked. Order is snapshotted when the list opens.
+    await page.locator('.lorebook-tab').click();
+    await settle(page, 700);
+    const rows = async () =>
+      (await page.locator('.menu-panel .switcher-item').allInnerTexts())
+        .map((t) => t.split('\n')[0].trim());
+
+    const before = await rows();
+    check('the sort toggle is on the panel too',
+      await page.locator('.lorebook-panel-sort .tm-sort-btn').count(), 2);
+
+    await page.locator('.menu-panel .switcher-item').nth(1).click();
+    await settle(page, 400);
+    // Clicking a row raises a "save first?" prompt rather than switching outright.
+    const anyway = page.locator('.switcher-prompt-btn', { hasText: 'Switch anyway' });
+    if (await anyway.count()) await anyway.click();
+    await settle(page, 700);
+
+    check('switching does not rearrange the open list',
+      (await rows()).join('|'), before.join('|'));
+
+    // …but reopening reflects the new recency.
+    await page.locator('.lorebook-tab').click();
+    await settle(page, 600);
+    await page.locator('.lorebook-tab').click();
+    await settle(page, 700);
+    check('reopening re-sorts to the new recency',
+      (await rows()).join('|') !== before.join('|'), true);
+  }),
+
   scenario('Update notice: shown once to returning users, never to new ones', async (page, check) => {
     const KEY = 'mkp_last_seen_release';
     const notice = page.locator('.update-notice');
@@ -2064,7 +2129,7 @@ const SCENARIOS = [
     check('no status footer on mobile', await page.locator('.status-footer').count(), 0);
   }, { mobile: true, width: 390, height: 780 }),
 
-  scenario('Title menu: both columns, alphabetical books, switch and rename', async (page, check) => {
+  scenario('Title menu: both columns, recency-ordered books, switch and rename', async (page, check) => {
     await openBuilderWithFixture(page);
     await importBookAsNew(page, VARIANT_FIXTURE);
     await settle(page, 400);
@@ -2085,11 +2150,11 @@ const SCENARIOS = [
       heads.map((h) => h.split('·')[0].trim()).join(' | '),
       'LOREBOOKS | IMPORT / EXPORT');
 
-    // Alphabetical, not recency-ordered — the stored index promotes the active
-    // book on every switch, so a recency list would reshuffle under the cursor.
+    // Recency-ordered by default: the most recently opened book leads. (A–Z is
+    // available from the column head — see the dedicated ordering scenario.)
     const names = await page.locator('.tm-book-name').allInnerTexts();
-    const sorted = [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    check('books are listed alphabetically', names.join('|'), sorted.join('|'));
+    check('the most recently opened book leads the list',
+      (await page.locator('.tm-book').first().getAttribute('class')).includes('tm-book--active'), true);
     check('the active book is marked', await page.locator('.tm-book--active').count(), 1);
 
     // Menu escapes the window's `overflow: hidden` — it is portaled to body, so

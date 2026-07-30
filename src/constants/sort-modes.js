@@ -37,3 +37,16 @@ export const DEFAULT_FOLDER_ORDER = 'position';
 export function folderOrderFor(sortMode) {
   return FOLDER_ORDER_BY_SORT[sortMode] ?? DEFAULT_FOLDER_ORDER;
 }
+
+// How the lorebook list is ordered in the title menu and the pull-tab panel.
+// Recency is the default: you are more likely to want the book you were just in
+// than the one starting with "A". Alphabetical is there for people who keep many
+// books and navigate them by name.
+export const LOREBOOK_SORT = {
+  recent: 'recent',
+  alpha:  'alpha',
+};
+export const LOREBOOK_SORT_OPTIONS = [
+  { id: LOREBOOK_SORT.recent, label: 'Recent',       title: 'Most recently opened first' },
+  { id: LOREBOOK_SORT.alpha,  label: 'A–Z',          title: 'Alphabetical by name' },
+];
