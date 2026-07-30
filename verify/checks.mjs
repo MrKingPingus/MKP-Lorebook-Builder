@@ -1875,7 +1875,7 @@ const SCENARIOS = [
       await page.locator('.update-notice-body .md-h2').count(), 0);
 
     // Dismissing sticks across reloads.
-    await page.locator('.update-notice-btn', { hasText: 'Close' }).click();
+    await page.locator('.update-notice-btn:not(.update-notice-btn--primary)').click();
     await settle(page, 300);
     check('closing dismisses it', await notice.count(), 0);
     await page.reload({ waitUntil: 'networkidle' });
@@ -1890,6 +1890,84 @@ const SCENARIOS = [
     await page.keyboard.press('Escape');
     await settle(page, 300);
     check('Escape closes it too', await notice.count(), 0);
+  }),
+
+  scenario('Feature tour: click-through from the update notice, with enlarge', async (page, check) => {
+    // Any 4xx/5xx means an image the tour needs is missing from the build —
+    // the failure mode this whole approach has to be watched for, since the
+    // images are generated separately from the code that shows them.
+    const failed = [];
+    page.on('response', (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`); });
+
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await page.evaluate(() => {
+      localStorage.removeItem('mkp_last_seen_release');
+      localStorage.setItem('mkp_lorebook_index', JSON.stringify([
+        { id: 'x', name: 'Old Book', updatedAt: Date.now() },
+      ]));
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+
+    await page.locator('.update-notice-btn', { hasText: 'Show me the new features' }).click();
+    await settle(page, 700);
+    check('the notice opens the tour', await page.locator('.tour-panel').count(), 1);
+    // Taking the tour counts as having seen the release, so it can't reappear
+    // behind the tour or on the next visit.
+    check('and the notice is dismissed, not just hidden',
+      await page.evaluate(() => localStorage.getItem('mkp_last_seen_release') !== null), true);
+
+    check('it starts at the first step',
+      (await page.locator('.tour-progress').innerText()).startsWith('1 of'), true);
+    check('Back is disabled on the first step',
+      await page.locator('.tour-btn', { hasText: 'Back' }).isDisabled(), true);
+
+    // The image has to actually decode — a broken src still renders an <img>.
+    const loaded = () => page.locator('.tour-shot img')
+      .evaluate((i) => i.complete && i.naturalWidth > 0);
+    check('the first screenshot loads', await loaded(), true);
+    check('it is a 2x capture, so there is detail to enlarge into',
+      (await page.locator('.tour-shot img').evaluate((i) => i.naturalWidth)) > 1000, true);
+    // Text baked into a PNG is invisible to a screen reader; the caption and alt
+    // text are what actually carry the step.
+    check('the step has real caption text',
+      (await page.locator('.tour-body').innerText()).length > 40, true);
+    check('and the image has alt text',
+      ((await page.locator('.tour-shot img').getAttribute('alt')) ?? '').length > 20, true);
+
+    // Walk to the end.
+    const steps = await page.locator('.tour-dot').count();
+    for (let i = 0; i < steps - 1; i++) {
+      await page.locator('.tour-btn', { hasText: 'Next' }).click();
+      await settle(page, 300);
+    }
+    check('every step is reachable',
+      (await page.locator('.tour-progress').innerText()), `${steps} of ${steps}`);
+    check('the last screenshot loads too', await loaded(), true);
+    check('the last step offers Done rather than Next',
+      await page.locator('.tour-btn', { hasText: 'Done' }).count(), 1);
+
+    // Enlarging is the reason the captures are 2x rather than 1x.
+    await page.locator('.tour-shot').click();
+    await settle(page, 400);
+    check('clicking the shot enlarges it', await page.locator('.tour-zoom').count(), 1);
+    // Escape backs out of the enlargement first, so zooming in doesn't cost you
+    // your place in the sequence.
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('Escape closes the enlargement', await page.locator('.tour-zoom').count(), 0);
+    check('and leaves the tour open', await page.locator('.tour-panel').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('a second Escape closes the tour', await page.locator('.tour-panel').count(), 0);
+
+    // Dismissing the notice must not be a one-way door to the tour.
+    check('the lander offers a way back in', await page.locator('.lander-tour-btn').count(), 1);
+    await page.locator('.lander-tour-btn').click();
+    await settle(page, 500);
+    check('which reopens it', await page.locator('.tour-panel').count(), 1);
+
+    check('no tour asset 404d', failed.join(' | '), '');
   }),
 
   scenario('Side panel slides open without the entry list lurching', async (page, check) => {

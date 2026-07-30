@@ -12,10 +12,14 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   launch, openBuilderWithFixture, enterSelectMode, selectCards, settle,
-  openSettings, openSettingsSection,
+  openSettings, openSettingsSection, importBookAsNew, openScaleMenu,
+  VARIANT_FIXTURE, FIXTURE,
 } from './driver.mjs';
+import { TOUR_RELEASE, TOUR_STEPS } from '../src/constants/tour-steps.js';
 
-const OUT = process.argv[2] || join(process.cwd(), 'screenshots');
+// Straight into public/ so the built site serves them, namespaced by release:
+// the 0.9.0 images stay correct for 0.9.0 even after the UI moves on.
+const OUT = process.argv[2] || join(process.cwd(), 'public', 'screenshots', TOUR_RELEASE);
 const SCALE = 2;
 
 // ── annotation layer ────────────────────────────────────────────────────────
@@ -222,134 +226,111 @@ async function scene(page) {
   await settle(page, 300);
 }
 
+// Every scene is keyed by the step id in constants/tour-steps.js, and the file
+// it writes is that step's `file`. A step with no scene here, or a scene whose
+// id isn't in the list, is reported rather than silently skipped — a tour with
+// a missing image is worse than one with a missing step.
+const SCENES = {
+  'title-menu': async (page) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+    await settle(page, 350);
+    await annotate(page, [
+      { selector: '.title-menu .tm-book--active', label: 'Every lorebook you have saved — most recent first' },
+      { selector: '.title-menu .tm-sort-btn', nth: 1, label: 'Switch to A–Z if you would rather find them by name', place: 'right' },
+      { selector: '.title-menu .tm-new', label: 'Start a new lorebook' },
+      { selector: '.title-menu .drop-zone', label: 'Drop a file here to import, or click to browse', place: 'right' },
+      { selector: '.title-menu .tm-btn-row', label: 'Download this book as JSON, TXT or DOCX', place: 'right' },
+    ], { title: 'Your lorebooks live in the title' });
+  },
+
+  import: async (page) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+    await page.locator('.title-menu .drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
+    await expect(page, '.import-flow-grid', 'import disposition step');
+    await settle(page, 400);
+    await annotate(page, [
+      { selector: '.import-flow-title', label: 'The file you picked, and how many entries it holds' },
+      { selector: '.import-flow-opt', nth: 0, label: 'Import as new — your current book is untouched', place: 'right' },
+      { selector: '.import-flow-opt', nth: 2, label: 'Replace overwrites what is there now', place: 'right' },
+      { selector: '.import-flow-opt', nth: 3, label: 'Back up first downloads a copy, then replaces', place: 'right' },
+      { selector: '.tm-rail-back', label: 'Back to your lorebooks' },
+    ], { title: 'Importing asks what you want' });
+  },
+
+  'status-bar': async (page) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+    await annotate(page, [
+      { selector: '.status-save', label: 'Whether your work is saved, and how long ago' },
+      { selector: '.status-count', label: 'How many entries this lorebook holds' },
+      { selector: '.status-version', label: 'Which build you are running — quote this in a bug report' },
+      { selector: '.status-right .storage-usage-ring', label: 'Browser storage in use; click for a breakdown' },
+      { selector: '.status-item', label: 'Every size setting lives here' },
+    ], { title: 'The bar along the bottom', legendOffset: 96 });
+  },
+
+  'size-menu': async (page) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]').first().hover();
+    await expect(page, '.scale-flyout', 'size submenu');
+    await settle(page, 400);
+    await annotate(page, [
+      { selector: '.scale-flyout', label: 'Named presets, or Custom… to type exact numbers', place: 'right' },
+      { selector: '.scale-menu', label: 'Each row shows its current value without opening anything', place: 'left' },
+    ], { title: 'One place for every size', legendOffset: 96 });
+  },
+
+  settings: async (page) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    await settle(page, 400);
+    await annotate(page, [
+      { selector: '.settings-search-input', label: 'Finds a control even if you do not know its exact name', place: 'left' },
+      { selector: '.settings-section-title', nth: 0, label: 'What happens as you write', place: 'left' },
+      { selector: '.settings-section-title', nth: 2, label: 'How you drive the app — shortcuts, hotbar, folders', place: 'left' },
+    ], { title: 'Settings is four sections now' });
+  },
+
+  'pull-tab': async (page) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 300);
+    await page.locator('.lorebook-tab').click();
+    await expect(page, '.menu-panel .switcher-list', 'lorebook side panel');
+    await settle(page, 600);
+    await annotate(page, [
+      { selector: '.lorebook-tab', label: 'Click the tab to open and close the panel', place: 'right' },
+      { selector: '.menu-panel .switcher-list', label: 'Your lorebooks, beside your entries rather than over them', place: 'left' },
+      { selector: '.entry-card', nth: 0, label: 'The entry list keeps its width — the window grew instead', place: 'left' },
+    ], { title: 'The pull tab on the right edge' });
+  },
+};
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
+
+  const missingScene = TOUR_STEPS.filter((s) => !SCENES[s.id]).map((s) => s.id);
+  const orphanScene  = Object.keys(SCENES).filter((id) => !TOUR_STEPS.some((s) => s.id === id));
+  for (const id of missingScene) console.log(`!! tour step "${id}" has no scene — no image will be written`);
+  for (const id of orphanScene)  console.log(`!! scene "${id}" is not in TOUR_STEPS — its image is unused`);
+
   const { browser, page } = await launch({ width: 1120, height: 880, deviceScaleFactor: SCALE });
 
-  // ── 1. the folder tree ────────────────────────────────────────────────────
-  await scene(page);
-  await annotate(page, [
-    { selector: '.folder-header .folder-swatch', label: 'Colour swatch — eight pastels, deliberately distinct from entry-type colours' },
-    { selector: '.folder-header .folder-count', label: 'How many entries are inside, counting sub-folders' },
-    { selector: '.folder-header .folder-add-entry-btn', label: 'Add a new entry straight into this folder', place: 'bottom' },
-    { selector: '.folder-entries .folder-header', label: 'Folders nest inside folders, up to three levels deep' },
-  ], { title: 'Folders — a builder-only organisation layer, never exported' });
-  await shot(page, '01-folder-tree');
-
-  // ── 2. multi-entry drag ───────────────────────────────────────────────────
-  await scene(page);
-  // Tuck the folder so every row in this shot fits on screen — the drag then
-  // stays clear of the auto-scroll zone at the list edges.
-  await page.locator('.folder-header .folder-collapse-btn').first().click();
-  await settle(page, 400);
-
-  const rows = page.locator('.entry-list > .entry-list-item .entry-label');
-  await rows.nth(0).click({ modifiers: ['Shift'] });
-  await settle(page, 250);
-  await rows.nth(2).click({ modifiers: ['Shift'] });
-  await settle(page, 350);
-
-  const src = await page.locator('.entry-list > .entry-list-item .entry-card').nth(0)
-    .locator('.drag-handle').boundingBox();
-  await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2 + 12, { steps: 4 });
-  await settle(page, 250);
-  const dst = await page.locator('.entry-list > .entry-list-item .entry-card').nth(4).boundingBox();
-  await page.mouse.move(dst.x + dst.width / 2, dst.y + dst.height * 0.8, { steps: 12 });
-  await settle(page, 300);
-  // A second small move at the destination. One long move can land without a
-  // dragover firing on the row underneath, leaving no indicator to photograph.
-  await page.mouse.move(dst.x + dst.width / 2 + 6, dst.y + dst.height * 0.8, { steps: 3 });
-  await settle(page, 350);
-  await expect(page, '.entry-list-item--drop-after', 'drop indicator');
-
-  await annotate(page, [
-    { selector: '.entry-list-item--dragging', label: 'The whole selection travels — grab any selected row by its handle' },
-    { selector: '.entry-list-item--drop-after', label: 'The blue line shows exactly where they will land, before you let go', place: 'left', ring: false },
-    { selector: '.bulk-action-count', label: 'Shift+click picks a range; Ctrl+click drops one back out', place: 'left' },
-  ], { title: 'Drag several entries at once — one gesture, one undo', legendOffset: 96 });
-  await shot(page, '02-multi-drag');
-  await page.mouse.up();
-  await settle(page, 250);
-
-  // ── 3. dropping into a folder ─────────────────────────────────────────────
-  await scene(page);
-  const loose = await page.locator('.entry-list > .entry-list-item .entry-card').first()
-    .locator('.drag-handle').boundingBox();
-  await page.mouse.move(loose.x + loose.width / 2, loose.y + loose.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(loose.x + loose.width / 2, loose.y + loose.height / 2 + 12, { steps: 4 });
-  await settle(page, 250);
-  // The outer folder header: big, and far enough from the list's top edge that
-  // the auto-scroll zone never gets involved.
-  const head = await page.locator('.folder-header').first().boundingBox();
-  await page.mouse.move(head.x + head.width * 0.45, head.y + head.height * 0.65, { steps: 12 });
-  await settle(page, 300);
-  await page.mouse.move(head.x + head.width * 0.5, head.y + head.height * 0.65, { steps: 3 });
-  await settle(page, 350);
-  await expect(page, '.folder-header--drop-into', 'folder drop outline');
-
-  await annotate(page, [
-    { selector: '.folder-header--drop-into', label: 'Drop onto a folder header to file the entry inside it' },
-    { selector: '.entry-list-tail', label: 'Or drop down here to pull it out of every folder', place: 'top' },
-  ], { title: 'Where you drop decides where it belongs', legendOffset: 96 });
-  await shot(page, '03-drop-into-folder');
-  await page.mouse.up();
-  await settle(page, 250);
-
-  // ── 4. filter by folder ───────────────────────────────────────────────────
-  await scene(page);
-  await page.locator('.folder-filter-btn').click();
-  await settle(page, 350);
-  await annotate(page, [
-    { selector: '.folder-filter-btn', label: 'Folder ▾ — only appears once the book actually has folders', place: 'top' },
-    // Left, so it does not stack against the count badge at the row's right edge.
-    { selector: '.folder-filter-popover .type-filter-popover-row', nth: 1, label: 'Pick a folder to show only its entries, sub-folders included', place: 'left' },
-    { selector: '.folder-filter-count', label: 'The count matches exactly what picking it will show', place: 'right' },
-    { selector: '.folder-filter-popover .type-filter-popover-row:last-child', label: 'Unfiled entries — everything you have not put away yet', place: 'right' },
-  ], { title: 'Filter the list down to one folder' });
-  await shot(page, '04-folder-filter');
-  await page.keyboard.press('Escape');
-  await settle(page, 250);
-
-  // ── 5. condensed rows ─────────────────────────────────────────────────────
-  await scene(page);
-  await openSettings(page);
-  const fset = await openSettingsSection(page, 'Layout & Controls');
-  await fset.locator('.settings-checkbox-row input').nth(1).check();
-  await settle(page, 250);
-  await page.locator('.menu-panel-close').first().click();
-  await settle(page, 350);
-  // One click on the inner folder now condenses it; the outer stays full size.
-  await page.locator('.folder-entries .folder-header .folder-collapse-btn').first().click();
-  await settle(page, 400);
-  await annotate(page, [
-    { selector: '.entry-card--condensed', label: 'Condensed — one line each: type dot, name, Expand and Remove' },
-    { selector: '.folder-entries .folder-header .folder-collapse-btn', label: 'The header button cycles a folder through its sizes' },
-    { selector: '.entry-list-item .entry-card', nth: 0, label: 'Entries outside that folder keep their full size' },
-  ], { title: 'Condense a folder to scan it, without hiding it' });
-  await shot(page, '05-condensed-rows');
-
-  // ── 6. collapse-stage settings ────────────────────────────────────────────
-  await openSettings(page);
-  const stages = await openSettingsSection(page, 'Layout & Controls');
-  // Shot 5 turned Condensed on. Put it back to the shipped default, or the
-  // image would contradict its own caption.
-  const condensedBox = stages.locator('.settings-checkbox-row input').nth(1);
-  if (await condensedBox.isChecked()) {
-    await condensedBox.uncheck();
-    await settle(page, 250);
+  for (const step of TOUR_STEPS) {
+    const build = SCENES[step.id];
+    if (!build) continue;
+    await build(page);
+    await shot(page, step.file.replace(/\.png$/, ''));
   }
-  await stages.scrollIntoViewIfNeeded();
-  await settle(page, 400);
-
-  await annotate(page, [
-    { selector: '.settings-checkbox-row', nth: 0, label: 'Full size is always available — every folder returns to it', place: 'left' },
-    { selector: '.settings-checkbox-row', nth: 1, label: 'Condensed is off by default; tick it for a middle step', place: 'left' },
-    { selector: '.settings-checkbox-row', nth: 2, label: 'Hidden tucks the entries away and shows just the count', place: 'left' },
-  ], { title: 'Choose which sizes the folder button cycles through', legendOffset: 150 });
-  await shot(page, '06-collapse-stages');
 
   await browser.close();
   console.log(`\nScreenshots in ${OUT}`);
