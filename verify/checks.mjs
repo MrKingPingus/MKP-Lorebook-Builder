@@ -1863,8 +1863,10 @@ const SCENARIOS = [
     await page.reload({ waitUntil: 'networkidle' });
     await settle(page, 600);
     check('a returning user gets the notice', await notice.count(), 1);
-    check('headed by the release date',
-      (await page.locator('.update-notice-date').innerText()).startsWith('Updated 20'), true);
+    // The changelog heading is the release identifier — a version and a date
+    // since 0.9.0, a bare date before it. Either way it must be shown.
+    check('headed by the release identifier',
+      /\d/.test(await page.locator('.update-notice-date').innerText()), true);
     check('the changelog body is rendered, not raw markdown',
       (await page.locator('.update-notice-body li').count()) > 0, true);
     // The date is already in the header; repeating it inside the body reads as

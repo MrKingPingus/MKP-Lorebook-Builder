@@ -17,6 +17,7 @@ import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { FeedbackLinks }        from './FeedbackLinks.jsx';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import { SCALE_MENU_OPEN_MS, SCALE_MENU_CLOSE_MS } from '../../constants/scaling.js';
+import { APP_VERSION } from '../../constants/version.js';
 
 export function StatusFooter() {
   const { label, title, fresh } = useSaveStatus();
@@ -153,6 +154,11 @@ export function StatusFooter() {
       </div>
 
       <div className="status-right">
+        {/* Which build you're on. Beside the bug-report link on purpose: the one
+            moment this matters is when someone is about to file a report. */}
+        <span className="status-version" title={`Lorebook Builder v${APP_VERSION}`}>
+          v{APP_VERSION}
+        </span>
         <FeedbackLinks />
         <span className="status-divider" aria-hidden="true" />
         <StorageUsageRing />

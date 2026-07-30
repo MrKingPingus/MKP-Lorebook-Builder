@@ -5,7 +5,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 See `docs/plan.md`. Work phases in order. Do not build ahead.
 
 ## Changelog
-Update `CHANGELOG.md` (repo root) when completing each phase or polish pass. Add a new dated section at the top with Additions / Fixes / Adjustments / Renames subheaders as appropriate. The changelog is the source the in-app lander will eventually render — keep entries plain-language and user-visible, not internal refactor notes.
+`CHANGELOG.md` (repo root) is **release notes, not a development log.** It is rendered in-app twice — the lander's What's New panel, and the update notice that opens once per release — so it is written for users, not for us.
+
+**One section per public release, not per phase or per day of work.** Add entries to the current unreleased section as you go; do not open a new one for each phase. The heading is `## <version> — <date>` (e.g. `## 0.9.0 — 2026-07-30`), and the version comes from `package.json`. The heading text is the identifier the update notice stores, so it must not change once shipped.
+
+**Entries describe the delta from the last *released* version.** Not from the last commit. Two rules follow, and both matter:
+
+- **If a user could not have experienced the old behaviour, there is no entry.** A feature built, revised, and shipped inside one release gets one entry describing what it now is — never a "fixed" or "changed" entry about an intermediate state nobody ever saw.
+- **Iterations collapse.** Three passes on the same control across a release is one entry.
+
+**Subheaders, in this order, omitting any that are empty:**
+
+| Section | For |
+|---|---|
+| `### New` | Did not exist for users before |
+| `### Improved` | Existed, now works differently or better (includes renames) |
+| `### Fixed` | Was broken in a version users actually had |
+| `### Under the hood` | For us and for contributors — **excluded from the in-app notice** |
+
+`Under the hood` is filtered out by `services/release-notes.js`. Keep it to things that affect someone else: storage-format changes, dependency changes, removed behaviour, performance. The reasoning and findings behind a change belong in `docs/plan.md`, not here — writing them in both means they drift.
 
 ## Commands
 ```bash

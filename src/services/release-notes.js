@@ -44,9 +44,32 @@ export function parseReleases(changelogRaw) {
   return releases.filter((r) => r.id && r.blocks.length > 0);
 }
 
+// Sections written for us rather than for users. They stay in the changelog —
+// a contributor reading the repo wants them — but the in-app notice drops them,
+// because "the README now documents local setup" is nothing to an end user.
+const INTERNAL_HEADINGS = ['under the hood'];
+
+/**
+ * Drop internal-only subsections from a release's blocks.
+ * Everything from a matching `h3` up to the next `h3` goes.
+ */
+export function userFacingBlocks(blocks) {
+  const out = [];
+  let skipping = false;
+  for (const block of blocks) {
+    if (block.type === 'h3') {
+      skipping = INTERNAL_HEADINGS.includes(headingText(block).toLowerCase());
+    }
+    if (!skipping) out.push(block);
+  }
+  return out;
+}
+
 /** The newest release, or null when the changelog has none. */
 export function latestRelease(changelogRaw) {
-  return parseReleases(changelogRaw)[0] ?? null;
+  const release = parseReleases(changelogRaw)[0];
+  if (!release) return null;
+  return { ...release, userBlocks: userFacingBlocks(release.blocks) };
 }
 
 /**

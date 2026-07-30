@@ -39,7 +39,10 @@ export function UpdateNotice({ release, onClose, onShowTour }) {
         <div className="update-notice-header">
           <div>
             <h2 className="update-notice-title" id="update-notice-title">What&rsquo;s changed</h2>
-            <p className="update-notice-date">Updated {release.id}</p>
+            {/* The heading is the release identifier verbatim — "0.9.0 —
+                2026-07-30", or a bare date for releases that predate
+                versioning. Under "What's changed" it needs no label. */}
+            <p className="update-notice-date">{release.id}</p>
           </div>
           <button
             ref={closeRef}
@@ -54,7 +57,7 @@ export function UpdateNotice({ release, onClose, onShowTour }) {
         </div>
 
         <div className="update-notice-body">
-          <MarkdownView blocks={release.blocks} />
+          <MarkdownView blocks={release.userBlocks ?? release.blocks} />
         </div>
 
         <div className="update-notice-actions">

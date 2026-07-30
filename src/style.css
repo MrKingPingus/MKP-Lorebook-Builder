@@ -7474,3 +7474,12 @@ kbd {
   gap: 2px;
   padding: 0 2px 6px;
 }
+
+/* Build version in the status bar. Sits next to the bug-report link because
+   that is the one moment knowing your exact build matters. */
+.status-version {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

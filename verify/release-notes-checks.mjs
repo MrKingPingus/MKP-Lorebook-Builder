@@ -5,7 +5,7 @@
 // about *who* the user is, and reproducing "returning user who predates the
 // feature" in Playwright means fabricating storage state — which tests the
 // fabrication as much as the rule.
-import { parseReleases, latestRelease, shouldShowUpdateNotice } from '../src/services/release-notes.js';
+import { parseReleases, latestRelease, userFacingBlocks, shouldShowUpdateNotice } from '../src/services/release-notes.js';
 
 const SAMPLE = `# Changelog
 
@@ -13,9 +13,13 @@ const SAMPLE = `# Changelog
 
 ## 2026-07-29
 
-### Additions
+### New
 
 - **Newest thing.** Description.
+
+### Under the hood
+
+- Internal note nobody outside the repo cares about.
 
 ---
 
@@ -53,6 +57,24 @@ export function runReleaseNotesChecks() {
     releases[0].blocks.some((b) => b.type === 'h3'), true);
   check('latestRelease agrees with the first entry', latestRelease(SAMPLE).id, '2026-07-29');
   check('an empty changelog yields nothing', latestRelease(''), null);
+
+  // ── what the in-app notice actually shows ────────────────────────────────
+  // "Under the hood" stays in the file for contributors but must never reach a
+  // user — telling someone the README was reorganised is worse than telling
+  // them nothing, because it costs them the attention they gave the notice.
+  const user = latestRelease(SAMPLE).userBlocks;
+  const headings = user.filter((b) => b.type === 'h3')
+    .map((b) => b.inline.map((i) => i.text ?? '').join(''));
+  check('user-facing blocks keep New', headings.includes('New'), true);
+  check('and drop Under the hood', headings.includes('Under the hood'), false);
+  check('the internal bullet goes with its heading',
+    JSON.stringify(user).includes('nobody outside the repo'), false);
+  check('the user-facing bullet survives',
+    JSON.stringify(user).includes('Newest thing'), true);
+  check('the full blocks still carry everything',
+    JSON.stringify(latestRelease(SAMPLE).blocks).includes('nobody outside the repo'), true);
+  check('filtering nothing changes nothing',
+    userFacingBlocks([{ type: 'p', inline: [] }]).length, 1);
 
   // ── who sees it ──────────────────────────────────────────────────────────
   const show = (lastSeen, hasExistingWork, latestId = '2026-07-29') =>

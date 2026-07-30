@@ -2,80 +2,40 @@
 
 ---
 
-## 2026-07-29
+## 0.9.0 — 2026-07-30
 
-### Additions
+The interface overhaul. The window header has been emptied down to essentials,
+the lorebook title has become a menu, and everything that's a *readout* rather
+than an *action* has moved to a new status bar along the bottom.
 
-- **The lorebook title at the top of the window is now a menu.** Click it and a panel drops down with two columns: every lorebook you've saved on the left, and import / export on the right. Switching books, making a new one, deleting one, downloading a copy and grabbing a template are all in one place, one click from the title — instead of two clicks into a side panel.
-- **Your lorebooks are listed alphabetically**, and they stay that way. The old list re-sorted itself by which book you touched last, so the book you wanted was never in the same place twice.
-- **You can import a file straight from the title menu, without leaving it.** Drop a file on the menu (or click to browse) and the lorebook list slides aside so the import gets the whole panel — pick what should happen, check the preview, confirm. Nothing opens anywhere else.
-- **Every import now offers the same four choices, wherever you start it:** *Import as new*, *Append*, *Replace*, and *Back up first* (which downloads a copy of your current book, then replaces it). Previously the side panel had the backup option but couldn't take pasted text, and the hotbar's Import button took pasted text but had no backup option — so which one you happened to open decided what you were allowed to do.
-- **Pasted entries can do anything a file can.** Paste used to only ever add to the book you had open. Now it reaches the same four choices. It lives behind an **or paste entries instead** link next to the drop zone.
+### New
 
-### Adjustments
+- **The lorebook title is a menu.** Click it for two columns: every lorebook you've saved on the left, import and export on the right. Switch books, start a new one, delete one, download a copy or grab a template — all one click from the title. Hover to peek, click to keep it open, double-click to rename the book.
+- **A status bar runs along the bottom of the window.** It holds the things that are simply *true* about your work rather than things you do to it: whether you're saved (and how long ago), your entry count, how much browser storage you're using, links to report a bug or request a feature, and which version you're running.
+- **A pull tab on the right edge opens your lorebook list.** The window *widens* to fit the panel rather than the panel covering your entries, so nothing you were reading gets hidden. Click it again to tuck it away.
+- **One menu for every size setting — `⤢ Size`, bottom-right.** Window size (named presets or exact numbers), text size, entry height and the **+** button's size, each showing its current value. **Save as default** sets what **Reset to default** returns to. **Reset all sizing** puts everything back except your text size, which is left alone deliberately — it's an accessibility setting you may be relying on.
+- **Settings has a filter box.** Type `fab`, `shortcut`, `dark mode`, `storage` and the panel narrows to those controls, opening whichever section holds them. It matches words that aren't in the visible label, so "hotkey" finds **Keyboard shortcuts**.
+- **You can sort your lorebook list.** It's ordered by what you opened most recently, with an **A–Z** toggle in the list header if you'd rather find books by name.
+- **This notice.** When you come back after an update, you'll get a short summary of what changed. Close it and it won't ask again.
 
-- **The header button is now a gear, and it opens Settings straight away.** No dropdown in between — with lorebooks and import / export moved to the title menu, Settings was the only thing that menu still had to offer.
-- **The window header is down to four things:** the logo, the lorebook title, the gear, and the close button.
-- **The storage ring, the bug-report and feature-request icons, and your entry counts moved down to the status bar.** They're all things that are simply *true* about your lorebook rather than things you *do* to it, which is what the bottom bar is for.
-- **Renaming a lorebook is now a double-click on the title.** It used to be a text field that was always live, which made it easy to edit by accident and made a poor menu button. Double-click it, type, press Enter.
-- **The title has a ring around it** in the same colour as the **+** button, so it reads as something you can press rather than as plain text.
-- **The title menu opens on hover and pins on click**, the same way the `⤢ Size` button in the status bar works. Brush past it and it appears; move away and it goes. Click it and it stays until you click again.
-- **The hotbar's Import button no longer asks you to pick a mode first.** It used to open with a three-way choice — paste, entries from a file, or a whole book — before you'd even chosen a file. Now you pick your file (or paste), and *then* decide what happens to your current book.
-- **A backup taken before a replace is always JSON.** You could previously pick TXT, which loses your triggers — a poor thing to discover about a backup after you've already overwritten the original.
-- **The status bar's icons are bigger, spaced further apart, and separated into groups** so they read as three separate controls instead of one cluster.
-- **The side panel now slides open and shut instead of appearing instantly.** The window, the panel and the pull tab all ease together over about a fifth of a second, and your entry list holds perfectly still while it happens — it doesn't shuffle sideways to make room. Dragging and resizing the window are deliberately left unanimated, so they still track your cursor exactly. If you have reduced motion turned on (in Settings or in your OS), the slide is skipped.
-- **The pull tab hangs off the outside of the window now.** It used to sit in a channel just inside the border, which meant your entry rows stopped short of the frame. They reach it now, and the tab sticks out past it. Its old footprint is spent on the outside instead: the window stops about 30px short of the screen edge so the tab always has somewhere to sit, even at full size.
+### Improved
 
-### Documentation
-
-- **The README has been synced with the `claude/builder-repo-setup-readme-w98mlh` branch and brought up to date.** From that branch: a full walkthrough for running the app on your own machine — which version of Node you need, clone and install steps, what each command does, where your data is stored, how to run the automated browser checks, and how to host your own copy on GitHub Pages. Alongside it, the rest of the README has been corrected to match the app as it stands: the lorebook title menu, the gear, the status bar and the pull tab; the four import choices and where to find them; the four Settings sections and the filter box; the `⤢ Size` menu; and the full keyboard shortcut list.
-
-### Fixes
-
-- **Clicking the lorebook title a second time closes the menu.** It used to do nothing at all.
-- **The storage-usage popovers open upwards.** Now that the storage ring lives in the status bar, hovering it used to push the readout off the bottom of the screen.
-
-### Settings
-
-- **Layout & Controls → Navigation → Legacy menus.** Turn this on to bring back the old **☰** menu with Lorebooks, Import / Export and Settings as side panels. The side panels never went away — this just decides whether the header still offers a route to them.
-
----
-
-## 2026-07-28
-
-### Additions
-
-- **A new status bar runs along the very bottom of the window.** It's deliberately thin and sits below the hotbar. The hotbar stays what it always was — things you *do* to your lorebook. The new bar is for things that are simply *true* about the app: whether your work is saved, and how big everything is drawn. Desktop only for now; the phone layout gets its own pass later.
-- **Your work now tells you it's saved.** The bottom-left corner reads **Saved** the moment a save lands, then ages into **Saved 4m ago** so you can tell at a glance that nothing is stuck. Hover it for the exact time.
-- **One place for every size setting — the `⤢ Size` button in the bottom-right corner.** Window size, text size, entry header height and FAB button size all live here now, each showing its current value right in the menu so you can read your settings without opening anything.
-  - **Window size has named presets** — Small, Medium, Large and Full height — plus **Custom…** if you want to type exact numbers. **Save as default** makes the current size the one **Reset to default** returns to.
-  - **Reset all sizing** puts the window, entry headers and FAB back to normal. It deliberately **leaves your text size alone**, since that's an accessibility setting you may be relying on.
-
-- **Settings has a filter box.** Type what you're after — `fab`, `shortcut`, `dark mode`, `storage` — and the panel narrows to just those controls, opening whichever section holds them. It matches words that aren't in the visible label too, so "hotkey" finds **Keyboard shortcuts** and "dark mode" finds the theme picker. It stays pinned to the top while you scroll, and clearing it puts everything back.
-- **A pull tab forms the right edge of the window and opens your lorebook list.** Click it and the window widens to fit a side panel — so the list appears *beside* your entries rather than on top of them, and nothing you were reading gets covered. Click it again to tuck it away. It sits in its own gutter down the right side, so it never covers your entries or the scrollbar and stays put at any size, including full screen. Its label reads top-to-bottom with the letters upright.
-
-### Adjustments
-
-- **Settings has been reorganised from six sections down to four**, grouped by *what you're changing* rather than by whichever feature happened to introduce the setting. Nothing changed meaning or default — everything is in a more sensible place.
-  - **Editing & Entries** — writing aids, counters, entry badges, and entry history.
-  - **Appearance & Accessibility** — themes, text size, motion, contrast, and the Funny Fish.
-  - **Layout & Controls** — keyboard shortcuts, hotbar, FAB menu, folders, the reference panel, and menu behaviour.
-  - **System** — the browser storage limit.
-- **Every section now starts closed.** Opening Settings shows you the four headings and nothing else, so you pick where you're going instead of scrolling past a wall of controls.
-- **Sections are split into labelled runs** — *Writing aids*, *Counters*, *Entry badges* and so on — so a long section reads as a few short lists.
-- **Keyboard shortcuts moved to Layout & Controls**, at the top, alongside the hotbar and FAB menu — they're all ways of driving the app. The **?** cheat sheet's "Edit shortcuts" link takes you straight there.
-- **Entry history moved to the bottom of Editing & Entries.** It's the tallest block in Settings and something you set once per lorebook, so it no longer greets you first.
-- **Three settings have moved out of Settings.** Window size, entry header height and FAB button size used to be scattered across three different Settings sections; they live in the `⤢ Size` menu now. Same settings, same behaviour, one findable place.
-- **Text size is the exception — it's in both places.** You'll find it in the `⤢ Size` menu for convenience, but it also stays under Settings → Appearance & Accessibility, because that's where people who rely on it go looking. Change it in either place and the other follows.
-- **The default window is much bigger — 1200×900, up from 760×620.** The old default was cramped, especially with the reference panel open. If you never picked a size of your own, yours updates automatically; if you did, your choice is left exactly as you set it.
-- **The status bar and its `⤢ Size` button are larger and easier to read.** The first pass made them too small to comfortably hit.
-- **The `⤢ Size` button surfaces on hover and pins on click.** Hover it and the menu appears; move away and it goes. Click it and it stays put until you click again — the same way FabFilter's footer controls behave. A pinned button is outlined so you can tell which mode you're in.
-- **The size menu's submenus now open to the right**, and they no longer appear and vanish the instant your pointer crosses them — there's a short grace period on the way in and a longer one on the way out, so brushing past a row doesn't fire it and reaching across to a submenu doesn't lose it.
+- **The header is down to four things** — the logo, the lorebook title, a gear, and close. The storage ring, feedback links and entry counts moved to the status bar.
+- **The gear opens Settings directly.** No dropdown standing between you and the only thing it offered. **Ctrl+,** does the same. If you preferred the old **☰** menu, Settings → Layout & Controls → Navigation → **Legacy menus** brings it back.
+- **Settings went from six sections to four**, grouped by *what you're changing* rather than by whichever feature introduced the setting: **Editing & Entries**, **Appearance & Accessibility**, **Layout & Controls**, **System**. Nothing changed meaning or default. Every section starts closed, so you pick where you're going instead of scrolling past everything.
+- **Keyboard shortcuts moved to Layout & Controls**, at the top, beside the hotbar and FAB menu. The **?** cheat sheet's *Edit shortcuts* link goes straight there.
+- **Every import offers the same four choices, wherever you start it:** *Import as new*, *Append*, *Replace*, and *Back up first*. Previously the side panel had the backup option but couldn't take pasted text, and the hotbar's Import took pasted text but had no backup — so which one you happened to open decided what you were allowed to do. Pasted entries now reach all four; they used to only ever append.
+- **A backup taken before a replace is always JSON.** You could previously pick TXT, which doesn't carry your triggers — a poor thing to discover after you've overwritten the original.
+- **The default window is much bigger: 1200×900, up from 760×620.** If you never picked a size of your own, yours updates automatically. If you did, your choice is untouched.
+- **Renaming a lorebook is a double-click on the title**, rather than a text field that was always live and easy to edit by accident.
 - **"Entry header" is now "Entry height"**, which reads better.
 
-### Fixes
+### Under the hood
 
-- **The custom window size boxes are typeable again.** Entering a number used to snap the field straight to its smallest or largest value, because every keystroke was being clamped before you could finish typing. Values are now applied when you press Enter or click away, so `1360` stays `1360`. Anything below the minimum still gets corrected — just at the end, not mid-word.
+- All three import surfaces now run one shared implementation, so a fix in one reaches all of them.
+- The README covers running and hosting the builder locally: Node requirements, install and run steps, what each command does, where your data is stored, and the GitHub Pages setup.
+- Versioning starts here at **0.9.0**, with 1.0 reserved for the full site integration. The version shows in the status bar so a bug report can name an exact build.
+- New browser-storage key `mkp_last_seen_release`, holding the release you were last shown.
 
 ---
 
