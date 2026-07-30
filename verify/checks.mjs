@@ -1774,6 +1774,57 @@ const SCENARIOS = [
       Math.abs(closed.width - widthBefore) <= 3, true);
   }, { width: 1700, height: 1000 }),
 
+  scenario('Update notice: shown once to returning users, never to new ones', async (page, check) => {
+    const KEY = 'mkp_last_seen_release';
+    const notice = page.locator('.update-notice');
+
+    // A first visit — nothing stored, nothing saved. Opening on a changelog for
+    // an app you have never used is a poor introduction, so: nothing.
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('a brand-new user sees no notice', await notice.count(), 0);
+    // …but the release still has to be recorded, or the first time they save a
+    // book and come back they'd be told about a release that predates them.
+    check('and is silently marked up to date',
+      await page.evaluate((k) => localStorage.getItem(k) !== null, KEY), true);
+
+    // A returning user from before this feature existed: has books, no record.
+    await page.evaluate((k) => {
+      localStorage.removeItem(k);
+      localStorage.setItem('mkp_lorebook_index', JSON.stringify([
+        { id: 'x', name: 'Old Book', updatedAt: Date.now() },
+      ]));
+    }, KEY);
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('a returning user gets the notice', await notice.count(), 1);
+    check('headed by the release date',
+      (await page.locator('.update-notice-date').innerText()).startsWith('Updated 20'), true);
+    check('the changelog body is rendered, not raw markdown',
+      (await page.locator('.update-notice-body li').count()) > 0, true);
+    // The date is already in the header; repeating it inside the body reads as
+    // a stray heading.
+    check('the release heading is not repeated in the body',
+      await page.locator('.update-notice-body .md-h2').count(), 0);
+
+    // Dismissing sticks across reloads.
+    await page.locator('.update-notice-btn', { hasText: 'Close' }).click();
+    await settle(page, 300);
+    check('closing dismisses it', await notice.count(), 0);
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('and it stays dismissed after a reload', await notice.count(), 0);
+
+    // Escape is the other way out.
+    await page.evaluate((k) => localStorage.removeItem(k), KEY);
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('it returns for an unseen release', await notice.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('Escape closes it too', await notice.count(), 0);
+  }),
+
   scenario('Side panel slides open without the entry list lurching', async (page, check) => {
     await openBuilderWithFixture(page);
     await settle(page, 300);

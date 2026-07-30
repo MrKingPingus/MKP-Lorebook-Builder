@@ -2,58 +2,19 @@
 // any Start tile, a Recent lorebook, or the "Continue to builder" link.
 // Five panels: hero, Start tiles, Recent lorebooks, What's New (bundled
 // CHANGELOG), Learn (tutorial + tips + templates), Report a Bug / Request a Feature.
-import { useState, useRef, useEffect, Fragment } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useKeybindings }       from '../../hooks/use-keybindings.js';
 import { useExport }            from '../../hooks/use-export.js';
 import { useLorebookSwitcher }  from '../../hooks/use-lorebook-switcher.js';
 import { useLorebook }          from '../../hooks/use-lorebook.js';
 import { useImport }            from '../../hooks/use-import.js';
-import { parseMarkdown }        from '../../services/markdown-parse.js';
+import { useReleaseNotes }      from '../../hooks/use-release-notes.js';
+import { MarkdownView }         from '../ui/MarkdownView.jsx';
+import { UpdateNotice }         from './UpdateNotice.jsx';
 import { DUPE_FLASH_MS }        from '../../constants/limits.js';
 import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
 import changelogRaw             from '../../../CHANGELOG.md?raw';
-
-// Render the inline-span AST emitted by markdown-parse into React nodes.
-function renderInline(spans, keyPrefix) {
-  return spans.map((s, idx) => {
-    const k = `${keyPrefix}-${idx}`;
-    if (s.type === 'text')   return <Fragment key={k}>{s.text}</Fragment>;
-    if (s.type === 'code')   return <code key={k} className="md-code">{s.text}</code>;
-    if (s.type === 'bold')   return <strong key={k}>{renderInline(s.children, k)}</strong>;
-    if (s.type === 'italic') return <em key={k}>{renderInline(s.children, k)}</em>;
-    if (s.type === 'link')   return (
-      <a key={k} href={s.url} target="_blank" rel="noreferrer" className="md-link">
-        {renderInline(s.children, k)}
-      </a>
-    );
-    return null;
-  });
-}
-
-// Render the block-level AST into React nodes.
-function renderMarkdown(src) {
-  const blocks = parseMarkdown(src);
-  return blocks.map((b, idx) => {
-    const k = `md-${idx}`;
-    if (b.type === 'hr') return <hr key={k} className="md-hr" />;
-    if (b.type === 'h1') return <h1 key={k} className="md-h1">{renderInline(b.inline, k)}</h1>;
-    if (b.type === 'h2') return <h2 key={k} className="md-h2">{renderInline(b.inline, k)}</h2>;
-    if (b.type === 'h3') return <h3 key={k} className="md-h3">{renderInline(b.inline, k)}</h3>;
-    if (b.type === 'p')  return <p  key={k} className="md-p">{renderInline(b.inline, k)}</p>;
-    if (b.type === 'ul' || b.type === 'ol') {
-      const Tag = b.type;
-      return (
-        <Tag key={k} className={`md-${b.type}`}>
-          {b.items.map((item, j) => (
-            <li key={`${k}-li${j}`}>{renderInline(item, `${k}-li${j}`)}</li>
-          ))}
-        </Tag>
-      );
-    }
-    return null;
-  });
-}
 
 const RECENT_LIMIT = 6;
 
@@ -70,6 +31,7 @@ export function Lander() {
   const { createLorebook, importAsNewLorebook } = useLorebook();
   const { parseFile }                           = useImport();
   const [copiedFlash, setCopiedFlash] = useState(false);
+  const { open: noticeOpen, release, dismiss: dismissNotice } = useReleaseNotes();
   const [importError, setImportError] = useState('');
   const fileInputRef = useRef(null);
   const flashTimer = useRef(null);
@@ -140,6 +102,10 @@ export function Lander() {
 
   return (
     <div className="lander">
+      {noticeOpen && release && (
+        <UpdateNotice release={release} onClose={dismissNotice} />
+      )}
+
       <div className="lander-hero">
         <div className="lander-logo">📖</div>
         <h1 className="lander-title">MKP Lorebook Builder</h1>
@@ -197,7 +163,7 @@ export function Lander() {
       <div className="lander-section">
         <h2 className="lander-section-title">What's new</h2>
         <div className="lander-changelog">
-          {renderMarkdown(changelogRaw)}
+          <MarkdownView source={changelogRaw} />
         </div>
       </div>
 
