@@ -21,7 +21,18 @@ A browser-based tool for building and managing lorebooks for AI chatbots. No ins
 
 Open the link above... That's it! There's nothing to install or sign in to, so you can just start getting to work by either starting a fresh book or importing an existing one. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything! (But clearing the cache on the host page WILL, so make sure your work is hard saved before doing such a thing or *you **will** cry*.
 
-The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the Settings tab has a button to snap it back to the default size. Whatever size you set it to will persist from session to session!
+The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the **⤢ Size** button in the bottom-right corner has presets and a **Reset to default** option to snap it back. Whatever size you set it to will persist from session to session!
+
+### Getting around the window
+
+Four things frame the app, and it's worth knowing what each is for:
+
+- **The lorebook title, up top.** Click it to open a menu with all your saved lorebooks on the left and import / export on the right. Double-click it to rename the current book.
+- **The gear, top right.** Opens Settings directly.
+- **The status bar, along the bottom.** Everything that's simply *true* about your work rather than something you do to it: whether it's saved, how many entries you have, how much browser storage you're using, links to report a bug or request a feature, and the **⤢ Size** menu.
+- **The pull tab, on the right edge.** Click it to open your lorebook list as a side panel. The window widens to fit it, so the panel appears *beside* your entries rather than covering them.
+
+The hotbar — the row of buttons flanking the **+** — is the other half of that split: it's for things you *do* to your lorebook. You choose what goes in its six slots in Settings.
 
 ---
 
@@ -29,7 +40,7 @@ The entire interface lives inside a single floating window. You can drag it arou
 
 ### Naming Your Lorebook
 
-Click the lorebook name field in the title bar and type. The name saves automatically.
+Double-click the lorebook title at the top of the window and type. The name saves automatically. (A single click opens the lorebook menu instead — see below.)
 
 ### Adding Entries
 
@@ -73,9 +84,16 @@ Every change to your entries is tracked. Use **Ctrl+Z** to undo and **Ctrl+Y** t
 
 ## Managing Multiple Lorebooks
 
-The lorebook switcher lives in the menu panel (accessible from the header). You can save up to 10 lorebooks independently. Each has its own name, entries, and history. Switch between them at any time — your current lorebook autosaves before switching!
+There are two ways to reach your lorebooks, and they suit different habits:
 
-To delete a lorebook, open the switcher and hit the delete button next to it. **This cannot be undone**.
+- **Click the lorebook title** at the top of the window. A menu drops down with every saved book listed alphabetically on the left. Click one to switch to it, or **+ New lorebook** at the foot of the list to start a fresh one.
+- **Click the pull tab** on the window's right edge. Same list, but as a side panel that stays open while you work — the window widens to fit it, so nothing you were reading gets covered.
+
+You can save up to 10 lorebooks independently. Each has its own name, entries, and history. Switch between them at any time — your current lorebook autosaves before switching!
+
+The list is alphabetical and stays that way, so a book you use often is always in the same place.
+
+To delete a lorebook, hover its row in the title menu and click the **×** on the right. You'll be asked to confirm. **This cannot be undone**.
 
 ---
 
@@ -97,30 +115,52 @@ The type filter bar lets you narrow the entry list to one or more types. Click a
 
 ### Import
 
-Open the **Import / Export** tab and drop a file onto the drop zone, or click to browse. Supported formats: **JSON**, **TXT**, and **DOCX**.
+Click the lorebook title and drop a file onto the drop zone in the right-hand column, or click it to browse. The **Import** button in the hotbar does the same thing in its own window. Supported formats: **JSON**, **TXT**, **DOCX**, and **ODT**.
 
-After loading a file, a preview of the parsed entries appears before anything is committed. You can choose to:
-- **Replace** the current lorebook's entries with the imported ones
-- **Load into a new lorebook slot** so your current work stays intact
+Prefer to paste? Click **or paste entries instead** next to the drop zone and paste a block of TXT-formatted entries directly.
 
-If your current lorebook has unsaved-to-file changes, the importer will offer to export it first before proceeding.
+Once the file is read, you're asked what should happen to the lorebook you have open. All four choices are available wherever you started the import:
 
-The **Append** import (available via the hotbar) lets you drop a file and add its entries to the current lorebook without replacing anything.
+| Choice | What happens |
+|---|---|
+| **Import as new** | The entries go into a brand-new lorebook. Your current one is untouched. |
+| **Append** | The entries are added to your current lorebook. |
+| **Replace** | Your current lorebook's entries are overwritten. |
+| **Back up first** | Downloads a JSON copy of your current lorebook, then replaces it. |
+
+Then you get a preview of every entry about to land, and a banner spelling out what confirming will do. **Back** returns you to the four choices without making you pick the file again.
+
+Autosave has already saved your work at this point — a backup is about keeping a copy *outside* the browser, which is a different thing.
 
 ### Export
 
-- **Download JSON** — the full lorebook as a `.json` file
-- **Download TXT** — a plain-text block format
-- **Download DOCX** — a Word-compatible document
-- **Copy JSON** — copies the full JSON directly to your clipboard
+Both live in the right-hand column of the lorebook title menu.
 
-**Templates** — download a blank TXT or DOCX file pre-formatted for import, useful if you want to write entries by hand outside the app.
+- **⬇ JSON** — the full lorebook as a `.json` file
+- **⬇ TXT** — a plain-text block format
+- **⬇ DOCX** — a Word-compatible document
+- **⎘ Copy** — copies the full JSON directly to your clipboard
+
+The **File** box above the buttons sets the download filename.
+
+**Templates** — download a blank JSON, TXT, or DOCX file pre-formatted for import, useful if you want to write entries by hand outside the app.
 
 ---
 
 ## Settings
 
-Open the **Settings** tab to configure:
+Click the **gear** in the top-right corner, or press **Ctrl+,**. Settings opens as four collapsed sections, so you pick where you're going rather than scrolling past everything:
+
+| Section | What's in it |
+|---|---|
+| **Editing & Entries** | Writing aids, character counters, entry badges, entry history |
+| **Appearance & Accessibility** | Themes and custom colors, text size, reduced motion, high contrast |
+| **Layout & Controls** | Keyboard shortcuts, hotbar slots, FAB menu, folders, reference panel, navigation |
+| **System** | Browser storage limit |
+
+There's a **filter box** at the top. Type what you're after — `fab`, `shortcut`, `dark mode`, `storage` — and the panel narrows to just those controls and opens whichever section holds them. It matches words that aren't in the visible label too, so "hotkey" finds **Keyboard shortcuts**.
+
+Some frequently-touched settings:
 
 | Setting | What it does |
 |---|---|
@@ -128,30 +168,115 @@ Open the **Settings** tab to configure:
 | Hide entry stats badges | Hides the trigger count and character count in entry headers |
 | Tiered counter colors | Color-codes character counters green → yellow → red by threshold |
 | Character count thresholds | Set where yellow and red kick in |
-| Default window size | The size the window resets to |
-| FAB button size | Size of the + button (small / medium / large / custom) |
 | Hotbar slots | Assign actions to the 6 slots flanking the + button (3 per side) |
-| Hotkey bindings | Change the key for new entry (Alt+?), undo (Ctrl+?), and redo (Ctrl+?) |
+| Keyboard shortcuts | Rebind any of the shortcuts listed below |
+| Legacy menus | Brings back the old **☰** header menu, with Lorebooks and Import / Export as side panels |
+
+---
+
+## Sizing
+
+Window size, text size, entry height, and the **+** button's size all live in one place: the **⤢ Size** button in the bottom-right corner. Hover it to peek, click it to keep it open.
+
+| Control | What it does |
+|---|---|
+| Window size | Named presets, or **Custom…** to type exact dimensions. **Save as default** makes the current size the one **Reset to default** returns to. |
+| Text size | Scales all text. Also in Settings → Appearance & Accessibility, since it's an accessibility setting — change it in either place and the other follows. |
+| Entry height | How tall entry headers are drawn |
+| FAB size | Size of the **+** button |
+
+**Reset all sizing** puts the window, entry height, and FAB back to normal. It deliberately leaves your text size alone.
 
 ---
 
 ## Keyboard Shortcuts
 
+Press **?** at any time for a cheat sheet inside the app. Every shortcut here is rebindable in Settings → Layout & Controls, and the cheat sheet has a link straight to the editor.
+
 | Shortcut | Action |
 |---|---|
-| Alt+N | New entry (key configurable) |
-| Ctrl+Z | Undo (key configurable) |
-| Ctrl+Y | Redo (key configurable) |
+| Alt+N | New entry |
+| Ctrl+Z | Undo |
+| Ctrl+Y | Redo *(Ctrl+Shift+Z also works)* |
+| Alt+S | Toggle select mode |
+| Alt+A | Expand / collapse all |
+| Alt+V | Select all visible |
+| Alt+D | Deselect all |
+| / | Focus search |
+| Alt+H | Focus find & replace |
+| Alt+R | Toggle reference panel |
+| Alt+W | Swap reference ↔ active *(while paired)* |
+| Alt+E | Export |
+| Alt+I | Import entries |
+| Ctrl+, | Open settings |
+| ? | This cheat sheet |
+| Escape | Dismiss / cancel |
+
+On macOS, **Ctrl** shortcuts use **Cmd** instead.
 
 ---
 
-## Local Development
+## Running It Yourself
+
+You don't need to do any of this to *use* the app — the link at the top is the whole product. This section is for anyone who wants to run it on their own machine or host their own copy.
+
+### What you need first
+
+- **[Node.js](https://nodejs.org/)** — version **20.19 or newer**, or **22.12 or newer**. Vite 7 won't run on anything older. Check what you have with `node --version`.
+- **npm** — comes bundled with Node, nothing extra to install.
+- **[Git](https://git-scm.com/)** — only needed for the clone step. You can also download the repo as a ZIP from GitHub and skip it.
+
+There is no database, no server, and no API key to set up. Nothing to configure before the first run.
+
+### Getting it running
 
 ```bash
+git clone https://github.com/MrKingPingus/MKP-Lorebook-Builder.git
+cd MKP-Lorebook-Builder
 npm install
-npm run dev      # dev server with hot reload
-npm run build    # production build → dist/
-npm run preview  # serve the production build locally
+npm run dev
 ```
 
-The app deploys automatically to GitHub Pages via `.github/workflows/main.yml` on push to `main`.
+`npm run dev` prints a local address — usually **http://localhost:5173** — open that in your browser and the app is live. Edits to files under `src/` reload in the browser instantly.
+
+Press **Ctrl+C** in the terminal to stop the server.
+
+### The other commands
+
+| Command | What it does |
+|---|---|
+| `npm install` | Downloads dependencies into `node_modules/`. Run once after cloning, and again whenever `package.json` changes. |
+| `npm run dev` | Starts the development server with hot reload on port 5173. This is the one you want day to day. |
+| `npm run build` | Compiles a production bundle into `dist/`. That folder is plain static files — it can be hosted anywhere. |
+| `npm run preview` | Serves the contents of `dist/` on port 4173 so you can check the real production build. Run `npm run build` first. |
+| `npm run verify` | Runs the automated browser checks. Optional — see below. |
+
+### Where your data lives
+
+Everything you create runs entirely in your browser and is stored in that browser's `localStorage`. Nothing is uploaded anywhere and no account exists. A local copy keeps its own separate storage from the hosted version, so lorebooks you made on the live site won't appear in your local one — move them across with Export and Import.
+
+### Running the automated checks (optional)
+
+`npm run verify` drives the real app in a headless browser to check features end to end. It needs a Chromium build that Playwright can find, which is a one-time extra install:
+
+```bash
+npx playwright install --with-deps chromium
+npm run verify
+```
+
+A full run launches a fresh browser per scenario and takes several minutes. To run just a slice of it, pass a name substring:
+
+```bash
+npm run verify -- folders
+```
+
+See `verify/README.md` for what the suite covers.
+
+### Hosting your own copy
+
+Push to `main` and `.github/workflows/main.yml` builds the app and deploys it to GitHub Pages. Two things to know:
+
+1. **Pages has to be turned on first.** In your repository, go to **Settings → Pages** and set the source to **GitHub Actions**. Until you do, the workflow runs, notices Pages is off, and exits cleanly without deploying — so a green check doesn't necessarily mean a live site.
+2. **The base path takes care of itself.** `vite.config.js` reads the repository name from the Actions environment, so the build works under `https://<user>.github.io/<repo-name>/` no matter what the repository is called. You don't need to edit anything after forking or renaming.
+
+For any other host, run `npm run build` and upload the `dist/` folder. It's static — no Node runtime required on the server.

@@ -26,6 +26,10 @@
 - **The side panel now slides open and shut instead of appearing instantly.** The window, the panel and the pull tab all ease together over about a fifth of a second, and your entry list holds perfectly still while it happens — it doesn't shuffle sideways to make room. Dragging and resizing the window are deliberately left unanimated, so they still track your cursor exactly. If you have reduced motion turned on (in Settings or in your OS), the slide is skipped.
 - **The pull tab hangs off the outside of the window now.** It used to sit in a channel just inside the border, which meant your entry rows stopped short of the frame. They reach it now, and the tab sticks out past it. Its old footprint is spent on the outside instead: the window stops about 30px short of the screen edge so the tab always has somewhere to sit, even at full size.
 
+### Documentation
+
+- **The README has been synced with the `claude/builder-repo-setup-readme-w98mlh` branch and brought up to date.** From that branch: a full walkthrough for running the app on your own machine — which version of Node you need, clone and install steps, what each command does, where your data is stored, how to run the automated browser checks, and how to host your own copy on GitHub Pages. Alongside it, the rest of the README has been corrected to match the app as it stands: the lorebook title menu, the gear, the status bar and the pull tab; the four import choices and where to find them; the four Settings sections and the filter box; the `⤢ Size` menu; and the full keyboard shortcut list.
+
 ### Fixes
 
 - **Clicking the lorebook title a second time closes the menu.** It used to do nothing at all.
