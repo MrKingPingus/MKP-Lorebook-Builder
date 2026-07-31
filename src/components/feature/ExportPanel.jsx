@@ -10,14 +10,15 @@ export function ExportPanel() {
   const { activeLorebook, renameLorebook } = useLorebook();
   const { exportJson: doExportJson, exportTxt: doExportTxt, exportDocx: doExportDocx,
           copyJsonToClipboard, downloadJsonTemplate, downloadTxtTemplate, downloadDocxTemplate,
-          copyJsonTemplate, copyTxtTemplate } = useExport();
+          copyJsonTemplate, copyTxtTemplate,
+          defaultExportFilename, resolveExportFilename } = useExport();
   // Which template-copy button is currently flashing "Copied" — null, 'json', or 'txt'.
   const [copiedFlash, setCopiedFlash] = useState(null);
   const flashTimer = useRef(null);
 
   // User-editable override for the download filename (without extension). Resets to the
   // lorebook's sanitized name when switching books.
-  const defaultName = (activeLorebook?.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+  const defaultName = defaultExportFilename(activeLorebook?.name);
   const [filenameOverride, setFilenameOverride] = useState(defaultName);
   useEffect(() => { setFilenameOverride(defaultName); }, [activeLorebook?.id]);
 
@@ -38,8 +39,7 @@ export function ExportPanel() {
 
   // Sanitize the user's input at export time — fall back to the lorebook's safe name if blank.
   function resolveFilename() {
-    const cleaned = filenameOverride.replace(/[^a-z0-9_-]/gi, '_').replace(/^_+|_+$/g, '');
-    return cleaned || defaultName || 'lorebook';
+    return resolveExportFilename(filenameOverride, activeLorebook?.name);
   }
 
   function exportJson() {

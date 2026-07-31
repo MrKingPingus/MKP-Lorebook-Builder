@@ -194,7 +194,7 @@ Decisions and findings from the build:
 - **Backups are JSON only.** TXT is a lossy export; as a pre-overwrite backup it's the wrong artefact, and offering it invites someone to pick it and lose their triggers.
 - **Back from the preview keeps the parse.** Changing your mind about a disposition shouldn't cost re-picking the file.
 - **"Replace with 29 entries", not "Replace 29 entries"** — the latter reads as though 29 are being deleted. The count is always what's arriving.
-- `use-append-import.js` deleted (sole consumer was the overlay). `DropZone` gained an optional `inputRef` so the Import hotkey can click the hidden input directly. The export-filename sanitiser moved to `services/export-filename.js`; **it is still copy-pasted in five other call sites** and converting them is an open cheap cleanup.
+- `use-append-import.js` deleted (sole consumer was the overlay). `DropZone` gained an optional `inputRef` so the Import hotkey can click the hidden input directly. The export-filename sanitiser moved to `services/export-filename.js`. ~~Still copy-pasted in five other call sites.~~ **Done 2026-07-31** — it was 8 inline copies across 4 files (`LorebookSwitcher`, `LorebookPanel`, `ExportPanel`, `ExportMenu`), all now going through `useExport()`, which already re-exported the service. Nothing was broken; the point is that the next change to the rule (allow spaces, cap the length) would have had to find all 8 by hand, and a missed one makes two export surfaces disagree — the same failure the shared import flow exists to prevent.
 
 **13D — Release notes, update notice, feature tour. Shipped 2026-07-30/31.**
 
@@ -210,7 +210,7 @@ Not in the original 13 plan. It came out of asking how anyone who *isn't* in the
 - **Captures were never of the builder's default size.** Bootstrap sizes a first-run window from the viewport (two thirds of its width, its full height), so every shot was of a shape no user's default looks like — and the extra height is what made the images unreadable in the tour. Scenes pick the Medium preset through the real UI, so the captures track the default if it changes.
 - Full detail on the generator — corner placement, collision scoring, cropping, per-scene storage reset — is in `screenshots/README.md`.
 
-**Open:** `docs/walkthrough-ui-overhaul.md` still has nine placeholder screenshot slots, predates the changelog rewrite, and now overlaps what the in-app tour covers. Needs a decision: point it at the generated images, rewrite it, or retire it.
+**The long-form walkthrough became `announcements/0.9.0-ui-overhaul.md`.** It was drafted as a Discord post and kept being treated as documentation, which is what made it rot: docs get maintained, announcements get published and then become history. Moving it out of `docs/` says which it is. It now embeds the six generated screenshots with the same numbered labels the tour renders, and it got the same content pass the changelog did — the passages describing states no released build ever had (the second-click fix, the typeable custom-size boxes, the popover direction) are gone, and the claim that the book list is alphabetical was corrected. The three slots the generator has no scene for were dropped rather than left as placeholders.
 
 ---
 

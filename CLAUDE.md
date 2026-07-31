@@ -7,7 +7,7 @@ See `docs/plan.md`. Work phases in order. Do not build ahead.
 ## Changelog
 `CHANGELOG.md` (repo root) is **release notes, not a development log.** It is rendered in-app twice — the lander's What's New panel, and the update notice that opens once per release — so it is written for users, not for us.
 
-**One section per public release, not per phase or per day of work.** Add entries to the current unreleased section as you go; do not open a new one for each phase. The heading is `## <version> — <date>` (e.g. `## 0.9.0 — 2026-07-30`), and the version comes from `package.json`. The heading text is the identifier the update notice stores, so it must not change once shipped.
+**One section per public release, not per phase or per day of work.** Add entries to the current unreleased section as you go; do not open a new one for each phase. The heading is `## <version> — <date>` (e.g. `## 0.9.0 — 2026-07-30`), and the version comes from `package.json`. The heading text is the identifier the update notice stores, so it must not change once shipped. Ship-time steps — version bump, screenshots, tagging — are in `docs/releasing.md`.
 
 **Entries describe the delta from the last *released* version.** Not from the last commit. Two rules follow, and both matter:
 
@@ -80,6 +80,7 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 - `docs/layout-rules.md` — layout priorities for UI changes (read before any layout work)
 - `docs/constants-reference.md` — key constants and CSS theming details
 - `docs/project-summary.md` — plain-language project overview for planning
+- `docs/glossary.md` — domain vocabulary (entry, trigger, crosstalk, folder …)
 
 ## Deployment
 GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions environment and sets the base path to `/<repo-name>/` automatically. Push to `main` triggers deploy via `.github/workflows/main.yml`.

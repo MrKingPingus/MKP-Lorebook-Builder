@@ -26,7 +26,7 @@ export function LorebookPanel() {
   const [editingName, setEditingName]         = useState('');
   const editInputRef = useRef(null);
   const { activeLorebookId, activeLorebook } = useLorebook();
-  const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
+  const { exportJson: doExportJson, exportTxt: doExportTxt, defaultExportFilename } = useExport();
   const isMobile           = useMobile();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
   const { referenceLorebook, setReferenceLorebookId } = useReferenceLorebook();
@@ -67,7 +67,7 @@ export function LorebookPanel() {
 
   function downloadJson() {
     if (activeLorebook) {
-      const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+      const safe = defaultExportFilename(activeLorebook.name);
       doExportJson(activeLorebook, `${safe}.json`);
     }
     doSwitch();
@@ -75,7 +75,7 @@ export function LorebookPanel() {
 
   function downloadTxt() {
     if (activeLorebook) {
-      const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+      const safe = defaultExportFilename(activeLorebook.name);
       doExportTxt(activeLorebook, `${safe}.txt`);
     }
     doSwitch();
