@@ -7632,15 +7632,26 @@ kbd {
   inset: 0;
   z-index: 9600;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Centred with `margin: auto` on the child rather than `align-items: center`.
+     With centring on the container, an image taller than the viewport has its
+     top pushed outside the scrollable area — it is clipped by the top edge and
+     cannot be scrolled back to. `margin: auto` centres when there is room and
+     yields to the scroll when there isn't. */
   padding: 20px;
   background: rgba(0, 0, 0, 0.88);
   cursor: zoom-out;
   overflow: auto;
+  overscroll-behavior: contain;
 }
+/* Capped to the viewport in both axes: the inline `width` is the builder's true
+   size, and this only bites when the screen can't fit that. Better to show a
+   shot at 80% and whole than at 100% with the top scrolled off — and it means
+   the common case needs no scrolling at all. `margin: auto` still handles the
+   genuinely-too-tall case without clipping the top. */
 .tour-zoom img {
+  margin: auto;
   max-width: 100%;
+  max-height: 100%;
   height: auto;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -7652,6 +7663,7 @@ kbd {
 .tour-zoom-close {
   position: fixed;
   bottom: 18px; left: 50%;
+  z-index: 1;
   transform: translateX(-50%);
   padding: 5px 12px;
   border-radius: var(--radius);

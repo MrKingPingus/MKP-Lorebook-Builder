@@ -29,7 +29,11 @@ export function FeatureTour({ onClose }) {
   // showing them at raw pixel width reads as roughly 2x zoomed — well past
   // being readable as a screenshot of an interface.
   const [naturalWidth, setNaturalWidth] = useState(0);
+  // Whether the enlarged image is taller than the space it has, so the hint can
+  // say the view scrolls rather than leaving someone to discover it.
+  const [zoomOverflows, setZoomOverflows] = useState(false);
   const nextRef = useRef(null);
+  const zoomRef = useRef(null);
 
   const step  = TOUR_STEPS[index];
   const first = index === 0;
@@ -51,6 +55,15 @@ export function FeatureTour({ onClose }) {
     const img = new Image();
     img.src = imageUrl(upcoming.file);
   }, [index]);
+
+  // A mousedown anywhere in the enlarged view closes it — except on its own
+  // scrollbar, which reports as a click on the container and would otherwise
+  // dismiss the image the moment someone tried to scroll it.
+  function closeZoom(e) {
+    const box = e.currentTarget;
+    if (e.clientX - box.getBoundingClientRect().left >= box.clientWidth) return;
+    setZoomed(false);
+  }
 
   function go(delta) {
     setZoomed(false);
@@ -140,8 +153,9 @@ export function FeatureTour({ onClose }) {
       {/* Enlarged view — the reason the captures are 2x rather than 1x. */}
       {zoomed && (
         <div
+          ref={zoomRef}
           className="tour-zoom"
-          onMouseDown={() => setZoomed(false)}
+          onMouseDown={closeZoom}
           role="dialog"
           aria-label={`${step.title} — enlarged`}
         >
@@ -149,8 +163,14 @@ export function FeatureTour({ onClose }) {
             src={imageUrl(step.file)}
             alt={step.alt}
             style={naturalWidth ? { width: naturalWidth / TOUR_CAPTURE_SCALE } : undefined}
+            onLoad={(e) => {
+              const box = zoomRef.current;
+              setZoomOverflows(Boolean(box) && e.currentTarget.height > box.clientHeight);
+            }}
           />
-          <span className="tour-zoom-close">Click anywhere to close</span>
+          <span className="tour-zoom-close">
+            {zoomOverflows ? 'Scroll to see the rest · click to close' : 'Click anywhere to close'}
+          </span>
         </div>
       )}
     </div>

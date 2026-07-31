@@ -1949,8 +1949,27 @@ const SCENARIOS = [
 
     // Enlarging is the reason the captures are 2x rather than 1x.
     await page.locator('.tour-shot').click();
-    await settle(page, 400);
+    await settle(page, 500);
     check('clicking the shot enlarges it', await page.locator('.tour-zoom').count(), 1);
+
+    // The captures are 1150 logical px tall — taller than plenty of browser
+    // viewports. Centring the container with `align-items: center` pushed the
+    // top of an oversized image outside the scrollable area, where it was both
+    // clipped and unreachable. It must fit, or at minimum stay scrollable to.
+    const zoom = await page.evaluate(() => {
+      const box = document.querySelector('.tour-zoom');
+      const img = box.querySelector('img');
+      const b = box.getBoundingClientRect();
+      const i = img.getBoundingClientRect();
+      return {
+        topVisible: Math.round(i.top) >= Math.round(b.top),
+        fits: Math.round(i.height) <= box.clientHeight,
+        wider: Math.round(i.width) > 0,
+      };
+    });
+    check('the enlarged image is not clipped at the top', zoom.topVisible, true);
+    check('and fits the viewport rather than needing a scroll', zoom.fits, true);
+    check('it actually rendered', zoom.wider, true);
     // Escape backs out of the enlargement first, so zooming in doesn't cost you
     // your place in the sequence.
     await page.keyboard.press('Escape');
