@@ -21,12 +21,18 @@ function imageUrl(file) {
   return `${import.meta.env.BASE_URL}screenshots/${TOUR_RELEASE}/${file}`;
 }
 
-// The caption and the numbered labels, as real text. Rendered in both the panel
-// and the enlarged view — the explanation used to be painted into the image, so
-// enlarging in order to read the screenshot took the words away with it.
-function StepNotes({ step, className = '' }) {
+// The title, the caption and the numbered labels, as real text. Rendered in
+// both the panel and the enlarged view — the explanation used to be painted into
+// the image, so enlarging in order to read the screenshot took the words away
+// with it.
+//
+// The title sits here, under the screenshot, rather than in a header above it:
+// split across the image, the name of the step and the explanation of it were
+// too far apart to read as one thought.
+function StepNotes({ step, className = '', Heading = 'h2' }) {
   return (
     <div className={`tour-notes ${className}`.trim()}>
+      <Heading className="tour-step-title">{step.title}</Heading>
       <p className="tour-body">{step.body}</p>
       {step.marks?.length > 0 && (
         <ol className="tour-marks">
@@ -107,11 +113,8 @@ export function FeatureTour({ onClose }) {
       aria-label={`What's new — step ${index + 1} of ${TOUR_STEPS.length}`}
     >
       <div className="tour-panel">
-        <div className="tour-header">
-          <div>
-            <h2 className="tour-title">{step.title}</h2>
-            <p className="tour-progress">{index + 1} of {TOUR_STEPS.length}</p>
-          </div>
+        <div className="tour-topbar">
+          <p className="tour-progress">{index + 1} of {TOUR_STEPS.length}</p>
           <button
             type="button"
             className="tour-close"
@@ -194,8 +197,7 @@ export function FeatureTour({ onClose }) {
           {/* Stops click-to-close firing when someone clicks into the notes to
               read or select them. */}
           <aside className="tour-zoom-aside" onMouseDown={(e) => e.stopPropagation()}>
-            <h3 className="tour-zoom-aside-title">{step.title}</h3>
-            <StepNotes step={step} className="tour-notes--aside" />
+            <StepNotes step={step} className="tour-notes--aside" Heading="h3" />
             <p className="tour-zoom-close">
               {zoomOverflows ? 'Scroll to see the rest · click the image to close' : 'Click the image to close'}
             </p>

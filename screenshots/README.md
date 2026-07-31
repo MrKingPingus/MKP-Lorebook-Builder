@@ -43,11 +43,58 @@ disappeared the moment anyone enlarged the image, taking the explanation with
 it. As HTML it sits outside the image, survives enlarging, scales with the
 text-size setting, and can be read by a screen reader.
 
-Badges are numbered in **reading order** — top to bottom, left to right within
-a row — not in the order the marks are listed. Numbering by source order
-produced images whose badges ran 3, 2, 1 down the page while the list counted
-up. The tour renders its list in the same array order, so keep marks listed in
-reading order.
+### Numbering comes from the array, and only from the array
+
+Badge `i + 1` is drawn for `marks[i]`. The tour renders the same array as a
+numbered list counting from 1, so the two agree by construction and nothing in
+the generator may reorder them. An earlier version sorted the marks into reading
+order *before* numbering them, and every badge on a step ended up pointing at a
+different label than its number — badge 3 sat on "Append" while the list's item
+3 described "Replace".
+
+That means the marks have to be *written* in the order they scan on the image.
+The run checks this and prints the order to use when they disagree:
+
+```
+status-bar:
+  !! badges scan 2, 1, 3, 4, 5, 6 — reorder this step's marks to match
+```
+
+`place` is the lever for moving a badge; the array position is the lever for
+renumbering it. Changing one to fix the other is what goes wrong.
+
+### Where a badge lands
+
+A badge tucks against a corner of its own ring, outside it — `place` names the
+preferred corner (`tl` `tr` `bl` `br`). Pinned to the midpoint of an edge, as
+they were at first, badges landed on whatever sat beside the target: the
+neighbouring cell of the 2×2 import grid, the label of the next status item. For
+a target at the window's left edge the badge fell outside the frame entirely.
+
+Every corner is scored, so `place` is a preference rather than an instruction. A
+badge that would cover another marked control, sit on another badge, or land
+outside the shot moves to a free corner by itself — which is why the Settings
+step's second badge sits below-left: both top corners would have covered the
+filter box above it.
+
+### Cropping
+
+`CROPS` in the generator narrows a shot vertically to the part of the window the
+step is about, keyed by step id: `{ top, bottom }` are selectors and
+`padTop`/`padBottom` keep some surrounding window for context. Full width is
+always kept, so a cropped shot still reads as a band across the builder rather
+than a floating fragment.
+
+Without this every step was the whole 1200×900 window regardless of its subject.
+The status-bar step was a 40px strip along the bottom of a 900px-tall picture of
+an entry list: the subject was in frame, but nobody could see it.
+
+### Each scene starts from an empty browser
+
+The generator drives one long-lived page and lorebooks persist in
+`localStorage`, so scenes inherit each other's books. Left alone, the last shot
+listed eight near-identical copies of the same fixture in a panel meant to show
+you your library.
 
 **The window is pinned to its default size before every capture.** Bootstrap
 sizes a first-run window from the viewport (two thirds of its width, its full
@@ -58,7 +105,9 @@ it changes.
 
 The capture clip unions the app window, any portalled menu, *and* every badge
 and ring, since annotations sit outside their targets by design and would
-otherwise get sliced off at the edge.
+otherwise get sliced off at the edge. The same list of portals bounds badge
+placement, so a badge belonging to something outside the window — the pull tab —
+isn't judged out of bounds.
 
 If a scene changes and a selector stops matching, the run prints
 `!! no match for <selector>` rather than quietly producing an image with a hole

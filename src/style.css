@@ -7512,16 +7512,24 @@ kbd {
   box-shadow: var(--shadow);
   overflow: hidden;
 }
-.tour-header {
+/* Only the step counter and the close button sit above the screenshot. The
+   title moved below it, next to the caption: with the title above and the
+   explanation below, the image separated two halves of the same thought. */
+.tour-topbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px 8px;
+  padding: 10px 14px 8px;
   flex-shrink: 0;
 }
-.tour-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text); }
-.tour-progress { margin: 2px 0 0; font-size: 0.6875rem; color: var(--muted); }
+.tour-step-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.tour-progress { margin: 0; font-size: 0.6875rem; color: var(--muted); }
 .tour-close {
   flex-shrink: 0;
   width: 28px; height: 28px;
@@ -7692,13 +7700,8 @@ kbd {
   border-radius: var(--radius-lg);
   cursor: default;
 }
-.tour-zoom-aside-title {
-  margin: 0 0 10px;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--text);
-}
 .tour-notes--aside { margin: 0; }
+.tour-notes--aside .tour-step-title { font-size: 0.9375rem; }
 @media (max-width: 1100px) {
   .tour-zoom { flex-wrap: wrap; }
   .tour-zoom-aside { flex: 1 1 100%; position: static; }

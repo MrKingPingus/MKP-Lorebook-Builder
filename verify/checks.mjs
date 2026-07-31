@@ -1939,6 +1939,15 @@ const SCENARIOS = [
       (await page.locator('.tour-marks li').count()) > 0, true);
     check('and the image has alt text',
       ((await page.locator('.tour-shot img').getAttribute('alt')) ?? '').length > 20, true);
+    // Title under the screenshot, next to the caption it belongs with. Split
+    // across the image — title above, explanation below — they read as two
+    // separate things and the title stopped giving the caption its context.
+    check('the step title sits below the screenshot, with the caption', await page.evaluate(() => {
+      const shot = document.querySelector('.tour-panel .tour-shot').getBoundingClientRect();
+      const title = document.querySelector('.tour-panel .tour-step-title').getBoundingClientRect();
+      const body = document.querySelector('.tour-panel .tour-body').getBoundingClientRect();
+      return title.top >= shot.bottom && body.top >= title.bottom;
+    }), true);
 
     // Walk to the end.
     const steps = await page.locator('.tour-dot').count();

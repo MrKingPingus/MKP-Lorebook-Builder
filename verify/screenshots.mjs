@@ -22,17 +22,40 @@ import { TOUR_RELEASE, TOUR_STEPS, TOUR_CAPTURE_SCALE } from '../src/constants/t
 const OUT = process.argv[2] || join(process.cwd(), 'public', 'screenshots', TOUR_RELEASE);
 const SCALE = TOUR_CAPTURE_SCALE;
 
+// Menus portalled to <body> that can sit outside the window frame, plus the
+// pull tab, which lives outside it by design. Both the clip and the badge
+// placement need this list: one so a menu isn't sliced in half, the other so a
+// badge belonging to something outside the window isn't judged out of bounds.
+const PORTALS = [
+  '.title-menu', '.scale-menu', '.scale-flyout',
+  '.type-filter-popover', '.folder-nest-menu', '.lorebook-tab',
+];
+
 // ── annotation layer ────────────────────────────────────────────────────────
-// `marks` is [{ selector, label, place }]; place is where the badge sits
-// relative to the target ('left' | 'right'). Badges are numbered in order and
-// Badges only — no legend strip. The labels are rendered as real HTML by the
-// tour (from the same TOUR_STEPS entry), which keeps them out of the image
-// entirely. Painted in, a legend pinned to the window's bottom edge covered
-// whatever the shot was about whenever that sat low — the sizing menu, for one —
-// and it disappeared the moment someone enlarged the image, taking the
-// explanation with it.
+// `marks` is [{ selector, label, nth, place, ring }]. Only badges are drawn —
+// no legend. The labels are rendered as real HTML by the tour from the same
+// TOUR_STEPS entry, which keeps them out of the image entirely: painted in, a
+// legend pinned to the window's bottom edge covered whatever the shot was about
+// whenever that sat low, and it vanished the moment someone enlarged the image.
+//
+// Two rules here, both learned from images that came out wrong:
+//
+// 1. BADGES ARE NUMBERED IN ARRAY ORDER. The tour renders the same array as a
+//    numbered list counting from 1, so nothing may renumber them here. A
+//    previous version sorted the marks into reading order before numbering, and
+//    every badge on a step ended up pointing at a different label than its
+//    number. The array is the only authority; the reading-order check at the end
+//    reports a mismatch rather than quietly correcting it.
+//
+// 2. A badge tucks against a corner of its own ring, outside it. Pinned to the
+//    midpoint of an edge it landed on whatever sat beside the target — the
+//    neighbouring cell of the 2x2 import grid, the label of the next status
+//    item — and for a target at the window's left edge it fell outside the frame
+//    altogether. `place` names the preferred corner ('tl' | 'tr' | 'bl' | 'br'),
+//    but every corner is scored: a badge that would cover another marked
+//    control, or another badge, or land outside the shot, steps aside on its own.
 async function annotate(page, marks) {
-  const missed = await page.evaluate(({ marks }) => {
+  const report = await page.evaluate(({ marks, PORTALS }) => {
     document.querySelectorAll('.shot-anno').forEach((n) => n.remove());
 
     const layer = document.createElement('div');
@@ -43,64 +66,90 @@ async function annotate(page, marks) {
     });
 
     const ACCENT = '#ff5c8a';
-    const missed = [];
+    const BADGE = 22;  // badge diameter
+    const RING = 3;    // how far the ring sits outside its target
+    const GAP = 4;     // clear air between ring and badge
+    const CORNERS = ['tl', 'tr', 'bl', 'br'];
 
-    // Resolve every mark to a rect and a badge position FIRST, then number them
-    // in reading order — top to bottom, left to right within a row. Numbering in
-    // the order the marks happen to be written in the script produced badges
-    // that ran 3, 2, 1 down the image while the legend counted 1, 2, 3.
-    const resolved = [];
-    for (const m of marks) {
-      const all = document.querySelectorAll(m.selector);
-      const el = all[m.nth ?? 0];
-      const r = el && el.getBoundingClientRect();
-      if (!el || (r.width === 0 && r.height === 0)) { missed.push(m.selector); continue; }
-      const place = m.place || 'left';
-      const cx = r.left + r.width / 2 - 11;
-      const cy = r.top + r.height / 2 - 11;
-      const pos = {
-        left:   { left: r.left - 30, top: cy },
-        right:  { left: r.right + 8, top: cy },
-        top:    { left: cx, top: r.top - 30 },
-        bottom: { left: cx, top: r.bottom + 8 },
-      }[place];
-      resolved.push({ m, r, pos });
-    }
-
-    // Band the y coordinate so two badges on the same visual row sort by x
-    // rather than by a couple of stray pixels of vertical difference.
-    resolved.sort((a, b) => {
-      const band = (v) => Math.round(v / 24);
-      return band(a.pos.top) - band(b.pos.top) || a.pos.left - b.pos.left;
+    const box = (r) => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+    const grow = (r, by) => ({
+      left: r.left - by, top: r.top - by, right: r.right + by, bottom: r.bottom + by,
+    });
+    const hits = (a, b) =>
+      a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const holds = (outer, inner) =>
+      inner.left >= outer.left && inner.right <= outer.right
+      && inner.top >= outer.top && inner.bottom <= outer.bottom;
+    const merge = (a, b) => ({
+      left: Math.min(a.left, b.left), top: Math.min(a.top, b.top),
+      right: Math.max(a.right, b.right), bottom: Math.max(a.bottom, b.bottom),
     });
 
-    resolved.forEach(({ m, r, pos }, i) => {
-      const n = i + 1;
+    // Resolve targets up front. A mark matching nothing is reported rather than
+    // shifting the number of every mark after it.
+    const missed = [];
+    const targets = [];
+    for (const m of marks) {
+      const el = document.querySelectorAll(m.selector)[m.nth ?? 0];
+      const r = el && el.getBoundingClientRect();
+      if (!el || (r.width === 0 && r.height === 0)) { missed.push(m.selector); continue; }
+      targets.push({ m, r });
+    }
+
+    // Where a badge is allowed to sit: the window, plus anything portalled
+    // outside it, plus the targets themselves.
+    let region = box(document.querySelector('.floating-window').getBoundingClientRect());
+    for (const sel of PORTALS) {
+      for (const el of document.querySelectorAll(sel)) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0) region = merge(region, r);
+      }
+    }
+    for (const { r } of targets) region = merge(region, r);
+
+    const placed = [];
+    targets.forEach(({ m, r }, i) => {
+      const ring = grow(r, RING);
 
       // Ring around the target — skippable, because a ring drawn tight around a
       // row sits exactly on top of the thin drop-indicator line and hides the
       // very thing the annotation is pointing at.
       if (m.ring !== false) {
-        const ring = document.createElement('div');
-        ring.className = 'shot-mark';
-        Object.assign(ring.style, {
+        const el = document.createElement('div');
+        el.className = 'shot-mark';
+        Object.assign(el.style, {
           position: 'fixed',
-          left: `${r.left - 3}px`, top: `${r.top - 3}px`,
-          width: `${r.width + 6}px`, height: `${r.height + 6}px`,
+          left: `${ring.left}px`, top: `${ring.top}px`,
+          width: `${r.width + RING * 2}px`, height: `${r.height + RING * 2}px`,
           border: `2px solid ${ACCENT}`, borderRadius: '7px',
-          boxShadow: `0 0 0 3px rgba(255,92,138,0.18)`,
+          boxShadow: '0 0 0 3px rgba(255,92,138,0.18)',
         });
-        layer.appendChild(ring);
+        layer.appendChild(el);
       }
+
+      // The author's corner first, then the rest; ties break towards the
+      // author's preference because `rank` is part of the cost.
+      const wanted = [m.place, ...CORNERS].filter((c, n, all) => c && all.indexOf(c) === n);
+      let best = null;
+      wanted.forEach((corner, rank) => {
+        const left = corner[1] === 'l' ? ring.left - GAP - BADGE : ring.right + GAP;
+        const top  = corner[0] === 't' ? ring.top - GAP - BADGE  : ring.bottom + GAP;
+        const at = { left, top, right: left + BADGE, bottom: top + BADGE };
+        let cost = rank;
+        if (!holds(region, at)) cost += 1000;
+        targets.forEach(({ r: other }, j) => { if (j !== i && hits(at, grow(other, RING))) cost += 100; });
+        placed.forEach((p) => { if (hits(at, p)) cost += 60; });
+        if (!best || cost < best.cost) best = { at, cost };
+      });
+      placed.push(best.at);
 
       const badge = document.createElement('div');
       badge.className = 'shot-mark';
-      badge.textContent = String(n);
+      badge.textContent = String(i + 1);
       Object.assign(badge.style, {
         position: 'fixed',
-        top: `${pos.top}px`,
-        left: `${pos.left}px`,
-        width: '22px', height: '22px', borderRadius: '50%',
+        left: `${best.at.left}px`, top: `${best.at.top}px`,
+        width: `${BADGE}px`, height: `${BADGE}px`, borderRadius: '50%',
         background: ACCENT, color: '#fff',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '12px', fontWeight: '700',
@@ -110,9 +159,22 @@ async function annotate(page, marks) {
     });
 
     document.body.appendChild(layer);
-    return missed;
-  }, { marks });
-  for (const sel of missed) console.log(`  !! no match for ${sel} — annotation dropped`);
+
+    // Do the badges scan in the order the list counts? Band the y so two badges
+    // on one visual row sort by x rather than by a few stray pixels.
+    const band = (v) => Math.round(v / 24);
+    const reading = placed.map((_, i) => i).sort((a, b) =>
+      band(placed[a].top) - band(placed[b].top) || placed[a].left - placed[b].left);
+    return {
+      missed,
+      reading: reading.every((v, i) => v === i) ? null : reading.map((i) => i + 1),
+    };
+  }, { marks, PORTALS });
+
+  for (const sel of report.missed) console.log(`  !! no match for ${sel} — annotation dropped`);
+  if (report.reading) {
+    console.log(`  !! badges scan ${report.reading.join(', ')} — reorder this step's marks to match`);
+  }
   await page.waitForTimeout(120);
 }
 
@@ -128,23 +190,38 @@ async function expect(page, selector, what) {
 }
 
 // Capture the app window and anything overhanging it, with a little margin.
-async function shot(page, name) {
-  const box = await page.evaluate(() => {
+//
+// `crop` narrows that vertically to the part of the window the step is actually
+// about: { top, bottom } are selectors, `padTop`/`padBottom` keep some of the
+// surrounding window for context. Full width is always kept, so a cropped shot
+// still reads as a band across the builder rather than a floating fragment.
+// Without this, a step about the status bar was a 40px strip at the bottom of a
+// 900px-tall image of an entry list — the subject was there, but nobody could
+// see it.
+async function shot(page, name, crop = {}) {
+  const box = await page.evaluate(({ crop, PORTALS }) => {
     const win = document.querySelector('.floating-window').getBoundingClientRect();
     let { left, top, right, bottom } = win;
-    // Menus are portalled to <body> and can overhang the window edge; a clip of
-    // the window alone would slice them in half.
-    // Popovers are portalled to <body> and can overhang the window edge; badges
-    // and rings sit outside their targets by design and can overhang too. Both
-    // have to be inside the clip or the shot cuts an annotation in half.
-    for (const el of document.querySelectorAll('.type-filter-popover, .folder-nest-menu, .shot-mark')) {
+    // Menus portalled to <body> can overhang the window edge, and rings and
+    // badges sit outside their targets by design. Both have to be inside the
+    // clip or the shot cuts an annotation in half.
+    for (const el of document.querySelectorAll([...PORTALS, '.shot-mark'].join(', '))) {
       const r = el.getBoundingClientRect();
       if (r.width === 0) continue;
       left = Math.min(left, r.left); top = Math.min(top, r.top);
       right = Math.max(right, r.right); bottom = Math.max(bottom, r.bottom);
     }
+    // The crop wins over the union above — that is the point of asking for one.
+    const edge = (sel) => {
+      const el = sel && document.querySelector(sel);
+      return el ? el.getBoundingClientRect() : null;
+    };
+    const from = edge(crop.top);
+    const to = edge(crop.bottom);
+    if (from) top = from.top - (crop.padTop ?? 0);
+    if (to) bottom = to.bottom + (crop.padBottom ?? 0);
     return { x: left, y: top, width: right - left, height: bottom - top };
-  });
+  }, { crop, PORTALS });
   const pad = 14;
   await page.screenshot({
     path: join(OUT, `${name}.png`),
@@ -217,6 +294,30 @@ async function useDefaultWindow(page) {
   await settle(page, 400);
 }
 
+// Every scene starts from an empty browser. The generator drives one long-lived
+// page and lorebooks persist in localStorage, so each scene used to inherit
+// every book the scenes before it had imported — by the last shot the side panel
+// listed eight near-identical copies of the same fixture.
+async function emptyStorage(page) {
+  if (!page.url().startsWith('http')) return;
+  await page.evaluate(() => localStorage.clear());
+}
+
+// How tightly each shot is cropped, keyed by step id. Steps absent from here are
+// captured whole, which is right when the subject is the window itself.
+const CROPS = {
+  // Both of these are about a menu hanging from the title, not about the entry
+  // list filling the 900px underneath it.
+  'title-menu': { bottom: '.title-menu', padBottom: 10 },
+  import:       { bottom: '.title-menu', padBottom: 10 },
+  // The subject is a 40px strip. Keep a slice of the list above the hotbar so it
+  // still reads as the bottom of a window.
+  'status-bar': { top: '.hotbar', padTop: 90 },
+  // The menus stack up from the bottom-right corner; everything above the
+  // flyout is entry rows.
+  'size-menu':  { top: '.scale-flyout', padTop: 40 },
+};
+
 const SCENES = {
   'title-menu': async (page) => {
     await openBuilderWithFixture(page);
@@ -281,9 +382,11 @@ async function main() {
   for (const step of TOUR_STEPS) {
     const build = SCENES[step.id];
     if (!build) continue;
+    console.log(`${step.id}:`);
+    await emptyStorage(page);
     await build(page);
     await annotate(page, step.marks ?? []);
-    await shot(page, step.file.replace(/\.png$/, ''));
+    await shot(page, step.file.replace(/\.png$/, ''), CROPS[step.id]);
   }
 
   await browser.close();

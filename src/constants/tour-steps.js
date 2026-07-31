@@ -7,8 +7,8 @@
 // release images stay correct.
 //
 // What lives here is declarative only — an id, an image, and the words. The
-// Playwright work of building each scene (opening menus, importing a file) stays
-// in screenshots.mjs, keyed by these ids.
+// Playwright work of building each scene (opening menus, importing a file) and
+// deciding how tightly to crop it stays in screenshots.mjs, keyed by these ids.
 //
 // `marks` is the numbered annotation list, and it lives here rather than being
 // painted into the PNG. Baked in, the legend was pinned to the window's bottom
@@ -18,6 +18,15 @@
 // text-size setting, and can be read by a screen reader. `selector` is unused by
 // the app and kept here only so the labels can't drift out of step with the
 // badges the generator draws from the same array.
+//
+// ARRAY ORDER IS THE NUMBERING. The app renders this list counting from 1 and
+// the generator draws badge `i + 1` for entry `i`, so reordering an array here
+// renumbers the image to match. It follows that the entries must be written in
+// the order the badges scan on the image — top to bottom, left to right within a
+// row — or the picture counts 1, 2, 3 down the page while the list underneath
+// says something else. The generator checks this on every run and prints the
+// order to use when they disagree; `place` is the lever for changing where a
+// badge lands, not the array position.
 //
 // The captions carry the information and the images support them, never the
 // reverse: text baked into a PNG ignores the user's text-size setting, can't be
@@ -47,11 +56,11 @@ export const TOUR_STEPS = [
     body:  'Click the lorebook name at the top of the window. Every book you’ve saved is on the left, import and export on the right. Double-click the title instead to rename the book you’re in.',
     alt:   'The lorebook title menu open, showing a list of saved lorebooks beside import and export controls.',
     marks: [
-      { selector: '.title-menu .tm-book--active', label: 'Every lorebook you have saved — most recent first' },
-      { selector: '.title-menu .tm-sort-btn', label: 'Switch to A–Z if you would rather find them by name', nth: 1, place: 'right' },
-      { selector: '.title-menu .tm-new', label: 'Start a new lorebook' },
-      { selector: '.title-menu .drop-zone', label: 'Drop a file here to import, or click to browse', place: 'right' },
-      { selector: '.title-menu .tm-btn-row', label: 'Download this book as JSON, TXT or DOCX', place: 'right' },
+      { selector: '.title-menu .tm-sort-btn', nth: 1, place: 'tr', label: 'Most recently opened first — switch to A–Z if you would rather find them by name' },
+      { selector: '.title-menu .tm-book--active', place: 'tl', label: 'Every lorebook you have saved; the one you are in is highlighted' },
+      { selector: '.title-menu .tm-new', place: 'tl', label: 'Start a new lorebook' },
+      { selector: '.title-menu .drop-zone', place: 'br', label: 'Drop a file here to import, or click to browse' },
+      { selector: '.title-menu .tm-btn-row', place: 'tr', label: 'Download this book as JSON, TXT or DOCX' },
     ],
   },
   {
@@ -61,36 +70,38 @@ export const TOUR_STEPS = [
     body:  'Drop a file on that menu and the book list steps aside. You choose what happens to the lorebook you have open — and you get the same four choices wherever you started the import.',
     alt:   'The import flow showing four choices: import as new, append, replace, and back up first.',
     marks: [
-      { selector: '.import-flow-title', label: 'The file you picked, and how many entries it holds' },
-      { selector: '.import-flow-opt', label: 'Import as new — your current book is untouched', nth: 0, place: 'right' },
-      { selector: '.import-flow-opt', label: 'Replace overwrites what is there now', nth: 2, place: 'right' },
-      { selector: '.import-flow-opt', label: 'Back up first downloads a copy, then replaces', nth: 3, place: 'right' },
-      { selector: '.tm-rail-back', label: 'Back to your lorebooks' },
+      { selector: '.import-flow-title', place: 'tl', label: 'The file you picked, and how many entries it holds' },
+      { selector: '.import-flow-opt', nth: 0, place: 'tl', label: 'Import as new — your current book is untouched' },
+      { selector: '.import-flow-opt', nth: 1, place: 'tr', label: 'Append — adds those entries to the book you are in' },
+      { selector: '.import-flow-opt', nth: 2, place: 'bl', label: 'Replace — overwrites what is there now' },
+      { selector: '.import-flow-opt', nth: 3, place: 'br', label: 'Back up first — downloads a copy, then replaces' },
     ],
   },
   {
     id:    'status-bar',
     file:  '03-status-bar.png',
     title: 'The bar along the bottom',
-    body:  'Everything that’s simply true about your work rather than something you do to it: whether you’re saved, your entry count, how much browser storage you’re using, and which version you’re running.',
-    alt:   'The status bar across the bottom of the window, showing save state, entry count, version, and controls.',
+    body:  'Everything that’s simply true about your work rather than something you do to it: whether you’re saved, your entry count, how much browser storage you’re using, and which build you’re on. The bug and idea links moved down here too.',
+    alt:   'The status bar across the bottom of the window, showing save state, entry count, version, feedback links, storage use and the Size button.',
     marks: [
-      { selector: '.status-save', label: 'Whether your work is saved, and how long ago' },
-      { selector: '.status-count', label: 'How many entries this lorebook holds' },
-      { selector: '.status-version', label: 'Which build you are running — quote this in a bug report' },
-      { selector: '.status-right .storage-usage-ring', label: 'Browser storage in use; click for a breakdown' },
-      { selector: '.status-item', label: 'Every size setting lives here' },
+      { selector: '.status-save', place: 'tr', label: 'Whether your work is saved, and how long ago' },
+      { selector: '.status-count', place: 'tr', label: 'How many entries this lorebook holds' },
+      { selector: '.status-version', place: 'tl', label: 'Which build you are running — quote this in a bug report' },
+      { selector: '.status-right .header-feedback', place: 'tl', label: 'Report a bug, or suggest a feature' },
+      { selector: '.status-right .storage-usage-ring', place: 'tl', label: 'Browser storage in use; click it for a breakdown' },
+      { selector: '.status-item', place: 'tl', label: 'Every size setting lives here' },
     ],
   },
   {
     id:    'size-menu',
     file:  '04-size-menu.png',
     title: 'One place for every size',
-    body:  'Window size, text size, entry height and the + button all live in ⌘ Size, bottom-right. Hover it to peek, click to keep it open. Reset all sizing leaves your text size alone on purpose.',
-    alt:   'The Size menu open, with the window-size options flown out to the right.',
+    body:  'Window size, text size, entry height and the + button all live in the Size button at the bottom-right. Hover it to peek, click to keep it open. Reset all sizing leaves your text size alone on purpose.',
+    alt:   'The Size menu open, with the window-size options flown out to the left.',
     marks: [
-      { selector: '.scale-flyout', label: 'Named presets, or Custom… to type exact numbers', place: 'right' },
-      { selector: '.scale-menu', label: 'Each row shows its current value without opening anything', place: 'left' },
+      { selector: '.scale-flyout', place: 'tl', label: 'Named presets, or Custom… to type exact numbers' },
+      { selector: '.scale-menu', place: 'tl', label: 'Each row shows what it is set to without opening anything' },
+      { selector: '.status-item', place: 'tr', label: 'Hover to peek at the menu, click to keep it open' },
     ],
   },
   {
@@ -100,21 +111,21 @@ export const TOUR_STEPS = [
     body:  'Grouped by what you’re changing rather than by whichever feature introduced the setting. Everything starts closed, and the filter box at the top finds a control even if you don’t know its exact name.',
     alt:   'The Settings panel showing four collapsed sections and a filter box.',
     marks: [
-      { selector: '.settings-search-input', label: 'Finds a control even if you do not know its exact name', place: 'left' },
-      { selector: '.settings-section-title', label: 'What happens as you write', nth: 0, place: 'left' },
-      { selector: '.settings-section-title', label: 'How you drive the app — shortcuts, hotbar, folders', nth: 2, place: 'left' },
+      { selector: '.settings-search-input', place: 'tl', label: 'Finds a control even if you do not know its exact name' },
+      { selector: '.settings-section-title', nth: 0, place: 'tr', label: 'What happens as you write' },
+      { selector: '.settings-section-title', nth: 2, place: 'tr', label: 'How you drive the app — shortcuts, hotbar, folders' },
     ],
   },
   {
     id:    'pull-tab',
     file:  '06-pull-tab.png',
     title: 'The pull tab on the right edge',
-    body:  'Click it and your lorebook list opens beside your entries. The window widens to fit it rather than the panel covering what you were reading.',
+    body:  'Click it and your lorebook list opens beside your entries. The window widens to fit the panel rather than the panel covering what you were reading.',
     alt:   'The pull tab opened, with the lorebook list beside the entry list and the window widened to fit.',
     marks: [
-      { selector: '.lorebook-tab', label: 'Click the tab to open and close the panel', place: 'right' },
-      { selector: '.menu-panel .switcher-list', label: 'Your lorebooks, beside your entries rather than over them', place: 'left' },
-      { selector: '.entry-card', label: 'The entry list keeps its width — the window grew instead', nth: 0, place: 'left' },
+      { selector: '.entry-card', nth: 0, place: 'tr', label: 'Your entries keep their width — the window grew to make room' },
+      { selector: '.menu-panel .switcher-list', place: 'tl', label: 'Your lorebooks, beside your entries rather than over them' },
+      { selector: '.lorebook-tab', place: 'tl', label: 'The tab rides the window’s edge; click it to open or close the panel' },
     ],
   },
 ];
