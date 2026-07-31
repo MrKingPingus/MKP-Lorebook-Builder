@@ -1893,11 +1893,22 @@ const SCENARIOS = [
   }),
 
   scenario('Feature tour: click-through from the update notice, with enlarge', async (page, check) => {
-    // Any 4xx/5xx means an image the tour needs is missing from the build —
-    // the failure mode this whole approach has to be watched for, since the
-    // images are generated separately from the code that shows them.
+    // A 4xx/5xx on a tour image means the build is missing one — the failure
+    // mode this whole approach has to be watched for, since the images are
+    // generated separately from the code that shows them.
+    //
+    // Scoped to the tour's own assets rather than every request on the page.
+    // Unscoped, this also caught `/_vercel/insights/script.js`, which
+    // @vercel/analytics requests at runtime and which only exists when the app
+    // is served by Vercel — so it 404s on the production build under CI, on
+    // GitHub Pages, and on any local preview. That is expected and harmless,
+    // and it has nothing to do with whether the tour's images shipped.
     const failed = [];
-    page.on('response', (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${r.url()}`); });
+    page.on('response', (r) => {
+      if (r.status() >= 400 && r.url().includes('/screenshots/')) {
+        failed.push(`${r.status()} ${r.url()}`);
+      }
+    });
 
     await page.goto(BASE_URL, { waitUntil: 'networkidle' });
     await page.evaluate(() => {

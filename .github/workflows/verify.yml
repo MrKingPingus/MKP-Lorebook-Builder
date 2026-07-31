@@ -70,20 +70,39 @@ jobs:
       # to Pages is the production bundle, so that is what the suite should be
       # exercising — a dev-only pass would miss anything the build itself
       # changes. run.mjs reuses a server already listening on VERIFY_URL.
+      # Two things this has to get right, both of which previously produced a
+      # 60-second timeout against a server that was up and printing its URL:
+      #
+      # - `--host 127.0.0.1` pins the bind. Vite preview defaults to `localhost`,
+      #   which on a runner resolves to ::1 as well as 127.0.0.1 — Node then
+      #   listens on IPv6 only, and every probe to 127.0.0.1 is refused.
+      # - The probe and VERIFY_URL both carry the Pages base path. vite.config.js
+      #   sets `base: /<repo>/` whenever GITHUB_ACTIONS is set, which is true in
+      #   this job and not only in the deploy, so the app is not served at `/`.
+      #   Testing under the real base is the more faithful check anyway: it is
+      #   what Pages serves, and it is where a BASE_URL bug — the tour images,
+      #   say — would actually show up.
+      #
+      # The failure branch dumps a verbose curl as well as the server log,
+      # so the next time this breaks it says why instead of just timing out.
       - name: Serve the production build
         run: |
-          npx vite preview --port 4173 --strictPort > /tmp/preview.log 2>&1 &
+          BASE="/${GITHUB_REPOSITORY#*/}/"
+          URL="http://127.0.0.1:4173${BASE}"
+          npx vite preview --port 4173 --strictPort --host 127.0.0.1 > /tmp/preview.log 2>&1 &
           for i in $(seq 1 60); do
-            if curl -sf -o /dev/null http://127.0.0.1:4173/; then ready=1; break; fi
+            if curl -sf -o /dev/null "$URL"; then ready=1; break; fi
             sleep 1
           done
           if [ -z "$ready" ]; then
-            echo "::error ::vite preview did not come up on port 4173"
+            echo "::error ::vite preview never answered at $URL"
             cat /tmp/preview.log
+            curl -sv "$URL" || true
             exit 1
           fi
+          echo "VERIFY_URL=$URL" >> "$GITHUB_ENV"
 
+      # VERIFY_URL comes from the step above via $GITHUB_ENV. Setting it here
+      # as well would override that with a guess at the base path.
       - name: Verify
-        env:
-          VERIFY_URL: http://127.0.0.1:4173/
         run: npm run verify
