@@ -2,7 +2,7 @@
 
 ---
 
-## 0.9.0 — 2026-07-30
+## 0.9.0 — 2026-07-31
 
 The interface overhaul. The window header has been emptied down to essentials,
 the lorebook title has become a menu, and everything that's a *readout* rather
