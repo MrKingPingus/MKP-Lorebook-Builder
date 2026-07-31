@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { formatBytes } from '../../services/format-bytes.js';
 import { useSettings } from '../../hooks/use-settings.js';
+import { useAnchoredPosition } from '../../hooks/use-anchored-position.js';
 import {
   STORAGE_QUOTA_PROFILE_WEBKIT,
   STORAGE_QUOTA_PROFILE_OTHER,
@@ -30,6 +31,7 @@ const CATEGORY_LABELS = {
   windowState:  'Window state',
 };
 const CATEGORY_ORDER = ['snapshots', 'entryContent', 'index', 'settings', 'windowState'];
+const WIDTH_PX = 280;
 
 export function StorageUsageDetailPopover({
   anchorRect,
@@ -42,6 +44,7 @@ export function StorageUsageDetailPopover({
   onClose,
 }) {
   const popoverRef = useRef(null);
+  const style = useAnchoredPosition(anchorRect, WIDTH_PX);
 
   useEffect(() => {
     function onDocClick(e) {
@@ -54,12 +57,7 @@ export function StorageUsageDetailPopover({
     };
   }, [onClose]);
 
-  if (!anchorRect) return null;
-  const style = {
-    position: 'fixed',
-    top:  anchorRect.bottom + 6,
-    left: Math.max(8, Math.min(anchorRect.right - 280, window.innerWidth - 288)),
-  };
+  if (!style) return null;
 
   const pct = Math.round(percent * 100);
 

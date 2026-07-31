@@ -33,6 +33,8 @@ export function useSettings() {
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const funnyFishEnabled         = useSettingsStore((s) => s.funnyFishEnabled);
   const storageQuotaProfile      = useSettingsStore((s) => s.storageQuotaProfile);
+  const legacyMenus              = useSettingsStore((s) => s.legacyMenus);
+  const lorebookSort             = useSettingsStore((s) => s.lorebookSort);
   const applySettings            = useSettingsStore((s) => s.applySettings);
 
   function updateSetting(key, value) {
@@ -66,6 +68,8 @@ export function useSettings() {
       thesaurusEnabled,
       funnyFishEnabled,
       storageQuotaProfile,
+      legacyMenus,
+      lorebookSort,
       ...patch,
     };
     writeJson(SETTINGS_KEY, current);
@@ -108,6 +112,8 @@ export function useSettings() {
     thesaurusEnabled,
     funnyFishEnabled,
     storageQuotaProfile,
+    legacyMenus,
+    lorebookSort,
     resetWindow,
     setCounterTiers:             (v) => updateSetting('counterTiers', v),
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
@@ -142,5 +148,7 @@ export function useSettings() {
     setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
     setFunnyFishEnabled:         (v) => updateSetting('funnyFishEnabled', v),
     setStorageQuotaProfile:      (v) => updateSetting('storageQuotaProfile', v),
+    setLegacyMenus:              (v) => updateSetting('legacyMenus', v),
+    setLorebookSort:             (v) => updateSetting('lorebookSort', v),
   };
 }

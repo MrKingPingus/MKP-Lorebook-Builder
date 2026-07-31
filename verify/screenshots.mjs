@@ -12,18 +12,50 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   launch, openBuilderWithFixture, enterSelectMode, selectCards, settle,
-  openSettings, openSettingsSection,
+  openSettings, openSettingsSection, importBookAsNew, openScaleMenu,
+  setScaleOption, closeScaleMenu, VARIANT_FIXTURE, FIXTURE,
 } from './driver.mjs';
+import { TOUR_RELEASE, TOUR_STEPS, TOUR_CAPTURE_SCALE } from '../src/constants/tour-steps.js';
 
-const OUT = process.argv[2] || join(process.cwd(), 'screenshots');
-const SCALE = 2;
+// Straight into public/ so the built site serves them, namespaced by release:
+// the 0.9.0 images stay correct for 0.9.0 even after the UI moves on.
+const OUT = process.argv[2] || join(process.cwd(), 'public', 'screenshots', TOUR_RELEASE);
+const SCALE = TOUR_CAPTURE_SCALE;
+
+// Menus portalled to <body> that can sit outside the window frame, plus the
+// pull tab, which lives outside it by design. Both the clip and the badge
+// placement need this list: one so a menu isn't sliced in half, the other so a
+// badge belonging to something outside the window isn't judged out of bounds.
+const PORTALS = [
+  '.title-menu', '.scale-menu', '.scale-flyout',
+  '.type-filter-popover', '.folder-nest-menu', '.lorebook-tab',
+];
 
 // ── annotation layer ────────────────────────────────────────────────────────
-// `marks` is [{ selector, label, place }]; place is where the badge sits
-// relative to the target ('left' | 'right'). Badges are numbered in order and
-// the labels are listed in a legend strip along the bottom.
-async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
-  const missed = await page.evaluate(({ marks, title, legendOffset }) => {
+// `marks` is [{ selector, label, nth, place, ring }]. Only badges are drawn —
+// no legend. The labels are rendered as real HTML by the tour from the same
+// TOUR_STEPS entry, which keeps them out of the image entirely: painted in, a
+// legend pinned to the window's bottom edge covered whatever the shot was about
+// whenever that sat low, and it vanished the moment someone enlarged the image.
+//
+// Two rules here, both learned from images that came out wrong:
+//
+// 1. BADGES ARE NUMBERED IN ARRAY ORDER. The tour renders the same array as a
+//    numbered list counting from 1, so nothing may renumber them here. A
+//    previous version sorted the marks into reading order before numbering, and
+//    every badge on a step ended up pointing at a different label than its
+//    number. The array is the only authority; the reading-order check at the end
+//    reports a mismatch rather than quietly correcting it.
+//
+// 2. A badge tucks against a corner of its own ring, outside it. Pinned to the
+//    midpoint of an edge it landed on whatever sat beside the target — the
+//    neighbouring cell of the 2x2 import grid, the label of the next status
+//    item — and for a target at the window's left edge it fell outside the frame
+//    altogether. `place` names the preferred corner ('tl' | 'tr' | 'bl' | 'br'),
+//    but every corner is scored: a badge that would cover another marked
+//    control, or another badge, or land outside the shot, steps aside on its own.
+async function annotate(page, marks) {
+  const report = await page.evaluate(({ marks, PORTALS }) => {
     document.querySelectorAll('.shot-anno').forEach((n) => n.remove());
 
     const layer = document.createElement('div');
@@ -34,109 +66,115 @@ async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
     });
 
     const ACCENT = '#ff5c8a';
-    const legendRows = [];
-    const missed = [];
+    const BADGE = 22;  // badge diameter
+    const RING = 3;    // how far the ring sits outside its target
+    const GAP = 4;     // clear air between ring and badge
+    const CORNERS = ['tl', 'tr', 'bl', 'br'];
 
-    // Resolve every mark to a rect and a badge position FIRST, then number them
-    // in reading order — top to bottom, left to right within a row. Numbering in
-    // the order the marks happen to be written in the script produced badges
-    // that ran 3, 2, 1 down the image while the legend counted 1, 2, 3.
-    const resolved = [];
-    for (const m of marks) {
-      const all = document.querySelectorAll(m.selector);
-      const el = all[m.nth ?? 0];
-      const r = el && el.getBoundingClientRect();
-      if (!el || (r.width === 0 && r.height === 0)) { missed.push(m.selector); continue; }
-      const place = m.place || 'left';
-      const cx = r.left + r.width / 2 - 11;
-      const cy = r.top + r.height / 2 - 11;
-      const pos = {
-        left:   { left: r.left - 30, top: cy },
-        right:  { left: r.right + 8, top: cy },
-        top:    { left: cx, top: r.top - 30 },
-        bottom: { left: cx, top: r.bottom + 8 },
-      }[place];
-      resolved.push({ m, r, pos });
-    }
-
-    // Band the y coordinate so two badges on the same visual row sort by x
-    // rather than by a couple of stray pixels of vertical difference.
-    resolved.sort((a, b) => {
-      const band = (v) => Math.round(v / 24);
-      return band(a.pos.top) - band(b.pos.top) || a.pos.left - b.pos.left;
+    const box = (r) => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+    const grow = (r, by) => ({
+      left: r.left - by, top: r.top - by, right: r.right + by, bottom: r.bottom + by,
+    });
+    const hits = (a, b) =>
+      a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const holds = (outer, inner) =>
+      inner.left >= outer.left && inner.right <= outer.right
+      && inner.top >= outer.top && inner.bottom <= outer.bottom;
+    const merge = (a, b) => ({
+      left: Math.min(a.left, b.left), top: Math.min(a.top, b.top),
+      right: Math.max(a.right, b.right), bottom: Math.max(a.bottom, b.bottom),
     });
 
-    resolved.forEach(({ m, r, pos }, i) => {
-      const n = i + 1;
+    // Resolve targets up front. A mark matching nothing is reported rather than
+    // shifting the number of every mark after it.
+    const missed = [];
+    const targets = [];
+    for (const m of marks) {
+      const el = document.querySelectorAll(m.selector)[m.nth ?? 0];
+      const r = el && el.getBoundingClientRect();
+      if (!el || (r.width === 0 && r.height === 0)) { missed.push(m.selector); continue; }
+      targets.push({ m, r });
+    }
+
+    // Where a badge is allowed to sit: the window, plus anything portalled
+    // outside it, plus the targets themselves.
+    let region = box(document.querySelector('.floating-window').getBoundingClientRect());
+    for (const sel of PORTALS) {
+      for (const el of document.querySelectorAll(sel)) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0) region = merge(region, r);
+      }
+    }
+    for (const { r } of targets) region = merge(region, r);
+
+    const placed = [];
+    targets.forEach(({ m, r }, i) => {
+      const ring = grow(r, RING);
 
       // Ring around the target — skippable, because a ring drawn tight around a
       // row sits exactly on top of the thin drop-indicator line and hides the
       // very thing the annotation is pointing at.
       if (m.ring !== false) {
-        const ring = document.createElement('div');
-        ring.className = 'shot-mark';
-        Object.assign(ring.style, {
+        const el = document.createElement('div');
+        el.className = 'shot-mark';
+        Object.assign(el.style, {
           position: 'fixed',
-          left: `${r.left - 3}px`, top: `${r.top - 3}px`,
-          width: `${r.width + 6}px`, height: `${r.height + 6}px`,
+          left: `${ring.left}px`, top: `${ring.top}px`,
+          width: `${r.width + RING * 2}px`, height: `${r.height + RING * 2}px`,
           border: `2px solid ${ACCENT}`, borderRadius: '7px',
-          boxShadow: `0 0 0 3px rgba(255,92,138,0.18)`,
+          boxShadow: '0 0 0 3px rgba(255,92,138,0.18)',
         });
-        layer.appendChild(ring);
+        layer.appendChild(el);
       }
+
+      // The author's corner first, then the rest; ties break towards the
+      // author's preference because `rank` is part of the cost.
+      const wanted = [m.place, ...CORNERS].filter((c, n, all) => c && all.indexOf(c) === n);
+      let best = null;
+      wanted.forEach((corner, rank) => {
+        const left = corner[1] === 'l' ? ring.left - GAP - BADGE : ring.right + GAP;
+        const top  = corner[0] === 't' ? ring.top - GAP - BADGE  : ring.bottom + GAP;
+        const at = { left, top, right: left + BADGE, bottom: top + BADGE };
+        let cost = rank;
+        if (!holds(region, at)) cost += 1000;
+        targets.forEach(({ r: other }, j) => { if (j !== i && hits(at, grow(other, RING))) cost += 100; });
+        placed.forEach((p) => { if (hits(at, p)) cost += 60; });
+        if (!best || cost < best.cost) best = { at, cost };
+      });
+      placed.push(best.at);
 
       const badge = document.createElement('div');
       badge.className = 'shot-mark';
-      badge.textContent = String(n);
+      badge.textContent = String(i + 1);
       Object.assign(badge.style, {
         position: 'fixed',
-        top: `${pos.top}px`,
-        left: `${pos.left}px`,
-        width: '22px', height: '22px', borderRadius: '50%',
+        left: `${best.at.left}px`, top: `${best.at.top}px`,
+        width: `${BADGE}px`, height: `${BADGE}px`, borderRadius: '50%',
         background: ACCENT, color: '#fff',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '12px', fontWeight: '700',
         boxShadow: '0 2px 6px rgba(0,0,0,0.45)',
       });
       layer.appendChild(badge);
-      legendRows.push(`${n}. ${m.label}`);
     });
 
-    // Legend strip across the bottom of the window.
-    const win = document.querySelector('.floating-window');
-    const wr = win ? win.getBoundingClientRect() : { left: 40, right: innerWidth - 40, bottom: innerHeight - 40 };
-    const legend = document.createElement('div');
-    legend.className = 'shot-legend';
-    Object.assign(legend.style, {
-      position: 'fixed',
-      left: `${wr.left + 14}px`, width: `${wr.right - wr.left - 28}px`,
-      bottom: `${innerHeight - wr.bottom + legendOffset}px`,
-      // Fully opaque: at 94% the entry rows behind it bled through and made the
-      // legend hard to read.
-      background: '#0f1015', color: '#e8e9ee',
-      border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px',
-      padding: '10px 14px', boxSizing: 'border-box',
-      display: 'flex', flexDirection: 'column', gap: '3px',
-      font: '500 12.5px ui-sans-serif, system-ui, -apple-system, sans-serif',
-      lineHeight: '1.45',
-    });
-    if (title) {
-      const h = document.createElement('div');
-      h.textContent = title;
-      Object.assign(h.style, { fontWeight: '700', fontSize: '13px', marginBottom: '2px', color: '#fff' });
-      legend.appendChild(h);
-    }
-    for (const row of legendRows) {
-      const d = document.createElement('div');
-      d.textContent = row;
-      Object.assign(d.style, { color: '#c7c9d4' });
-      legend.appendChild(d);
-    }
-    layer.appendChild(legend);
     document.body.appendChild(layer);
-    return missed;
-  }, { marks, title, legendOffset });
-  for (const sel of missed) console.log(`  !! no match for ${sel} — annotation dropped`);
+
+    // Do the badges scan in the order the list counts? Band the y so two badges
+    // on one visual row sort by x rather than by a few stray pixels.
+    const band = (v) => Math.round(v / 24);
+    const reading = placed.map((_, i) => i).sort((a, b) =>
+      band(placed[a].top) - band(placed[b].top) || placed[a].left - placed[b].left);
+    return {
+      missed,
+      reading: reading.every((v, i) => v === i) ? null : reading.map((i) => i + 1),
+    };
+  }, { marks, PORTALS });
+
+  for (const sel of report.missed) console.log(`  !! no match for ${sel} — annotation dropped`);
+  if (report.reading) {
+    console.log(`  !! badges scan ${report.reading.join(', ')} — reorder this step's marks to match`);
+  }
   await page.waitForTimeout(120);
 }
 
@@ -151,24 +189,39 @@ async function expect(page, selector, what) {
   }
 }
 
-// Capture the app window plus the legend beneath it, with a little margin.
-async function shot(page, name) {
-  const box = await page.evaluate(() => {
+// Capture the app window and anything overhanging it, with a little margin.
+//
+// `crop` narrows that vertically to the part of the window the step is actually
+// about: { top, bottom } are selectors, `padTop`/`padBottom` keep some of the
+// surrounding window for context. Full width is always kept, so a cropped shot
+// still reads as a band across the builder rather than a floating fragment.
+// Without this, a step about the status bar was a 40px strip at the bottom of a
+// 900px-tall image of an entry list — the subject was there, but nobody could
+// see it.
+async function shot(page, name, crop = {}) {
+  const box = await page.evaluate(({ crop, PORTALS }) => {
     const win = document.querySelector('.floating-window').getBoundingClientRect();
     let { left, top, right, bottom } = win;
-    // Menus are portalled to <body> and can overhang the window edge; a clip of
-    // the window alone would slice them in half.
-    // Popovers are portalled to <body> and can overhang the window edge; badges
-    // and rings sit outside their targets by design and can overhang too. Both
-    // have to be inside the clip or the shot cuts an annotation in half.
-    for (const el of document.querySelectorAll('.type-filter-popover, .folder-nest-menu, .shot-mark')) {
+    // Menus portalled to <body> can overhang the window edge, and rings and
+    // badges sit outside their targets by design. Both have to be inside the
+    // clip or the shot cuts an annotation in half.
+    for (const el of document.querySelectorAll([...PORTALS, '.shot-mark'].join(', '))) {
       const r = el.getBoundingClientRect();
       if (r.width === 0) continue;
       left = Math.min(left, r.left); top = Math.min(top, r.top);
       right = Math.max(right, r.right); bottom = Math.max(bottom, r.bottom);
     }
+    // The crop wins over the union above — that is the point of asking for one.
+    const edge = (sel) => {
+      const el = sel && document.querySelector(sel);
+      return el ? el.getBoundingClientRect() : null;
+    };
+    const from = edge(crop.top);
+    const to = edge(crop.bottom);
+    if (from) top = from.top - (crop.padTop ?? 0);
+    if (to) bottom = to.bottom + (crop.padBottom ?? 0);
     return { x: left, y: top, width: right - left, height: bottom - top };
-  });
+  }, { crop, PORTALS });
   const pad = 14;
   await page.screenshot({
     path: join(OUT, `${name}.png`),
@@ -222,134 +275,119 @@ async function scene(page) {
   await settle(page, 300);
 }
 
+// Every scene is keyed by the step id in constants/tour-steps.js, and the file
+// it writes is that step's `file`. A step with no scene here, or a scene whose
+// id isn't in the list, is reported rather than silently skipped — a tour with
+// a missing image is worse than one with a missing step.
+// Pin the window to its documented default before capturing.
+//
+// Bootstrap sizes a first-run window from the viewport — two thirds of its
+// width, and its full height — so on the generator's 1500x1050 canvas the app
+// came out 1000x1150. Every shot was therefore of a window no user's default
+// looks like, and the extra 250px of height was what made the images too tall
+// to read in the tour. Choosing the preset drives the real UI, so the captures
+// track the default if it ever changes.
+async function useDefaultWindow(page) {
+  await openScaleMenu(page);
+  await setScaleOption(page, 'Window size', 'Medium');
+  await closeScaleMenu(page);
+  await settle(page, 400);
+}
+
+// Every scene starts from an empty browser. The generator drives one long-lived
+// page and lorebooks persist in localStorage, so each scene used to inherit
+// every book the scenes before it had imported — by the last shot the side panel
+// listed eight near-identical copies of the same fixture.
+async function emptyStorage(page) {
+  if (!page.url().startsWith('http')) return;
+  await page.evaluate(() => localStorage.clear());
+}
+
+// How tightly each shot is cropped, keyed by step id. Steps absent from here are
+// captured whole, which is right when the subject is the window itself.
+const CROPS = {
+  // Both of these are about a menu hanging from the title, not about the entry
+  // list filling the 900px underneath it.
+  'title-menu': { bottom: '.title-menu', padBottom: 10 },
+  import:       { bottom: '.title-menu', padBottom: 10 },
+  // The subject is a 40px strip. Keep a slice of the list above the hotbar so it
+  // still reads as the bottom of a window.
+  'status-bar': { top: '.hotbar', padTop: 90 },
+  // The menus stack up from the bottom-right corner; everything above the
+  // flyout is entry rows.
+  'size-menu':  { top: '.scale-flyout', padTop: 40 },
+};
+
+const SCENES = {
+  'title-menu': async (page) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await useDefaultWindow(page);
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+    await settle(page, 350);
+  },
+
+  import: async (page) => {
+    await openBuilderWithFixture(page);
+    await useDefaultWindow(page);
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+    await page.locator('.title-menu .drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
+    await expect(page, '.import-flow-grid', 'import disposition step');
+    await settle(page, 400);
+  },
+
+  'status-bar': async (page) => {
+    await openBuilderWithFixture(page);
+    await useDefaultWindow(page);
+  },
+
+  'size-menu': async (page) => {
+    await openBuilderWithFixture(page);
+    await useDefaultWindow(page);
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]').first().hover();
+    await expect(page, '.scale-flyout', 'size submenu');
+    await settle(page, 400);
+  },
+
+  settings: async (page) => {
+    await openBuilderWithFixture(page);
+    await useDefaultWindow(page);
+    await openSettings(page);
+    await settle(page, 400);
+  },
+
+  'pull-tab': async (page) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await useDefaultWindow(page);
+    await page.locator('.lorebook-tab').click();
+    await expect(page, '.menu-panel .switcher-list', 'lorebook side panel');
+    await settle(page, 600);
+  },
+};
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  const { browser, page } = await launch({ width: 1120, height: 880, deviceScaleFactor: SCALE });
 
-  // ── 1. the folder tree ────────────────────────────────────────────────────
-  await scene(page);
-  await annotate(page, [
-    { selector: '.folder-header .folder-swatch', label: 'Colour swatch — eight pastels, deliberately distinct from entry-type colours' },
-    { selector: '.folder-header .folder-count', label: 'How many entries are inside, counting sub-folders' },
-    { selector: '.folder-header .folder-add-entry-btn', label: 'Add a new entry straight into this folder', place: 'bottom' },
-    { selector: '.folder-entries .folder-header', label: 'Folders nest inside folders, up to three levels deep' },
-  ], { title: 'Folders — a builder-only organisation layer, never exported' });
-  await shot(page, '01-folder-tree');
+  const missingScene = TOUR_STEPS.filter((s) => !SCENES[s.id]).map((s) => s.id);
+  const orphanScene  = Object.keys(SCENES).filter((id) => !TOUR_STEPS.some((s) => s.id === id));
+  for (const id of missingScene) console.log(`!! tour step "${id}" has no scene — no image will be written`);
+  for (const id of orphanScene)  console.log(`!! scene "${id}" is not in TOUR_STEPS — its image is unused`);
 
-  // ── 2. multi-entry drag ───────────────────────────────────────────────────
-  await scene(page);
-  // Tuck the folder so every row in this shot fits on screen — the drag then
-  // stays clear of the auto-scroll zone at the list edges.
-  await page.locator('.folder-header .folder-collapse-btn').first().click();
-  await settle(page, 400);
+  const { browser, page } = await launch({ width: 1500, height: 1050, deviceScaleFactor: SCALE });
 
-  const rows = page.locator('.entry-list > .entry-list-item .entry-label');
-  await rows.nth(0).click({ modifiers: ['Shift'] });
-  await settle(page, 250);
-  await rows.nth(2).click({ modifiers: ['Shift'] });
-  await settle(page, 350);
-
-  const src = await page.locator('.entry-list > .entry-list-item .entry-card').nth(0)
-    .locator('.drag-handle').boundingBox();
-  await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2 + 12, { steps: 4 });
-  await settle(page, 250);
-  const dst = await page.locator('.entry-list > .entry-list-item .entry-card').nth(4).boundingBox();
-  await page.mouse.move(dst.x + dst.width / 2, dst.y + dst.height * 0.8, { steps: 12 });
-  await settle(page, 300);
-  // A second small move at the destination. One long move can land without a
-  // dragover firing on the row underneath, leaving no indicator to photograph.
-  await page.mouse.move(dst.x + dst.width / 2 + 6, dst.y + dst.height * 0.8, { steps: 3 });
-  await settle(page, 350);
-  await expect(page, '.entry-list-item--drop-after', 'drop indicator');
-
-  await annotate(page, [
-    { selector: '.entry-list-item--dragging', label: 'The whole selection travels — grab any selected row by its handle' },
-    { selector: '.entry-list-item--drop-after', label: 'The blue line shows exactly where they will land, before you let go', place: 'left', ring: false },
-    { selector: '.bulk-action-count', label: 'Shift+click picks a range; Ctrl+click drops one back out', place: 'left' },
-  ], { title: 'Drag several entries at once — one gesture, one undo', legendOffset: 96 });
-  await shot(page, '02-multi-drag');
-  await page.mouse.up();
-  await settle(page, 250);
-
-  // ── 3. dropping into a folder ─────────────────────────────────────────────
-  await scene(page);
-  const loose = await page.locator('.entry-list > .entry-list-item .entry-card').first()
-    .locator('.drag-handle').boundingBox();
-  await page.mouse.move(loose.x + loose.width / 2, loose.y + loose.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(loose.x + loose.width / 2, loose.y + loose.height / 2 + 12, { steps: 4 });
-  await settle(page, 250);
-  // The outer folder header: big, and far enough from the list's top edge that
-  // the auto-scroll zone never gets involved.
-  const head = await page.locator('.folder-header').first().boundingBox();
-  await page.mouse.move(head.x + head.width * 0.45, head.y + head.height * 0.65, { steps: 12 });
-  await settle(page, 300);
-  await page.mouse.move(head.x + head.width * 0.5, head.y + head.height * 0.65, { steps: 3 });
-  await settle(page, 350);
-  await expect(page, '.folder-header--drop-into', 'folder drop outline');
-
-  await annotate(page, [
-    { selector: '.folder-header--drop-into', label: 'Drop onto a folder header to file the entry inside it' },
-    { selector: '.entry-list-tail', label: 'Or drop down here to pull it out of every folder', place: 'top' },
-  ], { title: 'Where you drop decides where it belongs', legendOffset: 96 });
-  await shot(page, '03-drop-into-folder');
-  await page.mouse.up();
-  await settle(page, 250);
-
-  // ── 4. filter by folder ───────────────────────────────────────────────────
-  await scene(page);
-  await page.locator('.folder-filter-btn').click();
-  await settle(page, 350);
-  await annotate(page, [
-    { selector: '.folder-filter-btn', label: 'Folder ▾ — only appears once the book actually has folders', place: 'top' },
-    // Left, so it does not stack against the count badge at the row's right edge.
-    { selector: '.folder-filter-popover .type-filter-popover-row', nth: 1, label: 'Pick a folder to show only its entries, sub-folders included', place: 'left' },
-    { selector: '.folder-filter-count', label: 'The count matches exactly what picking it will show', place: 'right' },
-    { selector: '.folder-filter-popover .type-filter-popover-row:last-child', label: 'Unfiled entries — everything you have not put away yet', place: 'right' },
-  ], { title: 'Filter the list down to one folder' });
-  await shot(page, '04-folder-filter');
-  await page.keyboard.press('Escape');
-  await settle(page, 250);
-
-  // ── 5. condensed rows ─────────────────────────────────────────────────────
-  await scene(page);
-  await openSettings(page);
-  const fset = await openSettingsSection(page, 'Folders');
-  await fset.locator('.settings-checkbox-row input').nth(1).check();
-  await settle(page, 250);
-  await page.locator('.menu-panel-close').first().click();
-  await settle(page, 350);
-  // One click on the inner folder now condenses it; the outer stays full size.
-  await page.locator('.folder-entries .folder-header .folder-collapse-btn').first().click();
-  await settle(page, 400);
-  await annotate(page, [
-    { selector: '.entry-card--condensed', label: 'Condensed — one line each: type dot, name, Expand and Remove' },
-    { selector: '.folder-entries .folder-header .folder-collapse-btn', label: 'The header button cycles a folder through its sizes' },
-    { selector: '.entry-list-item .entry-card', nth: 0, label: 'Entries outside that folder keep their full size' },
-  ], { title: 'Condense a folder to scan it, without hiding it' });
-  await shot(page, '05-condensed-rows');
-
-  // ── 6. collapse-stage settings ────────────────────────────────────────────
-  await openSettings(page);
-  const stages = await openSettingsSection(page, 'Folders');
-  // Shot 5 turned Condensed on. Put it back to the shipped default, or the
-  // image would contradict its own caption.
-  const condensedBox = stages.locator('.settings-checkbox-row input').nth(1);
-  if (await condensedBox.isChecked()) {
-    await condensedBox.uncheck();
-    await settle(page, 250);
+  for (const step of TOUR_STEPS) {
+    const build = SCENES[step.id];
+    if (!build) continue;
+    console.log(`${step.id}:`);
+    await emptyStorage(page);
+    await build(page);
+    await annotate(page, step.marks ?? []);
+    await shot(page, step.file.replace(/\.png$/, ''), CROPS[step.id]);
   }
-  await stages.scrollIntoViewIfNeeded();
-  await settle(page, 400);
-
-  await annotate(page, [
-    { selector: '.settings-checkbox-row', nth: 0, label: 'Full size is always available — every folder returns to it', place: 'left' },
-    { selector: '.settings-checkbox-row', nth: 1, label: 'Condensed is off by default; tick it for a middle step', place: 'left' },
-    { selector: '.settings-checkbox-row', nth: 2, label: 'Hidden tucks the entries away and shows just the count', place: 'left' },
-  ], { title: 'Choose which sizes the folder button cycles through', legendOffset: 150 });
-  await shot(page, '06-collapse-stages');
 
   await browser.close();
   console.log(`\nScreenshots in ${OUT}`);

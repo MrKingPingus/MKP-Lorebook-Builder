@@ -22,8 +22,18 @@ export function MenuPanel() {
   const activeMenuPanel    = useUi((s) => s.activeMenuPanel);
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
 
+  // The panel is always in layout, collapsed to zero width and hidden via
+  // `visibility` (see style.css). That is what makes this a single derived
+  // boolean rather than a state machine: an element arriving from display:none
+  // has no laid-out start width, so its transition is skipped entirely no matter
+  // how many frames you defer the class by. Kept in layout, it just animates.
+  //
+  // The window grows by exactly what the panel grows by, over the same duration
+  // and easing, so the entry list beside it holds a constant width throughout.
+  const expanded = activeMenuPanel !== null;
+
   return (
-    <div className="menu-panel" style={activeMenuPanel ? undefined : { display: 'none' }}>
+    <div className={`menu-panel${expanded ? ' menu-panel--expanded' : ''}`}>
       <div className="menu-panel-header">
         <span className="menu-panel-title">
           {activeMenuPanel ? PANEL_TITLES[activeMenuPanel] : ''}

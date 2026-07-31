@@ -49,6 +49,10 @@
   --font:     'Inter', system-ui, -apple-system, sans-serif;
   --mono:     'JetBrains Mono', 'Fira Code', monospace;
   --transition: 0.12s ease;
+  /* Shared by everything that moves when the side panel opens: the window's
+     width/left, the pull tab's left, and the panel's own width. They have to
+     use one curve or they visibly disagree mid-slide. */
+  --panel-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ui-scale: 1; /* accessibility text-scale multiplier (see accessibility-service.js) */
 }
 
@@ -239,6 +243,12 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
   min-height: 360px;
   z-index: 100;
 }
+/* left/width are inline styles rewritten on every pointermove of a drag or
+   resize, so this transition is opt-in for the duration of a panel slide only —
+   applied permanently it would rubber-band both gestures. */
+.floating-window--animating {
+  transition: width 220ms var(--panel-ease), left 220ms var(--panel-ease);
+}
 
 /* ── Corner bracket decorations ── */
 .corner {
@@ -369,28 +379,55 @@ img.logo-icon {
 }
 .lorebook-hidden-count:hover { color: var(--text); }
 
-/* Small caret button next to the name input — opens LorebookSwitchPopover in
-   solo mode so rename (input) and switch (button) live side by side. */
-.lorebook-switch-btn {
-  padding: 3px 8px;
-  /* Resting button chrome so it reads as an interactive control, not a stray
-     glyph — the old bare ▼ was too easy to miss (issue #113). */
-  background: var(--surface2);
-  border: 1px solid var(--border);
+/* The title field — reads as the lorebook's name at rest, behaves as a menu
+   button on click and a rename input on double-click. Modelled on FabFilter's
+   preset field: the whole strip is the target, not a caret bolted to the side. */
+.title-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: calc(190px * var(--ui-scale));
+  max-width: calc(300px * var(--ui-scale));
+  padding: 4px 16px;
+  background: transparent;
+  /* An accent ring at rest, in the FAB's colour. A borderless title read as
+     text rather than a control — people didn't know it was clickable. Sharing
+     the FAB's token keeps the app's two "this is a thing you press" cues
+     congruous, and themed accents carry both together. */
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
+  font-size: 0.8125rem;
   color: var(--muted2);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  white-space: nowrap;
   cursor: pointer;
-  transition: color var(--transition), border-color var(--transition), background var(--transition);
+  transition: background var(--transition), border-color var(--transition),
+              color var(--transition), box-shadow var(--transition);
 }
-.lorebook-switch-btn:hover {
+.title-field:hover {
+  background: var(--surface2);
   color: var(--text);
-  border-color: var(--border2);
-  background: var(--surface3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.title-field--open {
+  background: var(--surface2);
+  color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+/* Pinned by a click — stays put until clicked again, so it reads as latched
+   rather than merely hovered. Mirrors .status-item--pinned in the footer. */
+.title-field--pinned {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.title-field-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.title-field-caret {
+  color: var(--muted);
+  font-size: 0.625rem;
+  flex-shrink: 0;
 }
 
 /* Lorebook count badge */
@@ -428,6 +465,9 @@ img.logo-icon {
 }
 .menu-btn:hover,
 .menu-btn--open { background: var(--surface3); color: var(--text); }
+/* The gear is an SVG rather than a glyph, so it needs no font-size and would
+   otherwise inherit the ☰'s 1.375rem line box. */
+.menu-btn--gear { font-size: 0; }
 
 .menu-dropdown {
   position: absolute;
@@ -850,6 +890,305 @@ img.logo-icon {
 .export-menu-btn--outline:hover {
   background: var(--surface3);
   color: var(--text);
+}
+
+/* ============================================================
+   Status Footer  (desktop only — see StatusFooter.jsx)
+   ============================================================ */
+/* §STATUS-FOOTER */
+
+/* Height scales with the text-size setting rather than being fixed. A hard
+   height clips its own labels at 125%, and the control that fixes text size
+   lives in this bar — so the failure would be self-inflicting.
+   padding-right clears the 14px SE resize handle and the gold corner bracket. */
+.status-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: calc(32px * var(--ui-scale));
+  padding: 0 22px 0 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--muted2);
+  flex-shrink: 0;
+  position: relative;
+  /* Below .resize-handle's z-index 150 so the corner handles stay grabbable. */
+  z-index: 6;
+}
+
+.status-left  { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.status-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+.status-save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--muted2);
+}
+.status-save-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+.status-save--fresh { color: var(--green); }
+.status-save--fresh .status-save-dot { background: var(--green); }
+
+/* Entry counts, moved down from the header in 13C. Separated by rules rather
+   than the old leading "·" — a bullet reads as a continuation of the save
+   status, which these are not. */
+.status-count {
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.status-count--btn {
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.status-count--btn:hover { color: var(--text); }
+
+/* The feedback links and storage ring scale with the footer's text rather than
+   sitting at the header's fixed 28px. The first pass sized them down too far
+   and packed them together, which made three separate controls read as one
+   smudge — hence the roomier targets, the wider gaps, and the rules below. */
+.status-right .header-icon-btn,
+.status-right .storage-usage-ring {
+  width:  calc(27px * var(--ui-scale));
+  height: calc(27px * var(--ui-scale));
+}
+.status-right .header-icon-svg {
+  width:  calc(18px * var(--ui-scale));
+  height: calc(18px * var(--ui-scale));
+}
+.status-right .header-feedback { gap: 4px; }
+
+/* Rules between the footer's groups: feedback | storage | sizing. Without them
+   the icons crowd each other and none of them looks deliberate. */
+.status-divider {
+  width: 1px;
+  height: calc(16px * var(--ui-scale));
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  color: var(--muted2);
+  font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.status-item:hover {
+  background: var(--surface3);
+  border-color: var(--border);
+  color: var(--text);
+}
+.status-item--open {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--text);
+}
+/* Pinned by a click — stays put until clicked again, so it reads as latched
+   rather than merely hovered. */
+.status-item--pinned {
+  border-color: var(--passive-agree);
+  color: var(--passive-agree);
+}
+.status-item-icon { font-size: 0.875rem; line-height: 1; }
+
+/* ── Sizing menu ──
+   Portalled to document.body and positioned `fixed` from the trigger's rect,
+   so it escapes .floating-window's overflow:hidden. That is what lets flyouts
+   open to the RIGHT instead of folding back over the menu. */
+.scale-menu {
+  min-width: calc(216px * var(--ui-scale));
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  z-index: 400;
+}
+.scale-menu-head {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 10px 8px;
+}
+.scale-menu-divider { height: 1px; background: var(--border); margin: 5px 4px; }
+
+.scale-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  color: var(--text);
+  text-align: left;
+  position: relative;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.scale-row:hover,
+.scale-row--open { background: var(--surface3); }
+.scale-row:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+.scale-row-label { flex: 1; white-space: nowrap; }
+.scale-row-value { color: var(--muted2); font-size: 0.75rem; white-space: nowrap; }
+.scale-row-arrow { color: var(--muted); font-size: 0.625rem; }
+.scale-row--reset { color: var(--muted2); }
+.scale-row-note { color: var(--muted); font-size: 0.6875rem; }
+
+/* Flyouts are portalled too and positioned in JS (right by default, flipped
+   left only when the viewport can't fit them — see ScaleMenu.jsx).
+   The fade is the visual half of the hover grace: FLYOUT_OPEN_MS keeps a
+   flyout from unfurling on a passing pointer, this keeps the arrival soft. */
+.scale-flyout {
+  min-width: calc(164px * var(--ui-scale));
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 6px;
+  z-index: 401;
+  animation: scale-flyout-in 0.13s ease-out;
+}
+@keyframes scale-flyout-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.flyout-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--transition);
+}
+.flyout-item:hover { background: var(--surface3); }
+.flyout-item:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+.flyout-item--action { color: var(--muted2); }
+.flyout-check { width: 13px; flex-shrink: 0; color: var(--green); font-size: 0.75rem; }
+.flyout-item-label { flex: 1; white-space: nowrap; }
+.flyout-item-detail { color: var(--muted); font-size: 0.6875rem; }
+
+.flyout-custom { display: flex; gap: 8px; padding: 5px 10px 8px; }
+.flyout-custom-field { display: flex; align-items: center; gap: 6px; font-size: 0.6875rem; color: var(--muted); }
+.flyout-custom-field input {
+  width: 68px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 7px;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.flyout-custom-field input:focus {
+  border-color: var(--focus-border);
+  outline: none;
+}
+
+/* ============================================================
+   Lorebook Pull Tab  (right edge — see LorebookTab.jsx)
+   ============================================================ */
+/* §LOREBOOK-TAB */
+
+/* Row shell so the tab can be a real right-edge column rather than an overlay
+   sitting on top of entry rows and the scrollbar. */
+.window-shell {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.window-stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Portaled to document.body and positioned `fixed` from the window's rect, so
+   it hangs off the OUTSIDE of the frame rather than reserving a gutter inside
+   it. z-index sits just under .floating-window (100) so the tab's left edge
+   tucks behind the window's border — the two read as one object, and the corner
+   resize handles are no longer competing with it for the frame edge at all.
+   Vertically centred by translateY, since `top` is the window's midpoint. */
+.lorebook-tab {
+  position: fixed;
+  z-index: 99;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.lorebook-tab:focus-visible { outline: 2px solid var(--focus-border); outline-offset: -2px; }
+/* Same opt-in, same curve. The window animates `left` and `width` on one curve,
+   so its right edge follows that curve as well — matching it here keeps the tab
+   welded to the frame instead of jumping ahead to the final position. */
+.lorebook-tab--animating {
+  transition: left 220ms var(--panel-ease);
+}
+
+/* Mirrored from the old inboard pill: open edge and square corners now face
+   left, into the window, so the tab looks attached to the frame's outside. */
+.lorebook-tab-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px 0;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-left: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  color: var(--muted2);
+  transition: background var(--transition), color var(--transition);
+}
+.lorebook-tab:hover .lorebook-tab-inner { background: var(--surface3); color: var(--text); }
+.lorebook-tab--open .lorebook-tab-inner { background: var(--surface3); color: var(--passive-agree); }
+
+.lorebook-tab-arrow { font-size: 1rem; line-height: 1; }
+
+/* Upright glyphs stacked down the strip — vertical-rl alone lays the word on
+   its side, which is the hard-to-read version. text-orientation keeps every
+   letter the right way up, so it reads top-to-bottom like a spine. */
+.lorebook-tab-label {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 /* ============================================================
@@ -2671,6 +3010,532 @@ img.logo-icon {
 .hidden-entries-unhide:hover { background: rgba(245,158,11,.12); }
 
 /* Lorebook switch popover — opened from the caret button in WindowHeader */
+/* ── Title dropdown ──────────────────────────────────────────────────────
+   Two columns under the window title: lorebooks left, import / export right.
+   Portaled to document.body (the floating window clips its own overflow), so
+   width/position come from JS — see constants/title-menu.js. */
+.title-menu {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  z-index: 9000;
+}
+/* Narrow windows can't fit two columns side by side — stack them and let the
+   whole menu scroll rather than squeezing both into unreadable strips. */
+.title-menu--stacked {
+  flex-direction: column;
+  overflow-y: auto;
+}
+.title-menu--stacked .tm-col--books {
+  width: 100%;
+  border-right: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.tm-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tm-col--books {
+  width: 46%;
+  border-right: 1px solid var(--border);
+}
+.tm-col--io { flex: 1; min-width: 0; }
+
+.tm-col-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 7px;
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tm-col-head-count { color: var(--border2); }
+
+/* Sort toggle in the Lorebooks column head. In-context rather than buried in
+   Settings: it is a view preference for this specific list, and a user who
+   wants it alphabetical is looking at the list when they decide that. */
+.tm-sort {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.tm-sort-btn {
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+.tm-sort-btn:hover { color: var(--text); background: var(--surface3); }
+.tm-sort-btn--on {
+  color: var(--passive-agree);
+  border-color: color-mix(in srgb, var(--passive-agree) 45%, transparent);
+}
+
+/* Shrink-to-content rather than fill: with two or three lorebooks saved, a
+   filling body would strand "+ New lorebook" at the bottom of an empty column.
+   The menu's own max-height still forces this to scroll once the list is long. */
+.tm-col-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 7px 7px;
+}
+/* The import/export column has fixed content, so it can fill — that keeps the
+   menu's overall height driven by the taller of the two columns. */
+.tm-col--io > .tm-col-body { flex: 1 1 auto; }
+.tm-col-body::-webkit-scrollbar { width: 4px; }
+.tm-col-body::-webkit-scrollbar-track { background: transparent; }
+.tm-col-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Lorebook rows */
+.tm-book {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.tm-book:hover { background: var(--surface3); }
+.tm-book--active {
+  background: var(--surface3);
+  box-shadow: inset 2px 0 0 var(--passive-agree);
+}
+.tm-book-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tm-book--active .tm-book-name {
+  color: var(--passive-agree);
+  font-weight: 600;
+}
+.tm-book-time {
+  font-size: 0.625rem;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* Hidden until the row is hovered — a delete affordance on every row at rest
+   turns a list you read into a list you're afraid to click. */
+.tm-book-del {
+  flex-shrink: 0;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--transition), color var(--transition);
+}
+.tm-book:hover .tm-book-del,
+.tm-book:focus-visible .tm-book-del { opacity: 1; }
+.tm-book-del:hover { color: var(--destructive); }
+
+.tm-confirm {
+  margin: 2px 4px 6px;
+  padding: 7px 9px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+}
+.tm-confirm-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.6875rem;
+  color: var(--muted2);
+}
+.tm-confirm-actions { display: flex; gap: 5px; }
+.tm-confirm-btn {
+  padding: 4px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.tm-confirm-btn:hover { border-color: var(--border2); }
+.tm-confirm-btn--danger {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+.tm-confirm-btn--danger:hover {
+  background: var(--destructive);
+  color: #fff;
+}
+
+.tm-new {
+  flex-shrink: 0;
+  width: calc(100% - 14px);
+  margin: 4px 7px 8px;
+  padding: 7px;
+  background: transparent;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.tm-new:hover {
+  border-color: var(--passive-agree);
+  color: var(--passive-agree);
+}
+
+/* Import / export column */
+.tm-section { padding: 0 12px 12px; }
+.tm-section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tm-section-note { letter-spacing: 0; text-transform: none; }
+.tm-divider {
+  height: 1px;
+  margin: 0 12px 12px;
+  background: var(--border);
+}
+
+.tm-drop {
+  display: block;
+  width: 100%;
+  padding: 14px 10px;
+  background: transparent;
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.tm-drop:hover {
+  border-color: var(--passive-agree);
+  color: var(--passive-agree);
+  background: rgba(96, 165, 250, 0.05);
+}
+.tm-drop-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.625rem;
+  color: var(--muted);
+}
+
+.tm-filename-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.tm-filename-row label {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.tm-filename-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 7px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  color: var(--text);
+}
+.tm-filename-row input:focus { border-color: var(--focus-border); }
+
+.tm-btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.tm-btn {
+  padding: 5px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.tm-btn:hover { background: var(--surface2); border-color: var(--border2); }
+.tm-btn--outline { background: transparent; color: var(--muted2); }
+.tm-btn--outline:hover { color: var(--text); }
+
+/* Import takeover: the books column collapses to a rail so the flow gets the
+   whole menu, but the way back stays visible. */
+.tm-rail {
+  width: calc(34px * var(--ui-scale));
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 9px;
+}
+.tm-rail-back {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius);
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.tm-rail-back:hover { background: var(--surface3); color: var(--text); }
+.tm-rail-label {
+  writing-mode: vertical-rl;
+  margin-top: 10px;
+  font-size: 0.5625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--border2);
+}
+.title-menu--stacked .tm-rail {
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-right: none;
+  border-bottom: 1px solid var(--border);
+}
+.title-menu--stacked .tm-rail-label { writing-mode: horizontal-tb; margin-top: 0; }
+
+.tm-col-body--flow { padding: 0 0 10px; }
+
+/* ── The shared import flow ────────────────────────────────────────────────
+   One set of styles for all three surfaces (title dropdown, side panel,
+   hotbar overlay), so the flow can't drift apart between them again. */
+.import-flow-source { display: flex; flex-direction: column; gap: 7px; }
+.import-flow-formats {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.625rem;
+  color: var(--muted);
+}
+/* Paste is the niche path — a link, not a segmented control competing with the
+   drop zone for half the surface. */
+.import-flow-swap {
+  align-self: center;
+  padding: 2px 4px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  text-decoration: underline;
+  text-decoration-color: var(--border2);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+.import-flow-swap:hover { color: var(--text); }
+.import-flow-textarea {
+  width: 100%;
+  min-height: calc(110px * var(--ui-scale));
+  padding: 8px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.import-flow-textarea:focus { border-color: var(--focus-border); }
+.import-flow-source-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.import-flow-parse-btn {
+  padding: 6px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.import-flow-parse-btn:hover:not(:disabled) { background: var(--surface2); }
+.import-flow-parse-btn:disabled { opacity: 0.4; cursor: default; }
+
+.import-flow-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  flex-shrink: 0;
+}
+.import-flow-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.import-flow-sub { font-size: 0.6875rem; color: var(--muted); white-space: nowrap; }
+
+.import-flow-warn {
+  margin: 0 14px 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--yellow) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yellow) 35%, transparent);
+  font-size: 0.6875rem;
+  color: var(--yellow);
+}
+.import-flow-warn-list {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  color: var(--muted2);
+}
+.import-flow-backed-up {
+  margin: 0 14px 8px;
+  font-size: 0.6875rem;
+  color: var(--green);
+}
+
+.import-flow-question {
+  padding: 0 14px 7px;
+  font-size: 0.75rem;
+  color: var(--muted2);
+}
+/* 2×2 rather than four across — four buttons in a row does not fit the
+   dropdown's column at 480px, and a wrap that isn't a deliberate grid reads as
+   a bug. */
+.import-flow-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 14px 10px;
+}
+.import-flow-opt {
+  padding: 9px 10px;
+  text-align: left;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.import-flow-opt:hover { background: var(--surface2); border-color: var(--border2); }
+.import-flow-opt--danger { border-color: color-mix(in srgb, var(--destructive) 40%, transparent); }
+.import-flow-opt--danger .import-flow-opt-title { color: var(--destructive); }
+.import-flow-opt-title {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.import-flow-opt-hint {
+  display: block;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.import-flow-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px 12px;
+  font-size: 0.625rem;
+  color: var(--muted);
+}
+.import-flow-note-rule { flex: 1; height: 1px; background: var(--border); }
+
+.import-flow-banner {
+  margin: 0 14px 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  font-size: 0.6875rem;
+  color: var(--muted2);
+}
+.import-flow-banner strong { color: var(--text); }
+
+.import-flow-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 8px 14px 0;
+  flex-shrink: 0;
+}
+.import-flow-cancel {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.import-flow-cancel:hover { color: var(--text); border-color: var(--border2); }
+.import-flow-confirm {
+  padding: 6px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.import-flow-confirm:hover { background: var(--surface2); }
+/* Replace is the one irreversible choice in the flow, so it is the one button
+   that is coloured for it. */
+.import-flow-confirm--danger {
+  background: var(--destructive);
+  border-color: var(--destructive);
+  color: #fff;
+}
+.import-flow-confirm--danger:hover { background: var(--destructive-hover); }
+
+.import-panel-info {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .lorebook-switch-popover {
   min-width: 200px;
   max-width: 260px;
@@ -3888,7 +4753,82 @@ img.logo-icon {
   gap: 18px;
   padding: 14px 12px;
 }
+/* Filter box — first thing you meet, and it stays put while you scroll a long
+   open section (the keybinding table alone is taller than the panel).
+   Negative margins bleed it over .settings-panel's 14px padding so the sticky
+   band spans the full width and content scrolls cleanly under it. --surface
+   matches the panel, which sets no background of its own. */
+.settings-search {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: -14px -14px 0;
+  padding: 14px 14px 6px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+}
+.settings-search-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 28px 7px 10px;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.settings-search-input::placeholder { color: var(--muted); }
+.settings-search-input:focus { border-color: var(--focus-border); outline: none; }
+/* The type=search UA affordance would sit on top of our own clear button. */
+.settings-search-input::-webkit-search-cancel-button { display: none; }
+.settings-search-clear {
+  position: absolute;
+  right: 20px;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  line-height: 1;
+  color: var(--muted);
+  transition: background var(--transition), color var(--transition);
+}
+.settings-search-clear:hover { background: var(--surface3); color: var(--text); }
+.settings-search-empty {
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 10px 2px;
+}
+
 .settings-group { display: flex; flex-direction: column; gap: 6px; }
+
+/* Labelled rule between groups inside a section. Gives the ordering a visible
+   logic instead of an implied one, so a long section reads as a few short
+   lists rather than one undifferentiated run. Negative margins pull it tighter
+   to the group below than the section-body gap would otherwise allow. */
+.settings-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 -8px;
+}
+.settings-divider:first-child { margin-top: -2px; }
+.settings-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.settings-divider-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
 .settings-label { font-size: 0.75rem; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .settings-hint { font-size: 0.6875rem; color: var(--muted); line-height: 1.6; }
 .settings-row { display: flex; gap: 12px; }
@@ -4781,13 +5721,38 @@ kbd {
    Menu Panel (desktop side panel)
    ============================================================ */
 /* §MENU-PANEL */
+/* Animates open/shut in lockstep with the floating window's width — see
+   MENU_PANEL_ANIM_MS in constants/scaling.js for why the two must match. The
+   resting state is collapsed so there is a zero width to grow from; MenuPanel
+   adds --expanded on the frame after laying the panel out.
+   The border collapses too, otherwise a 1px rule sits in the layout while the
+   panel is nominally zero-width. */
 .menu-panel {
-  width: 320px;
+  width: 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--border);
+  border-left: 0 solid var(--border);
   overflow: hidden;
+  /* `visibility`, not `display`. The panel has to stay in layout at zero width
+     or the width transition has no start value to animate from — a panel
+     arriving via display:none jumps straight to 320px however many frames you
+     wait, because the browser has never laid out the collapsed state. visibility
+     still removes it from the focus order, so a zero-width panel can't be tabbed
+     into. Delayed to the end of the close so it stays visible while collapsing,
+     and instant on open (see --expanded). */
+  visibility: hidden;
+  transition: width 220ms var(--panel-ease),
+              border-left-width 220ms var(--panel-ease),
+              visibility 0s linear 220ms;
+}
+.menu-panel--expanded {
+  width: 320px;
+  border-left-width: 1px;
+  visibility: visible;
+  transition: width 220ms var(--panel-ease),
+              border-left-width 220ms var(--panel-ease),
+              visibility 0s;
 }
 
 .menu-panel-header {
@@ -6397,3 +7362,395 @@ kbd {
   pointer-events: none;
 }
 
+
+/* ── Update notice ─────────────────────────────────────────────────────────
+   Shown over the lander once per changelog release. Sits above the floating
+   window (z-index 100) and its portalled menus (9000) — nothing else should be
+   competing for attention while it is up. */
+.update-notice-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.update-notice {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: min(640px, 100%);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.update-notice-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 10px;
+  flex-shrink: 0;
+}
+.update-notice-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.update-notice-date {
+  margin: 2px 0 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+.update-notice-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.375rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.update-notice-close:hover { background: var(--surface3); color: var(--text); }
+
+/* The release is as long as the release was — scroll rather than truncate, so
+   the notice never quietly hides something that shipped. */
+.update-notice-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 18px 4px;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted2);
+}
+.update-notice-body::-webkit-scrollbar { width: 6px; }
+.update-notice-body::-webkit-scrollbar-track { background: transparent; }
+.update-notice-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+.update-notice-body .md-h2 { display: none; } /* the date is already in the header */
+
+.update-notice-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.update-notice-btn {
+  padding: 7px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.update-notice-btn:hover { background: var(--surface2); border-color: var(--border2); }
+.update-notice-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.update-notice-btn--primary:hover {
+  background: color-mix(in srgb, var(--accent) 82%, #000);
+  border-color: color-mix(in srgb, var(--accent) 82%, #000);
+}
+
+/* Sort toggle above the side-panel lorebook list — mirrors the title menu's. */
+.lorebook-panel-sort {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0 2px 6px;
+}
+
+/* Build version in the status bar. Sits next to the bug-report link because
+   that is the one moment knowing your exact build matters. */
+.status-version {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Feature tour ──────────────────────────────────────────────────────────
+   Click-through of a release's annotated screenshots, launched from the update
+   notice. Sits at the same level as the notice it replaces. */
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+}
+.tour-panel {
+  display: flex;
+  flex-direction: column;
+  /* Sized to what the captures actually render at, not to their full width.
+     They are portrait and height-constrained, so at 68vh they come out roughly
+     600-850px wide — a 1240px panel left wide empty margins either side. This
+     also keeps the caption to a readable measure rather than one long line. */
+  width: min(880px, 100%);
+  max-height: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+/* Only the step counter and the close button sit above the screenshot. The
+   title moved below it, next to the caption: with the title above and the
+   explanation below, the image separated two halves of the same thought. */
+.tour-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px 8px;
+  flex-shrink: 0;
+}
+.tour-step-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.tour-progress { margin: 0; font-size: 0.6875rem; color: var(--muted); }
+.tour-close {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border: none; border-radius: var(--radius);
+  background: transparent; color: var(--muted);
+  font-size: 1.375rem; line-height: 1; cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.tour-close:hover { background: var(--surface3); color: var(--text); }
+
+/* Hugs the image rather than filling the panel: the captures are portrait (a
+   tall app window plus its legend), so a full-width box letterboxed them with
+   large empty bars either side. */
+.tour-shot {
+  display: block;
+  width: fit-content;
+  max-width: calc(100% - 36px);
+  margin: 0 auto;
+  padding: 0;
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: zoom-in;
+  flex-shrink: 1;
+  min-height: 0;
+}
+.tour-shot img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 68vh;
+}
+.tour-zoom-hint {
+  position: absolute;
+  right: 8px; bottom: 8px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.625rem;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.tour-shot:hover .tour-zoom-hint { opacity: 1; }
+
+/* The caption and the numbered labels. Both are real text rather than being
+   painted into the screenshot, so they survive enlarging, scale with the
+   text-size setting, and can be read by a screen reader. */
+.tour-notes { margin: 14px 18px 0; flex-shrink: 0; }
+.tour-marks {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted2);
+}
+.tour-marks li { display: flex; align-items: flex-start; gap: 8px; }
+/* Same pink as the badges painted on the shot, so a number in the list and a
+   number on the image read as the same thing. */
+.tour-mark-num {
+  flex-shrink: 0;
+  width: 17px; height: 17px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #ff5c8a;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The caption carries the step — the image only supports it — but as plain
+   text under a large screenshot it was being skipped entirely. Given a panel of
+   its own with an accent edge so the eye lands on it. */
+.tour-body {
+  margin: 0;
+  padding: 11px 14px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 16px;
+  flex-shrink: 0;
+}
+.tour-dots { display: flex; gap: 6px; }
+.tour-dot {
+  width: 8px; height: 8px;
+  padding: 0;
+  border: none; border-radius: 50%;
+  background: var(--border2);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.tour-dot:hover { background: var(--muted); }
+.tour-dot--on { background: var(--accent); }
+
+.tour-nav { display: flex; gap: 8px; }
+.tour-btn {
+  padding: 7px 16px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.tour-btn:hover:not(:disabled) { background: var(--surface2); border-color: var(--border2); }
+.tour-btn:disabled { opacity: 0.35; cursor: default; }
+.tour-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.tour-btn--primary:hover { background: color-mix(in srgb, var(--accent) 82%, #000); }
+
+/* Enlarged view — what the 2x captures are for. */
+.tour-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 9600;
+  display: flex;
+  /* Centred with `margin: auto` on the child rather than `align-items: center`.
+     With centring on the container, an image taller than the viewport has its
+     top pushed outside the scrollable area — it is clipped by the top edge and
+     cannot be scrolled back to. `margin: auto` centres when there is room and
+     yields to the scroll when there isn't. */
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.88);
+  cursor: zoom-out;
+  overflow: auto;
+  overscroll-behavior: contain;
+  gap: 20px;
+  align-items: flex-start;
+}
+/* Image and notes side by side: a bar across the bottom would cover the shot,
+   which is exactly the problem the baked-in legend had. Wraps below on a narrow
+   screen. */
+.tour-zoom-figure { margin: auto; flex: 0 1 auto; min-width: 0; }
+.tour-zoom-aside {
+  flex: 0 0 300px;
+  position: sticky;
+  top: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  cursor: default;
+}
+.tour-notes--aside { margin: 0; }
+.tour-notes--aside .tour-step-title { font-size: 0.9375rem; }
+@media (max-width: 1100px) {
+  .tour-zoom { flex-wrap: wrap; }
+  .tour-zoom-aside { flex: 1 1 100%; position: static; }
+}
+/* Capped to the viewport in both axes: the inline `width` is the builder's true
+   size, and this only bites when the screen can't fit that. Better to show a
+   shot at 80% and whole than at 100% with the top scrolled off — and it means
+   the common case needs no scrolling at all. `margin: auto` still handles the
+   genuinely-too-tall case without clipping the top. */
+.tour-zoom img {
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  /* Width is set inline from naturalWidth / TOUR_CAPTURE_SCALE so the shot
+     appears at the size the builder actually is. Left to max-width alone it
+     rendered at close to raw capture pixels — about twice life size. */
+  flex-shrink: 0;
+}
+.tour-zoom-close {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+/* Re-entry to the feature tour from the lander, so dismissing the update
+   notice isn't a one-way door. */
+.lander-tour-btn {
+  margin-left: 12px;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.lander-tour-btn {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 55%, transparent);
+}
+.lander-tour-btn:hover {
+  color: var(--bg);
+  background: var(--green);
+  border-color: var(--green);
+}

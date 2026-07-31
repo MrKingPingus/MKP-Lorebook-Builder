@@ -13,10 +13,11 @@ export function ExportMenu() {
   const anchor          = useUi((s) => s.exportMenuAnchor);
   const closeExportMenu = useUi((s) => s.closeExportMenu);
   const { activeLorebook } = useLorebook();
-  const { exportJson, exportTxt, exportDocx, copyJsonToClipboard } = useExport();
+  const { exportJson, exportTxt, exportDocx, copyJsonToClipboard,
+          defaultExportFilename, resolveExportFilename } = useExport();
   const menuRef = useRef(null);
 
-  const defaultName = (activeLorebook?.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+  const defaultName = defaultExportFilename(activeLorebook?.name);
   const [filename, setFilename] = useState(defaultName);
 
   // Reset the filename to the active book's name each time the menu opens.
@@ -46,8 +47,7 @@ export function ExportMenu() {
 
   // Sanitize at export time; fall back to the book's safe name when blank.
   function resolveName() {
-    const cleaned = filename.replace(/[^a-z0-9_-]/gi, '_').replace(/^_+|_+$/g, '');
-    return cleaned || defaultName || 'lorebook';
+    return resolveExportFilename(filename, activeLorebook?.name);
   }
 
   function download(fn, ext) {

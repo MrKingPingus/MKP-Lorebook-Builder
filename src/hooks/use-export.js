@@ -3,6 +3,7 @@ import { exportToJsonBlob, downloadBlob } from '../services/json-export.js';
 import { exportToTxtBlob }               from '../services/txt-export.js';
 import { exportToDocxBlob }              from '../services/docx-export.js';
 import { TEMPLATE_LOREBOOK }             from '../constants/defaults.js';
+import { defaultExportFilename, resolveExportFilename } from '../services/export-filename.js';
 
 export function useExport() {
   function exportJson(lorebook, filename) {
@@ -69,5 +70,7 @@ export function useExport() {
     downloadDocxTemplate,
     copyJsonTemplate,
     copyTxtTemplate,
+    defaultExportFilename,
+    resolveExportFilename,
   };
 }

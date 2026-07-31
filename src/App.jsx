@@ -29,7 +29,7 @@ import {
   SETTINGS_KEY,
   WINDOW_STATE_KEY,
 } from './constants/storage-keys.js';
-import { DEFAULT_WINDOW_FRACTION } from './constants/defaults.js';
+import { DEFAULT_WINDOW_FRACTION, DEFAULT_WINDOW, LEGACY_DEFAULT_WINDOW } from './constants/defaults.js';
 import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from './constants/limits.js';
 
 /** Bootstrap: load persisted state from localStorage into stores on first mount. */
@@ -52,14 +52,33 @@ function useBootstrap() {
       if (settings !== rawSettings) writeJson(SETTINGS_KEY, settings);
     }
 
+    // One-time settings fix-ups, accumulated into a single patch so the last
+    // write can't clobber an earlier one.
+    const patch = {};
+
     // First-boot UA detect for the storage quota profile. Also fills in the
     // field for existing users upgrading from a build before this setting
     // existed. Once set, the user's chosen value is respected on every later
     // boot — we never silently re-detect on top of an explicit choice.
     if (!useSettingsStore.getState().storageQuotaProfile) {
-      const detected = detectQuotaProfile();
-      applySettings({ storageQuotaProfile: detected });
-      writeJson(SETTINGS_KEY, { ...(settings ?? {}), storageQuotaProfile: detected });
+      patch.storageQuotaProfile = detectQuotaProfile();
+    }
+
+    // Raise the stored default window size to the 1200×900 working size, but
+    // only for users still sitting on the untouched pre-13A 760×620. Settings
+    // persist and win over the constant, so without this the new default would
+    // reach nobody who had ever launched the app. A size the user actually
+    // chose is left exactly as they set it.
+    const stored = useSettingsStore.getState();
+    if (stored.defaultWindowWidth  === LEGACY_DEFAULT_WINDOW.width &&
+        stored.defaultWindowHeight === LEGACY_DEFAULT_WINDOW.height) {
+      patch.defaultWindowWidth  = DEFAULT_WINDOW.width;
+      patch.defaultWindowHeight = DEFAULT_WINDOW.height;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      applySettings(patch);
+      writeJson(SETTINGS_KEY, { ...(settings ?? {}), ...patch });
     }
 
     // Restore persisted window state, or fall back to default centre-two-thirds layout

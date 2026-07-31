@@ -8,6 +8,7 @@ import { runKeychordChecks } from './keychord-checks.mjs';
 import { runFolderTreeChecks } from './folder-tree-checks.mjs';
 import { runSelectionRangeChecks } from './selection-range-checks.mjs';
 import { runDragDropChecks } from './drag-drop-checks.mjs';
+import { runReleaseNotesChecks } from './release-notes-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -31,6 +32,7 @@ const pureOk = [
   runFolderTreeChecks(),
   runSelectionRangeChecks(),
   runDragDropChecks(),
+  runReleaseNotesChecks(),
 ].every(Boolean);
 
 let child = null;

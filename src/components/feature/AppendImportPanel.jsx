@@ -1,97 +1,50 @@
-// Overlay for the footer "Import Entries" button. Three modes selectable from
-// a segmented control at the top of the panel:
-//   - paste        : paste a block of entries into the textarea, parse, append
-//   - file-entries : drop / pick a file, parse, append entries to active book
-//   - file-book    : drop / pick a file, parse, then Replace or Import as New
+// Overlay for the hotbar's Import button.
+//
+// The three-mode segmented control is gone. It existed because this surface
+// could only append, so paste / entries-from-file / whole-book had to be picked
+// up front — and even then it carried "open the Import / Export tab" nudges for
+// the flows it couldn't do. It now renders the same useImportFlow as the title
+// dropdown and the side panel, so every disposition (including backup-first) is
+// available here and there is nowhere left to redirect anyone to.
 import { useState, useEffect, useRef } from 'react';
-import { useAppendImport }   from '../../hooks/use-append-import.js';
-import { useEntries }        from '../../hooks/use-entries.js';
-import { useLorebook }       from '../../hooks/use-lorebook.js';
-import { useUi }             from '../../hooks/use-ui.js';
-import { ImportPreview }     from './ImportPreview.jsx';
-
-const MODES = [
-  { id: 'paste',        label: 'Paste entries' },
-  { id: 'file-entries', label: 'Entries from file' },
-  { id: 'file-book',    label: 'Whole book from file' },
-];
+import { useImportFlow } from '../../hooks/use-import-flow.js';
+import { useUi }         from '../../hooks/use-ui.js';
+import { ImportFlow }    from './ImportFlow.jsx';
+import { IMPORT_STAGE }  from '../../constants/import-flow.js';
 
 export function AppendImportPanel() {
-  const {
-    preview,
-    importedName,
-    loading,
-    error,
-    handleText,
-    handleFile,
-    confirmAppend,
-    confirmReplace,
-    confirmAsNew,
-    cancel,
-    clearParseState,
-    openFullImport,
-  } = useAppendImport();
-  const { activeLorebook } = useLorebook();
-  const { entries }        = useEntries();
-  const [mode, setMode]    = useState('paste');
-  const [text, setText]    = useState('');
-  const [dragging, setDragging] = useState(false);
+  const setShowAppendImport = useUi((s) => s.setShowAppendImport);
+  const flow = useImportFlow({ onDone: () => setShowAppendImport(false) });
 
-  // Import hotkey: jump straight to the file picker. Switch to file mode, then
-  // click the file input once it renders (the keydown's transient activation
-  // keeps the OS dialog allowed). One-shot — the store flag is consumed here.
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Import hotkey: jump straight to the OS file picker. The keydown's transient
+  // activation is what keeps the dialog allowed, so the click has to happen in
+  // the effect that runs off the same event — not behind a timer.
   const pendingImportPick    = useUi((s) => s.pendingImportPick);
   const setPendingImportPick = useUi((s) => s.setPendingImportPick);
-  const fileInputRef = useRef(null);
-  const [armPick, setArmPick] = useState(false);
   useEffect(() => {
     if (!pendingImportPick) return;
-    setMode('file-choose');
-    setArmPick(true);
     setPendingImportPick(false);
+    fileInputRef.current?.click();
   }, [pendingImportPick, setPendingImportPick]);
-  useEffect(() => {
-    if (!armPick) return;
-    if (mode.startsWith('file') && !preview && fileInputRef.current) {
-      fileInputRef.current.click();
-      setArmPick(false);
-    }
-  }, [armPick, mode, preview]);
 
-  function onDragEnter(e) { e.preventDefault(); setDragging(true); }
+  // A drop anywhere on the panel imports, not just on the zone itself. Once the
+  // file is parsed there is nothing left to drop, so the target goes away with
+  // the source stage.
+  const acceptsDrop = flow.stage === IMPORT_STAGE.source;
+
+  function onDragEnter(e) { e.preventDefault(); if (acceptsDrop) setDragging(true); }
   function onDragOver(e)  { e.preventDefault(); }
   function onDragLeave(e) { if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false); }
   function onDrop(e) {
     e.preventDefault();
     setDragging(false);
-    // Drops are ignored in paste mode — that mode is text-only on purpose.
-    if (mode === 'paste') return;
+    if (!acceptsDrop) return;
     const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
+    if (file) flow.handleFile(file);
   }
-
-  function onPickFile(e) {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
-    // Clear the input so the same file can be re-picked after a cancel
-    e.target.value = '';
-  }
-
-  // Soft reset on mode change — clears the textarea AND any stale preview /
-  // error from the previous mode without closing the popup.
-  function resetForModeSwitch(next) {
-    setMode(next);
-    setText('');
-    clearParseState();
-  }
-
-  const lorebookName = activeLorebook?.name || '(unnamed)';
-  const showPasteUi  = mode === 'paste'        && !preview;
-  const showFileUi   = (mode === 'file-entries' || mode === 'file-book' || mode === 'file-choose') && !preview;
-  const isBookMode   = mode === 'file-book';
-  // file-choose (opened by the Import hotkey): after picking a file, offer
-  // Append vs Import-as-New rather than committing to one disposition up front.
-  const isChooseMode = mode === 'file-choose';
 
   return (
     <div className="append-import-overlay">
@@ -104,148 +57,19 @@ export function AppendImportPanel() {
       >
         <div className="append-import-header">
           <span className="append-import-title">Import</span>
-          <button className="append-import-close" onClick={cancel} title="Close" aria-label="Close import">×</button>
+          <button
+            className="append-import-close"
+            onClick={flow.cancel}
+            title="Close"
+            aria-label="Close import"
+          >
+            ×
+          </button>
         </div>
 
-        {!preview && (
-          <div className="append-import-mode-bar" role="tablist">
-            {MODES.map((m) => (
-              <button
-                key={m.id}
-                role="tab"
-                aria-selected={mode === m.id}
-                className={`append-import-mode-btn${mode === m.id ? ' append-import-mode-btn--active' : ''}`}
-                onClick={() => resetForModeSwitch(m.id)}
-                type="button"
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <ImportFlow flow={flow} fileInputRef={fileInputRef} />
 
-        {showPasteUi && (
-          <>
-            <div className="append-redirect">
-              <span className="append-redirect-text">Need a backup-first or non-default confirmation flow?</span>
-              <button className="append-redirect-btn" onClick={openFullImport}>
-                Open Import / Export tab
-              </button>
-            </div>
-            <textarea
-              className="append-text-area"
-              placeholder={'Paste entries here…\n\nSupported formats: TXT-style entry blocks.'}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            <button
-              className="append-parse-btn"
-              onClick={() => handleText(text)}
-              disabled={!text.trim() || loading}
-            >
-              {loading ? 'Parsing…' : 'Parse'}
-            </button>
-          </>
-        )}
-
-        {showFileUi && (
-          <>
-            <div className="append-redirect">
-              <span className="append-redirect-text">
-                {isBookMode
-                  ? 'For a save-backup-first flow, use the Import / Export tab.'
-                  : 'Need a save-backup-first or whole-book flow? Open the Import / Export tab.'}
-              </span>
-              <button className="append-redirect-btn" onClick={openFullImport}>
-                Open Import / Export tab
-              </button>
-            </div>
-            <label className="append-file-picker">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt,.docx,.odt,.json"
-                onChange={onPickFile}
-                disabled={loading}
-              />
-              <span className="append-file-picker-label">
-                {loading
-                  ? '⏳ Parsing…'
-                  : (isBookMode
-                      ? 'Drop a lorebook file here or click to browse (TXT, DOCX, ODT, JSON)'
-                      : 'Drop a file here or click to browse (TXT, DOCX, ODT, JSON)')}
-              </span>
-            </label>
-          </>
-        )}
-
-        {error && <div className="import-error">{error}</div>}
-
-        {preview && !isBookMode && !isChooseMode && (
-          <>
-            <div className="import-disposition-banner">
-              Will <strong>append</strong> {preview.length} {preview.length === 1 ? 'entry' : 'entries'} to &ldquo;{lorebookName}&rdquo;.
-            </div>
-            <ImportPreview
-              entries={preview}
-              replaceMode={false}
-              onConfirm={confirmAppend}
-              onCancel={cancel}
-            />
-          </>
-        )}
-
-        {preview && isChooseMode && (
-          <>
-            <div className="import-disposition-banner">
-              Importing {preview.length} {preview.length === 1 ? 'entry' : 'entries'}
-              {importedName ? <> from &ldquo;{importedName}&rdquo;</> : null}.
-              Add them how?
-            </div>
-            <ImportPreview
-              entries={preview}
-              hideActions
-            />
-            <div className="append-book-actions">
-              <button className="import-save-btn" onClick={confirmAppend}>
-                Append to &ldquo;{lorebookName}&rdquo;
-              </button>
-              <button className="import-save-btn import-save-btn--new" onClick={confirmAsNew}>
-                Import as New Lorebook
-              </button>
-              <button className="import-save-btn import-save-btn--cancel" onClick={cancel}>
-                Cancel
-              </button>
-            </div>
-          </>
-        )}
-
-        {preview && isBookMode && (
-          <>
-            <div className="import-disposition-banner">
-              Importing {preview.length} {preview.length === 1 ? 'entry' : 'entries'}
-              {importedName ? <> from &ldquo;{importedName}&rdquo;</> : null}.
-              Choose how to apply:
-            </div>
-            <ImportPreview
-              entries={preview}
-              hideActions
-            />
-            <div className="append-book-actions">
-              <button className="import-save-btn" onClick={confirmReplace}>
-                Replace &ldquo;{lorebookName}&rdquo;
-              </button>
-              <button className="import-save-btn import-save-btn--new" onClick={confirmAsNew}>
-                Import as New Lorebook
-              </button>
-              <button className="import-save-btn import-save-btn--cancel" onClick={cancel}>
-                Cancel
-              </button>
-            </div>
-          </>
-        )}
-
-        {dragging && mode !== 'paste' && (
+        {dragging && acceptsDrop && (
           <div className="append-drop-overlay">Drop file to import</div>
         )}
       </div>

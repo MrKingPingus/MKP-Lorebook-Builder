@@ -3,7 +3,20 @@ import { DEFAULT_TYPE } from './entry-types.js';
 import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
 import { DEFAULT_COLLAPSE_STAGES } from './folders.js';
 
-export const DEFAULT_WINDOW = { width: 760, height: 620, x: 60, y: 40 };
+// 1200×900 is the "healthy" working size: wide enough for a comfortable entry
+// list and for the crosstalk two-pane split, tall enough to show a useful run
+// of entries. The old 760×620 predated both. Clamped to the viewport on apply,
+// so a smaller screen still gets a sane window.
+export const DEFAULT_WINDOW = { width: 1200, height: 900, x: 60, y: 40 };
+
+/**
+ * The pre-13A default. Settings persist, so raising DEFAULT_WINDOW alone would
+ * never reach anyone who had already launched the app — their stored 760×620
+ * would win forever. Bootstrap rewrites a stored value that still matches this
+ * exactly (i.e. the user never chose a size of their own) and leaves any
+ * customised value alone.
+ */
+export const LEGACY_DEFAULT_WINDOW = { width: 760, height: 620 };
 export const DEFAULT_WINDOW_FRACTION = 2 / 3;
 
 export const DEFAULT_SETTINGS = {
@@ -71,6 +84,15 @@ export const DEFAULT_SETTINGS = {
   // documented per-engine localStorage cap. null on first boot; bootstrap UA-detects and
   // persists, then the user can override via Settings → Window & Layout.
   storageQuotaProfile:      null,
+  // When on, the header button stays a ☰ menu offering Lorebooks / Import-Export /
+  // Settings as side panels — the pre-13C arrangement. When off (default), it is a
+  // gear that goes straight to Settings, because the title dropdown now carries
+  // lorebooks and import/export. The side panels themselves are never removed;
+  // this only decides whether the header still offers a route to them.
+  legacyMenus:              false,
+  // Order of the lorebook list in the title menu and the pull-tab panel.
+  // 'recent' (default) | 'alpha' — see constants/sort-modes.js.
+  lorebookSort:             'recent',
 };
 
 export const DEFAULT_ENTRY = {

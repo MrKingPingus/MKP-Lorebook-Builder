@@ -23,5 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Generated feature screenshots — rebuild with verify/screenshots.mjs
+# Loose feature screenshots — scratch output, rebuild with verify/screenshots.mjs
 screenshots/*.png
+
+# public/screenshots/<release>/ is deliberately NOT ignored: the in-app feature
+# tour serves those images, so they have to be in the build. They are generated
+# too, but a release's set is captured once and then frozen — the 0.9.0 images
+# stay correct for 0.9.0 however far the UI moves on.

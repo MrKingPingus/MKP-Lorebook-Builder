@@ -3,10 +3,16 @@
 ## Key Constants (`src/constants/`)
 
 - `entry-types.js` — 5 types: `character`, `location`, `item`, `plot_event`, `other` with associated colors
-- `limits.js` — `MAX_TRIGGERS = 25`, `MAX_LOREBOOKS = 10`, `CHAR_LIMIT = 1500`
+- `limits.js` — `MAX_TRIGGERS = 25`, `MAX_LOREBOOKS = 50`, `CHAR_LIMIT = 1500`, `MENU_PANEL_WIDTH`. Also `LOREBOOK_TAB_WIDTH_PX` with `maxWindowWidth()` — the tab hangs off the window's right edge, so the max width has to reserve its margin or the tab is pushed off-screen; `POPOVER_ANCHOR_GAP_PX` / `POPOVER_EDGE_PAD_PX` for `use-anchored-position`; and `SAVE_STATUS_FRESH_MS` / `SAVE_STATUS_TICK_MS` behind the footer's ageing "Saved / 4m ago"
+- `version.js` — `APP_VERSION`, injected at build time by `vite.config.js` from `package.json`. Read by the status footer and by the update notice, which compares it against the changelog
+- `title-menu.js` — the title dropdown's geometry and its sort modes
+- `import-flow.js` — the shared import flow's vocabulary: `IMPORT_STAGE` (`source` → `disposition` → `preview`), `IMPORT_SOURCE`, and `IMPORT_DISPOSITION_OPTIONS` — the 2×2 grid of what to do with an imported file (new / append / replace / back up first, where the last is a replace that downloads a copy first). All three import surfaces render from this one list, which is what keeps them offering the same choices
+- `tour-steps.js` — the feature tour: `TOUR_RELEASE` (which folder of images to serve), `TOUR_CAPTURE_SCALE`, and `TOUR_STEPS`. Single source for both the in-app tour and `verify/screenshots.mjs`. **Array order is the badge numbering** — the generator draws badge `i + 1` for entry `i` and the tour renders the same array as a numbered list, so marks must be written in the order they scan on the image. See `screenshots/README.md`
+- `settings-search.js` — the filter index behind the Settings panel's search box
 - `storage-keys.js` — all localStorage key strings
 - `defaults.js` — default shapes for new entries, lorebooks, settings, window size
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
+- `scaling.js` — the option sets behind the footer's `⤢ Size` menu: `FAB_SIZES` (the px map `Hotbar.jsx` renders from), `FAB_SIZE_OPTIONS`, `ENTRY_HEADER_SIZE_OPTIONS`, and `WINDOW_SIZE_PRESETS` (`width: null` keeps the current width, `height: 'viewport'` resolves at apply time). `WINDOW_PRESET_TOLERANCE` is the px slop that keeps a preset's checkmark lit after re-centring rounds a dimension
 - `drag.js` — drop-target vocabulary (`DROP_KINDS`, `DROP_EDGES`, `DRAG_KINDS`), the spring-open delay for tucked folders, and the auto-scroll zone/speed
 - `selection.js` — modifier+click semantics (`SELECTION_ACTIONS`) and the gesture list the keyboard help overlay renders (`SELECTION_GESTURES`), kept beside the behaviour they describe so the two can't drift
 - `sort-modes.js` — which sort modes suppress a grouping layer (`group-by-type`, folders) because they impose their own ordering, plus `folderOrderFor()` — how folder rows order themselves against sibling entries (`position` by default, `name-asc`/`name-desc` under the alpha sorts)

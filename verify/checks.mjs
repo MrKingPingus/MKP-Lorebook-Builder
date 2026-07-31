@@ -3,21 +3,24 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, FIXTURE } from './driver.mjs';
+import { launch, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 
-function scenario(name, fn) {
-  return { name, fn };
+// `launch` overrides let a scenario run somewhere other than the default
+// desktop viewport — e.g. `{ mobile: true, width: 390, height: 780 }` for the
+// checks that assert a desktop-only surface is absent on a phone.
+function scenario(name, fn, launchOptions = {}) {
+  return { name, fn, launchOptions };
 }
 
-async function runScenario({ name, fn }) {
+async function runScenario({ name, fn, launchOptions = {} }) {
   const results = [];
   const check = (label, got, want) => {
     const ok = got === want;
     results.push(ok);
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}: ${JSON.stringify(got)} (expect ${JSON.stringify(want)})`);
   };
-  const { browser, page } = await launch();
+  const { browser, page } = await launch(launchOptions);
   console.log(`\n▶ ${name}`);
   try {
     await fn(page, check);
@@ -109,7 +112,8 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     check('private badges default off', await page.locator('.entry-private-icon').count(), 0);
     await openSettings(page);
-    const cb = page.locator('label:has-text("Mark private entries") input[type="checkbox"]');
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const cb = editing.locator('label:has-text("Mark private entries") input[type="checkbox"]');
     await cb.waitFor({ timeout: 4000 });
     await cb.check();
     await settle(page, 150);
@@ -151,12 +155,14 @@ const SCENARIOS = [
     await page.keyboard.press('Alt+i');
     await settle(page, 250);
     check('Alt+I opens import overlay', await page.locator('.append-import-overlay').count(), 1);
-    check('Alt+I lands in file mode', await page.locator('.append-file-picker').count(), 1);
-    // After picking a file, offer Append vs Import-as-New (not auto-append).
-    await page.locator('.append-file-picker input[type=file]').setInputFiles(FIXTURE);
+    check('Alt+I lands on the drop zone', await page.locator('.append-import-panel .drop-zone').count(), 1);
+    // After picking a file the shared flow asks what to do — it never commits to
+    // a disposition on the user's behalf.
+    await page.locator('.append-import-panel .drop-zone input[type=file]').setInputFiles(FIXTURE);
     await settle(page, 400);
-    check('Append option offered', await page.locator('.append-book-actions button', { hasText: 'Append to' }).count(), 1);
-    check('Import-as-New option offered', await page.locator('.append-book-actions button', { hasText: 'Import as New' }).count(), 1);
+    const opts = await page.locator('.import-flow-opt-title').allInnerTexts();
+    check('all four dispositions offered', opts.join(' | '),
+      'Import as new | Append | Replace | Back up first');
   }),
 
   scenario('Hotkeys in fields + find focus + export + help-close', async (page, check) => {
@@ -232,8 +238,7 @@ const SCENARIOS = [
     const cards = page.locator('.entry-card');
     const before = await cards.count();
     await openSettings(page);
-    await page.locator('.settings-section-header', { hasText: 'Accessibility' }).click();
-    await settle(page, 150);
+    await openSettingsSection(page, 'Layout & Controls');
     const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
     const captureBtn = row.locator('.kbd-capture-btn');
     await captureBtn.click();
@@ -325,8 +330,15 @@ const SCENARIOS = [
     await settle(page, 100);
     check('high-contrast theme toggles on', await page.evaluate(() => document.documentElement.getAttribute('data-theme')), 'high-contrast');
 
-    // Hotkeys relocated under Accessibility.
-    check('keybinding table lives here now', (await page.locator('.kbd-settings-row').count()) > 0, true);
+    // 13B moved the keybinding table out to Layout & Controls, with the other
+    // input surfaces. Prove it left here and prove it arrived there — a bare
+    // "it exists somewhere" check would pass even if the move never happened.
+    const a11ySection = await openSettingsSection(page, 'Appearance & Accessibility');
+    check('keybinding table no longer sits under Accessibility',
+      await a11ySection.locator('.kbd-settings-row').count(), 0);
+    const controls = await openSettingsSection(page, 'Layout & Controls');
+    check('keybinding table lives under Layout & Controls',
+      (await controls.locator('.kbd-settings-row').count()) > 0, true);
 
     // Text scale survives reload (applied pre-render).
     await page.reload({ waitUntil: 'networkidle' });
@@ -670,7 +682,7 @@ const SCENARIOS = [
 
     // Turn the condensed stage back off while the folder is sitting in it.
     await openSettings(page);
-    const folderSettings = await openSettingsSection(page, 'Folders');
+    const folderSettings = await openSettingsSection(page, 'Layout & Controls');
     await folderSettings.locator('.settings-checkbox-row input').nth(1).uncheck();
     await settle(page, 200);
     await page.locator('.menu-panel-close').first().click();
@@ -683,7 +695,7 @@ const SCENARIOS = [
 
     // Turn it back on: the folder was never rewritten, so it is condensed again.
     await openSettings(page);
-    const again = await openSettingsSection(page, 'Folders');
+    const again = await openSettingsSection(page, 'Layout & Controls');
     await again.locator('.settings-checkbox-row input').nth(1).check();
     await settle(page, 200);
     await page.locator('.menu-panel-close').first().click();
@@ -709,8 +721,8 @@ const SCENARIOS = [
       await page.locator('.entry-card--condensed .stats-badge').count(), 0);
 
     await openSettings(page);
-    const folderSettings = await openSettingsSection(page, 'Folders');
-    await folderSettings.locator('label:has-text("Show entry stats on condensed rows") input').check();
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    await editing.locator('label:has-text("Show entry stats on condensed rows") input').check();
     await settle(page, 200);
     await page.keyboard.press('Escape');
     await settle(page, 350);
@@ -1299,7 +1311,7 @@ const SCENARIOS = [
 
     // Turn the condensed stage on and the cycle gains its middle step.
     await openSettings(page);
-    const folders = await openSettingsSection(page, 'Folders');
+    const folders = await openSettingsSection(page, 'Layout & Controls');
     const boxes = folders.locator('.settings-checkbox-row input');
     check('three stage checkboxes', await boxes.count(), 3);
     check('full is locked on', await boxes.nth(0).isDisabled(), true);
@@ -1378,14 +1390,11 @@ const SCENARIOS = [
     const header = page.locator('.folder-header').first();
     const before = (await header.boundingBox()).height;
 
-    await openSettings(page);
-    // "Entry header height" lives under Editing & Entries, not Window & Layout —
-    // one of the placements the Settings-reorganisation note in plan.md covers.
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    await editing.locator('.settings-label', { hasText: 'Entry header height' })
-      .locator('select').selectOption('large');
-    await settle(page, 300);
-    await page.locator('.menu-panel-close').first().click();
+    // Entry header height moved out of Settings into the footer's ⤢ Size menu
+    // in Phase 13A — it is a sizing control, and the three that were scattered
+    // across different Settings sections now share one home.
+    await setScaleOption(page, 'Entry height', 'Large');
+    await closeScaleMenu(page);
     await settle(page, 350);
 
     const after = (await header.boundingBox()).height;
@@ -1533,6 +1542,997 @@ const SCENARIOS = [
       await page.locator('.build-panel .entry-card').count(), 0);
     check('marker present on 10 reference entries',
       await page.locator('.reference-entry-card').count(), 10);
+  }),
+
+  scenario('Status footer: save readout, sizing menu, and worst-case geometry', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    check('footer renders on desktop', await page.locator('.status-footer').count(), 1);
+    check('save readout has text',
+      (await page.locator('.status-save').innerText()).trim().length > 0, true);
+
+    // The footer sits along the bottom edge, where the SE resize handle lives.
+    // If the bar wins the hit test, the corner stops resizing the window.
+    const se = await page.locator('.resize-handle--se').boundingBox();
+    const atCorner = await page.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x, y);
+      return el ? el.className.toString() : '';
+    }, [se.x + se.width / 2, se.y + se.height / 2]);
+    check('SE resize handle still wins the hit test over the footer',
+      atCorner.includes('resize-handle'), true);
+
+    await openScaleMenu(page);
+    const rows = await page.locator('.scale-menu .scale-row[aria-haspopup] .scale-row-label').allInnerTexts();
+    check('all four sizing rows present',
+      ['Window size', 'Text size', 'Entry height', 'FAB button size'].every((r) => rows.includes(r)), true);
+
+    // Menu opens upward — it hangs off a bar at the base of the window.
+    const menuBox = await page.locator('.scale-menu').boundingBox();
+    const footBox = await page.locator('.status-footer').boundingBox();
+    check('sizing menu opens above the footer', menuBox.y + menuBox.height <= footBox.y + 2, true);
+
+    // "Reset to default" is the 1200x900 working size, not the old 760x620.
+    await setScaleOption(page, 'Window size', 'Reset to default');
+    const def = await page.locator('.floating-window').boundingBox();
+    check('default window is 1200x900',
+      Math.abs(def.width - 1200) <= 3 && Math.abs(def.height - 900) <= 3, true);
+
+    // Menu and flyouts are portalled to body specifically so a flyout can open
+    // RIGHT — .floating-window clips overflow, so an in-window flyout could
+    // only ever fold back left over the menu.
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'Text size' }).hover();
+    await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+    await settle(page, 250);
+    const menu2 = await page.locator('.scale-menu').boundingBox();
+    const fly   = await page.locator('.scale-flyout').boundingBox();
+    check('flyout opens to the right of the menu', fly.x >= menu2.x + menu2.width - 2, true);
+
+    const vp = page.viewportSize();
+    check('flyout stays inside the viewport',
+      fly.x >= 0 && fly.x + fly.width <= vp.width
+      && fly.y >= 0 && fly.y + fly.height <= vp.height, true);
+
+    // Hover grace: a quick pass must not unfurl a flyout (FLYOUT_OPEN_MS).
+    await closeScaleMenu(page);
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'FAB button size' }).hover();
+    await page.waitForTimeout(60);
+    check('a 60ms pass over a row does not open its flyout',
+      await page.locator('.scale-flyout').count(), 0);
+    await page.waitForTimeout(220);
+    check('the flyout opens once the pointer settles',
+      await page.locator('.scale-flyout').count(), 1);
+
+    // …and survives the gap between row and flyout (FLYOUT_CLOSE_MS).
+    await page.mouse.move(4, 4);
+    await page.waitForTimeout(80);
+    check('flyout survives briefly after the pointer leaves',
+      await page.locator('.scale-flyout').count(), 1);
+
+    await setScaleOption(page, 'Text size', '125%');
+    const scaled = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--ui-scale').trim());
+    check('125% reaches --ui-scale', parseFloat(scaled), 1.25);
+    const grown = await page.locator('.status-footer').boundingBox();
+    check('footer height grew with the text scale', grown.height > footBox.height, true);
+
+    await closeScaleMenu(page);
+    check('Escape closes the sizing menu', await page.locator('.scale-menu').count(), 0);
+
+    // Hover surfaces, leaving dismisses, a click pins — FabFilter's model.
+    const sizeBtn = page.locator('.status-footer .status-item').first();
+    await sizeBtn.hover();
+    await page.waitForTimeout(90);   // under SCALE_MENU_OPEN_MS
+    check('a brief pass over Size does not open the menu',
+      await page.locator('.scale-menu').count(), 0);
+    await page.waitForTimeout(260);
+    check('hovering Size surfaces the menu without a click',
+      await page.locator('.scale-menu').count(), 1);
+
+    await page.mouse.move(500, 300);
+    await page.waitForTimeout(600);
+    check('moving away dismisses an unpinned menu',
+      await page.locator('.scale-menu').count(), 0);
+
+    await sizeBtn.click();
+    await page.locator('.scale-menu').waitFor({ timeout: 3000 });
+    check('a click pins the menu',
+      (await sizeBtn.getAttribute('class')).includes('status-item--pinned'), true);
+    await page.mouse.move(500, 300);
+    await page.waitForTimeout(700);
+    check('a pinned menu survives the pointer leaving',
+      await page.locator('.scale-menu').count(), 1);
+
+    await sizeBtn.click();
+    await settle(page, 250);
+    check('clicking again unpins and closes it',
+      await page.locator('.scale-menu').count(), 0);
+    // The pointer is still on the button — it must not re-surface from the
+    // hover already in progress, or a click could never dismiss it.
+    await page.waitForTimeout(400);
+    check('it stays shut while the pointer sits on the button post-click',
+      await page.locator('.scale-menu').count(), 0);
+  }, { width: 1900, height: 1100 }),
+
+  scenario('Sizing menu: custom size commits on Enter rather than clamping per keystroke', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
+    await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+    await settle(page, 250);
+    if ((await page.locator('.flyout-custom').count()) === 0) {
+      await page.locator('.scale-flyout .flyout-item', { hasText: 'Custom' }).first().click();
+      await settle(page, 200);
+    }
+
+    // The field is bound to a draft, not to the clamped live size. Bound
+    // directly, the first digit of "1360" clamps back to the minimum before
+    // the second arrives and the value can never be typed.
+    const w = page.locator('.flyout-custom-field input').first();
+    await w.click();
+    await w.press('Control+a');
+    await w.type('1360', { delay: 40 });
+    check('field holds the typed value mid-edit', await w.inputValue(), '1360');
+
+    await w.press('Enter');
+    await settle(page, 350);
+    const sized = await page.locator('.floating-window').boundingBox();
+    check('Enter applies the typed width', Math.abs(sized.width - 1360) <= 3, true);
+
+    // Clamping still happens — on commit, not on keystroke.
+    await openScaleMenu(page);
+    await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
+    await settle(page, 250);
+    const w2 = page.locator('.flyout-custom-field input').first();
+    await w2.click();
+    await w2.press('Control+a');
+    await w2.type('100', { delay: 30 });
+    await w2.press('Enter');
+    await settle(page, 300);
+    const clamped = await page.locator('.floating-window').boundingBox();
+    check('a below-minimum value clamps on commit', Math.abs(clamped.width - 480) <= 3, true);
+  }, { width: 1900, height: 1100 }),
+
+  scenario('Lorebook pull tab opens the side panel without covering the entry list', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    const tab = page.locator('.lorebook-tab');
+    check('pull tab renders on the right edge', await tab.count(), 1);
+
+    // The tab hangs off the OUTSIDE of the frame. It reserved a gutter inside
+    // the border through three earlier passes — first clipped by
+    // `overflow: hidden`, then an overlay sitting on entry rows, then a real
+    // flex column that cost 30px of interior width. Portaling to document.body
+    // and positioning from the window's own rect is what finally put it out
+    // there, so these checks pin down "outside", not "at the edge".
+    const tabBox = await tab.boundingBox();
+    const frame  = await page.locator('.floating-window').boundingBox();
+    check('the tab is portaled out of the clipped frame',
+      await page.locator('.floating-window .lorebook-tab').count(), 0);
+    check('the tab starts at or past the frame right edge',
+      tabBox.x >= frame.x + frame.width - 2, true);
+    check('it is a short chip, not a full-height strip',
+      tabBox.height < frame.height * 0.4, true);
+    check('vertically centred on the window',
+      Math.abs((tabBox.y + tabBox.height / 2) - (frame.y + frame.height / 2)) <= 2, true);
+
+    // Mirrored from the old inboard pill: the open edge and square corners now
+    // face left, into the window, so the tab reads as growing out of the frame.
+    const corners = await page.locator('.lorebook-tab-inner').evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { left: parseFloat(cs.borderTopLeftRadius), right: parseFloat(cs.borderTopRightRadius) };
+    });
+    check('the chip is rounded on its right side only',
+      corners.right > 0 && corners.left === 0, true);
+
+    // The whole point: interior width is no longer spent on the tab.
+    const reachesEdge = await page.evaluate(() => {
+      const f = document.querySelector('.floating-window').getBoundingClientRect();
+      const row = document.querySelector('.entry-card')?.getBoundingClientRect();
+      return row ? f.right - row.right : 999;
+    });
+    check('entry rows now reach the frame edge instead of stopping at a gutter',
+      reachesEdge < 20, true);
+
+    // Positioned from windowPos/windowSize, which use-drag-window writes on every
+    // pointermove — so it tracks the window live rather than after the fact.
+    await page.mouse.move(frame.x + 300, frame.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(frame.x + 180, frame.y + 70, { steps: 6 });
+    const draggedFrame = await page.locator('.floating-window').boundingBox();
+    const draggedTab   = await tab.boundingBox();
+    check('the tab tracks the window mid-drag',
+      Math.abs(draggedTab.x - (draggedFrame.x + draggedFrame.width - 1)) <= 2, true);
+    await page.mouse.up();
+    await settle(page, 300);
+
+
+    // Upright stacked glyphs — vertical-rl alone lays the word on its side.
+    const label = await page.locator('.lorebook-tab-label').evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { mode: cs.writingMode, orientation: cs.textOrientation };
+    });
+    check('label flows vertically', label.mode.startsWith('vertical'), true);
+    check('label glyphs stay upright', label.orientation, 'upright');
+
+    const widthBefore = frame.width;
+    await tab.click();
+    await page.locator('.menu-panel').waitFor({ timeout: 4000 });
+    await settle(page, 400);
+    check('tab opens the lorebook list', await page.locator('.switcher-list').count(), 1);
+
+    // The whole point: the window widens to fit the panel rather than the
+    // panel taking space from the entry list.
+    const opened = await page.locator('.floating-window').boundingBox();
+    check('window widened for the panel', opened.width > widthBefore, true);
+
+    await tab.click();
+    await settle(page, 400);
+    const closed = await page.locator('.floating-window').boundingBox();
+    check('clicking again closes it and restores the width',
+      Math.abs(closed.width - widthBefore) <= 3, true);
+  }, { width: 1700, height: 1000 }),
+
+  scenario('Lorebook list: recency by default, A–Z on request, stable while open', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+
+    const menuNames = async () =>
+      (await page.locator('.tm-book-name').allInnerTexts()).map((t) => t.trim());
+
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+
+    // Recency, not alphabetical: you are far likelier to want the book you were
+    // just in than the one starting with "A".
+    check('Recent is the default mode',
+      (await page.locator('.title-menu .tm-sort-btn--on').innerText()).trim(), 'RECENT');
+    check('the most recently opened book leads',
+      (await page.locator('.tm-book').first().getAttribute('class')).includes('tm-book--active'), true);
+
+    const recent = await menuNames();
+    await page.locator('.title-menu .tm-sort-btn', { hasText: 'A–Z' }).click();
+    await settle(page, 300);
+    const alpha = await menuNames();
+    check('A–Z reorders the list',
+      alpha.join('|'), [...recent].sort((a, b) => a.localeCompare(b)).join('|'));
+    check('and it is a different order than recency here',
+      alpha.join('|') !== recent.join('|'), true);
+
+    await page.locator('.title-menu .tm-sort-btn', { hasText: 'Recent' }).click();
+    await settle(page, 300);
+    check('switching back restores recency', (await menuNames()).join('|'), recent.join('|'));
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    // The side panel is the surface that stays on screen through a switch, so
+    // it is the one where a live re-sort would rearrange rows under the pointer
+    // at the moment they were clicked. Order is snapshotted when the list opens.
+    await page.locator('.lorebook-tab').click();
+    await settle(page, 700);
+    const rows = async () =>
+      (await page.locator('.menu-panel .switcher-item').allInnerTexts())
+        .map((t) => t.split('\n')[0].trim());
+
+    const before = await rows();
+    check('the sort toggle is on the panel too',
+      await page.locator('.lorebook-panel-sort .tm-sort-btn').count(), 2);
+
+    await page.locator('.menu-panel .switcher-item').nth(1).click();
+    await settle(page, 400);
+    // Clicking a row raises a "save first?" prompt rather than switching outright.
+    const anyway = page.locator('.switcher-prompt-btn', { hasText: 'Switch anyway' });
+    if (await anyway.count()) await anyway.click();
+    await settle(page, 700);
+
+    check('switching does not rearrange the open list',
+      (await rows()).join('|'), before.join('|'));
+
+    // …but reopening reflects the new recency.
+    await page.locator('.lorebook-tab').click();
+    await settle(page, 600);
+    await page.locator('.lorebook-tab').click();
+    await settle(page, 700);
+    check('reopening re-sorts to the new recency',
+      (await rows()).join('|') !== before.join('|'), true);
+  }),
+
+  scenario('Update notice: shown once to returning users, never to new ones', async (page, check) => {
+    const KEY = 'mkp_last_seen_release';
+    const notice = page.locator('.update-notice');
+
+    // A first visit — nothing stored, nothing saved. Opening on a changelog for
+    // an app you have never used is a poor introduction, so: nothing.
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('a brand-new user sees no notice', await notice.count(), 0);
+    // …but the release still has to be recorded, or the first time they save a
+    // book and come back they'd be told about a release that predates them.
+    check('and is silently marked up to date',
+      await page.evaluate((k) => localStorage.getItem(k) !== null, KEY), true);
+
+    // A returning user from before this feature existed: has books, no record.
+    await page.evaluate((k) => {
+      localStorage.removeItem(k);
+      localStorage.setItem('mkp_lorebook_index', JSON.stringify([
+        { id: 'x', name: 'Old Book', updatedAt: Date.now() },
+      ]));
+    }, KEY);
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('a returning user gets the notice', await notice.count(), 1);
+    // The changelog heading is the release identifier — a version and a date
+    // since 0.9.0, a bare date before it. Either way it must be shown.
+    check('headed by the release identifier',
+      /\d/.test(await page.locator('.update-notice-date').innerText()), true);
+    check('the changelog body is rendered, not raw markdown',
+      (await page.locator('.update-notice-body li').count()) > 0, true);
+    // The date is already in the header; repeating it inside the body reads as
+    // a stray heading.
+    check('the release heading is not repeated in the body',
+      await page.locator('.update-notice-body .md-h2').count(), 0);
+
+    // Dismissing sticks across reloads.
+    await page.locator('.update-notice-btn:not(.update-notice-btn--primary)').click();
+    await settle(page, 300);
+    check('closing dismisses it', await notice.count(), 0);
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('and it stays dismissed after a reload', await notice.count(), 0);
+
+    // Escape is the other way out.
+    await page.evaluate((k) => localStorage.removeItem(k), KEY);
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    check('it returns for an unseen release', await notice.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('Escape closes it too', await notice.count(), 0);
+  }),
+
+  scenario('Feature tour: click-through from the update notice, with enlarge', async (page, check) => {
+    // A 4xx/5xx on a tour image means the build is missing one — the failure
+    // mode this whole approach has to be watched for, since the images are
+    // generated separately from the code that shows them.
+    //
+    // Scoped to the tour's own assets rather than every request on the page.
+    // Unscoped, this also caught `/_vercel/insights/script.js`, which
+    // @vercel/analytics requests at runtime and which only exists when the app
+    // is served by Vercel — so it 404s on the production build under CI, on
+    // GitHub Pages, and on any local preview. That is expected and harmless,
+    // and it has nothing to do with whether the tour's images shipped.
+    const failed = [];
+    page.on('response', (r) => {
+      if (r.status() >= 400 && r.url().includes('/screenshots/')) {
+        failed.push(`${r.status()} ${r.url()}`);
+      }
+    });
+
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await page.evaluate(() => {
+      localStorage.removeItem('mkp_last_seen_release');
+      localStorage.setItem('mkp_lorebook_index', JSON.stringify([
+        { id: 'x', name: 'Old Book', updatedAt: Date.now() },
+      ]));
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+
+    await page.locator('.update-notice-btn', { hasText: 'Show me the new features' }).click();
+    await settle(page, 700);
+    check('the notice opens the tour', await page.locator('.tour-panel').count(), 1);
+    // Taking the tour counts as having seen the release, so it can't reappear
+    // behind the tour or on the next visit.
+    check('and the notice is dismissed, not just hidden',
+      await page.evaluate(() => localStorage.getItem('mkp_last_seen_release') !== null), true);
+
+    check('it starts at the first step',
+      (await page.locator('.tour-progress').innerText()).startsWith('1 of'), true);
+    check('Back is disabled on the first step',
+      await page.locator('.tour-btn', { hasText: 'Back' }).isDisabled(), true);
+
+    // The image has to actually decode — a broken src still renders an <img>.
+    const loaded = () => page.locator('.tour-shot img')
+      .evaluate((i) => i.complete && i.naturalWidth > 0);
+    check('the first screenshot loads', await loaded(), true);
+    check('it is a 2x capture, so there is detail to enlarge into',
+      (await page.locator('.tour-shot img').evaluate((i) => i.naturalWidth)) > 1000, true);
+    // Text baked into a PNG is invisible to a screen reader; the caption and alt
+    // text are what actually carry the step.
+    check('the step has real caption text',
+      (await page.locator('.tour-body').innerText()).length > 40, true);
+    // The numbered labels are HTML, not painted into the PNG. Baked in they
+    // covered whatever sat low in the window — the sizing menu, for one — and
+    // they vanished on enlarging, taking the explanation with them.
+    check('the numbered labels are real text, not part of the image',
+      (await page.locator('.tour-marks li').count()) > 0, true);
+    check('and the image has alt text',
+      ((await page.locator('.tour-shot img').getAttribute('alt')) ?? '').length > 20, true);
+    // Title under the screenshot, next to the caption it belongs with. Split
+    // across the image — title above, explanation below — they read as two
+    // separate things and the title stopped giving the caption its context.
+    check('the step title sits below the screenshot, with the caption', await page.evaluate(() => {
+      const shot = document.querySelector('.tour-panel .tour-shot').getBoundingClientRect();
+      const title = document.querySelector('.tour-panel .tour-step-title').getBoundingClientRect();
+      const body = document.querySelector('.tour-panel .tour-body').getBoundingClientRect();
+      return title.top >= shot.bottom && body.top >= title.bottom;
+    }), true);
+
+    // Walk to the end.
+    const steps = await page.locator('.tour-dot').count();
+    for (let i = 0; i < steps - 1; i++) {
+      await page.locator('.tour-btn', { hasText: 'Next' }).click();
+      await settle(page, 300);
+    }
+    check('every step is reachable',
+      (await page.locator('.tour-progress').innerText()), `${steps} of ${steps}`);
+    check('the last screenshot loads too', await loaded(), true);
+    check('the last step offers Done rather than Next',
+      await page.locator('.tour-btn', { hasText: 'Done' }).count(), 1);
+
+    // Enlarging is the reason the captures are 2x rather than 1x.
+    await page.locator('.tour-shot').click();
+    await settle(page, 500);
+    check('clicking the shot enlarges it', await page.locator('.tour-zoom').count(), 1);
+
+    // The captures are 1150 logical px tall — taller than plenty of browser
+    // viewports. Centring the container with `align-items: center` pushed the
+    // top of an oversized image outside the scrollable area, where it was both
+    // clipped and unreachable. It must fit, or at minimum stay scrollable to.
+    const zoom = await page.evaluate(() => {
+      const box = document.querySelector('.tour-zoom');
+      const img = box.querySelector('img');
+      const b = box.getBoundingClientRect();
+      const i = img.getBoundingClientRect();
+      return {
+        topVisible: Math.round(i.top) >= Math.round(b.top),
+        fits: Math.round(i.height) <= box.clientHeight,
+        wider: Math.round(i.width) > 0,
+      };
+    });
+    check('the enlarged image is not clipped at the top', zoom.topVisible, true);
+
+    // Enlarging is what makes the screenshot readable, so the explanation has
+    // to come with it — and must not sit on top of the thing it describes.
+    check('the notes stay visible while enlarged',
+      (await page.locator('.tour-zoom-aside .tour-marks li').count()) > 0, true);
+    check('and the caption comes too',
+      (await page.locator('.tour-zoom-aside .tour-body').innerText()).length > 40, true);
+    const overlap = await page.evaluate(() => {
+      const box = document.querySelector('.tour-zoom');
+      const i = box.querySelector('img').getBoundingClientRect();
+      const a = box.querySelector('.tour-zoom-aside').getBoundingClientRect();
+      return !(a.left >= i.right - 1 || a.right <= i.left + 1);
+    });
+    check('the notes do not overlap the screenshot', overlap, false);
+    check('and fits the viewport rather than needing a scroll', zoom.fits, true);
+    check('it actually rendered', zoom.wider, true);
+    // Escape backs out of the enlargement first, so zooming in doesn't cost you
+    // your place in the sequence.
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('Escape closes the enlargement', await page.locator('.tour-zoom').count(), 0);
+    check('and leaves the tour open', await page.locator('.tour-panel').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('a second Escape closes the tour', await page.locator('.tour-panel').count(), 0);
+
+    // Dismissing the notice must not be a one-way door to the tour.
+    check('the lander offers a way back in', await page.locator('.lander-tour-btn').count(), 1);
+    await page.locator('.lander-tour-btn').click();
+    await settle(page, 500);
+    check('which reopens it', await page.locator('.tour-panel').count(), 1);
+
+    check('no tour asset 404d', failed.join(' | '), '');
+  }),
+
+  scenario('Side panel slides open without the entry list lurching', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // Sampled in-page with rAF: a Playwright round trip per sample is ~3ms and
+    // was slow enough to miss the first frames of the slide entirely, which is
+    // exactly where the bug this guards against shows up.
+    const sample = async (act) => {
+      await page.evaluate(() => {
+        window.__s = [];
+        window.__go = true;
+        const tick = () => {
+          if (!window.__go) return;
+          const slot  = document.querySelector('.pane-split-slot').getBoundingClientRect();
+          const frame = document.querySelector('.floating-window').getBoundingClientRect();
+          const tab   = document.querySelector('.lorebook-tab').getBoundingClientRect();
+          window.__s.push({
+            slot: Math.round(slot.width),
+            frameW: Math.round(frame.width),
+            gap: Math.round(tab.left - frame.right),
+          });
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      await act();
+      await settle(page, 600);
+      const all = await page.evaluate(() => { window.__go = false; return window.__s; });
+      return all.filter((x, i) => i > 0 && x.frameW !== all[i - 1].frameW);
+    };
+
+    const tab = page.locator('.lorebook-tab');
+
+    // The window grows by 320 and the panel grows by 320, so the list between
+    // them must not move at all. `.menu-panel` is a fixed width against a
+    // `flex: 1` slot — animate only the window and the list gets robbed of 320px
+    // for the duration, then handed it back.
+    const opening = await sample(() => tab.click());
+    check('the slide actually animates rather than snapping',
+      opening.length >= 3, true);
+    const openSlots = opening.map((x) => x.slot);
+    check('entry list holds its width while the panel opens',
+      Math.max(...openSlots) - Math.min(...openSlots) <= 2, true);
+    // The tab is positioned from the same store values the window uses, so it
+    // has to carry the same easing or it jumps to the final spot immediately.
+    check('the tab stays welded to the frame edge throughout the open',
+      opening.every((x) => Math.abs(x.gap + 1) <= 2), true);
+
+    const closing = await sample(() => tab.click());
+    const closeSlots = closing.map((x) => x.slot);
+    check('entry list holds its width while the panel closes',
+      Math.max(...closeSlots) - Math.min(...closeSlots) <= 2, true);
+    check('and the tab stays welded through the close',
+      closing.every((x) => Math.abs(x.gap + 1) <= 2), true);
+
+    // Dragging rewrites left/width every pointermove. If the transition were
+    // permanent rather than opt-in, both drag and resize would rubber-band.
+    const frame = await page.locator('.floating-window').boundingBox();
+    await page.mouse.move(frame.x + 300, frame.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(frame.x + 150, frame.y + 60, { steps: 5 });
+    const dragging = await page.evaluate(() => {
+      const el = document.querySelector('.floating-window');
+      return {
+        animating: el.className.includes('--animating'),
+        duration: getComputedStyle(el).transitionDuration,
+      };
+    });
+    await page.mouse.up();
+    check('dragging the window is not animated', dragging.animating, false);
+    check('so it has no transition duration mid-drag', dragging.duration, '0s');
+
+    // A zero-width panel is still in the DOM, so it must not be tab-reachable.
+    const reachable = await page.evaluate(() =>
+      getComputedStyle(document.querySelector('.menu-panel')).visibility);
+    check('the collapsed panel is hidden, not merely zero-width', reachable, 'hidden');
+  }, { width: 1400, height: 950 }),
+
+  scenario('Window width leaves the pull tab its margin outside the frame', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // The tab hangs outside the frame, so the window can never occupy the last
+    // strip of the viewport — otherwise the tab would be pushed off-screen at
+    // full width, which is the one thing it must never do.
+    const viewport = await page.evaluate(() => window.innerWidth);
+
+    const se = await page.locator('.resize-handle--se').boundingBox();
+    await page.mouse.move(se.x + se.width / 2, se.y + se.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(viewport * 3, 2000, { steps: 10 });
+    await page.mouse.up();
+    await settle(page, 400);
+
+    const frame = await page.locator('.floating-window').boundingBox();
+    const tab   = await page.locator('.lorebook-tab').boundingBox();
+    check('dragged past the edge, the frame still stops short of it',
+      frame.x + frame.width < viewport, true);
+    check('and the tab lands fully on screen',
+      Math.round(tab.x + tab.width) <= viewport, true);
+    check('the reserved margin is exactly the tab width',
+      Math.round(viewport - (frame.x + frame.width)), 30);
+  }, { width: 1280, height: 900 }),
+
+  scenario('Default window size: legacy 760x620 migrates, a chosen size does not', async (page, check) => {
+    // Settings persist and win over the constant, so raising DEFAULT_WINDOW
+    // alone would never reach an existing user. Bootstrap rewrites the stored
+    // pair only when it still matches the old default exactly.
+    // Seeded as plain JSON — storage-service reads that fine (it only re-saves
+    // compressed), so there's no need to drive the UI to set it up.
+    async function defaultSizeAfterBoot(seed) {
+      await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+      await page.evaluate(([s]) => {
+        localStorage.setItem('mkp_settings', JSON.stringify(s));
+      }, [seed]);
+      await openBuilderWithFixture(page);
+      await settle(page, 400);
+      await openScaleMenu(page);
+      await page.locator('.scale-row[aria-haspopup]', { hasText: 'Window size' }).hover();
+      await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+      await settle(page, 250);
+      await page.locator('.scale-flyout .flyout-item', { hasText: 'Reset to default' }).click();
+      await settle(page, 400);
+      const b = await page.locator('.floating-window').boundingBox();
+      return { width: Math.round(b.width), height: Math.round(b.height) };
+    }
+
+    const migrated = await defaultSizeAfterBoot({ defaultWindowWidth: 760, defaultWindowHeight: 620 });
+    check('untouched legacy default is raised to 1200x900',
+      Math.abs(migrated.width - 1200) <= 3 && Math.abs(migrated.height - 900) <= 3, true);
+
+    const chosen = await defaultSizeAfterBoot({ defaultWindowWidth: 1000, defaultWindowHeight: 800 });
+    check('a size the user chose survives untouched',
+      Math.abs(chosen.width - 1000) <= 3 && Math.abs(chosen.height - 800) <= 3, true);
+
+    const partial = await defaultSizeAfterBoot({ defaultWindowWidth: 760, defaultWindowHeight: 900 });
+    check('a partial match counts as chosen, not legacy',
+      Math.abs(partial.width - 760) <= 3 && Math.abs(partial.height - 900) <= 3, true);
+  }, { width: 1700, height: 1000 }),
+
+  scenario('Settings: four sections, all collapsed, dividers inside', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+
+    const titles = await page.locator('.settings-section-title').allInnerTexts();
+    check('exactly four sections', titles.length, 4);
+    check('sections are the 13B set',
+      titles.join(' | '),
+      'Editing & Entries | Appearance & Accessibility | Layout & Controls | System');
+
+    // Nothing opens by default — the panel reads as a menu of four choices.
+    check('every section starts collapsed',
+      await page.locator('.settings-section-header[aria-expanded="true"]').count(), 0);
+    check('no section body is rendered while collapsed',
+      await page.locator('.settings-section-body').count(), 0);
+
+    // Sub-dividers give each section a visible internal order.
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const editingDividers = await editing.locator('.settings-divider-label').allInnerTexts();
+    check('Editing & Entries is divided into four runs',
+      editingDividers.join(',').toLowerCase(), 'writing aids,counters,entry badges,entry history');
+
+    // Entry history is the tallest block and a set-once, per-book opt-in, so it
+    // deliberately trails its section rather than leading it.
+    const groupOrder = await editing.evaluate((sec) =>
+      [...sec.querySelectorAll('.settings-divider-label, .settings-label')]
+        .map((el) => el.textContent.trim()));
+    check('suggestions lead the section',
+      groupOrder.indexOf('Suggestions collapsed by default') < groupOrder.indexOf('Entry history (this lorebook)'), true);
+
+    // The storage limit is alone in System for now, by design.
+    const system = await openSettingsSection(page, 'System');
+    check('System holds the browser storage limit',
+      await system.locator('.settings-label', { hasText: 'Browser storage limit' }).count(), 1);
+  }),
+
+  scenario('Settings: the filter box narrows by keyword, not just by label', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    const box = page.locator('.settings-search-input');
+    await box.waitFor({ timeout: 4000 });
+    const type = async (q) => { await box.fill(q); await settle(page, 250); };
+
+    // "hotkey" appears in no visible label — the keyword index is the point.
+    await type('hotkey');
+    check('a keyword absent from every label still finds its setting',
+      (await page.locator('.settings-label').allInnerTexts()).some((l) => l.includes('Keyboard shortcuts')), true);
+    check('and non-matching sections drop out',
+      (await page.locator('.settings-section-title').allInnerTexts()).join(','), 'Layout & Controls');
+    // A filter that leaves its own hits collapsed would surface nothing.
+    check('the matching section force-opens',
+      await page.locator('.settings-section-body').count(), 1);
+    check('dividers hide while filtering',
+      await page.locator('.settings-divider').count(), 0);
+
+    // Extra terms have to narrow, not widen.
+    await type('storage');
+    const oneTerm = await page.locator('.settings-label').count();
+    await type('storage safari');
+    const twoTerm = await page.locator('.settings-label').count();
+    check('extra terms narrow rather than widen', twoTerm <= oneTerm && twoTerm === 1, true);
+
+    await type('zzzznope');
+    check('a no-match query says so instead of blanking',
+      await page.locator('.settings-search-empty').count(), 1);
+    check('and hides every section', await page.locator('.settings-section').count(), 0);
+
+    await page.locator('.settings-search-clear').click();
+    await settle(page, 300);
+    check('clearing restores all four sections',
+      await page.locator('.settings-section-title').count(), 4);
+    check('and returns them to collapsed',
+      await page.locator('.settings-section-body').count(), 0);
+  }),
+
+  scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.keyboard.press('?');
+    await page.locator('.kbd-help-panel').waitFor({ timeout: 4000 });
+    await page.locator('.kbd-help-edit').click();
+    await settle(page, 400);
+
+    // 13B moved shortcuts from Accessibility to Layout & Controls; the overlay
+    // hardcodes the target section, so it has to travel with them.
+    const controls = page.locator('.settings-section', {
+      has: page.locator('.settings-section-title', { hasText: 'Layout & Controls' }),
+    }).first();
+    check('the deep-link opens Layout & Controls',
+      await controls.locator('.settings-section-header[aria-expanded="true"]').count(), 1);
+    check('and the keybinding table is rendered',
+      (await controls.locator('.kbd-settings-row').count()) > 0, true);
+  }),
+
+  scenario('Status footer: absent on mobile', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    check('no status footer on mobile', await page.locator('.status-footer').count(), 0);
+  }, { mobile: true, width: 390, height: 780 }),
+
+  scenario('Title menu: both columns, recency-ordered books, switch and rename', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+
+    const field = page.locator('.title-field');
+    check('the header carries a title field, not a bare name input',
+      await field.count(), 1);
+    check('and the old name input is gone from the resting header',
+      await page.locator('.window-header .lorebook-name-input').count(), 0);
+
+    await field.click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+
+    // Both halves are present in one menu — this is the whole point of 13C.
+    const heads = await page.locator('.tm-col-head').allInnerTexts();
+    // innerText reflects the CSS `text-transform: uppercase` on column heads.
+    check('two columns: lorebooks and import/export',
+      heads.map((h) => h.split('·')[0].trim()).join(' | '),
+      'LOREBOOKS | IMPORT / EXPORT');
+
+    // Recency-ordered by default: the most recently opened book leads. (A–Z is
+    // available from the column head — see the dedicated ordering scenario.)
+    const names = await page.locator('.tm-book-name').allInnerTexts();
+    check('the most recently opened book leads the list',
+      (await page.locator('.tm-book').first().getAttribute('class')).includes('tm-book--active'), true);
+    check('the active book is marked', await page.locator('.tm-book--active').count(), 1);
+
+    // Menu escapes the window's `overflow: hidden` — it is portaled to body, so
+    // it must not be a descendant of .floating-window.
+    check('the menu is portaled out of the clipped window',
+      await page.locator('.floating-window .title-menu').count(), 0);
+
+    // Switching from the menu changes the active book and closes the menu.
+    const activeName = (await page.locator('.tm-book--active .tm-book-name').innerText()).trim();
+    const other = names.map((n) => n.trim()).find((n) => n !== activeName);
+    await page.locator('.tm-book', { hasText: other }).first().click();
+    await settle(page, 500);
+    check('picking a book closes the menu', await page.locator('.title-menu').count(), 0);
+    check('and switches to it', (await field.innerText()).includes(other), true);
+
+    // Escape dismisses without switching.
+    await field.click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+    check('Escape closes the menu', await page.locator('.title-menu').count(), 0);
+
+    // Rename still exists — it moved from an always-live input to double-click.
+    await field.dblclick();
+    await settle(page, 300);
+    const input = page.locator('.window-header .lorebook-name-input');
+    check('double-click swaps the field for a rename input', await input.count(), 1);
+    check('and the menu is not left open behind it',
+      await page.locator('.title-menu').count(), 0);
+    await input.fill('Renamed From Title');
+    await page.keyboard.press('Enter');
+    await settle(page, 400);
+    check('the rename sticks', (await field.innerText()).includes('Renamed From Title'), true);
+  }),
+
+  scenario('Title field: hover surfaces, click pins, clicking again closes', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    const field = page.locator('.title-field');
+    const menu  = page.locator('.title-menu');
+
+    // A second click has to close. The portaled menu's outside-click handler
+    // has to exclude the field itself, or mousedown closes and the click that
+    // follows reopens — which looks like the click doing nothing at all.
+    await field.click();
+    await settle(page, 300);
+    check('first click opens', await menu.count(), 1);
+    check('and pins', await page.locator('.title-field--pinned').count(), 1);
+    await field.click();
+    await settle(page, 300);
+    check('second click closes', await menu.count(), 0);
+    check('and unpins', await page.locator('.title-field--pinned').count(), 0);
+
+    // Hover alone surfaces it, moving away dismisses it — the footer Size
+    // button's behaviour.
+    await page.mouse.move(700, 500);
+    await settle(page, 400);
+    await field.hover();
+    await settle(page, 500);
+    check('hover surfaces the menu without a click', await menu.count(), 1);
+    check('hovering does not pin', await page.locator('.title-field--pinned').count(), 0);
+    await page.mouse.move(700, 600);
+    await settle(page, 700);
+    check('moving away dismisses it', await menu.count(), 0);
+
+    // A pinned menu ignores the pointer leaving — that is what the pin is for.
+    await field.click();
+    await settle(page, 300);
+    await page.mouse.move(700, 600);
+    await settle(page, 700);
+    check('a pinned menu survives the pointer leaving', await menu.count(), 1);
+  }),
+
+  scenario('Import takeover: the dropdown imports in place, never handing off', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    const before = await page.locator('.entry-card').count();
+
+    await page.locator('.title-field').click();
+    await page.locator('.title-menu').waitFor({ timeout: 4000 });
+
+    // The drop zone is in the menu itself. The first pass opened the
+    // Import/Export side panel from here, which was a detour to another surface.
+    await page.locator('.title-menu .drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
+    await page.locator('.import-flow-grid').waitFor({ timeout: 6000 });
+    check('no side panel was opened', await page.locator('.menu-panel:visible').count(), 0);
+    check('the menu is still the surface', await page.locator('.title-menu').count(), 1);
+
+    // Books column collapses to a rail so the flow gets the menu's width.
+    check('the books column collapses to a rail',
+      await page.locator('.title-menu .tm-rail').count(), 1);
+    check('and the book list is gone while importing',
+      await page.locator('.title-menu .tm-book').count(), 0);
+
+    check('all four dispositions are offered',
+      (await page.locator('.import-flow-opt-title').allInnerTexts()).join(' | '),
+      'Import as new | Append | Replace | Back up first');
+
+    // Append, so the assertion is about entry count rather than a book switch.
+    await page.locator('.import-flow-opt', { hasText: 'Append' }).click();
+    await settle(page, 300);
+    check('the preview says what will happen',
+      (await page.locator('.import-flow-banner').innerText()).includes('append'), true);
+
+    // Back keeps the parse — nobody should have to re-pick a file to change
+    // their mind about the disposition.
+    await page.locator('.import-flow-cancel', { hasText: 'Back' }).click();
+    await settle(page, 300);
+    check('Back returns to the grid with the parse intact',
+      await page.locator('.import-flow-grid').count(), 1);
+
+    await page.locator('.import-flow-opt', { hasText: 'Append' }).click();
+    await settle(page, 300);
+    await page.locator('.import-flow-confirm').click();
+    await settle(page, 600);
+    check('confirming closes the menu', await page.locator('.title-menu').count(), 0);
+    check('and the entries landed', (await page.locator('.entry-card').count()) > before, true);
+  }),
+
+  scenario('Import: all three surfaces offer the same flow', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // Before 13C each surface had its own subset — the side panel had a backup
+    // step but no paste, the hotbar had paste but no backup. Parity is the point.
+    //
+    // Every locator here is scoped to one surface on purpose. MenuPanel keeps
+    // all three of its sections mounted (display:none) so panel state survives a
+    // tab switch, which means the side panel's flow is in the DOM at all times —
+    // an unscoped `.drop-zone` would reach into whichever came first.
+    const expected = 'Import as new,Append,Replace,Back up first';
+    const dispositionsIn = async (surface) => {
+      await surface.locator('.drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
+      await surface.locator('.import-flow-grid').waitFor({ timeout: 6000 });
+      const opts = (await surface.locator('.import-flow-opt-title').allInnerTexts()).join(',');
+      await surface.locator('.import-flow-cancel', { hasText: 'Cancel' }).click();
+      await settle(page, 400);
+      return opts;
+    };
+
+    await page.locator('.title-field').click();
+    const titleMenu = page.locator('.title-menu');
+    await titleMenu.waitFor({ timeout: 4000 });
+    check('the title dropdown offers all four', await dispositionsIn(titleMenu), expected);
+
+    const openHotbarImport = async () => {
+      await page.locator('.hotbar').locator('button', { hasText: 'Import' }).first().click();
+      const panel = page.locator('.append-import-panel');
+      await panel.waitFor({ timeout: 4000 });
+      return panel;
+    };
+    check('the hotbar overlay offers all four',
+      await dispositionsIn(await openHotbarImport()), expected);
+
+    const panel = await openHotbarImport();
+    check('the old three-mode segmented control is gone',
+      await panel.locator('.append-import-mode-btn').count(), 0);
+
+    // Paste is reachable from the shared flow, behind a link rather than a
+    // segmented control — it's the niche path.
+    await panel.locator('.import-flow-swap', { hasText: 'paste' }).click();
+    await settle(page, 250);
+    check('paste swaps the drop zone for a textarea',
+      await panel.locator('.import-flow-textarea').count(), 1);
+    check('and the drop zone steps aside', await panel.locator('.drop-zone').count(), 0);
+
+    // Pasted entries get the same four dispositions a file does — they used to
+    // be append-only.
+    await panel.locator('.import-flow-textarea').fill(
+      'Name: Pasted Keep\nTriggers: keep\nDescription: A hold above the pass.');
+    await panel.locator('.import-flow-parse-btn').click();
+    await settle(page, 400);
+    check('pasted entries reach the same disposition grid',
+      (await panel.locator('.import-flow-opt-title').allInnerTexts()).join(','), expected);
+  }),
+
+  scenario('Storage ring: the footer popover opens upward, not off-screen', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // The ring used to sit in the header, where hanging downward was correct.
+    // In the footer the same style ran the popover off the bottom of the screen.
+    const ring = page.locator('.status-right .storage-usage-ring');
+    const rbox = await ring.boundingBox();
+    await ring.hover();
+    await settle(page, 400);
+
+    const hov = await page.locator('.storage-usage-hover-popover').boundingBox();
+    check('the hover summary sits above the ring', hov.y + hov.height <= rbox.y + 1, true);
+    check('and stays on screen', hov.y >= 0 && hov.y + hov.height <= 950, true);
+
+    await ring.click();
+    await settle(page, 400);
+    const det = await page.locator('.storage-usage-detail-popover').boundingBox();
+    check('the detail popover sits above the ring too', det.y + det.height <= rbox.y + 1, true);
+    check('and stays on screen', det.y >= 0 && det.y + det.height <= 950, true);
+  }, { width: 1400, height: 950 }),
+
+  scenario('Header: gear opens Settings, and the legacy menu can be restored', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+
+    // The header is down to logo | title | gear | close. Everything else moved
+    // to the status footer.
+    check('the header button is a gear, not a hamburger',
+      await page.locator('.menu-btn--gear').count(), 1);
+    check('feedback links left the header',
+      await page.locator('.window-header .header-feedback').count(), 0);
+    check('the storage ring left the header',
+      await page.locator('.window-header .storage-usage-ring').count(), 0);
+    check('and the entry count left the header',
+      await page.locator('.window-header .lorebook-entry-count').count(), 0);
+
+    // …and landed in the footer.
+    check('feedback links are in the footer',
+      await page.locator('.status-right .header-icon-btn').count(), 2);
+    check('the storage ring is in the footer',
+      await page.locator('.status-right .storage-usage-ring').count(), 1);
+    check('the entry count is in the footer',
+      (await page.locator('.status-count').first().innerText()).trim(), '34 entries');
+
+    // One click, no dropdown in between.
+    await page.locator('.menu-btn--gear').click();
+    await settle(page, 400);
+    check('the gear opens Settings directly',
+      await page.locator('.settings-panel').isVisible(), true);
+
+    // Legacy menus put the ☰ and its three destinations back.
+    const controls = await openSettingsSection(page, 'Layout & Controls');
+    await controls.locator('.settings-label', { hasText: 'Legacy menus' })
+      .locator('input[type="checkbox"]').check();
+    await settle(page, 400);
+    check('the gear is replaced by the ☰',
+      await page.locator('.menu-btn--gear').count(), 0);
+
+    await page.locator('.menu-btn').click();
+    await settle(page, 250);
+    check('and the dropdown offers all three panels again',
+      (await page.locator('.menu-dropdown-item').allInnerTexts()).join(' | '),
+      'Lorebooks | Import / Export | Settings');
   }),
 ];
 

@@ -5,7 +5,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 See `docs/plan.md`. Work phases in order. Do not build ahead.
 
 ## Changelog
-Update `CHANGELOG.md` (repo root) when completing each phase or polish pass. Add a new dated section at the top with Additions / Fixes / Adjustments / Renames subheaders as appropriate. The changelog is the source the in-app lander will eventually render — keep entries plain-language and user-visible, not internal refactor notes.
+`CHANGELOG.md` (repo root) is **release notes, not a development log.** It is rendered in-app twice — the lander's What's New panel, and the update notice that opens once per release — so it is written for users, not for us.
+
+**One section per public release, not per phase or per day of work.** Add entries to the current unreleased section as you go; do not open a new one for each phase. The heading is `## <version> — <date>` (e.g. `## 0.9.0 — 2026-07-30`), and the version comes from `package.json`. The heading text is the identifier the update notice stores, so it must not change once shipped. Ship-time steps — version bump, screenshots, tagging — are in `docs/releasing.md`.
+
+**Entries describe the delta from the last *released* version.** Not from the last commit. Two rules follow, and both matter:
+
+- **If a user could not have experienced the old behaviour, there is no entry.** A feature built, revised, and shipped inside one release gets one entry describing what it now is — never a "fixed" or "changed" entry about an intermediate state nobody ever saw.
+- **Iterations collapse.** Three passes on the same control across a release is one entry.
+
+**Subheaders, in this order, omitting any that are empty:**
+
+| Section | For |
+|---|---|
+| `### New` | Did not exist for users before |
+| `### Improved` | Existed, now works differently or better (includes renames) |
+| `### Fixed` | Was broken in a version users actually had |
+| `### Under the hood` | For us and for contributors — **excluded from the in-app notice** |
+
+`Under the hood` is filtered out by `services/release-notes.js`. Keep it to things that affect someone else: storage-format changes, dependency changes, removed behaviour, performance. The reasoning and findings behind a change belong in `docs/plan.md`, not here — writing them in both means they drift.
 
 ## Commands
 ```bash
@@ -62,6 +80,7 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 - `docs/layout-rules.md` — layout priorities for UI changes (read before any layout work)
 - `docs/constants-reference.md` — key constants and CSS theming details
 - `docs/project-summary.md` — plain-language project overview for planning
+- `docs/glossary.md` — domain vocabulary (entry, trigger, crosstalk, folder …)
 
 ## Deployment
 GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions environment and sets the base path to `/<repo-name>/` automatically. Push to `main` triggers deploy via `.github/workflows/main.yml`.
@@ -80,6 +99,27 @@ GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions enviro
 ## Communication
 
 When an exploratory or design discussion includes multiple decisions to make, finish the message with a numbered list of the specific clarifications you need from the user — one decision per item, with the options enumerated `(a)/(b)/(c)`. Lay out reasoning and tradeoffs in prose above the list as usual, but the trailing list should be self-contained enough that the user can reply with `1. a, 2. b, 3. yes` and unambiguously approve the path forward.
+
+### Moving from discussion to implementation requires a firm Yes
+
+**Only an explicit, unambiguous approval starts implementation work.** A clear "yes", "do it", "go ahead", "build it", or a direct answer selecting an option (`1. a, 2. b`) is approval. Nothing else is.
+
+**Anything in the middle means the user wants to keep discussing** — not that Claude should pick the most reasonable option and proceed. Treat all of these as "still discussing":
+
+- "I'm unsure", "I'm torn", "maybe", "I could see that"
+- "I like X, but…" / "that's interesting, though…"
+- Thinking out loud, or floating an alternative without settling on it
+- Answering some items in a decision list while leaving others open
+- Silence on a question that was asked
+
+When the reply lands in the middle, the correct next move is to **help resolve the specific thing the user is stuck on** — sharpen the tradeoff, offer a recommendation with reasoning, propose a tiebreaker — and then ask again. Do not begin editing files.
+
+Two failure modes to avoid specifically:
+
+1. **Do not treat a recommendation as pre-approved because it is cheap to reverse.** "Easy to change later" is not the same as "mine to decide". The user's call is the user's call regardless of how reversible it is.
+2. **Do not treat partial approval as total approval.** If the user approves a structure but leaves one placement open, the unresolved item blocks the work that depends on it — build nothing that assumes an answer.
+
+This applies to the *start* of implementation. Once work is genuinely approved, the ordinary judgement calls inside it (naming a variable, picking a selector, choosing where a helper lives) do not each need re-approval.
 
 ## Token Cost Warnings
 

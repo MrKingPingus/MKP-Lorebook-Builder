@@ -20,7 +20,7 @@ export function KeyboardHelpOverlay() {
 
   function editShortcuts() {
     setKeyboardHelpOpen(false);
-    openSettingsSection('accessibility');
+    openSettingsSection('controls');
   }
 
   return (

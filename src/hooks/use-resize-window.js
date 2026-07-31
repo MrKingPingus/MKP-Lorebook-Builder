@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useUiStore }  from '../state/ui-store.js';
 import { writeJson }   from '../services/storage-service.js';
 import { WINDOW_STATE_KEY }              from '../constants/storage-keys.js';
-import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from '../constants/limits.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, maxWindowWidth } from '../constants/limits.js';
 
 const MIN_WIDTH  = MIN_WINDOW_WIDTH;
 const MIN_HEIGHT = MIN_WINDOW_HEIGHT;
@@ -50,7 +50,7 @@ export function useResizeWindow() {
         newY = Math.max(0, Math.min(newY, window.innerHeight - MIN_HEIGHT));
 
         // Clamp size so opposite edges stay within viewport
-        if (newX + newW > window.innerWidth)  newW = Math.max(MIN_WIDTH,  window.innerWidth  - newX);
+        if (newX + newW > maxWindowWidth())   newW = Math.max(MIN_WIDTH,  maxWindowWidth()   - newX);
         if (newY + newH > window.innerHeight) newH = Math.max(MIN_HEIGHT, window.innerHeight - newY);
 
         setWindowSize({ width: newW, height: newH });
@@ -75,7 +75,7 @@ export function useResizeWindow() {
         if (corner.includes('s') || corner.includes('n')) { fY = startPosY + (startH - fH) / 2; }
         fX = Math.max(0, Math.min(fX, window.innerWidth  - MIN_WIDTH));
         fY = Math.max(0, Math.min(fY, window.innerHeight - MIN_HEIGHT));
-        if (fX + fW > window.innerWidth)  fW = Math.max(MIN_WIDTH,  window.innerWidth  - fX);
+        if (fX + fW > maxWindowWidth())   fW = Math.max(MIN_WIDTH,  maxWindowWidth()   - fX);
         if (fY + fH > window.innerHeight) fH = Math.max(MIN_HEIGHT, window.innerHeight - fY);
         writeJson(WINDOW_STATE_KEY, { pos: { x: fX, y: fY }, size: { width: fW, height: fH } });
       }

@@ -77,10 +77,13 @@ export async function openBuilderWithFixture(page, fixturePath = FIXTURE) {
 export async function importBookAsNew(page, fixturePath) {
   await page.locator('.hotbar').locator('button', { hasText: 'Import' }).first().click();
   await page.locator('.append-import-panel').waitFor({ timeout: 4000 });
-  await page.locator('.append-import-mode-btn', { hasText: 'Whole book from file' }).click();
-  await page.locator('.append-file-picker input[type="file"]').setInputFiles(fixturePath);
-  await page.locator('.import-save-btn--new').waitFor({ timeout: 6000 });
-  await page.locator('.import-save-btn--new').click();
+  // 13C put every surface on the shared import flow: drop a file, pick a
+  // disposition, confirm. The old segmented mode control is gone.
+  await page.locator('.append-import-panel .drop-zone input[type="file"]').setInputFiles(fixturePath);
+  await page.locator('.import-flow-grid').waitFor({ timeout: 6000 });
+  await page.locator('.import-flow-opt', { hasText: 'Import as new' }).click();
+  await page.locator('.import-flow-confirm').waitFor({ timeout: 4000 });
+  await page.locator('.import-flow-confirm').click();
   await page.locator('.append-import-panel').waitFor({ state: 'detached', timeout: 4000 });
 }
 
@@ -98,7 +101,7 @@ export async function pairCrosstalk(page) {
   // sections don't render their children, so the section has to be opened
   // before its controls exist in the DOM.
   await openSettings(page);
-  await openSettingsSection(page, 'Reference & Crosstalk');
+  await openSettingsSection(page, 'Layout & Controls');
   const toggle = page.locator('label:has-text("Show reference panel") input[type="checkbox"]');
   await toggle.waitFor({ timeout: 4000 });
   await toggle.check();
@@ -136,6 +139,38 @@ export async function openSettingsSection(page, title) {
     await settle(page, 150);
   }
   return section;
+}
+
+// Open the status footer's ⤢ Size menu (desktop only). No-op if already open.
+// Phase 13A moved window size, entry header height and FAB size out of Settings
+// and into this menu, so scenarios that used to drive a Settings <select> for
+// any of those come through here instead.
+export async function openScaleMenu(page) {
+  if ((await page.locator('.scale-menu').count()) > 0) return;
+  await page.locator('.status-footer .status-item').first().click();
+  await page.locator('.scale-menu').waitFor({ timeout: 4000 });
+}
+
+// Pick a value from one of the ⤢ Size menu's flyouts, e.g.
+//   setScaleOption(page, 'Entry header', 'Large')
+//
+// `rowLabel` is matched against the four flyout-bearing rows only — the
+// "Reset all sizing" row carries a note reading "Text size kept", so an
+// unqualified hasText match on "Text size" hits two rows.
+export async function setScaleOption(page, rowLabel, optionLabel) {
+  await openScaleMenu(page);
+  await page.locator('.scale-row[aria-haspopup]', { hasText: rowLabel }).hover();
+  await page.locator('.scale-flyout').waitFor({ timeout: 4000 });
+  await settle(page, 120);
+  await page.locator('.scale-flyout .flyout-item', { hasText: optionLabel }).first().click();
+  await settle(page, 250);
+}
+
+// Close the ⤢ Size menu the way a user would.
+export async function closeScaleMenu(page) {
+  if ((await page.locator('.scale-menu').count()) === 0) return;
+  await page.keyboard.press('Escape');
+  await settle(page, 200);
 }
 
 // Click entry cards to select them, in select mode.
@@ -185,7 +220,16 @@ export function countPrivate(book) {
 }
 
 // Open the Settings panel via the header ☰ menu.
+// 13C turned the header ☰ into a gear that opens Settings in one click. The
+// legacy ☰ dropdown is still reachable behind a setting, so handle both: if the
+// gear is present, click it; otherwise fall back to the two-step menu.
 export async function openSettings(page) {
+  const gear = page.locator('.menu-btn--gear');
+  if (await gear.count()) {
+    await gear.click();
+    await settle(page, 300);
+    return;
+  }
   await page.locator('.menu-btn').click();
   await settle(page, 150);
   await page.getByText('Settings', { exact: true }).first().click();
@@ -243,7 +287,7 @@ export async function scrollListToBottom(page) {
 // scenario exercising condensed rows has to enable it first.
 export async function enableCondensedStage(page) {
   await openSettings(page);
-  const folders = await openSettingsSection(page, 'Folders');
+  const folders = await openSettingsSection(page, 'Layout & Controls');
   const condensed = folders.locator('.settings-checkbox-row input').nth(1);
   if (!(await condensed.isChecked())) {
     await condensed.check();

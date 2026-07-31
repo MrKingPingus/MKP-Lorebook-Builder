@@ -37,7 +37,7 @@ export function LorebookSwitcher() {
   }, [editingId]);
 
   const { activeLorebookId, activeLorebook } = useLorebook();
-  const { exportJson: doExportJson, exportTxt: doExportTxt } = useExport();
+  const { exportJson: doExportJson, exportTxt: doExportTxt, defaultExportFilename } = useExport();
 
   function requestSwitch(id) {
     if (id === activeLorebookId) { setOpen(false); return; }
@@ -58,7 +58,7 @@ export function LorebookSwitcher() {
 
   function downloadJson() {
     if (activeLorebook) {
-      const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+      const safe = defaultExportFilename(activeLorebook.name);
       doExportJson(activeLorebook, `${safe}.json`);
     }
     doSwitch();
@@ -66,7 +66,7 @@ export function LorebookSwitcher() {
 
   function downloadTxt() {
     if (activeLorebook) {
-      const safe = (activeLorebook.name || 'lorebook').replace(/[^a-z0-9_-]/gi, '_');
+      const safe = defaultExportFilename(activeLorebook.name);
       doExportTxt(activeLorebook, `${safe}.txt`);
     }
     doSwitch();

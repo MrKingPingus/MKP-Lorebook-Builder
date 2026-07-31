@@ -6,6 +6,8 @@ import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
+import { StatusFooter }      from './StatusFooter.jsx';
+import { LorebookTab }       from './LorebookTab.jsx';
 import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
@@ -25,6 +27,7 @@ export function FloatingWindow() {
   const showLander       = useUi((s) => s.showLander);
   const showAppendImport = useUi((s) => s.showAppendImport);
   const activeSide       = useUi((s) => s.activeSide);
+  const panelAnimating   = useUi((s) => s.panelAnimating);
   const { crosstalkEnabled } = useReferenceLorebook();
   const { crosstalkSwapMode } = useSettings();
 
@@ -47,7 +50,11 @@ export function FloatingWindow() {
   };
 
   return (
-    <div className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`} style={style}>
+    <div
+      className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`
+        + (panelAnimating ? ' floating-window--animating' : '')}
+      style={style}
+    >
       {/* Golden corner bracket decorations — hidden on mobile via CSS */}
       <span className="corner corner--nw" />
       <span className="corner corner--ne" />
@@ -60,6 +67,13 @@ export function FloatingWindow() {
         </div>
       ) : (
         <>
+          {/* Row shell: the app stack, then the pull tab as a real right-edge
+              column. The tab used to be absolutely positioned over the content,
+              which put it on top of entry rows and the scrollbar; as a flex
+              column it insets everything instead and reads as part of the
+              window frame at any size. */}
+          <div className="window-shell">
+          <div className="window-stack">
           <WindowHeader />
 
           <div className="window-body">
@@ -87,6 +101,18 @@ export function FloatingWindow() {
           </div>
 
           <Hotbar />
+
+          {/* Status footer — desktop only. Mobile already spends ~490px of the
+              viewport on chrome before the first entry renders, and this bar's
+              contents can't fit one line at 375px; mobile keeps these controls
+              in Settings until its own UI pass. */}
+          {!isMobile && <StatusFooter />}
+          </div>
+
+          {/* Pull tab for the Lorebooks side panel — desktop only, since the
+              panel is a full-screen overlay on mobile and reached from the menu. */}
+          {!isMobile && <LorebookTab />}
+          </div>
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
           {isMobile && <EntryDetailPanel />}

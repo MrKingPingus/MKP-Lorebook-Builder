@@ -19,9 +19,19 @@ Use this to identify which file to look at based on what's visible on screen.
 | What you see | File |
 |---|---|
 | The floating window itself (dark bordered frame with golden corners) | `src/components/layout/FloatingWindow.jsx` |
-| The top bar with lorebook name, minimize, and close buttons | `src/components/layout/WindowHeader.jsx` |
+| The top bar: the lorebook title field (hover-highlighted; click opens the title menu, double-click renames in place), the gear, and close. Owns the title menu's open/close orchestration | `src/components/layout/WindowHeader.jsx` |
+| The dual-column dropdown under the title — saved lorebooks on the left, import/export on the right. Portalled to `document.body`; the book column collapses to a rail once an import takes over | `src/components/feature/TitleMenu.jsx` |
+| The order books are listed in, snapshotted on open so a list can't reshuffle under the pointer (`recent` default, `alpha` opt-in) | `src/hooks/use-sorted-lorebooks.js` |
 | The bottom toolbar with action icons (add entry, undo, redo, etc.) | `src/components/layout/Hotbar.jsx` |
-| The hamburger menu button (top-left of header) | `src/components/layout/MenuButton.jsx` |
+| The thin status bar below the hotbar (save state, `⤢ Size`) — desktop only. Holds app state and view controls; content actions belong in the hotbar | `src/components/layout/StatusFooter.jsx` |
+| The `⤢ Size` menu and its flyouts (window size, text size, entry height, FAB size) — portalled to `document.body` so flyouts can open rightward past the window's `overflow: hidden` | `src/components/feature/ScaleMenu.jsx` |
+| The vertical `LOREBOOKS` pull tab on the window's right edge | `src/components/layout/LorebookTab.jsx` |
+| Window preset maths — apply a named size, report which one is live, re-centre and clamp | `src/hooks/use-window-scale.js` |
+| The footer's "Saved / 4m ago" readout, derived from `ui-store.savedAt` | `src/hooks/use-save-status.js` |
+| The gear button that opens Settings (top-right of header; a hamburger before 13C) | `src/components/layout/MenuButton.jsx` |
+| The storage-usage ring in the footer, and its hover/click popovers | `src/components/layout/StorageUsageRing.jsx` |
+| The bug + idea icons in the footer (moved out of the header in 13C) | `src/components/layout/FeedbackLinks.jsx` |
+| Popover placement — flips a popover upward when its anchor sits low in the viewport, so a footer control's menu doesn't open off the bottom of the screen | `src/hooks/use-anchored-position.js` |
 | The slide-out menu panel (import, export, settings, etc.) | `src/components/layout/MenuPanel.jsx` |
 | The resize handles on window edges/corners | `src/components/layout/ResizeHandles.jsx` |
 
@@ -52,6 +62,8 @@ Use this to identify which file to look at based on what's visible on screen.
 | The full lorebook management panel | `src/components/feature/LorebookPanel.jsx` |
 | The "new lorebook name" popup | `src/components/feature/LorebookNameModal.jsx` |
 | Import preview (before confirming an import) | `src/components/feature/ImportPreview.jsx` |
+| The shared import flow — pick a file, choose what happens to the book you have open, confirm. Rendered by all three import surfaces, which is why they can't drift apart | `src/components/feature/ImportFlow.jsx` |
+| That flow's state machine (`source` → `disposition` → `preview`), including the backup-then-replace path | `src/hooks/use-import-flow.js` |
 | Import panel in the menu | `src/components/feature/ImportPanel.jsx` |
 | Append import panel | `src/components/feature/AppendImportPanel.jsx` |
 | Export panel in the menu | `src/components/feature/ExportPanel.jsx` |
@@ -59,7 +71,10 @@ Use this to identify which file to look at based on what's visible on screen.
 | Rollback panel (snapshot list inside an entry) | `src/components/feature/RollbackPanel.jsx` |
 | The build panel (main entry editing view) | `src/components/feature/BuildPanel.jsx` |
 | Mobile entry detail view (tapping an entry on mobile) | `src/components/feature/EntryDetailPanel.jsx` |
-| The landing page (shown before opening a lorebook) | `src/components/feature/Lander.jsx` |
+| The landing page (shown before opening a lorebook), including its *What's new* panel | `src/components/feature/Lander.jsx` |
+| The "what changed" notice shown once per release on return | `src/components/feature/UpdateNotice.jsx` |
+| The click-through tour of a release's annotated screenshots, opened from that notice or from *Take the tour* | `src/components/feature/FeatureTour.jsx` |
+| Whether the notice is due, and the release it should show — reads the lorebook index from storage rather than the store, since the store hydrates after first render and a first-time user would otherwise be shown an update notice | `src/hooks/use-release-notes.js` |
 
 ### UI Primitives
 
@@ -71,3 +86,4 @@ Use this to identify which file to look at based on what's visible on screen.
 | Match count display in search | `src/components/ui/MatchCounter.jsx` |
 | Stats badge (entry count, etc.) | `src/components/ui/StatsBadge.jsx` |
 | Drag-and-drop target zones | `src/components/ui/DropZone.jsx` |
+| Rendered changelog markdown (the *What's new* panel and the update notice) | `src/components/ui/MarkdownView.jsx` |

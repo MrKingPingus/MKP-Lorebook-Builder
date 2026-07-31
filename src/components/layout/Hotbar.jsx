@@ -8,8 +8,7 @@ import { useSettings }      from '../../hooks/use-settings.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
 import { ExportMenu }       from '../feature/ExportMenu.jsx';
 import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
-
-const FAB_SIZES = { small: 44, medium: 54, large: 64 };
+import { FAB_SIZES } from '../../constants/scaling.js';
 
 // Hover delays for the FAB quick menu — slightly longer than the suggestion
 // chips so a casual mouse-over doesn't unfurl the menu when the user only

@@ -27,7 +27,7 @@ All planned phases through **Phase 10** have shipped (see **Completed** below). 
 
 ## Upcoming Phases
 
-Pre-planned but not yet started (unlike Future Features, these have locked design decisions and are queued to build). Both came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
+Phases with locked design decisions, as opposed to Future Features which are still ideas. Some have since shipped and stay here with their decisions intact — status is marked inline on each phase's sub-phase line, not by which section it sits in. As of 2026-07-31: **11 complete**, **12 not started**, **13 complete**. Both came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
 
 ### Phase 11 — Custom Categories / Folders (GitHub #116)
 
@@ -119,7 +119,130 @@ Still open: there is no "after this folder" band, so ordering is expressed purel
 - ~~**Drag has no folder semantics yet.**~~ **Closed in 11E** — a drop position now decides the folder, and the whole gesture is one undo.
 - **Entry-card footer is at four controls** (Entry History · Move to folder · Public/Private · Hide from Export). Fits one line at the desktop default; wraps in a narrow crosstalk pane. The footer-crowding revisit below is now live, not theoretical.
 
-### Settings reorganisation (queued, not yet scheduled)
+### Phase 13 — UI/UX Overhaul (status footer · settings reorg · title menu)
+
+**Planned 2026-07-28.** A deliberate pass on visibility, cleanliness, and discoverability, using the FabFilter Pro-Q 4 plugin as the reference: clean on its face, settings tucked out of the way but a click deep, advanced features nested so they're reachable for power users and ignorable for casual ones. Absorbs the previously-queued settings reorganisation as **13B**.
+
+**Locked decisions (2026-07-28):**
+1. **The hotbar and the footer split on word class.** Hotbar = verbs on content (add, undo, export, select). Footer = app state and view controls (saved, counts, storage, sizing). This is the rule for deciding where any future control goes; it's the same division Pro-Q's footer draws between plugin state and audio.
+2. **The status footer is desktop-only.** Mobile already burns ~490px of chrome before the first entry renders, and the footer's contents can't fit one line at 375px. Mobile gets its own bespoke UI session later; until then its scaling controls stay in Settings.
+3. **Footer height is expressed off `--ui-scale`.** A hardcoded height clips its own labels at 125% text scale — and the control that fixes text size lives *in* the footer, so the failure is self-inflicting.
+4. **The resize grip moves into the footer** (Pro-Q's solution). A bar pinned to the bottom edge otherwise swallows the bottom-edge and SE-corner hit zones owned by `ResizeHandles.jsx`, and dragging the footer would resize nothing.
+5. **Scaling settings move to the footer menu — not mirrored, no pointer left behind.** Window size, entry header height and FAB size currently live in three different Settings sections; moving them is what lets 13B collapse to four sections rather than merely re-home the same volume. Accepted cost: existing users relearn one location.
+   - **Text size is the one deliberate exception and appears in both places.** It is an accessibility setting, and people who need it look for it under *Accessibility* — removing it from there to save a menu row would be a real regression for exactly the users who can least afford it. The footer copy is a convenience; the Accessibility section stays its discoverable home. Both read the same store field, so they cannot disagree.
+6. **Reference/crosstalk stays where it is.** Considered for a footer readout and rejected — the current placement is fine and the footer shouldn't become a dumping ground.
+7. **The lorebook title becomes a hover-highlighted field, not a live input.** Click opens the dual menu; double-click renames in place — the same gesture the menu's list already uses, so renaming is one gesture everywhere a lorebook name appears.
+8. **No `< >` prev/next arrows on the title field.** `switchLorebook` calls `promoteInIndex` (`use-lorebook.js:60`), which moves the switched-to book to the front of the index — and the index *is* the list order. Stepping with arrows would oscillate between two books forever. Fixable by giving arrows a separate stable order, but judged not worth the complexity.
+9. **The title menu's lorebook list sorts alphabetically**, not by recency, for the same reason: a list that reorders itself on every switch is disorienting to click through. Recency ordering stays on the lander, where it's actually useful.
+10. **The full import flow lives in the dropdown via a takeover.** When a file parses, the lorebook column collapses to a ~34px rail and the import flow claims the menu's full width. Escalating to a separate panel was rejected — the flow gets *more* room this way than it has today.
+11. **A pending parse is protected.** Outside-click must not dismiss-and-discard, and the dropdown's dismiss-stack priority must not let Escape destroy a parse.
+12. **Legacy Lorebooks / Import-Export panels are a frozen compatibility path.** Kept working, but no new features ported to them. Without this, every addition gets built twice and the two silently drift.
+13. **The hamburger becomes a gear whose icon follows the mode** — gear (straight to Settings, no intermediate dropdown) in the new system, hamburger in legacy, since a gear opening a three-item menu would be lying.
+14. **Verify routes through the new UI by default**, plus one scenario that flips the legacy setting and confirms the old panels still open. Cheap insurance for a path we've promised not to break but would otherwise never exercise.
+
+**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu~~ **shipped 2026-07-28** · ~~13B settings reorg~~ **shipped 2026-07-28** · ~~13C title field + dual dropdown + import takeover + gear~~ **shipped 2026-07-29** · ~~13D release notes + update notice + feature tour~~ **shipped 2026-07-31** (added mid-phase; not in the original plan).
+
+**13A notes (shipped 2026-07-28).** `StatusFooter.jsx` (layout) + `ScaleMenu.jsx` (feature), `use-window-scale.js`, `use-save-status.js`, `constants/scaling.js`. Three things the build settled that the plan had guessed at:
+
+- **`ResizeHandles` needed no change at all.** The bottom *edge* was never a resize target — only four 14×14 corner divs at `z-index: 150`. So the footer keeps a z-index below that and insets its controls ~20px from the right, and the SE corner keeps winning the hit test. Decision 4's "move the grip into the footer" turned out to mean "don't draw one" — the gold `corner--se` bracket already marks the spot, and a second glyph there would have collided with it.
+- **`.floating-window` sets `overflow: hidden`**, so menu geometry is a hard constraint rather than a preference. At the 480px minimum width and 125% text the menu + flyout + gap must fit inside 460px of usable width; the min-widths are `calc(196px * var(--ui-scale))` and `calc(150px * var(--ui-scale))` against that budget, and the labels are `nowrap` so they can't wrap instead of overflowing.
+- **Flyouts anchor `bottom`, not `top`.** The whole menu hangs off a bar at the base of the window, so a tall flyout aligned to its row's top runs off the bottom edge and gets clipped away. Everything here grows upward.
+
+**13A feedback pass (2026-07-28, from user testing).** Six fixes plus one new surface:
+
+- **Flyouts open right, which required portalling.** `.floating-window` clips overflow, so an in-window flyout could only ever fold back *left* over the menu — the two requirements are geometrically incompatible while the menu lives inside the frame. Menu and flyouts now portal to `document.body` positioned `fixed` from their anchor's rect (the pattern `ExportMenu` / `LorebookSwitchPopover` / `FolderFilterButton` already use), open right, and flip left only when the *viewport* can't fit them. The window's own width stopped being a constraint, so the min-width budget from 13A no longer binds.
+- **Hover grace** (`FLYOUT_OPEN_MS` 150 / `FLYOUT_CLOSE_MS` 320, asymmetric like the FAB quick-menu's). Without the open delay a diagonal pointer unfurls every row it crosses; without the longer close delay the gap between row and flyout drops it mid-reach. Moving *between* rows once a flyout is already up skips the open delay, so tracking down the menu stays instant.
+- **The custom size fields were unusable and the cause generalises.** They were controlled inputs bound to a value clamped on every keystroke: typing the first digit of `1360` into a field reading `480` produced `1`, which clamped straight back before the second digit landed, so the field snapped to a bound on every keypress. `CommitNumberInput` holds a draft while focused and commits (clamped) on blur/Enter. **Never bind an input directly to a clamped value** — clamp on commit.
+- **Default window 760×620 → 1200×900**, with a one-time bootstrap migration: settings persist and win over the constant, so raising `DEFAULT_WINDOW` alone would have reached nobody who had already launched the app. Only an exact `LEGACY_DEFAULT_WINDOW` match is rewritten; a partial match counts as a deliberate choice. Presets rescaled around it (800×700 / 1200×900 / 1600×1000). The one-time fix-ups in `useBootstrap` now accumulate into a single patch so a later write can't clobber an earlier one.
+- **Footer and its controls enlarged** (26 → 32px tall, 0.6875 → 0.75rem, real padding on the button); menu and flyout type up a step too. **"Entry header" → "Entry height".**
+- **Lorebook pull tab** (`LorebookTab.jsx`) on the window's right edge. It toggles the existing Lorebooks side panel, which is the one layout that leaves the entry list genuinely unobstructed — `useMenuPanel` *widens the window* by `MENU_PANEL_WIDTH` rather than taking space from the list. This answers the repeated "I want the lorebook list in the side panel" feedback without a presentation mode, and it means 13C's title menu doesn't have to be the only way to reach the list.
+
+**Second feedback pass (2026-07-28).**
+
+- **The tab became a real layout column, not an overlay.** As an absolutely-positioned element it sat on top of entry rows and the scrollbar. `FloatingWindow` now nests the app in `.window-shell` (row) → `.window-stack` (column), with the tab as a full-height sibling column: content is inset by it, nothing can run underneath, and it holds at any size including full screen. It spans the corners now, so the resize handles keep working purely on z-index (150 vs the tab's flow level) — verified by hit test rather than by geometry.
+  - **Layout and look are separate concerns here, and conflating them was the mistake.** Painting that whole column made the edge far too heavy. The column only reserves the gutter; `.lorebook-tab-inner` carries the original short centred pill — left-rounded, `--surface2`, flush to the frame. The button stays the full column, so the hit target is generous while the chrome is light. The gutter is transparent because `.window-body` and the entry list set no background of their own, so it inherits `--surface` from `.floating-window` and blends rather than reading as a stripe.
+- **`writing-mode: vertical-rl` alone lays the word on its side**, which is the hard-to-read orientation. `text-orientation: upright` stacks the glyphs the right way up, so the label reads like a book spine.
+- **The `⤢ Size` button is hover-to-surface, click-to-pin** (`SCALE_MENU_OPEN_MS` 180 / `SCALE_MENU_CLOSE_MS` 300), matching FabFilter's footer controls. Two independent states — `scaleOpen` and `pinned` — because "showing" and "latched" are genuinely different: a pinned menu ignores the pointer leaving. Flyouts are portalled *separately* from the menu, so moving from menu into flyout counts as leaving the menu; the flyout has to cancel the footer's close timer too, which is why the enter/leave handlers thread all the way down through `ScaleRow`.
+  - **After an unpinning click the menu must stay shut while the pointer is still on the button.** Re-surfacing from the hover already in progress would make the click unable to dismiss anything. You have to leave and come back — the behaviour is deliberate, and there is a check pinning it down.
+
+Scaling settings left Settings in this phase rather than 13B — leaving them in both places would have contradicted decision 5 for a whole phase. `verify/checks.mjs` drives the folder-header-height check through the new menu via the `openScaleMenu` / `setScaleOption` / `closeScaleMenu` driver helpers, and `scenario()` now takes launch overrides so a check can assert a desktop-only surface is absent on mobile.
+
+**Mockup:** `mockup-ui-overhaul.html` (repo root) covers 13A and 13C in five walkable states. Dark-theme only and throwaway — do not make it theme-aware. 13B was deliberately not mocked; an accordion with different contents is better reviewed as a written outline than as pixels.
+
+**Open at mockup time:** whether "Reset all sizing" should also reset text size (leaning no — it's an accessibility setting and wiping it from a general reset reads as hostile). The `AppendImportPanel` / `ImportPanel` question was **resolved in 13C**: neither retires, and all three surfaces share one flow instead — see below.
+
+**13C — Header rebuild + shared import flow. Shipped 2026-07-29.**
+
+Landed in four passes: title field + dual dropdown · gear + header declutter · feedback polish · shared import flow.
+
+Decisions and findings from the build:
+
+- **The book list is recency-ordered by default, with an A–Z toggle.** ~~Alphabetical, not recency-ordered.~~ **Reversed on user feedback, 2026-07-30.** The original argument was that `promoteInIndex` (`use-lorebook.js`) moves the active book to the front of the stored index on every switch, so a recency list would reshuffle under the cursor — the same store behaviour that killed the `< >` arrows at planning time. Two things were wrong with it. The reshuffle is invisible where it was supposed to bite: the title menu *closes* when you switch books, so the list is rebuilt on next open rather than moving while you look at it. And it optimised for the wrong task — people return to what they were just working on far more often than they hunt for a name they already know. Order is snapshotted on open (`use-sorted-lorebooks.js`) so it cannot move mid-interaction under either mode, and `settings-store.lorebookSort` is read by every list of books so the title menu and the side panel can't disagree. **The lesson worth keeping: "the data reorders itself" is an argument about a *visible* reshuffle, and it only lands if the surface stays open across the reorder.**
+- **Rename moved from an always-live input to double-click.** An input that is permanently focusable makes a poor menu button, and a name you can edit by accident is worse than one you edit deliberately. It's covered by a check so it can't quietly rot.
+- **The header's Switch button is gone** — the title field does that job. `LorebookSwitchPopover` stays; the crosstalk role bar still uses it.
+- **Open/close orchestration lives in `WindowHeader`, not `TitleMenu`**, mirroring how `StatusFooter` owns it for the sizing menu. Hover/pin/outside-click/resize all sit beside the trigger, and the menu only renders and asks to close.
+- **A portaled menu's outside-click test must exclude its own anchor.** Without it, `mousedown` closes the menu and the click that follows reopens it — so a second click on the trigger appears to do nothing. This is a general trap for every portaled-menu-plus-trigger pair, and it's why clicking the title twice was broken on first ship.
+- **The title needed an accent ring at rest.** A borderless title read as text; testers didn't know it was clickable. It uses `--accent`, the FAB's token, so the app's two "this is a thing you press" cues stay congruous under a themed accent.
+- **Popovers anchored with a hard `top: anchorRect.bottom` break when their trigger moves.** Both storage popovers were written when the ring sat under the title bar; moving it to the footer pushed them off the bottom of the screen. `use-anchored-position.js` flips to a `bottom` anchor when the trigger is in the lower half of the viewport, which grows the popover upward with no measurement pass — the same trick the sizing flyouts use. **Any new anchored popover should use it rather than hardcoding a side.**
+- **The legacy-menus setting is narrower than the plan implied.** It only decides whether the header button is a gear (straight to Settings) or the ☰ with three destinations. The side panels always exist; nothing about the title menu or the relocated footer items is conditional on it. A wider dual path would have doubled the surface area of the header for no benefit anyone asked for.
+
+**The import flow is now one thing (`use-import-flow.js` + `ImportFlow.jsx`).** This resolves the question deferred at mockup time — neither old panel retires, they share a flow instead. What made that necessary rather than merely tidy: each surface had a *different subset* of the same feature. The side panel offered backup-before-replace but couldn't take pasted text; the hotbar overlay took pasted text but had no backup, and shipped "open the Import / Export tab" nudges for the flows it couldn't do. Which surface you happened to open decided what you were allowed to do, and the nudges were the code admitting it.
+
+- **The dropdown takes over rather than handing off.** The first pass routed Import to the side panel, which meant clicking Import in a menu opened a different surface elsewhere. The books column collapses to a rail (`.tm-rail`, back button visible) and the flow gets the menu's width.
+- **The hotbar's three-mode segmented control is gone.** It existed only because that surface could only append, forcing paste / entries-from-file / whole-book to be picked before a file was even chosen.
+- **Paste sits behind a link, not a segmented control** — it's the niche path and shouldn't cost the drop zone half its surface. Pasted entries now reach all four dispositions; they used to be append-only.
+- **Backups are JSON only.** TXT is a lossy export; as a pre-overwrite backup it's the wrong artefact, and offering it invites someone to pick it and lose their triggers.
+- **Back from the preview keeps the parse.** Changing your mind about a disposition shouldn't cost re-picking the file.
+- **"Replace with 29 entries", not "Replace 29 entries"** — the latter reads as though 29 are being deleted. The count is always what's arriving.
+- `use-append-import.js` deleted (sole consumer was the overlay). `DropZone` gained an optional `inputRef` so the Import hotkey can click the hidden input directly. The export-filename sanitiser moved to `services/export-filename.js`. ~~Still copy-pasted in five other call sites.~~ **Done 2026-07-31** — it was 8 inline copies across 4 files (`LorebookSwitcher`, `LorebookPanel`, `ExportPanel`, `ExportMenu`), all now going through `useExport()`, which already re-exported the service. Nothing was broken; the point is that the next change to the rule (allow spaces, cap the length) would have had to find all 8 by hand, and a missed one makes two export surfaces disagree — the same failure the shared import flow exists to prevent.
+
+**13D — Release notes, update notice, feature tour. Shipped 2026-07-30/31.**
+
+Not in the original 13 plan. It came out of asking how anyone who *isn't* in the Discord finds out what changed — the walkthroughs written for each pass only ever reached people already following the project.
+
+- **The changelog became release notes rather than a development log.** It is rendered in-app twice (the lander's *What's new* panel and the update notice), so it is written for users. One section per public release, not per phase or per working day; entries describe the delta from the last *released* version. Two rules follow, and both cut real entries: **if a user could not have experienced the old behaviour, there is no entry** (the pull tab never shipped in an earlier form, so "moved the pull tab" is not a fix — it's part of one new feature), and **iterations collapse** (three passes on one control across a release is one entry). Technical changes are siloed under `Under the hood`, which `services/release-notes.js` filters out of the in-app notice. The rules live in `CLAUDE.md`; the reasoning stays here so the two don't drift.
+- **Dated work-day sections were not releases.** The 07-28 and 07-29 sections were merged into `## 0.9.0 — 2026-07-30`. This was not tidying: the notice stores the heading text as the identifier of what a user has seen, so with two sections a returning user would have been shown one and silently skipped the other.
+- **0.9.0, not 1.0.** The builder has never had a formal release. 1.0 is reserved for the site integration, so the current state is deliberately pre-release. `package.json` is the source; `vite.config.js` injects it as `__APP_VERSION__` and `constants/version.js` exports it, so the footer and the notice cannot disagree about which build is running.
+- **Annotated screenshots, not a tour engine.** A live tour driving the real UI would have to open menus, cope with targets that don't exist until something is open, and handle the window moving underneath it. Screenshots have none of those failure modes and a 0.9.0 image stays correct for 0.9.0 forever — staleness becomes an archive rather than a bug. `verify/screenshots.mjs` drives the real app to generate them; `constants/tour-steps.js` is the single source for the generator and the tour both.
+- **The notice must read the lorebook index from storage, not the store.** The store hydrates after first render, so a returning user looked like a first-time user for one frame and got silently seeded as "already seen" — the notice then never appeared for exactly the people it exists for.
+- **Words are HTML, never painted into the image.** The first version baked a legend into each PNG. Pinned to the window's bottom edge it covered whatever the shot was about whenever that sat low, and it vanished the moment anyone enlarged the image — so a readable screenshot and its explanation could never be on screen together. Text baked into a PNG also ignores the text-size setting, can't be selected, and is invisible to a screen reader.
+- **Badge numbering needs exactly one authority.** The generator sorted marks into reading order and numbered *that*, while the tour numbered the array it renders; every badge on a step pointed at a different label than its number. The array is now the only authority and the generator lints the result against geometry. **This is the general shape of the bug: two consumers deriving the same ordering independently.** The fix is never to make both sorts agree — it's to make one of them stop sorting.
+- **Captures were never of the builder's default size.** Bootstrap sizes a first-run window from the viewport (two thirds of its width, its full height), so every shot was of a shape no user's default looks like — and the extra height is what made the images unreadable in the tour. Scenes pick the Medium preset through the real UI, so the captures track the default if it changes.
+- Full detail on the generator — corner placement, collision scoring, cropping, per-scene storage reset — is in `screenshots/README.md`.
+
+**The long-form walkthrough became `announcements/0.9.0-ui-overhaul.md`.** It was drafted as a Discord post and kept being treated as documentation, which is what made it rot: docs get maintained, announcements get published and then become history. Moving it out of `docs/` says which it is. It now embeds the six generated screenshots with the same numbered labels the tour renders, and it got the same content pass the changelog did — the passages describing states no released build ever had (the second-click fix, the typeable custom-size boxes, the popover direction) are gone, and the claim that the book list is alphabetical was corrected. The three slots the generator has no scene for were dropped rather than left as placeholders.
+
+---
+
+**Verify note.** `MenuPanel` keeps all three of its sections mounted (`display: none`) so panel state survives a tab switch — which means the side panel's import flow is in the DOM *at all times*. An unscoped `.drop-zone` or `.import-flow-*` locator therefore reaches into whichever surface comes first in the DOM. The parity scenario scopes every locator to one surface; the first draft did not, and was silently measuring the wrong one. **Scope to a surface whenever more than one can render the same component.**
+
+---
+
+**13B — Settings reorganisation. Shipped 2026-07-28.**
+
+Final grouping (six sections → four), by *what you are changing*:
+
+| Section | Contents |
+|---|---|
+| **Editing & Entries** | writing aids · counters · entry badges · entry history |
+| **Appearance & Accessibility** | theme + custom colors · accessibility · funny fish |
+| **Layout & Controls** | keyboard shortcuts · hotbar · FAB menu · folders · reference panel · menus |
+| **System** | browser storage limit |
+
+Decisions taken during the build:
+
+- **Keyboard shortcuts left Accessibility for the top of Layout & Controls**, beside the other input surfaces. This reverses 10D's placement. `KeyboardHelpOverlay`'s deep-link travels with them (`openSettingsSection('controls')`) — that link, not browsing, is how keyboard users actually reach the editor. The section name was the sticking point, not the section: "Advanced" and "Miscellaneous" are both names nobody searches, which is why System ended up holding one setting rather than absorbing shortcuts to justify itself.
+- **Entry history dropped to the foot of its section.** Tallest block in Settings and a set-once, per-book opt-in — leading with it was the clearest inversion of the ordering principle.
+- **Condensed-row stats moved to Editing & Entries**, filed as an entry-badge setting that merely happens to apply inside folders.
+- **Every section starts collapsed.** Opening Settings shows four headings, so the panel reads as a menu you choose from.
+- **The filter box matches a keyword index, not visible labels** (`constants/settings-search.js`). "hotkey" has to find Keyboard shortcuts and "dark mode" the theme picker, which label text alone cannot do. The index lives in constants because two callers need it — the group deciding whether to render, and the section deciding whether to render at all. Terms are ANDed so extra words narrow. Sections force open while filtering; dividers hide, since the runs they label are no longer intact. `ThemeSettings` / `AccessibilitySettings` are wrapped as groups so they filter individually rather than travelling together.
+- **The box is sticky.** The keybinding table alone is taller than the panel, so a filter that scrolled away would vanish exactly when it is most needed.
+
+**Verify note.** Section titles are load-bearing — all eight `openSettingsSection` call sites moved. Two existing scenarios failed *correctly* and were fixed rather than adjusted around: one relied on Editing & Entries being open by default, and one was aimed at the wrong new section by a blanket `Folders` → `Layout & Controls` rename (condensed-row stats went to Editing & Entries instead). A blanket rename across a re-home needs checking per call site, not per string.
+
+---
+
+**Original diagnosis (2026-07-27), kept for context.**
 
 **Raised 2026-07-27 from user testing.** Settings has accreted section by section as features landed, and options are now in places that make sense only historically. Finding a given setting means guessing which section it grew up in rather than which one it belongs to.
 
@@ -130,6 +253,17 @@ Concrete examples of the drift:
 - Density and sizing controls are split across three sections (*Editing & Entries*, *Window & Layout*, *Appearance*) with no obvious rule for which lands where.
 
 Worth doing as a deliberate pass rather than incrementally: decide the grouping principle first (by *what you are changing* — content, layout, appearance, behaviour — rather than by which feature introduced it), then move everything at once. `pendingSettingsSection` deep-links and the `openSettingsSection` verify helper both key off section titles, so a rename or re-home has to update those together. Purely a re-organisation — no setting should change meaning or default.
+
+**Target shape (2026-07-28): six sections down to four**, grouped by what you're changing rather than by which feature introduced it.
+
+1. **Editing & Entries** — suggestions default, thesaurus, tiered counters + thresholds, stats badges, private markers, entry history. History moves to the *bottom* of the section: it's the tallest block in Settings and a per-book opt-in a user sets once, so leading with it is the clearest inversion of the ordering principle.
+2. **Appearance & Accessibility** — theme + custom colors, text size, reduce motion, high contrast, funny fish. The word "Accessibility" stays in the title deliberately; folding it silently under "Appearance" would be a real discoverability regression for the people who search for that word.
+3. **Layout & Controls** — window defaults, hotbar slots, FAB quick menu, folder collapse stages, condensed-row stats, keep-menu-open-after-import, reference panel + swap mode, legacy-menus toggle.
+4. **Advanced** — keyboard shortcuts, browser storage limit.
+
+Plus **sub-dividers within sections** (thin "History" / "Counters" labels) so ordering has a visible logic rather than an implied one, and a **filter box** at the top of the panel — the highest-value addition to a panel this dense, since it makes "which section is it in?" stop mattering. A filter match must force its section open, or it surfaces nothing.
+
+**Migration surface:** section titles are load-bearing. `verify/driver.mjs:128`'s `openSettingsSection(page, title)` matches on title text, with call sites in `verify/checks.mjs` for `Folders`, `Editing & Entries`, and `Reference & Crosstalk`, plus `verify/screenshots.mjs`. `pendingSettingsSection` deep-links by section id and `KeyboardHelpOverlay.jsx:23` hardcodes `'accessibility'`. All of it moves in the same commit or the suite goes red.
 
 ### Phase 12 — Entry Templates (GitHub #114)
 
