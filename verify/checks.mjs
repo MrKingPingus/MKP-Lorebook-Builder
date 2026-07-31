@@ -1932,6 +1932,11 @@ const SCENARIOS = [
     // text are what actually carry the step.
     check('the step has real caption text',
       (await page.locator('.tour-body').innerText()).length > 40, true);
+    // The numbered labels are HTML, not painted into the PNG. Baked in they
+    // covered whatever sat low in the window — the sizing menu, for one — and
+    // they vanished on enlarging, taking the explanation with them.
+    check('the numbered labels are real text, not part of the image',
+      (await page.locator('.tour-marks li').count()) > 0, true);
     check('and the image has alt text',
       ((await page.locator('.tour-shot img').getAttribute('alt')) ?? '').length > 20, true);
 
@@ -1968,6 +1973,20 @@ const SCENARIOS = [
       };
     });
     check('the enlarged image is not clipped at the top', zoom.topVisible, true);
+
+    // Enlarging is what makes the screenshot readable, so the explanation has
+    // to come with it — and must not sit on top of the thing it describes.
+    check('the notes stay visible while enlarged',
+      (await page.locator('.tour-zoom-aside .tour-marks li').count()) > 0, true);
+    check('and the caption comes too',
+      (await page.locator('.tour-zoom-aside .tour-body').innerText()).length > 40, true);
+    const overlap = await page.evaluate(() => {
+      const box = document.querySelector('.tour-zoom');
+      const i = box.querySelector('img').getBoundingClientRect();
+      const a = box.querySelector('.tour-zoom-aside').getBoundingClientRect();
+      return !(a.left >= i.right - 1 || a.right <= i.left + 1);
+    });
+    check('the notes do not overlap the screenshot', overlap, false);
     check('and fits the viewport rather than needing a scroll', zoom.fits, true);
     check('it actually rendered', zoom.wider, true);
     // Escape backs out of the enlargement first, so zooming in doesn't cost you

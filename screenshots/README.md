@@ -35,10 +35,26 @@ whole image stays sharp at 2× device scale.
 2× is deliberate: the tour displays them scaled down, but clicking a shot
 enlarges it, and that is where the extra detail is spent.
 
+**Only the badges are drawn into the image.** The labels live in
+`TOUR_STEPS[].marks` and are rendered as HTML by the tour. Painted into the PNG,
+the legend was pinned to the window's bottom edge — so it covered whatever the
+shot was about whenever that sat low (the sizing menu, for one), and it
+disappeared the moment anyone enlarged the image, taking the explanation with
+it. As HTML it sits outside the image, survives enlarging, scales with the
+text-size setting, and can be read by a screen reader.
+
 Badges are numbered in **reading order** — top to bottom, left to right within
-a row — not in the order the marks happen to be listed in the script, and the
-legend is emitted in that same order. Numbering by source order produced images
-whose badges ran 3, 2, 1 down the page while the legend counted up.
+a row — not in the order the marks are listed. Numbering by source order
+produced images whose badges ran 3, 2, 1 down the page while the list counted
+up. The tour renders its list in the same array order, so keep marks listed in
+reading order.
+
+**The window is pinned to its default size before every capture.** Bootstrap
+sizes a first-run window from the viewport (two thirds of its width, its full
+height), so captures were of a window no user's default looks like — and the
+extra height is what made them too tall to read in the tour. `useDefaultWindow`
+picks the Medium preset through the real UI, so the shots track the default if
+it changes.
 
 The capture clip unions the app window, any portalled menu, *and* every badge
 and ring, since annotations sit outside their targets by design and would

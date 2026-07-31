@@ -7570,11 +7570,42 @@ kbd {
 }
 .tour-shot:hover .tour-zoom-hint { opacity: 1; }
 
+/* The caption and the numbered labels. Both are real text rather than being
+   painted into the screenshot, so they survive enlarging, scale with the
+   text-size setting, and can be read by a screen reader. */
+.tour-notes { margin: 14px 18px 0; flex-shrink: 0; }
+.tour-marks {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 5px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--muted2);
+}
+.tour-marks li { display: flex; align-items: flex-start; gap: 8px; }
+/* Same pink as the badges painted on the shot, so a number in the list and a
+   number on the image read as the same thing. */
+.tour-mark-num {
+  flex-shrink: 0;
+  width: 17px; height: 17px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #ff5c8a;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* The caption carries the step — the image only supports it — but as plain
    text under a large screenshot it was being skipped entirely. Given a panel of
    its own with an accent edge so the eye lands on it. */
 .tour-body {
-  margin: 14px 18px 0;
+  margin: 0;
   padding: 11px 14px;
   background: var(--surface3);
   border: 1px solid var(--border2);
@@ -7642,6 +7673,35 @@ kbd {
   cursor: zoom-out;
   overflow: auto;
   overscroll-behavior: contain;
+  gap: 20px;
+  align-items: flex-start;
+}
+/* Image and notes side by side: a bar across the bottom would cover the shot,
+   which is exactly the problem the baked-in legend had. Wraps below on a narrow
+   screen. */
+.tour-zoom-figure { margin: auto; flex: 0 1 auto; min-width: 0; }
+.tour-zoom-aside {
+  flex: 0 0 300px;
+  position: sticky;
+  top: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  cursor: default;
+}
+.tour-zoom-aside-title {
+  margin: 0 0 10px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.tour-notes--aside { margin: 0; }
+@media (max-width: 1100px) {
+  .tour-zoom { flex-wrap: wrap; }
+  .tour-zoom-aside { flex: 1 1 100%; position: static; }
 }
 /* Capped to the viewport in both axes: the inline `width` is the builder's true
    size, and this only bites when the screen can't fit that. Better to show a
@@ -7661,15 +7721,10 @@ kbd {
   flex-shrink: 0;
 }
 .tour-zoom-close {
-  position: fixed;
-  bottom: 18px; left: 50%;
-  z-index: 1;
-  transform: translateX(-50%);
-  padding: 5px 12px;
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.7);
-  color: var(--muted2);
+  margin: 12px 0 0;
+  color: var(--muted);
   font-size: 0.6875rem;
+  line-height: 1.4;
 }
 
 /* Re-entry to the feature tour from the lander, so dismissing the update

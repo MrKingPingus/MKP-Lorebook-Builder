@@ -21,6 +21,27 @@ function imageUrl(file) {
   return `${import.meta.env.BASE_URL}screenshots/${TOUR_RELEASE}/${file}`;
 }
 
+// The caption and the numbered labels, as real text. Rendered in both the panel
+// and the enlarged view — the explanation used to be painted into the image, so
+// enlarging in order to read the screenshot took the words away with it.
+function StepNotes({ step, className = '' }) {
+  return (
+    <div className={`tour-notes ${className}`.trim()}>
+      <p className="tour-body">{step.body}</p>
+      {step.marks?.length > 0 && (
+        <ol className="tour-marks">
+          {step.marks.map((m, i) => (
+            <li key={i}>
+              <span className="tour-mark-num" aria-hidden="true">{i + 1}</span>
+              {m.label}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export function FeatureTour({ onClose }) {
   const [index, setIndex]    = useState(0);
   const [zoomed, setZoomed]  = useState(false);
@@ -117,7 +138,7 @@ export function FeatureTour({ onClose }) {
           <span className="tour-zoom-hint" aria-hidden="true">Click to enlarge</span>
         </button>
 
-        <p className="tour-body">{step.body}</p>
+        <StepNotes step={step} />
 
         <div className="tour-actions">
           <div className="tour-dots" role="tablist" aria-label="Steps">
@@ -159,18 +180,26 @@ export function FeatureTour({ onClose }) {
           role="dialog"
           aria-label={`${step.title} — enlarged`}
         >
-          <img
-            src={imageUrl(step.file)}
-            alt={step.alt}
-            style={naturalWidth ? { width: naturalWidth / TOUR_CAPTURE_SCALE } : undefined}
-            onLoad={(e) => {
-              const box = zoomRef.current;
-              setZoomOverflows(Boolean(box) && e.currentTarget.height > box.clientHeight);
-            }}
-          />
-          <span className="tour-zoom-close">
-            {zoomOverflows ? 'Scroll to see the rest · click to close' : 'Click anywhere to close'}
-          </span>
+          <div className="tour-zoom-figure">
+            <img
+              src={imageUrl(step.file)}
+              alt={step.alt}
+              style={naturalWidth ? { width: naturalWidth / TOUR_CAPTURE_SCALE } : undefined}
+              onLoad={(e) => {
+                const box = zoomRef.current;
+                setZoomOverflows(Boolean(box) && e.currentTarget.height > box.clientHeight);
+              }}
+            />
+          </div>
+          {/* Stops click-to-close firing when someone clicks into the notes to
+              read or select them. */}
+          <aside className="tour-zoom-aside" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="tour-zoom-aside-title">{step.title}</h3>
+            <StepNotes step={step} className="tour-notes--aside" />
+            <p className="tour-zoom-close">
+              {zoomOverflows ? 'Scroll to see the rest · click the image to close' : 'Click the image to close'}
+            </p>
+          </aside>
         </div>
       )}
     </div>

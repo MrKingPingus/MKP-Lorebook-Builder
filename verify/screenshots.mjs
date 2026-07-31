@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import {
   launch, openBuilderWithFixture, enterSelectMode, selectCards, settle,
   openSettings, openSettingsSection, importBookAsNew, openScaleMenu,
-  VARIANT_FIXTURE, FIXTURE,
+  setScaleOption, closeScaleMenu, VARIANT_FIXTURE, FIXTURE,
 } from './driver.mjs';
 import { TOUR_RELEASE, TOUR_STEPS, TOUR_CAPTURE_SCALE } from '../src/constants/tour-steps.js';
 
@@ -25,9 +25,14 @@ const SCALE = TOUR_CAPTURE_SCALE;
 // ── annotation layer ────────────────────────────────────────────────────────
 // `marks` is [{ selector, label, place }]; place is where the badge sits
 // relative to the target ('left' | 'right'). Badges are numbered in order and
-// the labels are listed in a legend strip along the bottom.
-async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
-  const missed = await page.evaluate(({ marks, title, legendOffset }) => {
+// Badges only — no legend strip. The labels are rendered as real HTML by the
+// tour (from the same TOUR_STEPS entry), which keeps them out of the image
+// entirely. Painted in, a legend pinned to the window's bottom edge covered
+// whatever the shot was about whenever that sat low — the sizing menu, for one —
+// and it disappeared the moment someone enlarged the image, taking the
+// explanation with it.
+async function annotate(page, marks) {
+  const missed = await page.evaluate(({ marks }) => {
     document.querySelectorAll('.shot-anno').forEach((n) => n.remove());
 
     const layer = document.createElement('div');
@@ -38,7 +43,6 @@ async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
     });
 
     const ACCENT = '#ff5c8a';
-    const legendRows = [];
     const missed = [];
 
     // Resolve every mark to a rect and a badge position FIRST, then number them
@@ -103,43 +107,11 @@ async function annotate(page, marks, { title, legendOffset = 14 } = {}) {
         boxShadow: '0 2px 6px rgba(0,0,0,0.45)',
       });
       layer.appendChild(badge);
-      legendRows.push(`${n}. ${m.label}`);
     });
 
-    // Legend strip across the bottom of the window.
-    const win = document.querySelector('.floating-window');
-    const wr = win ? win.getBoundingClientRect() : { left: 40, right: innerWidth - 40, bottom: innerHeight - 40 };
-    const legend = document.createElement('div');
-    legend.className = 'shot-legend';
-    Object.assign(legend.style, {
-      position: 'fixed',
-      left: `${wr.left + 14}px`, width: `${wr.right - wr.left - 28}px`,
-      bottom: `${innerHeight - wr.bottom + legendOffset}px`,
-      // Fully opaque: at 94% the entry rows behind it bled through and made the
-      // legend hard to read.
-      background: '#0f1015', color: '#e8e9ee',
-      border: '1px solid rgba(255,255,255,0.10)', borderRadius: '10px',
-      padding: '10px 14px', boxSizing: 'border-box',
-      display: 'flex', flexDirection: 'column', gap: '3px',
-      font: '500 12.5px ui-sans-serif, system-ui, -apple-system, sans-serif',
-      lineHeight: '1.45',
-    });
-    if (title) {
-      const h = document.createElement('div');
-      h.textContent = title;
-      Object.assign(h.style, { fontWeight: '700', fontSize: '13px', marginBottom: '2px', color: '#fff' });
-      legend.appendChild(h);
-    }
-    for (const row of legendRows) {
-      const d = document.createElement('div');
-      d.textContent = row;
-      Object.assign(d.style, { color: '#c7c9d4' });
-      legend.appendChild(d);
-    }
-    layer.appendChild(legend);
     document.body.appendChild(layer);
     return missed;
-  }, { marks, title, legendOffset });
+  }, { marks });
   for (const sel of missed) console.log(`  !! no match for ${sel} — annotation dropped`);
   await page.waitForTimeout(120);
 }
@@ -155,7 +127,7 @@ async function expect(page, selector, what) {
   }
 }
 
-// Capture the app window plus the legend beneath it, with a little margin.
+// Capture the app window and anything overhanging it, with a little margin.
 async function shot(page, name) {
   const box = await page.evaluate(() => {
     const win = document.querySelector('.floating-window').getBoundingClientRect();
@@ -230,88 +202,69 @@ async function scene(page) {
 // it writes is that step's `file`. A step with no scene here, or a scene whose
 // id isn't in the list, is reported rather than silently skipped — a tour with
 // a missing image is worse than one with a missing step.
+// Pin the window to its documented default before capturing.
+//
+// Bootstrap sizes a first-run window from the viewport — two thirds of its
+// width, and its full height — so on the generator's 1500x1050 canvas the app
+// came out 1000x1150. Every shot was therefore of a window no user's default
+// looks like, and the extra 250px of height was what made the images too tall
+// to read in the tour. Choosing the preset drives the real UI, so the captures
+// track the default if it ever changes.
+async function useDefaultWindow(page) {
+  await openScaleMenu(page);
+  await setScaleOption(page, 'Window size', 'Medium');
+  await closeScaleMenu(page);
+  await settle(page, 400);
+}
+
 const SCENES = {
   'title-menu': async (page) => {
     await openBuilderWithFixture(page);
     await importBookAsNew(page, VARIANT_FIXTURE);
-    await settle(page, 400);
+    await useDefaultWindow(page);
     await page.locator('.title-field').click();
     await page.locator('.title-menu').waitFor({ timeout: 4000 });
     await settle(page, 350);
-    await annotate(page, [
-      { selector: '.title-menu .tm-book--active', label: 'Every lorebook you have saved — most recent first' },
-      { selector: '.title-menu .tm-sort-btn', nth: 1, label: 'Switch to A–Z if you would rather find them by name', place: 'right' },
-      { selector: '.title-menu .tm-new', label: 'Start a new lorebook' },
-      { selector: '.title-menu .drop-zone', label: 'Drop a file here to import, or click to browse', place: 'right' },
-      { selector: '.title-menu .tm-btn-row', label: 'Download this book as JSON, TXT or DOCX', place: 'right' },
-    ], { title: 'Your lorebooks live in the title' });
   },
 
   import: async (page) => {
     await openBuilderWithFixture(page);
-    await settle(page, 300);
+    await useDefaultWindow(page);
     await page.locator('.title-field').click();
     await page.locator('.title-menu').waitFor({ timeout: 4000 });
     await page.locator('.title-menu .drop-zone input[type="file"]').setInputFiles(VARIANT_FIXTURE);
     await expect(page, '.import-flow-grid', 'import disposition step');
     await settle(page, 400);
-    await annotate(page, [
-      { selector: '.import-flow-title', label: 'The file you picked, and how many entries it holds' },
-      { selector: '.import-flow-opt', nth: 0, label: 'Import as new — your current book is untouched', place: 'right' },
-      { selector: '.import-flow-opt', nth: 2, label: 'Replace overwrites what is there now', place: 'right' },
-      { selector: '.import-flow-opt', nth: 3, label: 'Back up first downloads a copy, then replaces', place: 'right' },
-      { selector: '.tm-rail-back', label: 'Back to your lorebooks' },
-    ], { title: 'Importing asks what you want' });
   },
 
   'status-bar': async (page) => {
     await openBuilderWithFixture(page);
-    await settle(page, 400);
-    await annotate(page, [
-      { selector: '.status-save', label: 'Whether your work is saved, and how long ago' },
-      { selector: '.status-count', label: 'How many entries this lorebook holds' },
-      { selector: '.status-version', label: 'Which build you are running — quote this in a bug report' },
-      { selector: '.status-right .storage-usage-ring', label: 'Browser storage in use; click for a breakdown' },
-      { selector: '.status-item', label: 'Every size setting lives here' },
-    ], { title: 'The bar along the bottom', legendOffset: 96 });
+    await useDefaultWindow(page);
   },
 
   'size-menu': async (page) => {
     await openBuilderWithFixture(page);
-    await settle(page, 300);
+    await useDefaultWindow(page);
     await openScaleMenu(page);
     await page.locator('.scale-row[aria-haspopup]').first().hover();
     await expect(page, '.scale-flyout', 'size submenu');
     await settle(page, 400);
-    await annotate(page, [
-      { selector: '.scale-flyout', label: 'Named presets, or Custom… to type exact numbers', place: 'right' },
-      { selector: '.scale-menu', label: 'Each row shows its current value without opening anything', place: 'left' },
-    ], { title: 'One place for every size', legendOffset: 96 });
   },
 
   settings: async (page) => {
     await openBuilderWithFixture(page);
+    await useDefaultWindow(page);
     await openSettings(page);
     await settle(page, 400);
-    await annotate(page, [
-      { selector: '.settings-search-input', label: 'Finds a control even if you do not know its exact name', place: 'left' },
-      { selector: '.settings-section-title', nth: 0, label: 'What happens as you write', place: 'left' },
-      { selector: '.settings-section-title', nth: 2, label: 'How you drive the app — shortcuts, hotbar, folders', place: 'left' },
-    ], { title: 'Settings is four sections now' });
   },
 
   'pull-tab': async (page) => {
     await openBuilderWithFixture(page);
     await importBookAsNew(page, VARIANT_FIXTURE);
-    await settle(page, 300);
+    await useDefaultWindow(page);
     await page.locator('.lorebook-tab').click();
     await expect(page, '.menu-panel .switcher-list', 'lorebook side panel');
     await settle(page, 600);
-    await annotate(page, [
-      { selector: '.lorebook-tab', label: 'Click the tab to open and close the panel', place: 'right' },
-      { selector: '.menu-panel .switcher-list', label: 'Your lorebooks, beside your entries rather than over them', place: 'left' },
-      { selector: '.entry-card', nth: 0, label: 'The entry list keeps its width — the window grew instead', place: 'left' },
-    ], { title: 'The pull tab on the right edge' });
   },
 };
 
@@ -323,12 +276,13 @@ async function main() {
   for (const id of missingScene) console.log(`!! tour step "${id}" has no scene — no image will be written`);
   for (const id of orphanScene)  console.log(`!! scene "${id}" is not in TOUR_STEPS — its image is unused`);
 
-  const { browser, page } = await launch({ width: 1500, height: 1150, deviceScaleFactor: SCALE });
+  const { browser, page } = await launch({ width: 1500, height: 1050, deviceScaleFactor: SCALE });
 
   for (const step of TOUR_STEPS) {
     const build = SCENES[step.id];
     if (!build) continue;
     await build(page);
+    await annotate(page, step.marks ?? []);
     await shot(page, step.file.replace(/\.png$/, ''));
   }
 
