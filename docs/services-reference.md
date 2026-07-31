@@ -11,6 +11,8 @@ Plain JS modules in `src/services/` — no React imports.
 | `drag-drop.js` | Drop resolution — turns "these ids were dropped here" into the next `entries[]` (and `folders[]` for a folder drag). The drop position implies the parent, so order and `folderId` are written together. Pure |
 | `selection-range.js` | Modifier+click gesture table — resolves a click into add/remove plus the ids it applies to (`rangeBetween`, `resolveSelectionClick`). Pure; no store access |
 | `lorebook-index.js` | Builds/maintains the lorebook index |
+| `export-filename.js` | Turns a lorebook name into a safe download filename. Extracted from the export paths; several call sites still carry their own copy of the same sanitiser |
+| `release-notes.js` | Parses `CHANGELOG.md` into releases (`parseReleases`, `latestRelease`), strips the `Under the hood` section for the in-app notice (`userFacingBlocks`), and decides whether the update notice is due (`shouldShowUpdateNotice`) |
 | `suggestion-engine.js` | Generates trigger/keyword suggestions |
 | `scan-service.js` | Generic lorebook scanner for trigger crosstalk and duplicate detection |
 | `entry-health.js` | Evaluates entry health (empty fields, limit warnings) |

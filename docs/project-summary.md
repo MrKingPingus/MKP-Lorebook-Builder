@@ -58,7 +58,7 @@ src/
   constants/   — shared values (entry types, limits, defaults, storage keys)
 ```
 
-## Current Features (through Phase 7 + Polish Passes)
+## Current Features (through Phase 13)
 
 - Create, edit, delete, reorder entries with drag-and-drop
 - 5 entry types with color-coded cards
@@ -71,7 +71,7 @@ src/
 - Group entries by type
 - Collapse/expand all entries
 - Undo/redo (50-step history)
-- Multi-lorebook support (up to 10)
+- Multi-lorebook support (up to 50), reachable from the title menu or the right-edge pull tab
 - Import/export in JSON, TXT, DOCX, and ZIP formats
 - Import preview before confirming
 - Append import (merge entries into existing lorebook)
@@ -84,18 +84,25 @@ src/
 - Mobile responsive
 - Persistent window size and position
 
-## What's Next (Phase 8 — Entry Enhancements)
+Added since Phase 8:
 
-Remaining work in Phase 8:
-- Comparison Panel (side-by-side entry view)
-- Entry duplicate detection and merge
-- Entry splitting (break long entries into two)
+- Folders — nested, collapsible, colour-coded, with drag-and-drop filing, folder filtering and modifier+click selection macros (Phase 11). Builder-only: never exported
+- Trigger crosstalk — a second lorebook loaded as a read-only reference, with cross-book trigger collision detection (Phase 9)
+- Themes and accessibility settings, export control, entry health, thesaurus lookup, customisable keybindings (Phase 10)
+- A status bar along the bottom: save state, entry count, storage use, build version, feedback links, and one `⤢ Size` menu holding window size, text size, entry height and FAB size (Phase 13A)
+- Settings regrouped from six sections into four, by what you're changing rather than which feature introduced the setting, with a filter box (Phase 13B)
+- The lorebook title as a menu — saved books on the left, import/export on the right; double-click to rename. One shared import flow behind all three import surfaces (Phase 13C)
+- Release notes rendered in-app: a *What's new* panel on the lander and a once-per-release update notice, plus a click-through tour of annotated screenshots (Phase 13D)
+
+## What's Next
+
+`docs/plan.md` is the authority on phase status — check it rather than this file when it matters. As of 2026-07-31 Phase 13 is complete and **Phase 12 (Entry Templates)** is the queued next phase, with its design decisions already locked. A bespoke mobile UI pass and a mobile density pass are both deferred but planned.
 
 ## Known Limitations
 
 - All data is in localStorage — clearing browser data deletes everything
 - No cloud sync, no accounts, no collaboration
-- Max 10 lorebooks
+- Max 50 lorebooks
 - 1500 character soft limit per entry description
 - 25 trigger keyword soft limit per entry
 

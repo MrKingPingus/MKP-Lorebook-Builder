@@ -27,7 +27,7 @@ All planned phases through **Phase 10** have shipped (see **Completed** below). 
 
 ## Upcoming Phases
 
-Pre-planned but not yet started (unlike Future Features, these have locked design decisions and are queued to build). Both came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
+Phases with locked design decisions, as opposed to Future Features which are still ideas. Some have since shipped and stay here with their decisions intact — status is marked inline on each phase's sub-phase line, not by which section it sits in. As of 2026-07-31: **11 complete**, **12 not started**, **13 complete**. Both came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
 
 ### Phase 11 — Custom Categories / Folders (GitHub #116)
 
@@ -140,7 +140,7 @@ Still open: there is no "after this folder" band, so ordering is expressed purel
 13. **The hamburger becomes a gear whose icon follows the mode** — gear (straight to Settings, no intermediate dropdown) in the new system, hamburger in legacy, since a gear opening a three-item menu would be lying.
 14. **Verify routes through the new UI by default**, plus one scenario that flips the legacy setting and confirms the old panels still open. Cheap insurance for a path we've promised not to break but would otherwise never exercise.
 
-**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu~~ **shipped 2026-07-28** · ~~13B settings reorg~~ **shipped 2026-07-28** · ~~13C title field + dual dropdown + import takeover + gear~~ **shipped 2026-07-29**.
+**Sub-phases, sequenced so nothing is built twice:** ~~13A footer shell + scaling menu~~ **shipped 2026-07-28** · ~~13B settings reorg~~ **shipped 2026-07-28** · ~~13C title field + dual dropdown + import takeover + gear~~ **shipped 2026-07-29** · ~~13D release notes + update notice + feature tour~~ **shipped 2026-07-31** (added mid-phase; not in the original plan).
 
 **13A notes (shipped 2026-07-28).** `StatusFooter.jsx` (layout) + `ScaleMenu.jsx` (feature), `use-window-scale.js`, `use-save-status.js`, `constants/scaling.js`. Three things the build settled that the plan had guessed at:
 
@@ -177,7 +177,7 @@ Landed in four passes: title field + dual dropdown · gear + header declutter ·
 
 Decisions and findings from the build:
 
-- **The book list is alphabetical, not recency-ordered.** `promoteInIndex` (`use-lorebook.js`) moves the active book to the front of the stored index on every switch, so a recency list would reshuffle itself under the cursor the moment it was used — you'd never find the same book in the same place twice. This is the same store behaviour that killed the `< >` arrows at planning time.
+- **The book list is recency-ordered by default, with an A–Z toggle.** ~~Alphabetical, not recency-ordered.~~ **Reversed on user feedback, 2026-07-30.** The original argument was that `promoteInIndex` (`use-lorebook.js`) moves the active book to the front of the stored index on every switch, so a recency list would reshuffle under the cursor — the same store behaviour that killed the `< >` arrows at planning time. Two things were wrong with it. The reshuffle is invisible where it was supposed to bite: the title menu *closes* when you switch books, so the list is rebuilt on next open rather than moving while you look at it. And it optimised for the wrong task — people return to what they were just working on far more often than they hunt for a name they already know. Order is snapshotted on open (`use-sorted-lorebooks.js`) so it cannot move mid-interaction under either mode, and `settings-store.lorebookSort` is read by every list of books so the title menu and the side panel can't disagree. **The lesson worth keeping: "the data reorders itself" is an argument about a *visible* reshuffle, and it only lands if the surface stays open across the reorder.**
 - **Rename moved from an always-live input to double-click.** An input that is permanently focusable makes a poor menu button, and a name you can edit by accident is worse than one you edit deliberately. It's covered by a check so it can't quietly rot.
 - **The header's Switch button is gone** — the title field does that job. `LorebookSwitchPopover` stays; the crosstalk role bar still uses it.
 - **Open/close orchestration lives in `WindowHeader`, not `TitleMenu`**, mirroring how `StatusFooter` owns it for the sizing menu. Hover/pin/outside-click/resize all sit beside the trigger, and the menu only renders and asks to close.
@@ -195,6 +195,24 @@ Decisions and findings from the build:
 - **Back from the preview keeps the parse.** Changing your mind about a disposition shouldn't cost re-picking the file.
 - **"Replace with 29 entries", not "Replace 29 entries"** — the latter reads as though 29 are being deleted. The count is always what's arriving.
 - `use-append-import.js` deleted (sole consumer was the overlay). `DropZone` gained an optional `inputRef` so the Import hotkey can click the hidden input directly. The export-filename sanitiser moved to `services/export-filename.js`; **it is still copy-pasted in five other call sites** and converting them is an open cheap cleanup.
+
+**13D — Release notes, update notice, feature tour. Shipped 2026-07-30/31.**
+
+Not in the original 13 plan. It came out of asking how anyone who *isn't* in the Discord finds out what changed — the walkthroughs written for each pass only ever reached people already following the project.
+
+- **The changelog became release notes rather than a development log.** It is rendered in-app twice (the lander's *What's new* panel and the update notice), so it is written for users. One section per public release, not per phase or per working day; entries describe the delta from the last *released* version. Two rules follow, and both cut real entries: **if a user could not have experienced the old behaviour, there is no entry** (the pull tab never shipped in an earlier form, so "moved the pull tab" is not a fix — it's part of one new feature), and **iterations collapse** (three passes on one control across a release is one entry). Technical changes are siloed under `Under the hood`, which `services/release-notes.js` filters out of the in-app notice. The rules live in `CLAUDE.md`; the reasoning stays here so the two don't drift.
+- **Dated work-day sections were not releases.** The 07-28 and 07-29 sections were merged into `## 0.9.0 — 2026-07-30`. This was not tidying: the notice stores the heading text as the identifier of what a user has seen, so with two sections a returning user would have been shown one and silently skipped the other.
+- **0.9.0, not 1.0.** The builder has never had a formal release. 1.0 is reserved for the site integration, so the current state is deliberately pre-release. `package.json` is the source; `vite.config.js` injects it as `__APP_VERSION__` and `constants/version.js` exports it, so the footer and the notice cannot disagree about which build is running.
+- **Annotated screenshots, not a tour engine.** A live tour driving the real UI would have to open menus, cope with targets that don't exist until something is open, and handle the window moving underneath it. Screenshots have none of those failure modes and a 0.9.0 image stays correct for 0.9.0 forever — staleness becomes an archive rather than a bug. `verify/screenshots.mjs` drives the real app to generate them; `constants/tour-steps.js` is the single source for the generator and the tour both.
+- **The notice must read the lorebook index from storage, not the store.** The store hydrates after first render, so a returning user looked like a first-time user for one frame and got silently seeded as "already seen" — the notice then never appeared for exactly the people it exists for.
+- **Words are HTML, never painted into the image.** The first version baked a legend into each PNG. Pinned to the window's bottom edge it covered whatever the shot was about whenever that sat low, and it vanished the moment anyone enlarged the image — so a readable screenshot and its explanation could never be on screen together. Text baked into a PNG also ignores the text-size setting, can't be selected, and is invisible to a screen reader.
+- **Badge numbering needs exactly one authority.** The generator sorted marks into reading order and numbered *that*, while the tour numbered the array it renders; every badge on a step pointed at a different label than its number. The array is now the only authority and the generator lints the result against geometry. **This is the general shape of the bug: two consumers deriving the same ordering independently.** The fix is never to make both sorts agree — it's to make one of them stop sorting.
+- **Captures were never of the builder's default size.** Bootstrap sizes a first-run window from the viewport (two thirds of its width, its full height), so every shot was of a shape no user's default looks like — and the extra height is what made the images unreadable in the tour. Scenes pick the Medium preset through the real UI, so the captures track the default if it changes.
+- Full detail on the generator — corner placement, collision scoring, cropping, per-scene storage reset — is in `screenshots/README.md`.
+
+**Open:** `docs/walkthrough-ui-overhaul.md` still has nine placeholder screenshot slots, predates the changelog rewrite, and now overlaps what the in-app tour covers. Needs a decision: point it at the generated images, rewrite it, or retire it.
+
+---
 
 **Verify note.** `MenuPanel` keeps all three of its sections mounted (`display: none`) so panel state survives a tab switch — which means the side panel's import flow is in the DOM *at all times*. An unscoped `.drop-zone` or `.import-flow-*` locator therefore reaches into whichever surface comes first in the DOM. The parity scenario scopes every locator to one surface; the first draft did not, and was silently measuring the wrong one. **Scope to a surface whenever more than one can render the same component.**
 
