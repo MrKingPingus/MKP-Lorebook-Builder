@@ -28,6 +28,7 @@ export function useReleaseNotes() {
     latestId: LATEST?.id ?? null,
     lastSeen,
     hasExistingWork,
+    hasUserFacingContent: (LATEST?.userBlocks?.length ?? 0) > 0,
   });
 
   // A first-time visitor is shown nothing — but the current release still has to

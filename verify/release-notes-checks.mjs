@@ -95,6 +95,33 @@ export function runReleaseNotesChecks() {
 
   check('no changelog means nothing to show', show(null, true, null), false);
 
+  // ── a release with nothing to say to users ───────────────────────────────
+  //
+  // A version can ship as pure `Under the hood` — a test suite, a dependency
+  // bump. That section is stripped from the notice, so what is left is an empty
+  // panel, which is worse than staying shut. Real case: 0.9.1.
+  const internalOnly = (lastSeen, hasExistingWork) => shouldShowUpdateNotice({
+    latestId: '0.9.1 — 2026-08-11', lastSeen, hasExistingWork, hasUserFacingContent: false,
+  });
+  check('an internal-only release does not open the notice', internalOnly('0.9.0', true), false);
+  check('…nor for a returning user who has never seen one', internalOnly(null, true), false);
+
+  const INTERNAL_ONLY_SAMPLE = `# Changelog
+
+---
+
+## 0.9.1 — 2026-08-11
+
+### Under the hood
+
+- A test suite nobody outside the repo can see.
+
+---
+`;
+  const internalRelease = latestRelease(INTERNAL_ONLY_SAMPLE);
+  check('such a release still parses', internalRelease?.id, '0.9.1 — 2026-08-11');
+  check('…but has no user-facing blocks left', internalRelease.userBlocks.length, 0);
+
   const passed = results.filter(Boolean).length;
   console.log(`  ${passed}/${results.length} release-notes checks passed`);
   return results.every(Boolean);

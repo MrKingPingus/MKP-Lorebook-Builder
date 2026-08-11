@@ -1,6 +1,6 @@
 {
   "name": "mkp-lorebook-builder",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Browser-only utility for creating and managing lorebooks for AI chatbots",
   "license": "ISC",
   "author": "",

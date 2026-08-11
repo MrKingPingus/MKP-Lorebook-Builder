@@ -2,6 +2,16 @@
 
 ---
 
+## 0.9.1 — 2026-08-11
+
+### Under the hood
+
+- **The mobile UI now has a test suite.** It drives the app on phone-sized screens the way the existing suite drives it on desktop, with real touch taps and long-presses, and adds a set of layout checks — nothing off-screen, nothing untappable, nothing covered — that run against every panel, popover and sheet.
+- **Test books can now be generated at the app's limits** (25 triggers, a full-length description, 500 entries) rather than only the hand-written fixtures, so the layouts get checked under pressure instead of on tidy data.
+- **Fixed a blind spot in the existing suite:** the reference/crosstalk scenarios were leaving the Settings panel open for the rest of each run, because they closed it with a key press that doesn't close it. Harmless on desktop, where the panel sits beside the builder — but it meant those scenarios were never testing the layout they claimed to.
+
+---
+
 ## 0.9.0 — 2026-07-31
 
 The interface overhaul. The window header has been emptied down to essentials,

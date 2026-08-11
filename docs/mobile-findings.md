@@ -51,11 +51,18 @@ reference entry overlay. Each has its own on-screen dismissal (`← Back`, a clo
 button, an outside tap) and those all work — the suite checks them — but the
 platform gesture for "close this full-screen thing" is unhandled.
 
-Phase 14 should decide whether full-screen layers become history entries. It is
-the difference between a swipe closing the editor and a swipe discarding the
-screen the user was working on.
+It is the difference between a swipe closing the editor and a swipe discarding
+the screen the user was working on.
 
-Covered by `Mobile: the Back gesture against the entry editor`.
+**Deferred 2026-08-11 — to revisit, not dropped.** Making full-screen layers
+history entries is a design decision with its own costs (every layer becomes a
+navigable state, and the lander/builder boundary has to decide what Back means
+there), so it is held rather than patched.
+
+Covered by `Mobile: the Back gesture against the entry editor`, which records
+the current behaviour as a quirk. **Do not "fix" that scenario by asserting
+today's output** — it is written as the intent on purpose, so the day the
+behaviour changes, deliberately or otherwise, the roll-up says so.
 
 ## F1b — The mobile-only layers are not in the dismiss stack
 

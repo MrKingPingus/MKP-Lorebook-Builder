@@ -82,9 +82,18 @@ export function latestRelease(changelogRaw) {
  *     "before" to be updated from, and opening on a changelog is a poor first
  *     impression of an app they have not used yet.
  * `hasExistingWork` is what distinguishes them.
+ *
+ * `hasUserFacingContent` guards the release that is *entirely* internal. A
+ * version can ship with nothing but an `Under the hood` section — a test suite,
+ * a dependency bump — and since that section is stripped from the notice, what
+ * is left to show is nothing at all. Opening on an empty panel is worse than
+ * not opening, so such a release passes silently. `lastSeen` is deliberately
+ * *not* advanced in that case: the next release with something to say still
+ * needs to reach a user who has been quiet through several internal ones.
  */
-export function shouldShowUpdateNotice({ latestId, lastSeen, hasExistingWork }) {
+export function shouldShowUpdateNotice({ latestId, lastSeen, hasExistingWork, hasUserFacingContent = true }) {
   if (!latestId) return false;
+  if (!hasUserFacingContent) return false;
   if (lastSeen === latestId) return false;
   if (lastSeen === null) return Boolean(hasExistingWork);
   return true;

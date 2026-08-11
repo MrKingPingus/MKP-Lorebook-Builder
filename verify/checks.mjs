@@ -5,6 +5,20 @@
 // private, 0 hidden-from-export.
 import { launch, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { latestRelease } from '../src/services/release-notes.js';
+
+// Does the newest changelog section have anything left after the internal-only
+// subsections are stripped? Reads the same file the app bundles, so it answers
+// for the build under test rather than for a fixture.
+//
+// Two scenarios depend on the update notice actually opening, and it correctly
+// does not open for a release that is pure `Under the hood`.
+function latestReleaseHasUserContent() {
+  const raw = readFileSync(fileURLToPath(new URL('../CHANGELOG.md', import.meta.url)), 'utf8');
+  return (latestRelease(raw)?.userBlocks?.length ?? 0) > 0;
+}
 
 // `launch` overrides let a scenario run somewhere other than the default
 // desktop viewport — e.g. `{ mobile: true, width: 390, height: 780 }` for the
@@ -1843,6 +1857,18 @@ const SCENARIOS = [
     const KEY = 'mkp_last_seen_release';
     const notice = page.locator('.update-notice');
 
+    // The app only ever shows the newest release, so this scenario can only run
+    // when that release has something to say to users. A version that ships as
+    // pure `Under the hood` — a test suite, a dependency bump — correctly opens
+    // no notice at all, and there is then no notice here to make assertions
+    // about. Skipped rather than relaxed: an assertion rewritten to accept
+    // "no notice" would keep passing forever and stop testing anything.
+    // The rule itself is covered without a browser in release-notes-checks.mjs.
+    if (!latestReleaseHasUserContent()) {
+      check('skipped — the newest release is internal-only', true, true);
+      return;
+    }
+
     // A first visit — nothing stored, nothing saved. Opening on a changelog for
     // an app you have never used is a poor introduction, so: nothing.
     await page.goto(BASE_URL, { waitUntil: 'networkidle' });
@@ -1893,6 +1919,13 @@ const SCENARIOS = [
   }),
 
   scenario('Feature tour: click-through from the update notice, with enlarge', async (page, check) => {
+    // Same dependency as the update-notice scenario above: this one enters the
+    // tour *through* the notice, so it needs a release with user-facing content.
+    if (!latestReleaseHasUserContent()) {
+      check('skipped — the newest release is internal-only', true, true);
+      return;
+    }
+
     // A 4xx/5xx on a tour image means the build is missing one — the failure
     // mode this whole approach has to be watched for, since the images are
     // generated separately from the code that shows them.

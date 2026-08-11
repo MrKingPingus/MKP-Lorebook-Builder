@@ -279,6 +279,11 @@ const SCENARIOS = [
   // history entry — and Back, the gesture a phone user reaches for to close a
   // full-screen view, leaves the site instead. With the entry editor open, that
   // is a swipe away from the work.
+  //
+  // Deferred 2026-08-11 — to revisit, not dropped. These stay written as the
+  // intent rather than as today's output: asserting the current behaviour would
+  // pin it as correct and the eventual fix would have to delete the assertion.
+  // As quirks they cost nothing and flag the day the behaviour moves.
   scenario('Mobile: the Back gesture against the entry editor', async (page, check, sweepPose, quirk) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);
