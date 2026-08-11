@@ -30,15 +30,16 @@ const PHONE = { mobile: true, width: 390, height: 844 };
 
 // The matrix, for the poses where width genuinely changes the outcome.
 //
-// `landscape` is in here on purpose: the app's breakpoint is `innerWidth < 768`,
-// so a phone turned sideways is 780px wide and gets the *desktop* layout — full
-// window chrome, resize handles and status footer — in a 360px-tall viewport.
+// Portrait only, by decision (2026-08-11): landscape is not a supported pose and
+// will not be until someone asks for it. A phone turned sideways is ~780px wide,
+// which is past the `innerWidth < 768` breakpoint, so it gets the desktop layout
+// in a 360px-tall viewport — out of scope rather than broken. To check it, add
+// `{ label: 'landscape', mobile: true, width: 780, height: 360 }` here.
 const VIEWPORTS = [
   { label: 'small phone',  mobile: true, width: 360, height: 640 },
   { label: 'phone',        mobile: true, width: 390, height: 844 },
   { label: 'large phone',  mobile: true, width: 414, height: 896 },
   { label: 'breakpoint-1', mobile: true, width: 767, height: 1024 },
-  { label: 'landscape',    mobile: true, width: 780, height: 360 },
 ];
 
 function scenario(name, fn, launchOptions = PHONE) {
@@ -271,10 +272,39 @@ const SCENARIOS = [
     check('and opens the new entry for editing', await page.locator('.entry-detail-panel--open').count(), 1);
   }),
 
+  // ── The system Back gesture against a full-screen layer ───────────────────
+  //
+  // This is the dismissal question that actually matters on a phone. There is no
+  // pushState/popstate anywhere in src/, so opening a full-screen layer adds no
+  // history entry — and Back, the gesture a phone user reaches for to close a
+  // full-screen view, leaves the site instead. With the entry editor open, that
+  // is a swipe away from the work.
+  scenario('Mobile: the Back gesture against the entry editor', async (page, check, sweepPose, quirk) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+
+    const before = await page.evaluate(() => history.length);
+    await openEntryDetail(page, 0);
+    const after = await page.evaluate(() => history.length);
+
+    quirk('opening the entry editor pushes a history entry to catch Back', after > before, true);
+
+    // Then the consequence, stated rather than inferred. Last in the scenario
+    // because navigating away ends the page.
+    const url = page.url();
+    await page.goBack({ waitUntil: 'load' }).catch(() => {});
+    await settle(page, 400);
+    quirk('Back closes the editor rather than leaving the app', page.url(), url);
+  }),
+
   // ── Which layers the Escape stack actually reaches ────────────────────────
   //
-  // Every transient layer ought to close on Escape. These are written as the
-  // intent, so the gaps show up as quirks rather than being pinned as correct.
+  // Scoped: Escape is not a gesture a phone has. This matters for a desktop
+  // browser window narrower than 768px — which renders this same UI — and for a
+  // tablet with a keyboard. It is not a finding about phone users, and the
+  // dismiss stack is Escape-only (services/dismiss-stack.js), so not registering
+  // costs a phone nothing. Kept because the narrow-window case is real and the
+  // fix is one hook call per layer.
   scenario('Mobile: Escape closes the transient layers', async (page, check, sweepPose, quirk) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);

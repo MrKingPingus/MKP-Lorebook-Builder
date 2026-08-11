@@ -22,48 +22,72 @@ npm run verify -- "mobile sweep"  # layout sweeps only
 
 The mobile UI is **structurally sound and dimensionally wrong.**
 
-Across 23 scenarios and 30-odd poses, at five viewports from 360px to a
-landscape 780×360, there were **zero** hard layout violations: nothing renders
-off-screen, nothing overflows the body horizontally, no control is covered by a
-layer that shouldn't cover it, and no page threw. The stress tier — 25 triggers,
-a 1500-character description, 240-character names, 500 entries — produced none
+Across the scenarios and 30-odd poses, at four portrait viewports from 360px to
+767px, there were **zero** hard layout violations: nothing renders off-screen,
+nothing overflows the body horizontally, no control is covered by a layer that
+shouldn't cover it, and no page threw. The stress tier — 25 triggers, a
+1500-character description, 240-character names, 500 entries — produced none
 either.
 
-What it did produce is **227 notes, and all but three of them are one problem**:
-controls sized for a mouse. Plus three gaps in the Escape stack.
+What it did produce is a couple of hundred notes, and **nearly all of them are
+one problem**: controls sized for a mouse. The one finding that is about phone
+users rather than pixel dimensions is the Back gesture (F1).
 
 ---
 
-## F1 — The mobile-only layers are not in the dismiss stack
+## F1 — The Back gesture leaves the site instead of closing a full-screen layer
 
-**Severity: real, small fix, worth doing before the overhaul rather than during.**
+**Severity: the most consequential mobile finding here.**
 
-The app has a proper Escape priority stack (`services/dismiss-stack.js`, via
-`hooks/use-dismiss-layer.js`). Seven components register with it:
-`FeatureTour`, `FolderHeader`, `KeyboardHelpOverlay`, `MoveToFolderButton`,
-`TitleMenu`, `UpdateNotice`, `StatusFooter`.
+There is no `pushState`, `popstate` or `hashchange` handling anywhere in `src/`.
+Opening the full-screen entry editor adds **no history entry** — measured:
+`history.length` is 2 before and 2 after. So the system Back gesture, which is
+what a phone user reaches for to dismiss a full-screen view, navigates away from
+the app entirely. Verified: after Back with the editor open, the page is
+`about:blank`.
 
-**None of the mobile-only layers do.** Escape does not close:
+The same applies to the settings overlay, the reference browse sheet and the
+reference entry overlay. Each has its own on-screen dismissal (`← Back`, a close
+button, an outside tap) and those all work — the suite checks them — but the
+platform gesture for "close this full-screen thing" is unhandled.
+
+Phase 14 should decide whether full-screen layers become history entries. It is
+the difference between a swipe closing the editor and a swipe discarding the
+screen the user was working on.
+
+Covered by `Mobile: the Back gesture against the entry editor`.
+
+## F1b — The mobile-only layers are not in the dismiss stack
+
+**Severity: minor, and narrower than it first looked.**
+
+This was originally written up as a mobile finding. It mostly isn't, and the
+correction is worth stating plainly: **Escape is not a gesture a phone has.**
+`services/dismiss-stack.js` is Escape-only — nothing but the keyboard dispatcher
+calls `dismissTopLayer()` — so a layer that does not register costs a phone user
+nothing at all.
+
+Where it does apply: a **desktop browser window narrower than 768px** renders
+this same UI, and a tablet with a keyboard. Both are real, neither is the
+overhaul's centre of gravity.
+
+The facts, for whoever picks it up. Seven components register with the stack
+(`FeatureTour`, `FolderHeader`, `KeyboardHelpOverlay`, `MoveToFolderButton`,
+`TitleMenu`, `UpdateNotice`, `StatusFooter`). None of the mobile-only layers do:
 
 | Layer | Escape closes it? |
 |---|---|
 | `EntryDetailPanel` | no |
 | Settings panel (`.menu-panel`) | no |
 | `FabQuickMenu` | no |
-| `TypeFilterBar` popover | yes — but see below |
+| `TypeFilterBar` popover | yes — via its own listener, not the stack |
 | `ReferenceBrowseSheet` | not registered |
 | `ReferenceEntryOverlay` | not registered |
 
-The filter popover works because `TypeFilterBar.jsx:44-51` carries its own
-`document` keydown listener that calls `stopPropagation` — a private workaround
-that bypasses the stack rather than joining it. So the one layer that behaves
-correctly does so by the mechanism the stack exists to replace.
-
-On a phone this mostly bites with an external keyboard, but it also applies to
-any desktop browser window narrower than 768px, and it means these layers sit
-outside the app's single dismissal ordering. Pinned as quirks in
-`Mobile: Escape closes the transient layers` and in the FAB long-press scenario,
-so they surface as notes rather than being asserted as correct.
+`TypeFilterBar.jsx:44-51` carries a private `document` keydown listener that
+calls `stopPropagation`, so the one layer that behaves correctly does so by
+bypassing the mechanism built for exactly this. The fix is one hook call per
+layer, whenever someone is in there anyway.
 
 ## F2 — A panel left open across the breakpoint becomes a full-screen overlay
 
@@ -117,24 +141,21 @@ Failing on it would mean a permanently red suite reporting one fact 227 times.
 Once the overhaul sets a floor, raise `TAP_TARGET_HARD` to it and promote the
 rule.
 
-## F4 — A phone in landscape gets the desktop layout
+## F4 — Landscape: out of scope, by decision
 
-**Severity: worth an explicit decision, currently untested territory for users.**
+**Resolved 2026-08-11: not a finding. Recorded so it is not re-discovered.**
 
-`useMobile()` is `window.innerWidth < 768` (`src/hooks/use-mobile.js:5`). A
-phone turned sideways is around 780px wide, so it renders the **full desktop
-layout in a 360px-tall viewport** — floating-window chrome, resize handles,
-status footer, the lorebook tab, and desktop-density controls (type pills at
-22px tall, card action buttons at 21px).
+`useMobile()` is `window.innerWidth < 768` (`src/hooks/use-mobile.js:5`), so a
+phone turned sideways (~780px) renders the desktop layout in a 360px-tall
+viewport. The sweep found no hard violations there, and **landscape is not a
+supported pose** — it will not be until someone asks for it.
 
-It is not broken — the containment sweep passes at 780×360 — but it is a pose
-nobody designed for, reached by an extremely common gesture. Phase 14 should
-decide whether the breakpoint should consider height or orientation, not width
-alone.
+The landscape row has been removed from the viewport matrix accordingly; the
+matrix is portrait-only. `verify/mobile-checks.mjs` documents the one line that
+puts it back if that ever changes.
 
-Also: `useMobile` listens only for `resize`, never `orientationchange`.
-
-Covered by the `landscape 780x360` row of the viewport matrix.
+Related and also unaddressed by choice: `useMobile` listens only for `resize`,
+never `orientationchange`.
 
 ## F5 — Always-mounted layers
 

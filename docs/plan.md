@@ -289,16 +289,18 @@ Save an entry's content as a reusable, **globally-stored** template and load it 
 
 The mobile UI is a genuinely separate surface, not a reflow: 18 files branch on `useMobile()` (`window.innerWidth < 768`), and `EntryDetailPanel`, `ReferenceBrowseSheet` and `ReferenceEntryOverlay` exist only below the breakpoint. Until 14A none of it was tested — one scenario in the whole suite ran at a phone viewport, and it asserted the absence of the status footer.
 
-**14A — Mobile verification sweep · complete.** A mobile suite (`verify/mobile-checks.mjs`) and a structure-agnostic layout-invariant battery (`verify/layout-invariants.mjs`), plus a limits fixture generator (`fixtures/build-stress-book.mjs`). 23 scenarios over ~30 poses at five viewports, including a landscape phone. Findings in `docs/mobile-findings.md`.
+**14A — Mobile verification sweep · complete.** A mobile suite (`verify/mobile-checks.mjs`) and a structure-agnostic layout-invariant battery (`verify/layout-invariants.mjs`), plus a limits fixture generator (`fixtures/build-stress-book.mjs`). ~30 poses at four portrait viewports (360–767px). Findings in `docs/mobile-findings.md`.
 
 The battery deliberately asserts nothing about markup — only containment, occlusion, tap-target size, text clipping and page errors — so the overhaul can churn the DOM without invalidating it. It is viewport-agnostic, so the deferred desktop stress pass can reuse it unchanged.
 
 **Findings that set the brief** (detail and reproduction in `docs/mobile-findings.md`):
 
 1. **Tap targets are sized for a mouse throughout** — 57 distinct controls below 32px, 14 more in the 32–43px band. Systemic, not a list of oversights; this is the bulk of the work. The suite grades it as a *note* rather than a failure precisely because it is systemic — once 14B sets a floor, raise `TAP_TARGET_HARD` and promote the rule to a hard failure.
-2. **The mobile-only layers are not in the dismiss stack** — Escape closes none of `EntryDetailPanel`, the settings panel, or `FabQuickMenu`. `TypeFilterBar` works around it with a private `document` keydown listener that `stopPropagation`s, bypassing the stack rather than joining it.
-3. **A layer left open across the breakpoint becomes a full-screen overlay** — the settings panel is a 320px column above 768px and full-screen below, and nothing reconciles the two on a rotation or a window drag. Needs a decision: close open layers on crossing, or re-pose them.
-4. **A phone in landscape (≈780px) gets the desktop layout** in a 360px-tall viewport, at desktop control density. Needs a decision on whether the breakpoint should consider height or orientation rather than width alone. `useMobile` also listens only for `resize`, never `orientationchange`.
+2. **The Back gesture leaves the site rather than closing a full-screen layer** — there is no `pushState`/`popstate` handling anywhere in `src/`, so opening the entry editor adds no history entry (measured: `history.length` 2 before, 2 after) and Back lands on `about:blank`. Each layer's own dismissal control works; the platform gesture for "close this full-screen view" is unhandled. Needs a decision on whether full-screen layers become history entries.
+3. **A layer left open across the breakpoint becomes a full-screen overlay** — the settings panel is a 320px column above 768px and full-screen below, and nothing reconciles the two when a desktop window is dragged narrow. Needs a decision: close open layers on crossing, or re-pose them.
+4. **Minor: the mobile-only layers are not in the dismiss stack** — Escape closes none of `EntryDetailPanel`, the settings panel, or `FabQuickMenu`, and `TypeFilterBar` works around it with a private listener that bypasses the stack. Scoped deliberately: `dismiss-stack.js` is Escape-only, so this costs a phone user nothing — it applies to desktop windows narrower than 768px and to tablets with keyboards. One hook call per layer.
+
+**Out of scope by decision (2026-08-11):** landscape. A sideways phone (~780px) is past the breakpoint and renders the desktop layout; the sweep found no violations there, and landscape support waits for someone to ask. The viewport matrix is portrait-only.
 
 **What the sweep found already solid**, and so should survive the overhaul: containment (zero off-screen or body-overflow violations at any viewport), hit testing, 240-character name handling (ellipsised, row height held, chevron intact — pinned by assertions), and every limit in `constants/limits.js` rendering cleanly on a 390px screen.
 
