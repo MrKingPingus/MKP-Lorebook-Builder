@@ -105,7 +105,14 @@ export async function pairCrosstalk(page) {
   const toggle = page.locator('label:has-text("Show reference panel") input[type="checkbox"]');
   await toggle.waitFor({ timeout: 4000 });
   await toggle.check();
-  await page.keyboard.press('Escape');
+
+  // Close via the panel's own close button, and wait for it. Escape does *not*
+  // close the settings panel — the mobile sweep caught this — so the Escape that
+  // used to stand here left the panel open for the rest of the pose. Harmless on
+  // desktop, where the panel sits beside the builder, but below the breakpoint
+  // the same panel is a full-screen overlay covering everything under test.
+  await page.locator('.menu-panel-close').first().click();
+  await page.locator('.menu-panel--expanded').waitFor({ state: 'detached', timeout: 4000 });
   await page.locator('.reference-panel').waitFor({ timeout: 4000 });
 
   // Pick the variant as the reference. The picker excludes the active book, so
@@ -179,12 +186,130 @@ export async function closeScaleMenu(page) {
 // select mode the header also carries a type-change dropdown that calls
 // stopPropagation, and in a narrow crosstalk pane that dropdown sits right
 // under the card's midpoint, so a centre-click silently selects nothing.
+//
+// The mobile card is a different component with different internals — there is
+// no `.entry-label` on it at all — so the label target is chosen per viewport.
 export async function selectCards(page, containerSelector, indices) {
+  const label = isMobileViewport(page) ? '.entry-card-mobile-name' : '.entry-label';
   for (const i of indices) {
-    await page.locator(`${containerSelector} .entry-card`).nth(i).locator('.entry-label').first().click();
+    await page.locator(`${containerSelector} .entry-card`).nth(i).locator(label).first().click();
     await settle(page, 80);
   }
   await settle(page, 120);
+}
+
+// ── Mobile ───────────────────────────────────────────────────────────────────
+// The mobile layout is not a reflow of the desktop one: roughly a third of the
+// component tree branches on `useMobile()`, and two components
+// (ReferenceBrowseSheet, ReferenceEntryOverlay) exist only here. The pathways
+// below are the mobile equivalents of the desktop ones above.
+
+// The app's own breakpoint, from src/hooks/use-mobile.js. Kept in sync by hand;
+// there is no import path from verify/ into src/ constants.
+export const MOBILE_BREAKPOINT = 768;
+
+export function isMobileViewport(page) {
+  return (page.viewportSize()?.width ?? Infinity) < MOBILE_BREAKPOINT;
+}
+
+// Touch dispatch goes through a CDP session per page, and that session must have
+// touch emulation switched on explicitly — `Input.dispatchTouchEvent` is
+// silently dropped without it, which looks exactly like the app ignoring the
+// gesture. Playwright's own `hasTouch` context flag does not cover our session.
+const touchSessions = new WeakMap();
+
+async function touchSession(page) {
+  let session = touchSessions.get(page);
+  if (!session) {
+    session = await page.context().newCDPSession(page);
+    await session.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    touchSessions.set(page, session);
+  }
+  return session;
+}
+
+// Hold a touch on an element long enough to trip the app's long-press threshold
+// (THESAURUS_LONG_PRESS_MS, 450ms). Produces the real event sequence a phone
+// does — pointerdown/touchstart … pointerup/touchend/click, all with
+// pointerType 'touch' — which matters because the long-press handlers deliberately
+// suppress the trailing click, and a mouse-based fake would not prove that works.
+export async function longPress(page, locator, ms = 700) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('longPress: target not visible');
+  const session = await touchSession(page);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x, y, id: 1, radiusX: 12, radiusY: 12, force: 1 }],
+  });
+  await settle(page, ms);
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await settle(page, 250);
+}
+
+// A real touch tap, as opposed to a synthetic click.
+export async function tap(page, locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('tap: target not visible');
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await settle(page, 250);
+}
+
+// Open an entry's mobile detail panel by list position.
+//
+// `.entry-detail-panel` is always mounted — only the `--open` modifier says
+// whether it is actually showing — so anything checking for it must look for the
+// modifier, not the element.
+export async function openEntryDetail(page, index = 0) {
+  await tap(page, page.locator('.entry-card').nth(index));
+  await page.locator('.entry-detail-panel--open').waitFor({ timeout: 4000 });
+}
+
+export async function closeEntryDetail(page) {
+  await tap(page, page.locator('.entry-detail-back'));
+  await page.locator('.entry-detail-panel--open').waitFor({ state: 'detached', timeout: 4000 });
+}
+
+export function detailOpen(page) {
+  return page.locator('.entry-detail-panel--open').count().then((n) => n > 0);
+}
+
+// Open the mobile "Filter ▾" popover — the type pills, Group-by-type and the
+// folder filter are all collapsed into it below the breakpoint.
+export async function openFilterPopover(page) {
+  await tap(page, page.locator('.type-filter-button'));
+  await page.locator('.type-filter-popover').waitFor({ timeout: 4000 });
+}
+
+// Move the pointer somewhere harmless.
+//
+// A real phone has no hover, but Playwright's mouse stays wherever the last
+// click left it, and at desktop widths that can sit over a hover-activated
+// surface — the FAB quick menu opens this way — so a sweep would report a layer
+// no user could have opened.
+export async function parkMouse(page) {
+  await page.mouse.move(1, 1);
+  await settle(page, 350);
+}
+
+// Dismiss a popover the way the app expects: a pointerdown outside it. Note
+// that Escape does not close every mobile layer, so this is not interchangeable
+// with a keypress.
+export async function dismissPopover(page) {
+  await page.mouse.click(5, Math.round((page.viewportSize()?.height ?? 800) / 2));
+  await settle(page, 250);
+}
+
+// Seed localStorage before the app boots, for poses that depend on prior state —
+// notably a desktop-sized window persisted from a previous session then reopened
+// on a phone. Must be called before the first navigation to BASE_URL.
+export async function seedStorage(page, entries) {
+  await page.addInitScript((pairs) => {
+    for (const [k, v] of Object.entries(pairs)) {
+      window.localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+    }
+  }, entries);
 }
 
 // Every fixed wait in the suite goes through here so there's one dial for all

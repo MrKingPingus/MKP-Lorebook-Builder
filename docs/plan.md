@@ -22,12 +22,13 @@ All planned phases through **Phase 10** have shipped (see **Completed** below). 
 - **Entry-list keyboard navigation** (deferred from 10D) — a roving focus cursor + list ARIA so keyboard/screen-reader users can move through and act on entries. Also unblocks per-entry hotkeys (duplicate / delete / toggle *this* entry) if ever wanted. A feature in its own right.
 - **Entry Planner** (parked from Phase 9) — see Future Features.
 - **Mobile crosstalk redesign** (parked from Phase 9) — see Future Features.
+- **Desktop stress pass** (deferred from 14A) — there is currently no stress or limits testing on desktop at all. 14A built both halves of what one needs: `verify/layout-invariants.mjs` is viewport-agnostic and reusable as-is, and `fixtures/build-stress-book.mjs` generates books at the caps in `constants/limits.js`. What it still needs is desktop poses and a decision on which limits matter there — the crosstalk two-pane layout under 500 entries a side, and the folder tree at `MAX_FOLDER_DEPTH` with wide sibling sets, are the obvious candidates. Folders, `MAX_LOREBOOKS` and `MAX_HISTORY` all need seeded state rather than an imported book, since none of them are part of the CharSnap format.
 
 ---
 
 ## Upcoming Phases
 
-Phases with locked design decisions, as opposed to Future Features which are still ideas. Some have since shipped and stay here with their decisions intact — status is marked inline on each phase's sub-phase line, not by which section it sits in. As of 2026-07-31: **11 complete**, **12 not started**, **13 complete**. Both came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
+Phases with locked design decisions, as opposed to Future Features which are still ideas. Some have since shipped and stay here with their decisions intact — status is marked inline on each phase's sub-phase line, not by which section it sits in. As of 2026-08-11: **11 complete**, **12 not started**, **13 complete**, **14 in progress (14A complete)**. 11 and 12 came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
 
 ### Phase 11 — Custom Categories / Folders (GitHub #116)
 
@@ -283,6 +284,25 @@ Save an entry's content as a reusable, **globally-stored** template and load it 
 **Sub-phases:** 12A core (save whole entry, both load actions, content-driven checklist + description-conflict prompt, flat list) · 12B organization (drill-in folders, colors, hover preview, management). Complexity: 12A Medium · 12B Medium.
 
 > **Revisit — entry-card footer crowding.** Phase 11 adds "Move to folder" and Phase 12 adds "Save as Template" + "Load Template" on top of the existing entry-history / visibility / public controls. Before it overflows, rethink the footer — an overflow `⋯` menu, relocating the less-common actions, or regrouping per-entry actions. _(what would FabFilter do?)_ Noted 2026-07-24.
+
+### Phase 14 — Mobile Overhaul
+
+The mobile UI is a genuinely separate surface, not a reflow: 18 files branch on `useMobile()` (`window.innerWidth < 768`), and `EntryDetailPanel`, `ReferenceBrowseSheet` and `ReferenceEntryOverlay` exist only below the breakpoint. Until 14A none of it was tested — one scenario in the whole suite ran at a phone viewport, and it asserted the absence of the status footer.
+
+**14A — Mobile verification sweep · complete.** A mobile suite (`verify/mobile-checks.mjs`) and a structure-agnostic layout-invariant battery (`verify/layout-invariants.mjs`), plus a limits fixture generator (`fixtures/build-stress-book.mjs`). 23 scenarios over ~30 poses at five viewports, including a landscape phone. Findings in `docs/mobile-findings.md`.
+
+The battery deliberately asserts nothing about markup — only containment, occlusion, tap-target size, text clipping and page errors — so the overhaul can churn the DOM without invalidating it. It is viewport-agnostic, so the deferred desktop stress pass can reuse it unchanged.
+
+**Findings that set the brief** (detail and reproduction in `docs/mobile-findings.md`):
+
+1. **Tap targets are sized for a mouse throughout** — 57 distinct controls below 32px, 14 more in the 32–43px band. Systemic, not a list of oversights; this is the bulk of the work. The suite grades it as a *note* rather than a failure precisely because it is systemic — once 14B sets a floor, raise `TAP_TARGET_HARD` and promote the rule to a hard failure.
+2. **The mobile-only layers are not in the dismiss stack** — Escape closes none of `EntryDetailPanel`, the settings panel, or `FabQuickMenu`. `TypeFilterBar` works around it with a private `document` keydown listener that `stopPropagation`s, bypassing the stack rather than joining it.
+3. **A layer left open across the breakpoint becomes a full-screen overlay** — the settings panel is a 320px column above 768px and full-screen below, and nothing reconciles the two on a rotation or a window drag. Needs a decision: close open layers on crossing, or re-pose them.
+4. **A phone in landscape (≈780px) gets the desktop layout** in a 360px-tall viewport, at desktop control density. Needs a decision on whether the breakpoint should consider height or orientation rather than width alone. `useMobile` also listens only for `resize`, never `orientationchange`.
+
+**What the sweep found already solid**, and so should survive the overhaul: containment (zero off-screen or body-overflow violations at any viewport), hit testing, 240-character name handling (ellipsised, row height held, chevron intact — pinned by assertions), and every limit in `constants/limits.js` rendering cleanly on a 390px screen.
+
+**Sub-phases beyond 14A are deliberately unwritten** until the findings are triaged into decisions — 14A exists to produce that brief, not to presume it.
 
 ---
 

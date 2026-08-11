@@ -4,6 +4,7 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { runAllChecks } from './checks.mjs';
+import { runMobileChecks } from './mobile-checks.mjs';
 import { runKeychordChecks } from './keychord-checks.mjs';
 import { runFolderTreeChecks } from './folder-tree-checks.mjs';
 import { runSelectionRangeChecks } from './selection-range-checks.mjs';
@@ -49,9 +50,13 @@ if (await serverUp()) {
   }
 }
 
+// Desktop first, then mobile. Both honour the same name filter, so
+// `npm run verify -- mobile` runs the mobile suite alone.
 let ok = false;
 try {
-  ok = await runAllChecks(only);
+  const desktopOk = await runAllChecks(only);
+  const mobileOk  = await runMobileChecks(only);
+  ok = desktopOk && mobileOk;
 } finally {
   if (child) child.kill('SIGTERM');
 }
