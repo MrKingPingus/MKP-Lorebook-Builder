@@ -265,6 +265,29 @@ input { font-family: inherit; }
 
 /* The #123 fix, in place: pairing is a per-book action in this list. */
 .book-act--ref { color: var(--blue); }
+
+/* Per-row ⋯ menu — every action here is a word, not a glyph alone. */
+.row-menu {
+  position: absolute; right: 6px; top: 46px; z-index: 40; min-width: 196px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 5px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.row-menu-item {
+  min-height: 44px; padding: 0 11px; border-radius: var(--radius);
+  font-size: .8125rem; color: var(--text); text-align: left;
+  display: flex; align-items: center; gap: 9px;
+}
+.row-menu-item:hover { background: var(--surface3); }
+.row-menu-item--ref { color: var(--blue); }
+.row-menu-item--del { color: var(--coral); }
+
+/* Reference chooser, opened from the footer button */
+.ref-pick-head { font-size: .6875rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 2px 2px 0; }
+.ref-current {
+  display: flex; align-items: center; gap: 9px; min-height: 52px; padding: 7px 8px 7px 11px;
+  background: var(--surface2); border: 1px solid var(--blue); border-radius: var(--radius);
+}
 .pair-hint {
   font-size: .6875rem; color: var(--muted2); background: var(--surface);
   border: 1px dashed var(--border2); border-radius: var(--radius); padding: 8px 10px;
@@ -277,6 +300,7 @@ input { font-family: inherit; }
    thing" should look the same wherever it is offered. */
 .foot-btn--accent { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 .foot-btn--ref.is-on { border-color: var(--blue); color: var(--blue); }
+.foot-btn--ref.is-open { background: var(--blue); border-color: var(--blue); color: #0b1220; font-weight: 600; }
 
 /* Import takeover inside the sheet */
 .drop {
@@ -349,7 +373,7 @@ input { font-family: inherit; }
     390×844. The real app measures <b>238px of chrome above the first card and 57px below</b> — 46% of a
     360×640 screen. Frames 1 and 5 rebuild that stack closely rather than to the pixel, and the ruler
     measures itself, so what to read off it is the <b>difference</b> between states, not the absolute.
-    States 2–4 are the proposal. Dark theme only, throwaway — same rules as <code>mockup-ui-overhaul.html</code>.
+    States 2–7 are the proposal. Dark theme only, throwaway — same rules as <code>mockup-ui-overhaul.html</code>.
   </div>
 </div>
 
@@ -358,8 +382,9 @@ input { font-family: inherit; }
   <button class="state-btn" data-state="menuA">2 · Title menu — A (parity)</button>
   <button class="state-btn" data-state="import">3 · A, import tab</button>
   <button class="state-btn" data-state="menuB">4 · Title menu — B (lean)</button>
-  <button class="state-btn" data-state="consol">5 · Consolidated bar + hotbar pair</button>
-  <button class="state-btn" data-state="settings">6 · Settings — lander route</button>
+  <button class="state-btn" data-state="refpick">5 · Reference chooser</button>
+  <button class="state-btn" data-state="consol">6 · Consolidated bar + hotbar pair</button>
+  <button class="state-btn" data-state="settings">7 · Settings — lander route</button>
 </div>
 
 <div class="stage">
@@ -528,30 +553,74 @@ input { font-family: inherit; }
                 <div class="book-meta">41 entries · 2 hours ago</div>
               </div>
               <span class="book-badge book-badge--ref">REF</span>
-              <button class="book-act book-act--ref" title="Paired as reference">⇄</button>
               <button class="book-act">⋯</button>
             </div>
-            <div class="book">
+            <div class="book" style="position:relative">
               <div class="book-main">
                 <div class="book-name">Sable Street — v3</div>
                 <div class="book-meta">12 entries · yesterday</div>
               </div>
-              <button class="book-act book-act--ref" title="Pair as reference">⇄</button>
-              <button class="book-act">⋯</button>
+              <button class="book-act" style="background:var(--surface3)">⋯</button>
+              <!-- Shown open. Pairing lives here as a labelled row rather than as
+                   a bare glyph in the row itself — the glyph failed on the first
+                   person who saw it. -->
+              <div class="row-menu">
+                <button class="row-menu-item row-menu-item--ref">⇄ Pair as reference</button>
+                <button class="row-menu-item">✏️ Rename</button>
+                <button class="row-menu-item">⧉ Duplicate</button>
+                <button class="row-menu-item row-menu-item--del">🗑 Delete</button>
+              </div>
             </div>
             <div class="book">
               <div class="book-main">
                 <div class="book-name">Winter Arc — scratch</div>
                 <div class="book-meta">6 entries · 3 days ago</div>
               </div>
-              <button class="book-act book-act--ref" title="Pair as reference">⇄</button>
               <button class="book-act">⋯</button>
             </div>
 
             <div class="pair-hint">
-              <b>⇄</b> pairs a book as the reference. This is the control #123 was
-              looking for — today it exists only inside the Lorebooks side panel,
-              which mobile has no route to.
+              Pairing is reachable two ways, both <b>labelled in words</b>: the
+              <b>⇄ Reference</b> button in the footer, and <b>Pair as reference</b>
+              in a row's ⋯ menu. This is the control #123 was looking for — today
+              it exists only inside the Lorebooks side panel, which mobile has no
+              route to.
+            </div>
+          </div>
+
+          <!-- Reference chooser — what the footer's ⇄ Reference opens -->
+          <div class="sheet-scroll hidden" id="tabRef">
+            <div class="ref-pick-head">Currently paired</div>
+            <div class="ref-current">
+              <div class="book-main">
+                <div class="book-name">Akaya — Draft 2</div>
+                <div class="book-meta">41 entries · shared triggers surface on your entries</div>
+              </div>
+              <span class="book-badge book-badge--ref">REF</span>
+            </div>
+            <div class="row" style="gap:6px">
+              <button class="foot-btn" style="flex:1">Browse it</button>
+              <button class="foot-btn" style="flex:1;color:var(--coral);border-color:var(--border2)">Unpair</button>
+            </div>
+
+            <div class="ref-pick-head" style="margin-top:6px">Pair a different lorebook</div>
+            <div class="book">
+              <div class="book-main">
+                <div class="book-name">Sable Street — v3</div>
+                <div class="book-meta">12 entries · yesterday</div>
+              </div>
+            </div>
+            <div class="book">
+              <div class="book-main">
+                <div class="book-name">Winter Arc — scratch</div>
+                <div class="book-meta">6 entries · 3 days ago</div>
+              </div>
+            </div>
+
+            <div class="pair-hint">
+              A reference lorebook is read-only. Shared triggers, same-named
+              entries and search hits in it surface as annotations on the book
+              you are editing.
             </div>
           </div>
 
@@ -622,17 +691,23 @@ const NOTES = {
       <li><b>Two columns become two tabs.</b> 390px has no room to put Lorebooks
         beside Import/Export, so the parity is in the <i>contents and the route</i>,
         not the geometry. Desktop's rail-collapse trick is the same idea one size up.</li>
-      <li><b>⇄ per book is the #123 fix.</b> Pairing is a property of a book, so it
-        belongs on the book's row — not in a <code>&lt;select&gt;</code> in a panel elsewhere.
-        <span class="good">REF</span> marks the paired one.</li>
+      <li><b>The bare ⇄ on each row is gone.</b> It failed on the first person to
+        look at this mockup, who did not read it as "choose a reference book" — and
+        if the person who specified the feature cannot decode the glyph cold, no
+        user will. Pairing now says so <b>in words</b>, in the row's ⋯ menu (shown
+        open) and on the footer button. <span class="good">REF</span> still marks
+        the paired book: a badge only has to be recognised once it has been
+        explained, not guessed at.</li>
+      <li>That still fixes #123 — pairing is a property of a book, so it belongs
+        on the book, not in a <code>&lt;select&gt;</code> in a panel elsewhere. It just
+        sits one labelled tap deeper.</li>
       <li><b>The active tab and ＋ New both take the accent</b>, so tab, FAB and
         primary action read as one family — and all three follow a custom theme,
         since <code>--accent</code> is themeable. <b>⇄ Reference</b> takes the slot the
         lander route used to hold; that route moved to Settings (state 6).</li>
       <li>Every row here is ≥44px, and the sort toggle keeps desktop's Recent/A–Z pair
         so the two surfaces cannot disagree about order.</li>
-      <li class="q">One thing still to pin down: with per-row ⇄ doing the pairing,
-        what does the footer's <b>⇄ Reference</b> do? See the note under state 4.</li>
+      <li>The footer's <b>⇄ Reference</b> opens the chooser — state 5.</li>
     </ul>`,
   import: `
     <h3>3 · Option A, the Import tab</h3>
@@ -667,13 +742,10 @@ const NOTES = {
       <li>Nothing here forecloses A; the tabs could be added later without moving
         what ships in B. The question is only whether to ship a known gap first.</li>
     </ul>
-    <p style="margin-top:10px"><b>Open question carried over from state 2:</b> what does
-    the footer's ⇄ Reference do, given each row already has a ⇄ that pairs?
-    Three readings — it toggles the mode and reveals the row controls; it opens
-    Browse on the already-paired book; or it replaces the per-row ⇄ with a single
-    "choose a reference" list.</p>`,
+    <p style="margin-top:10px">B keeps the same footer and the same ⋯ menu, so the
+    reference work is identical either way. Only the Import/Export tab differs.</p>`,
   consol: `
-    <h3>5 · The 14C consolidation, and the hotbar pair action</h3>
+    <h3>6 · The 14C consolidation, and the hotbar pair action</h3>
     <p>Not part of 14B's decision, shown so the title menu is judged against the
     layout it will actually sit in.</p>
     <ul class="legend">
@@ -694,8 +766,27 @@ const NOTES = {
         (<code>fabHidden</code>, <code>Hotbar.jsx</code>); this is the same rule extended to
         hotbar popovers, rather than a new one.</li>
     </ul>`,
+  refpick: `
+    <h3>5 · The reference chooser</h3>
+    <p>What <b>⇄ Reference</b> opens. It is a mode of the Lorebooks tab rather than
+    a third tab — still "things about your books", narrowed to the pairing.</p>
+    <ul class="legend">
+      <li><b>State first, then the choice.</b> What is currently paired is the top of
+        the sheet with Browse and Unpair beside it, because "what am I referencing
+        right now?" is the question people arrive with. The list of candidates is
+        below that.</li>
+      <li><b>No mode toggle anywhere.</b> A book is paired or it is not, and
+        <code>crosstalkEnabled</code> follows from that rather than being a separate
+        switch the user has to find and flip. This is the same trap #123 fell
+        into: a toggle whose effect is invisible until a second, hidden control
+        is also set.</li>
+      <li>One line explaining what a reference lorebook <i>is</i>. The concept is
+        the hard part, not the button, and this is the moment the user is asking.</li>
+      <li>The same chooser is what the hotbar's Reference action opens (state 6),
+        so there is one reference UI reached two ways rather than two that drift.</li>
+    </ul>`,
   settings: `
-    <h3>6 · Where the lander route lives</h3>
+    <h3>7 · Where the lander route lives</h3>
     <p>A button at the foot of the Settings panel, not a section of its own and
     not a row in the title menu.</p>
     <ul class="legend">
@@ -736,6 +827,9 @@ const els = {
   seg: document.getElementById('seg'),
   tabBooks: document.getElementById('tabBooks'),
   tabImport: document.getElementById('tabImport'),
+  tabRef: document.getElementById('tabRef'),
+  refBtn: document.getElementById('refBtn'),
+  sheetTitle: document.getElementById('sheetTitle'),
   hbPop: document.getElementById('hbPop'),
   pairBtn: document.getElementById('pairBtn'),
   gearBtn: document.getElementById('gearBtn'),
@@ -749,6 +843,7 @@ const LABELS = {
   menuA:  'Proposed — title menu, option A',
   import: 'Proposed — option A, import tab',
   menuB:  'Proposed — title menu, option B',
+  refpick: 'Proposed — reference chooser',
   consol: 'Proposed — consolidated top bar',
   settings: 'Proposed — Settings, foot of the panel',
 };
@@ -756,7 +851,7 @@ const LABELS = {
 function setState(state) {
   const settings = state === 'settings';
   const consolidated = state === 'consol' || settings;
-  const menuOpen = state === 'menuA' || state === 'menuB' || state === 'import';
+  const menuOpen = state === 'menuA' || state === 'menuB' || state === 'import' || state === 'refpick';
   // The menu states show the consolidated bar behind the sheet, since that is
   // the layout it will really open from.
   const barOnTop = consolidated || menuOpen;
@@ -771,11 +866,18 @@ function setState(state) {
   show(els.rulerBot, state === 'today' || state === 'consol');
 
   show(els.sheet, menuOpen);
-  show(els.seg, state === 'menuA' || state === 'import');
-  show(els.tabBooks, state !== 'import');
+  show(els.seg, state === 'menuA' || state === 'import' || state === 'refpick');
+  show(els.tabBooks, state !== 'import' && state !== 'refpick');
   show(els.tabImport, state === 'import');
+  show(els.tabRef, state === 'refpick');
   document.getElementById('segBooks').classList.toggle('seg-btn--on', state !== 'import');
   document.getElementById('segImport').classList.toggle('seg-btn--on', state === 'import');
+  // The footer's Reference button is a mode of the Lorebooks tab, not a third
+  // tab — it is still "things about your books", just filtered to the pairing.
+  // Blue, not accent: accent is reserved for the primary "make a new thing"
+  // action, so a second filled-accent button beside it would read as a rival.
+  els.refBtn.classList.toggle('is-open', state === 'refpick');
+  els.sheetTitle.textContent = state === 'refpick' ? 'Reference lorebook' : 'Reika — Test Book';
 
   show(els.settingsSheet, settings);
   show(els.backdrop, menuOpen || settings);
@@ -823,6 +925,7 @@ document.querySelectorAll('[data-goto]').forEach((b) => {
 });
 document.getElementById('segImport').addEventListener('click', () => setState('import'));
 document.getElementById('segBooks').addEventListener('click', () => setState('menuA'));
+document.getElementById('refBtn').addEventListener('click', () => setState('refpick'));
 
 setState('today');
 </script>
