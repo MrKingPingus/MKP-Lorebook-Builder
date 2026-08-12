@@ -21,14 +21,15 @@ All planned phases through **Phase 10** have shipped (see **Completed** below). 
 - **Verify hand-made JSON import** (follow-up to #102) — a reporter noted hand-made JSONs "wouldn't import," most likely malformed JSON (trailing commas / comments / smart quotes) rather than a schema issue. Needs the reporter's actual file to reproduce.
 - **Entry-list keyboard navigation** (deferred from 10D) — a roving focus cursor + list ARIA so keyboard/screen-reader users can move through and act on entries. Also unblocks per-entry hotkeys (duplicate / delete / toggle *this* entry) if ever wanted. A feature in its own right.
 - **Entry Planner** (parked from Phase 9) — see Future Features.
-- **Mobile crosstalk redesign** (parked from Phase 9) — see Future Features.
+- **Mobile crosstalk redesign** (parked from Phase 9) — see Future Features. **Confirmed parked 2026-08-12** (Phase 14 locked decision 6): #123 showed the current overlay/annotation model works once it is reachable, so this is a want rather than a blocker.
+- **No test covers the Find/Replace apply path on desktop** (found 2026-08-12 while fixing #124) — an action that rewrites text across a whole book had no coverage at all on either viewport. Mobile is covered now; desktop is not. Small, and the mobile scenario is the template.
 - **Desktop stress pass** (deferred from 14A) — there is currently no stress or limits testing on desktop at all. 14A built both halves of what one needs: `verify/layout-invariants.mjs` is viewport-agnostic and reusable as-is, and `fixtures/build-stress-book.mjs` generates books at the caps in `constants/limits.js`. What it still needs is desktop poses and a decision on which limits matter there — the crosstalk two-pane layout under 500 entries a side, and the folder tree at `MAX_FOLDER_DEPTH` with wide sibling sets, are the obvious candidates. Folders, `MAX_LOREBOOKS` and `MAX_HISTORY` all need seeded state rather than an imported book, since none of them are part of the CharSnap format.
 
 ---
 
 ## Upcoming Phases
 
-Phases with locked design decisions, as opposed to Future Features which are still ideas. Some have since shipped and stay here with their decisions intact — status is marked inline on each phase's sub-phase line, not by which section it sits in. As of 2026-08-11: **11 complete**, **12 not started**, **13 complete**, **14 in progress (14A complete)**. 11 and 12 came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
+Phases with locked design decisions, as opposed to Future Features which are still ideas. Some have since shipped and stay here with their decisions intact — status is marked inline on each phase's sub-phase line, not by which section it sits in. As of 2026-08-12: **11 complete**, **12 not started**, **13 complete**, **14 in progress (14A complete; 14B–E scoped, 14B blocked on a mockup)**. 11 and 12 came out of the 2026-07-24 "what's next" user-poll planning pass; Folders is the poll front-runner, Templates the runner-up, sequenced so Templates can reuse Folders' category primitive.
 
 ### Phase 11 — Custom Categories / Folders (GitHub #116)
 
@@ -304,7 +305,46 @@ The battery deliberately asserts nothing about markup — only containment, occl
 
 **What the sweep found already solid**, and so should survive the overhaul: containment (zero off-screen or body-overflow violations at any viewport), hit testing, 240-character name handling (ellipsised, row height held, chevron intact — pinned by assertions), and every limit in `constants/limits.js` rendering cleanly on a 390px screen.
 
-**Sub-phases beyond 14A are deliberately unwritten** until the findings are triaged into decisions — 14A exists to produce that brief, not to presume it.
+**Triage pass (2026-08-12).** The findings above were triaged against the three open mobile issues — #122 (the overhaul umbrella), #123 (reference mode) and #124 (Find/Replace clipping) — and the sub-phases below came out of it. What the triage changed is the *diagnosis*: 14A's headline was "structurally sound and dimensionally wrong", which was true of everything the sweep could reach. Probing #123 showed the other half of the problem, and it is not dimensional at all.
+
+**Mobile's real defect is that whole destinations have no door.** With the default (non-legacy) menus at a phone width there are **zero routes** to the Lorebooks side panel: the header is a gear that goes straight to Settings, and the title field, the `LorebookTab` pull tab and the ☰ dropdown are all desktop-or-legacy-only. Measured consequences:
+
+- **#123 is that gap, not a broken feature.** The only reference picker in the app is a `<select>` inside `LorebookPanel`. Enabling "Pair with reference lorebook" on mobile therefore changes nothing whatsoever (measured: zero delta in rendered text), and the Settings hint tells the user to "Pick which book to pair from the Lorebooks tab" — a tab mobile does not have. Reach the picker by turning on Legacy menus and **everything downstream works**: the two-segment role bar renders, the ⋯ menu opens on-screen, Browse reference lists all 91 rows. The mobile crosstalk surface is built, functional, and orphaned.
+- **There is no route back to the lander.** `setShowLander(true)` has exactly one call site — the header `×`, which is `!isMobile`. So New Lorebook, the recent-books list, What's New and Learn are all unreachable in-session; reloading is the only way back.
+- **Creating, deleting and renaming a *different* book are unreachable** for the same reason. Mobile's `▼` opens `LorebookSwitchPopover`, which switches between existing books and does nothing else.
+
+**Measured chrome, replacing the stale ~490px estimate in the Mobile Density Pass:** 238px above the first entry card, 57px below — **46% of a 360×640 screen**. The composition is what #122's layout asks are about: the filter stack is *three* rows (search input 33 / a second row holding nothing but the mode `<select>` 33 / type chips 39), and the lorebook name row sits *below* all of them at y=184.
+
+**Why 14A missed both bugs, worth keeping:** no sweep pose opens the Find/Replace scope popover, and there is no mobile crosstalk pathway in the driver at all — `pairCrosstalk` waits on `.reference-panel`, which mobile never renders. The suite could not reach either surface. Both gaps close in 14B.
+
+**Locked decisions (2026-08-12):**
+
+1. **Mobile gets its own title menu, mirroring desktop's `TitleMenu`**, anchored on the lorebook name in the role bar — rather than the cheaper option of turning the gear back into a menu. Chosen for parity and recognisability: it keeps the least distance between the two surfaces. **The reference picker lives in that menu's lorebook list**, which is what closes #123 properly.
+2. **Touch floor is 44px of *hit area*, not visual size.** WCAG 2.5.5 and the Apple HIG are both about the target, not the ink, so a 24px-looking chip can carry a 44px target via padding or a `::before` overlay. This matters because 14C is trying to reclaim 238px of chrome while 14D grows 57 controls — as a *visual* floor those two sub-phases fight over the same pixels, and as a hit-area floor most of the 57 cost no layout height at all. The floor is set as tokens in 14B so 14C's layout work obeys it rather than being redone.
+3. **The hotbar's `toggle_crosstalk` action becomes a book-picker, on desktop as well as mobile.** It currently flips a flag and leaves the user to find the picker in the panel it just opened — which is the trap #123 fell into. Precedent for an action that opens a surface: `make_export` opens a floating `ExportMenu`. The action's `active` state should mean *a book is actually paired*, not merely that the mode is on.
+4. **Crossing the breakpoint closes every open layer.** One rule at the `useMobile` boundary, decided in 14B because 14B is what builds the new layer that needs it. Subsumes finding 3 above rather than solving the settings-panel case separately.
+5. **No status footer on mobile.** 13A decision 2 stands; app state and view controls fold into the consolidated top bar instead. #122's "bring the footer in line with desktop" is answered by parity of *contents*, not by growing a second bar on a screen that is already 46% chrome.
+6. **Landscape stays out of scope** (2026-08-11, unchanged) and **the mobile crosstalk redesign stays parked** in Future Features — #123 is evidence the current overlay/annotation model works once reachable, so the redesign is a want, not a blocker.
+
+**Sub-phases:**
+
+- **14A — verification sweep · complete** (above).
+- **14B — Navigation spine.** The mobile title menu, the touch-floor tokens, the breakpoint rule, the hotbar picker. Fixes #123 at the root, restores the lander route, gives create/delete/rename a home. Also the harness work: a `pairCrosstalkMobile` driver pathway and popover poses in the sweep, so the surface is testable *before* it is rebuilt. **Blocked on a mockup** — parity is the right instinct only if it actually works at 390px, and that is a thing to look at rather than argue about (`mockup-mobile-overhaul.html`, same throwaway spirit as `mockup-ui-overhaul.html`).
+- **14C — Density & layout.** The three-row filter stack, the lorebook-bar order (both from #122), the 238px of chrome. Absorbs the **Mobile Density Pass**, which stops being a Future Feature. A real-device pass belongs at the end of this sub-phase, before 14D locks any sizes.
+- **14D — Touch ergonomics.** Apply the floor, then raise `TAP_TARGET_HARD` and promote the rule from note to hard failure. Findings 4 (dismiss-stack registration) and F5 (assistive-tech hiding of the always-mounted layers) ride along.
+- **14E — Mobile feature tour** (#122 item 1). Last by necessity: `verify/screenshots.mjs` captures the real UI, so the tour has to be generated against the finished one. Note the generator has desktop scenes only — mobile scenes are part of this sub-phase, not a given.
+
+**Shipped ahead of the phase (2026-08-12), because all three are live bugs independent of the redesign:**
+
+- **#124 — the Replace scope popover.** It was an absolutely-positioned child of `.replace-btn-wrap` with `right: 0`; the wrapper sits at x=12 and the popover is 360 wide, so right-aligning it put it at **left −211** on a 390px phone, and every ancestor up to `#root` is `overflow: hidden`, so the missing 211px was clipped rather than scrollable. Now portalled and positioned by `use-anchored-position.js` — which 13C built for exactly this and left a note in this file recommending for all new anchored popovers. Anchored off the *button* rather than the wrapper, because in the mobile row the wrapper is squeezed narrower than the button it contains.
+- **A second bug the first one was hiding: Replace did not apply on mobile.** Once the popover was reachable, Proceed still did nothing. `SearchBar` renders `FindReplace` **twice** on mobile — the fields in one row, the Replace button in another — and both instances share `scopeOpen` and both run the outside-click effect. The fields-only instance holds no popover node, so it judged every click "outside" and closed the popover before the button's own handler could run. The pre-fix code survived this by accident (`popoverRef.current &&` short-circuited on the null ref) and an optional-chaining rewrite removed the accident. **The general rule: when one piece of shared state is arbitrated by a document-level listener, only the instance that owns the DOM node may answer.** The double render is itself a smell — 14C should collapse it when it consolidates the filter rows.
+- **`100vh` reached under the iOS URL bar.** `.app-root` was `height: 100vh`, which on iOS Safari is the *large* viewport — it excludes the collapsing URL bar — so the bottom ~60–90px of the app sat under the browser's own chrome, exactly where the hotbar and FAB live. Both `.app-root` and `.floating-window--mobile` now size in `dvh` (the latter matters independently: `position: fixed` resolves against the initial containing block, so `inset: 0` reaches under the bar regardless of what `.app-root` says). The usual objection to `dvh` — height changing as the bar collapses — does not apply, because the page itself never scrolls.
+
+Also worth knowing before 14C designs a bottom bar: there is no `viewport-fit=cover` and no `env(safe-area-inset-*)` anywhere. That is *fine* today, since iOS letterboxes the safe area and nothing hides under the home indicator, but an edge-to-edge bottom bar needs both added.
+
+**Already handled, so do not re-solve it:** the iOS zoom-on-focus trap. `style.css:201` forces every form element to 16px below the breakpoint, and all seven fields measure 16px in both the list view and the entry editor. Two consequences for 14D: the guard is `!important`, so form fields cannot follow the text-size setting downward on mobile; and because it is written as `1rem`, a user who sets text scale *below* 100% brings the zoom back.
+
+**Coverage gap found while fixing #124, and only half closed:** the Replace *apply* path had no test at all, on either viewport, for an action that rewrites text across a whole book. The new mobile scenario covers it at a phone width; **desktop still has none.**
 
 ---
 
@@ -371,7 +411,8 @@ Multi-select entries and move them together up/down. Options: checkbox column + 
 **Markdown Dropdown**
 Helper UI on the description textarea for inserting common markdown (bold, italic, heading, bullet, blockquote); insertion at cursor, no parser. Deferred because the target platform doesn't currently render markdown in descriptions.
 
-**Mobile Density Pass**
+**Mobile Density Pass** — **absorbed into Phase 14C (2026-08-12).** No longer a Future Feature; the ideas below are its starting material. The ~490px figure is superseded by measurement: **238px above the first entry card and 57px below**, 46% of a 360×640 screen.
+
 The mobile UI burns ~half the viewport on chrome before any entries show (header, search/sort row, type-filter chips, lorebook-name row, reference row, hotbar footer ≈ 490px). Ideas, ranked by ROI:
 - Collapse top chrome into a sticky compact bar on scroll (name/reference/filters fold into a thin row with the entry count + a chevron). Recovers ~250px.
 - Replace the chip-row type filter with a `Filter ▾ (n)` button opening a sheet. Recovers ~75–100px.
@@ -379,7 +420,7 @@ The mobile UI burns ~half the viewport on chrome before any entries show (header
 - Combine the name + reference rows when crosstalk is on.
 - Auto-hide the name row on scroll; tap the header title to reveal.
 
-User wants mockups before committing to a direction. Defer until after the mobile crosstalk redesign.
+User wants mockups before committing to a direction. ~~Defer until after the mobile crosstalk redesign.~~ **Reversed** — the crosstalk redesign stays parked (Phase 14 locked decision 6) and the density work does not depend on it. The mockup requirement stands and is folded into 14B's.
 
 ---
 

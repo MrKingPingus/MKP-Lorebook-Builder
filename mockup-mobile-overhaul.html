@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MKP Lorebook Builder — Mobile Overhaul Mockup (Phase 14B)</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   Design tokens — copied verbatim from src/style.css :root (dark only).
+   Deliberately dark-theme-only and throwaway, same as
+   mockup-ui-overhaul.html. Do not make it theme-aware.
+
+   Frames are 390×844 (iPhone 14-class), the middle row of the verify
+   viewport matrix. The "today" state reproduces measured geometry:
+   238px of chrome above the first card, 57px below.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg:       #0f172a;
+  --surface:  #111827;
+  --surface2: #1f2937;
+  --surface3: #1e293b;
+  --border:   #374151;
+  --border2:  #4b5563;
+  --text:     #e5e7eb;
+  --muted:    #6b7280;
+  --muted2:   #9ca3af;
+  --coral:    #f87171;
+  --green:    #34d399;
+  --yellow:   #f59e0b;
+  --red:      #ef4444;
+  --blue:     #60a5fa;
+  --gold:     #eab308;
+  --accent:   #ef4444;
+  --passive-agree: #60a5fa;
+  --focus-border: #a0b5d6;
+  --radius:   5px;
+  --radius-lg: 8px;
+  --shadow:   0 12px 40px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.5);
+  --font:     'Inter', system-ui, -apple-system, sans-serif;
+  --transition: 0.12s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #070b14; color: var(--text); font-family: var(--font);
+  font-size: 14px; line-height: 1.5; padding: 24px 20px 60px;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input { font-family: inherit; }
+
+/* ── Page chrome (not part of the app) ── */
+.page-head { max-width: 940px; width: 100%; text-align: center; }
+.page-title { font-size: 1.125rem; font-weight: 800; letter-spacing: .02em; }
+.page-sub { color: var(--muted2); font-size: .8125rem; margin-top: 6px; }
+.state-switcher {
+  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 8px; position: sticky; top: 10px; z-index: 900;
+}
+.state-btn {
+  padding: 7px 13px; border-radius: var(--radius); font-size: .8125rem;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted2);
+  transition: all var(--transition); white-space: nowrap;
+}
+.state-btn:hover { background: var(--surface3); color: var(--text); }
+.state-btn--active { background: var(--passive-agree); border-color: var(--passive-agree); color: #fff; }
+
+.stage { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+.note {
+  max-width: 380px; font-size: .8125rem; color: var(--muted2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 16px;
+}
+.note h3 { font-size: .875rem; color: var(--text); margin-bottom: 8px; }
+.note ul { margin: 8px 0 0 16px; }
+.note li { margin-bottom: 6px; }
+.note code { background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: .75rem; }
+.note .bad  { color: var(--coral); font-weight: 600; }
+.note .good { color: var(--green); font-weight: 600; }
+.note .q    { color: var(--yellow); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Phone frame
+   ═══════════════════════════════════════════════════════════════════ */
+.phone-wrap { position: relative; flex-shrink: 0; }
+.phone-label {
+  text-align: center; font-size: .6875rem; color: var(--muted);
+  letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px;
+}
+.phone {
+  position: relative; width: 390px; height: 844px;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 22px; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow);
+}
+
+/* Chrome-height ruler drawn over the frame */
+.ruler {
+  position: absolute; left: 0; width: 100%; pointer-events: none; z-index: 700;
+  background: rgba(248,113,113,.11);
+  border-bottom: 1px dashed var(--coral);
+}
+.ruler-tag {
+  position: absolute; right: 6px; bottom: 3px;
+  font-size: .625rem; color: var(--coral); font-weight: 700;
+  background: rgba(15,23,42,.9); padding: 1px 5px; border-radius: 3px;
+}
+.ruler--bottom { border-bottom: none; border-top: 1px dashed var(--coral); }
+.ruler--bottom .ruler-tag { top: 3px; bottom: auto; }
+
+/* ── Header ── */
+.window-header {
+  display: flex; align-items: center; gap: 9px; height: 55px;
+  padding: 0 12px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.header-logo { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.logo-icon {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; font-size: 13px;
+  background: linear-gradient(140deg, #3b82f6, #1e293b 70%);
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-text { font-size: .75rem; font-weight: 800; letter-spacing: .03em; color: var(--coral); white-space: nowrap; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.ring {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: conic-gradient(var(--green) 0 22%, var(--surface3) 22% 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.ring::after { content: ''; width: 17px; height: 17px; border-radius: 50%; background: var(--surface); }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted2); font-size: 17px;
+}
+.icon-btn:hover { background: var(--surface2); color: var(--text); }
+.icon-btn--hit { position: relative; }
+/* Decision 2 made visible: a 24px glyph carrying a 44px target. */
+.icon-btn--hit::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 44px; height: 44px; transform: translate(-50%, -50%);
+  outline: 1px dashed rgba(96,165,250,.55); border-radius: 6px;
+}
+
+/* ── Rows in the builder ── */
+.gfb { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.row { display: flex; align-items: center; gap: 6px; }
+.field-h { height: 33px; }
+.inp {
+  flex: 1; min-width: 0; height: 33px; padding: 0 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: .8125rem;
+}
+.sel {
+  height: 33px; padding: 0 8px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--muted2); font-size: .75rem; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+}
+.chips { display: flex; gap: 5px; height: 39px; align-items: center; overflow: hidden; }
+.chip {
+  padding: 4px 9px; border-radius: 999px; font-size: .6875rem;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted2); white-space: nowrap;
+}
+.chip--on { background: var(--passive-agree); border-color: var(--passive-agree); color: #fff; }
+
+/* Lorebook bar (today: below the filters; proposed: above them, and the menu anchor) */
+.lb-bar {
+  display: flex; align-items: center; gap: 6px; height: 46px;
+  margin: 0 12px 8px; padding: 0 4px 0 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); flex-shrink: 0;
+}
+.lb-name { font-weight: 600; font-size: .8125rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-act { width: 32px; height: 32px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--muted2); }
+.lb-act:hover { background: var(--surface2); }
+
+/* The proposed title field — same affordance as desktop's, phone-width */
+.lb-bar--title { cursor: pointer; }
+.lb-bar--title.is-open, .lb-bar--title:hover { border-color: var(--accent); background: var(--surface2); }
+.lb-caret { color: var(--muted); font-size: .625rem; margin-right: 6px; }
+
+/* ── Entry list ── */
+.entry-list { flex: 1; min-height: 0; overflow: hidden; padding: 8px 12px; display: flex; flex-direction: column; gap: 7px; }
+.card {
+  height: 81px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 9px 11px; display: flex; flex-direction: column; gap: 5px; flex-shrink: 0;
+}
+.card-top { display: flex; align-items: center; gap: 7px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.card-name { font-size: .8125rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-chev { color: var(--muted); font-size: .6875rem; }
+.card-sub { font-size: .6875rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-tags { display: flex; gap: 4px; }
+.tag { font-size: .5625rem; padding: 1px 5px; border-radius: 3px; background: var(--surface3); color: var(--muted2); }
+
+/* ── Hotbar + FAB ── */
+.hotbar {
+  height: 57px; flex-shrink: 0; background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-around; padding: 0 8px; position: relative;
+}
+.hb-btn { font-size: .6875rem; color: var(--muted2); display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 44px; }
+.hb-btn span:first-child { font-size: 15px; }
+.fab {
+  position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%);
+  width: 58px; height: 58px; border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 27px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.55); z-index: 60;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   The proposed mobile title menu — full-screen sheet from the name row
+   ═══════════════════════════════════════════════════════════════════ */
+.sheet-backdrop { position: absolute; inset: 0; background: rgba(4,7,14,.62); z-index: 300; }
+.sheet {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 310;
+  background: var(--bg); display: flex; flex-direction: column;
+}
+.sheet-head {
+  height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 0 8px 0 12px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.sheet-title { font-size: .875rem; font-weight: 700; flex: 1; }
+.sheet-close { width: 44px; height: 44px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 19px; color: var(--muted2); }
+.sheet-close:hover { background: var(--surface2); }
+.sheet-body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+
+/* Segmented head — mobile's answer to desktop's two columns.
+   Desktop puts Lorebooks and Import/Export side by side; 390px has no room
+   for two columns, so the same two destinations become two tabs. */
+.seg { display: flex; gap: 4px; padding: 8px 12px 0; flex-shrink: 0; }
+.seg-btn {
+  flex: 1; height: 44px; border-radius: var(--radius); font-size: .8125rem;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--muted2);
+}
+.seg-btn--on { background: var(--surface3); border-color: var(--focus-border); color: var(--text); font-weight: 600; }
+
+.sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sub-label {
+  font-size: .625rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); margin-top: 4px;
+}
+.sort-row { display: flex; gap: 5px; }
+.sort-btn { flex: 1; height: 34px; border-radius: var(--radius); font-size: .75rem; background: var(--surface2); border: 1px solid var(--border); color: var(--muted2); }
+.sort-btn--on { background: var(--passive-agree); border-color: var(--passive-agree); color: #fff; }
+
+.book {
+  display: flex; align-items: center; gap: 9px; min-height: 52px;
+  padding: 7px 8px 7px 11px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.book--active { border-color: var(--passive-agree); background: var(--surface2); }
+.book-main { flex: 1; min-width: 0; }
+.book-name { font-size: .8125rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.book-meta { font-size: .625rem; color: var(--muted); margin-top: 1px; }
+.book-badge { font-size: .5625rem; padding: 2px 6px; border-radius: 3px; background: var(--passive-agree); color: #fff; font-weight: 700; letter-spacing: .04em; }
+.book-badge--ref { background: var(--surface3); color: var(--blue); border: 1px solid var(--blue); }
+.book-act { width: 44px; height: 44px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--muted2); font-size: 15px; flex-shrink: 0; }
+.book-act:hover { background: var(--surface3); }
+
+/* The #123 fix, in place: pairing is a per-book action in this list. */
+.book-act--ref { color: var(--blue); }
+.pair-hint {
+  font-size: .6875rem; color: var(--muted2); background: var(--surface);
+  border: 1px dashed var(--border2); border-radius: var(--radius); padding: 8px 10px;
+}
+.pair-hint b { color: var(--blue); }
+
+.sheet-foot { flex-shrink: 0; border-top: 1px solid var(--border); padding: 8px 12px; display: flex; gap: 6px; background: var(--surface); }
+.foot-btn { flex: 1; height: 44px; border-radius: var(--radius); font-size: .8125rem; background: var(--surface2); border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.foot-btn--accent { border-color: var(--accent); color: var(--coral); }
+
+/* Import takeover inside the sheet */
+.drop {
+  border: 2px dashed var(--border2); border-radius: var(--radius-lg);
+  padding: 26px 14px; text-align: center; color: var(--muted2); font-size: .8125rem;
+  background: var(--surface);
+}
+.drop-icon { font-size: 26px; display: block; margin-bottom: 8px; }
+.imp-opt {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 9px 11px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.imp-opt--on { border-color: var(--focus-border); background: var(--surface2); }
+.imp-radio { width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--border2); flex-shrink: 0; }
+.imp-opt--on .imp-radio { border-color: var(--passive-agree); background: radial-gradient(var(--passive-agree) 42%, transparent 46%); }
+.imp-txt { flex: 1; min-width: 0; }
+.imp-name { font-size: .8125rem; font-weight: 600; }
+.imp-desc { font-size: .625rem; color: var(--muted); }
+.imp-confirm { height: 44px; border-radius: var(--radius); background: var(--accent); color: #fff; font-size: .8125rem; font-weight: 600; }
+
+/* Hotbar reference picker (decision 3) */
+.hb-pop {
+  position: absolute; left: 8px; right: 8px; bottom: 65px; z-index: 400;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 8px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.hb-pop-title { font-size: .6875rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 2px 4px 4px; }
+.hb-pop-item { min-height: 44px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; padding: 0 11px; font-size: .8125rem; }
+.hb-pop-item--on { border-color: var(--blue); }
+.hb-pop-item .book-meta { margin: 0; }
+.hb-btn--on { color: var(--blue); }
+
+/* Callout pins over a frame */
+.pin {
+  position: absolute; z-index: 800; font-size: .625rem; font-weight: 700;
+  background: var(--yellow); color: #1a1204; border-radius: 999px;
+  width: 19px; height: 19px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.5);
+}
+.legend { counter-reset: pin; }
+.legend li { list-style: none; position: relative; padding-left: 26px; }
+.legend li::before {
+  counter-increment: pin; content: counter(pin);
+  position: absolute; left: 0; top: 2px;
+  width: 19px; height: 19px; border-radius: 999px;
+  background: var(--yellow); color: #1a1204; font-size: .625rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="page-title">Mobile Overhaul — Phase 14B mockup</div>
+  <div class="page-sub">
+    390×844. The real app measures <b>238px of chrome above the first card and 57px below</b> — 46% of a
+    360×640 screen. Frames 1 and 5 rebuild that stack closely rather than to the pixel, and the ruler
+    measures itself, so what to read off it is the <b>difference</b> between states, not the absolute.
+    States 2–4 are the proposal. Dark theme only, throwaway — same rules as <code>mockup-ui-overhaul.html</code>.
+  </div>
+</div>
+
+<div class="state-switcher">
+  <button class="state-btn state-btn--active" data-state="today">1 · Today</button>
+  <button class="state-btn" data-state="menuA">2 · Title menu — A (parity)</button>
+  <button class="state-btn" data-state="import">3 · A, import tab</button>
+  <button class="state-btn" data-state="menuB">4 · Title menu — B (lean)</button>
+  <button class="state-btn" data-state="consol">5 · Consolidated bar + hotbar pair</button>
+</div>
+
+<div class="stage">
+  <div class="phone-wrap">
+    <div class="phone-label" id="frameLabel">Today — 0.9.1</div>
+    <div class="phone" id="phone">
+
+      <!-- Chrome rulers, only on the geometry states -->
+      <div class="ruler" id="rulerTop" style="top:0;height:238px;"><span class="ruler-tag" id="rulerTopTag">238px chrome</span></div>
+      <div class="ruler ruler--bottom" id="rulerBot" style="bottom:0;height:57px;"><span class="ruler-tag">57px</span></div>
+
+      <!-- ── Header ── -->
+      <div class="window-header">
+        <div class="header-logo">
+          <span class="logo-icon">📖</span>
+          <span class="logo-text">LOREBOOK BUILDER</span>
+        </div>
+        <div class="header-right">
+          <div class="ring"></div>
+          <button class="icon-btn" id="gearBtn">⚙</button>
+        </div>
+      </div>
+
+      <!-- ── Lorebook bar — ABOVE the filters in the proposal ── -->
+      <div class="lb-bar lb-bar--title hidden" id="lbBarTop">
+        <span class="lb-name">Reika — Test Book</span>
+        <span class="lb-caret">▾</span>
+        <button class="lb-act">✏️</button>
+      </div>
+
+      <!-- ── Filter stack ── -->
+      <div class="gfb" id="gfb">
+        <div class="row">
+          <input class="inp" placeholder="Search entries…" />
+          <div class="sel" id="sortSel">↕ Manual</div>
+        </div>
+        <!-- Today: a whole row for one dropdown -->
+        <div class="row" id="row2">
+          <div class="sel" style="flex:1;justify-content:center;">Search ▾</div>
+        </div>
+        <!-- Today: chips on their own row -->
+        <div class="chips" id="chipRow">
+          <span class="chip chip--on">All</span>
+          <span class="chip">Character</span>
+          <span class="chip">Location</span>
+          <span class="chip">Item</span>
+          <span class="chip">Lore</span>
+        </div>
+        <!-- Proposal: one row, mode + type filter together -->
+        <div class="row hidden" id="rowConsol">
+          <div class="sel" style="flex:1;">Search ▾</div>
+          <div class="sel">Filter ▾ <span style="color:var(--blue)">(1)</span></div>
+        </div>
+      </div>
+
+      <!-- ── Lorebook bar — BELOW the filters, as today ── -->
+      <div class="lb-bar" id="lbBarBottom">
+        <span class="lb-name">Reika — Test Book</span>
+        <button class="lb-act">✏️</button>
+        <button class="lb-act">▼</button>
+      </div>
+
+      <!-- ── Entry list ── -->
+      <div class="entry-list">
+        <div class="card">
+          <div class="card-top"><span class="dot" style="background:var(--green)"></span><span class="card-name">Akaya's Apartment</span><span class="card-chev">›</span></div>
+          <div class="card-sub">A cramped third-floor walk-up above the laundromat…</div>
+          <div class="card-tags"><span class="tag">Location</span><span class="tag">4 triggers</span></div>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="dot" style="background:var(--blue)"></span><span class="card-name">Reika Amano</span><span class="card-chev">›</span></div>
+          <div class="card-sub">Nineteen, second-year, permanently unimpressed…</div>
+          <div class="card-tags"><span class="tag">Character</span><span class="tag">7 triggers</span></div>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="dot" style="background:var(--yellow)"></span><span class="card-name">The Gallery Key</span><span class="card-chev">›</span></div>
+          <div class="card-sub">Brass, worn smooth, kept on a loop of red thread…</div>
+          <div class="card-tags"><span class="tag">Item</span><span class="tag">3 triggers</span></div>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="dot" style="background:var(--coral)"></span><span class="card-name">Sable Street Market</span><span class="card-chev">›</span></div>
+          <div class="card-sub">Open from dusk; the stalls change hands weekly…</div>
+          <div class="card-tags"><span class="tag">Location</span><span class="tag">5 triggers</span></div>
+        </div>
+      </div>
+
+      <!-- ── Hotbar ── -->
+      <div class="hotbar">
+        <button class="hb-btn"><span>⬆</span><span>Import</span></button>
+        <button class="hb-btn"><span>↶</span><span>Undo</span></button>
+        <button class="hb-btn" id="pairBtn"><span>⇄</span><span>Reference</span></button>
+        <button class="hb-btn"><span>↷</span><span>Redo</span></button>
+        <button class="hb-btn"><span>⬇</span><span>Export</span></button>
+        <div class="fab">+</div>
+      </div>
+
+      <!-- Hotbar reference picker (state 5) -->
+      <div class="hb-pop hidden" id="hbPop">
+        <div class="hb-pop-title">Reference against…</div>
+        <div class="hb-pop-item hb-pop-item--on">⇄ Akaya — Draft 2 <span class="book-meta" style="margin-left:auto">2h ago</span></div>
+        <div class="hb-pop-item">⇄ Sable Street — v3 <span class="book-meta" style="margin-left:auto">yesterday</span></div>
+        <div class="hb-pop-item" style="color:var(--muted2)">✕ Unpair</div>
+      </div>
+
+      <!-- ═══ The proposed mobile title menu ═══ -->
+      <div class="sheet-backdrop hidden" id="backdrop"></div>
+      <div class="sheet hidden" id="sheet">
+        <div class="sheet-head">
+          <span class="sheet-title" id="sheetTitle">Reika — Test Book</span>
+          <button class="sheet-close" id="sheetClose">×</button>
+        </div>
+        <div class="sheet-body">
+
+          <!-- Segmented head — only in option A -->
+          <div class="seg hidden" id="seg">
+            <button class="seg-btn seg-btn--on" id="segBooks">Lorebooks</button>
+            <button class="seg-btn" id="segImport">Import / Export</button>
+          </div>
+
+          <!-- Books tab -->
+          <div class="sheet-scroll" id="tabBooks">
+            <div class="sort-row">
+              <button class="sort-btn sort-btn--on">Recent</button>
+              <button class="sort-btn">A–Z</button>
+            </div>
+
+            <div class="sub-label">This lorebook</div>
+            <div class="book book--active">
+              <div class="book-main">
+                <div class="book-name">Reika — Test Book</div>
+                <div class="book-meta">29 entries · saved just now</div>
+              </div>
+              <span class="book-badge">ACTIVE</span>
+              <button class="book-act">✏️</button>
+            </div>
+
+            <div class="sub-label">Other lorebooks</div>
+            <div class="book">
+              <div class="book-main">
+                <div class="book-name">Akaya — Draft 2</div>
+                <div class="book-meta">41 entries · 2 hours ago</div>
+              </div>
+              <span class="book-badge book-badge--ref">REF</span>
+              <button class="book-act book-act--ref" title="Paired as reference">⇄</button>
+              <button class="book-act">⋯</button>
+            </div>
+            <div class="book">
+              <div class="book-main">
+                <div class="book-name">Sable Street — v3</div>
+                <div class="book-meta">12 entries · yesterday</div>
+              </div>
+              <button class="book-act book-act--ref" title="Pair as reference">⇄</button>
+              <button class="book-act">⋯</button>
+            </div>
+            <div class="book">
+              <div class="book-main">
+                <div class="book-name">Winter Arc — scratch</div>
+                <div class="book-meta">6 entries · 3 days ago</div>
+              </div>
+              <button class="book-act book-act--ref" title="Pair as reference">⇄</button>
+              <button class="book-act">⋯</button>
+            </div>
+
+            <div class="pair-hint">
+              <b>⇄</b> pairs a book as the reference. This is the control #123 was
+              looking for — today it exists only inside the Lorebooks side panel,
+              which mobile has no route to.
+            </div>
+          </div>
+
+          <!-- Import tab -->
+          <div class="sheet-scroll hidden" id="tabImport">
+            <div class="drop">
+              <span class="drop-icon">⬆</span>
+              Tap to choose a file<br />
+              <span style="font-size:.6875rem;color:var(--muted)">JSON or TXT · or <u>paste text instead</u></span>
+            </div>
+            <div class="sub-label">Reika — Test Book.json · 29 entries</div>
+            <div class="imp-opt imp-opt--on">
+              <span class="imp-radio"></span>
+              <span class="imp-txt"><span class="imp-name">Import as new</span><span class="imp-desc">Keeps this lorebook untouched</span></span>
+            </div>
+            <div class="imp-opt">
+              <span class="imp-radio"></span>
+              <span class="imp-txt"><span class="imp-name">Add 29 entries to this book</span><span class="imp-desc">Appends; duplicates are skipped</span></span>
+            </div>
+            <div class="imp-opt">
+              <span class="imp-radio"></span>
+              <span class="imp-txt"><span class="imp-name">Replace with 29 entries</span><span class="imp-desc">Backs up as JSON first</span></span>
+            </div>
+            <button class="imp-confirm">Import 29 entries</button>
+          </div>
+
+          <div class="sheet-foot" id="sheetFoot">
+            <button class="foot-btn">＋ New</button>
+            <button class="foot-btn foot-btn--accent" id="homeBtn">⌂ Home</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+const NOTES = {
+  today: `
+    <h3>1 · What a phone shows today</h3>
+    <p>Every point below was measured against the running app, not guessed. The real
+    chrome is <b>238px above the first card and 57px below</b> — on a 360×640 phone,
+    <b>46% of the viewport</b>. The ruler shows this mockup's own stack, which is a
+    few pixels off; compare it against state 5 rather than reading it as the app.</p>
+    <ul class="legend">
+      <li>The gear is the <b>only</b> header destination, and it opens Settings. No title
+        field, no pull tab, no ☰ — so the <span class="bad">Lorebooks panel has zero routes</span>,
+        and with it the only reference picker (#123).</li>
+      <li>Three filter rows: search, a row holding <span class="bad">nothing but the mode dropdown</span>,
+        then the type chips. 105px for two controls and a filter.</li>
+      <li>The lorebook name sits <span class="bad">below</span> the filters — #122 asks for it above.</li>
+      <li>No route back to the lander: the header <code>×</code> is desktop-only, so
+        <span class="bad">New / Recent / What's New / Learn are unreachable</span> without a reload.</li>
+      <li>Controls sized for a mouse — 57 of them under 32px.</li>
+    </ul>`,
+  menuA: `
+    <h3>2 · Option A — parity with desktop's title menu</h3>
+    <p>The name row becomes the anchor, with desktop's accent ring at rest so it reads
+    as pressable. Tapping it opens the same two destinations desktop's
+    <code>TitleMenu</code> carries.</p>
+    <ul class="legend">
+      <li><b>Two columns become two tabs.</b> 390px has no room to put Lorebooks
+        beside Import/Export, so the parity is in the <i>contents and the route</i>,
+        not the geometry. Desktop's rail-collapse trick is the same idea one size up.</li>
+      <li><b>⇄ per book is the #123 fix.</b> Pairing is a property of a book, so it
+        belongs on the book's row — not in a <code>&lt;select&gt;</code> in a panel elsewhere.
+        <span class="good">REF</span> marks the paired one.</li>
+      <li><b>⌂ Home restores the lander route</b> that the hidden <code>×</code> took away.
+        ＋ New covers book creation, ⋯ covers rename and delete.</li>
+      <li>Every row here is ≥44px, and the sort toggle keeps desktop's Recent/A–Z pair
+        so the two surfaces cannot disagree about order.</li>
+      <li class="q">The open question: is the second tab worth it, given the hotbar
+        already reaches Import and Export? That is state 4.</li>
+    </ul>`,
+  import: `
+    <h3>3 · Option A, the Import tab</h3>
+    <p>The reason to check this state: desktop's import takeover works because the
+    books column can collapse to a 34px rail and hand its width over. On a phone
+    there is no width to hand over — the tab <i>replaces</i> the list instead.</p>
+    <ul class="legend">
+      <li>Same shared flow as every other surface (<code>use-import-flow.js</code>),
+        so the four dispositions and the JSON-backup-before-replace all come free.</li>
+      <li>"Replace <b>with</b> 29 entries" — the count is always what is arriving,
+        never what is being deleted. Same wording rule as 13C.</li>
+      <li>Paste stays behind a link rather than taking half the drop zone.</li>
+      <li class="q">Judgement call: this is a second route to a flow the hotbar's
+        Import button already opens. 13C decided one shared flow across many
+        surfaces is fine — this is that decision applied again, or the argument
+        for option B.</li>
+    </ul>`,
+  menuB: `
+    <h3>4 · Option B — books and Home only</h3>
+    <p>The lean version: no segmented head, no second tab. Import and Export stay
+    where they already work, on the hotbar.</p>
+    <ul class="legend">
+      <li>Closes <b>everything that is actually broken</b> — #123's picker, the lander
+        route, create/rename/delete — with roughly half the surface area of A.</li>
+      <li>Costs the parity: a returning desktop user taps the name expecting
+        Import to be in there, and it is one row further away instead.</li>
+      <li>Nothing here forecloses A. The tabs can be added later without moving
+        anything that ships in B.</li>
+    </ul>
+    <p style="margin-top:10px">Flip between 2 and 4 — the question is only whether the
+    second tab earns its place at this width.</p>`,
+  consol: `
+    <h3>5 · The 14C consolidation, and the hotbar pair action</h3>
+    <p>Not part of 14B's decision, shown so the title menu is judged against the
+    layout it will actually sit in.</p>
+    <ul class="legend">
+      <li>Name row moves <b>above</b> the filters (#122) and becomes the menu anchor.</li>
+      <li>Three filter rows become one: mode select and <code>Filter ▾ (1)</code>
+        side by side (#122), chips gone. <span class="good">−45px in this mockup</span>
+        — over half a card of list back, before 14C touches the header or the
+        card rows themselves.</li>
+      <li>The hotbar's Reference action opens a <b>book picker</b> instead of flipping
+        a flag (decision 3) — the fast path for someone who already knows which book
+        they want. Its lit state means <i>paired</i>, not merely <i>mode on</i>.</li>
+      <li>The dashed blue box on the gear is decision 2 made visible: a 24px glyph
+        carrying a 44px target. Most of the 57 undersized controls fix this way,
+        costing no layout height.</li>
+    </ul>`,
+};
+
+const els = {
+  rulerTop: document.getElementById('rulerTop'),
+  rulerTopTag: document.getElementById('rulerTopTag'),
+  rulerBot: document.getElementById('rulerBot'),
+  lbBarTop: document.getElementById('lbBarTop'),
+  lbBarBottom: document.getElementById('lbBarBottom'),
+  row2: document.getElementById('row2'),
+  chipRow: document.getElementById('chipRow'),
+  rowConsol: document.getElementById('rowConsol'),
+  backdrop: document.getElementById('backdrop'),
+  sheet: document.getElementById('sheet'),
+  seg: document.getElementById('seg'),
+  tabBooks: document.getElementById('tabBooks'),
+  tabImport: document.getElementById('tabImport'),
+  hbPop: document.getElementById('hbPop'),
+  pairBtn: document.getElementById('pairBtn'),
+  gearBtn: document.getElementById('gearBtn'),
+  note: document.getElementById('note'),
+  frameLabel: document.getElementById('frameLabel'),
+};
+const show = (el, on) => el.classList.toggle('hidden', !on);
+
+const LABELS = {
+  today:  'Today — 0.9.1',
+  menuA:  'Proposed — title menu, option A',
+  import: 'Proposed — option A, import tab',
+  menuB:  'Proposed — title menu, option B',
+  consol: 'Proposed — consolidated top bar',
+};
+
+function setState(state) {
+  const consolidated = state === 'consol';
+  const menuOpen = state === 'menuA' || state === 'menuB' || state === 'import';
+  // The menu states show the consolidated bar behind the sheet, since that is
+  // the layout it will really open from.
+  const barOnTop = consolidated || menuOpen;
+
+  show(els.lbBarTop, barOnTop);
+  show(els.lbBarBottom, !barOnTop);
+  show(els.row2, !barOnTop);
+  show(els.chipRow, !barOnTop);
+  show(els.rowConsol, barOnTop);
+
+  show(els.rulerTop, state === 'today' || consolidated);
+  show(els.rulerBot, state === 'today' || consolidated);
+
+  show(els.backdrop, menuOpen);
+  show(els.sheet, menuOpen);
+  show(els.seg, state === 'menuA' || state === 'import');
+  show(els.tabBooks, state !== 'import');
+  show(els.tabImport, state === 'import');
+
+  show(els.hbPop, consolidated);
+  els.pairBtn.classList.toggle('hb-btn--on', consolidated);
+  els.gearBtn.classList.toggle('icon-btn--hit', consolidated);
+  els.lbBarTop.classList.toggle('is-open', menuOpen);
+
+  els.note.innerHTML = NOTES[state];
+  els.frameLabel.textContent = LABELS[state];
+
+  // The ruler measures this mockup rather than repeating a number typed by hand —
+  // a mockup that asserts its own geometry can be wrong about it, which is the
+  // one thing a measurement drawing must never be. The real app's figures are
+  // cited in the notes; these are the mockup's, and the delta is the point.
+  requestAnimationFrame(() => {
+    const phone = document.getElementById('phone').getBoundingClientRect();
+    const card = document.querySelector('.card').getBoundingClientRect();
+    const hot = document.querySelector('.hotbar').getBoundingClientRect();
+    const top = Math.round(card.top - phone.top);
+    els.rulerTop.style.height = `${top}px`;
+    els.rulerTopTag.textContent = `${top}px above the first card`;
+  });
+  document.querySelectorAll('.state-btn').forEach((b) => {
+    b.classList.toggle('state-btn--active', b.dataset.state === state);
+  });
+}
+
+document.querySelectorAll('.state-btn').forEach((b) => {
+  b.addEventListener('click', () => setState(b.dataset.state));
+});
+// In-frame shortcuts, so the mockup is walkable rather than only switchable.
+document.getElementById('lbBarTop').addEventListener('click', () => setState('menuA'));
+document.getElementById('lbBarBottom').addEventListener('click', () => setState('menuA'));
+document.getElementById('sheetClose').addEventListener('click', () => setState('consol'));
+document.getElementById('backdrop').addEventListener('click', () => setState('consol'));
+document.getElementById('segImport').addEventListener('click', () => setState('import'));
+document.getElementById('segBooks').addEventListener('click', () => setState('menuA'));
+
+setState('today');
+</script>
+</body>
+</html>

@@ -394,6 +394,42 @@ const SCENARIOS = [
       (await page.locator('.type-filter-button').innerText()).includes('(1)'), true);
   }),
 
+  // Reported as #124: the scope popover was an absolutely-positioned child of
+  // `.replace-btn-wrap` with `right: 0`, which put it at left −211 on a 390px
+  // phone — and every ancestor up to #root is `overflow: hidden`, so the missing
+  // 211px was clipped rather than scrollable. It is portalled and anchored now.
+  //
+  // The Replace *apply* path had no coverage at all before this, on either
+  // viewport, which is a poor thing to leave untested for an action that rewrites
+  // text across a whole book. Hence the second half.
+  scenario('Mobile: the Replace scope popover fits on screen, and replaces', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+
+    await page.locator('.search-mode-select').first().selectOption('find-replace');
+    await settle(page, 300);
+    await page.locator('.find-input').first().fill('Reika');
+    await page.locator('.replace-input').first().fill('Zephyr');
+    await settle(page, 300);
+
+    await tap(page, page.locator('.replace-all-btn').first());
+    await page.locator('.replace-scope-popover').waitFor({ timeout: 4000 });
+
+    const box = await page.locator('.replace-scope-popover').boundingBox();
+    const width = page.viewportSize().width;
+    check('the popover starts on screen', box.x >= 0, true);
+    check('and ends on screen',           box.x + box.width <= width, true);
+
+    // Proceed applies to the active book. The count in the button is the number
+    // of matches, so a successful replace has to take it to zero.
+    await tap(page, page.locator('.replace-scope-proceed').first());
+    await settle(page, 600);
+    check('replacing leaves no matches for the old text',
+      (await page.locator('.replace-all-btn').first().innerText()).includes('(0)'), true);
+    check('and the new text is in the book',
+      await page.evaluate(() => document.body.innerText.includes('Zephyr')), true);
+  }),
+
   scenario('Mobile: reordering by drag is disabled', async (page, check) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);

@@ -220,7 +220,16 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 /* --- App root --- */
 .app-root {
   width: 100vw;
+  /* `100vh` on iOS Safari is the LARGE viewport — it excludes the collapsing URL
+     bar — so the bottom ~60-90px of the app sat under the browser's own chrome,
+     which is exactly where the mobile hotbar and FAB live. `dvh` tracks the
+     visible viewport instead. The usual objection to `dvh` (the height changing
+     as the bar collapses) does not apply here: this element is `overflow: hidden`
+     and the entry list scrolls inside it, so the page never scrolls and the bar
+     never collapses. The `100vh` line above it is the fallback for browsers
+     without `dvh`. */
   height: 100vh;
+  height: 100dvh;
   position: relative;
   overflow: hidden;
   background: var(--bg);
@@ -1749,13 +1758,17 @@ img.logo-icon {
 .replace-all-btn:hover:not(:disabled) { background: #dc2626; }
 .replace-all-btn:disabled { opacity: 0.4; cursor: default; }
 
-/* Replace scope popover */
+/* Replace scope popover.
+   Portalled to the body and positioned by `use-anchored-position` (position,
+   left and top/bottom all arrive as inline style). It used to be an
+   absolutely-positioned child of `.replace-btn-wrap` with `right: 0`, which put
+   it at left −211 on a 390px phone — the wrapper sits at x=12 and the popover is
+   360 wide, so right-aligning it hung 211px off the left edge. Every ancestor up
+   to #root is `overflow: hidden`, so that part was clipped away rather than
+   scrollable. Width is capped here and narrowed to the viewport by the caller. */
 .replace-scope-popover {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 260px;
-  max-width: 360px;
+  width: 360px;
+  max-width: calc(100vw - 16px);
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
@@ -5605,7 +5618,13 @@ kbd {
     min-width: unset;
     min-height: unset;
     width: 100% !important;
+    /* `position: fixed` resolves against the initial containing block, which on
+       iOS Safari is the large viewport — so `inset: 0` alone reaches under the
+       URL bar no matter what `.app-root` says. Sizing in `dvh` here is what
+       actually keeps the hotbar on screen. With top, bottom and height all set,
+       CSS ignores `bottom`, so the height wins over `inset: 0`. */
     height: 100% !important;
+    height: 100dvh !important;
   }
 
   /* Hide desktop-only chrome */
