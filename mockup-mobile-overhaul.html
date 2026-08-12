@@ -235,7 +235,10 @@ input { font-family: inherit; }
   flex: 1; height: 44px; border-radius: var(--radius); font-size: .8125rem;
   background: var(--surface2); border: 1px solid var(--border); color: var(--muted2);
 }
-.seg-btn--on { background: var(--surface3); border-color: var(--focus-border); color: var(--text); font-weight: 600; }
+/* Active tab takes the accent, so the tab, the FAB and the primary action in
+   the footer all read as one family — and all three follow a custom theme,
+   since --accent is themeable. */
+.seg-btn--on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
 
 .sheet-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
 .sub-label {
@@ -270,7 +273,10 @@ input { font-family: inherit; }
 
 .sheet-foot { flex-shrink: 0; border-top: 1px solid var(--border); padding: 8px 12px; display: flex; gap: 6px; background: var(--surface); }
 .foot-btn { flex: 1; height: 44px; border-radius: var(--radius); font-size: .8125rem; background: var(--surface2); border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; gap: 6px; }
-.foot-btn--accent { border-color: var(--accent); color: var(--coral); }
+/* Filled, not outlined — the FAB is a filled accent circle, and "make a new
+   thing" should look the same wherever it is offered. */
+.foot-btn--accent { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.foot-btn--ref.is-on { border-color: var(--blue); color: var(--blue); }
 
 /* Import takeover inside the sheet */
 .drop {
@@ -279,6 +285,12 @@ input { font-family: inherit; }
   background: var(--surface);
 }
 .drop-icon { font-size: 26px; display: block; margin-bottom: 8px; }
+.paste-btn {
+  height: 44px; border-radius: var(--radius); font-size: .8125rem;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.paste-btn:hover { background: var(--surface3); }
 .imp-opt {
   display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 9px 11px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -287,8 +299,8 @@ input { font-family: inherit; }
 .imp-radio { width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--border2); flex-shrink: 0; }
 .imp-opt--on .imp-radio { border-color: var(--passive-agree); background: radial-gradient(var(--passive-agree) 42%, transparent 46%); }
 .imp-txt { flex: 1; min-width: 0; }
-.imp-name { font-size: .8125rem; font-weight: 600; }
-.imp-desc { font-size: .625rem; color: var(--muted); }
+.imp-name { display: block; font-size: .8125rem; font-weight: 600; }
+.imp-desc { display: block; font-size: .625rem; color: var(--muted); }
 .imp-confirm { height: 44px; border-radius: var(--radius); background: var(--accent); color: #fff; font-size: .8125rem; font-weight: 600; }
 
 /* Hotbar reference picker (decision 3) */
@@ -320,6 +332,12 @@ input { font-family: inherit; }
   background: var(--yellow); color: #1a1204; font-size: .625rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
+.set-sec {
+  min-height: 48px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: .8125rem; font-weight: 600;
+}
+.set-sec span { color: var(--muted); font-size: .6875rem; }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -341,6 +359,7 @@ input { font-family: inherit; }
   <button class="state-btn" data-state="import">3 · A, import tab</button>
   <button class="state-btn" data-state="menuB">4 · Title menu — B (lean)</button>
   <button class="state-btn" data-state="consol">5 · Consolidated bar + hotbar pair</button>
+  <button class="state-btn" data-state="settings">6 · Settings — lander route</button>
 </div>
 
 <div class="stage">
@@ -434,7 +453,11 @@ input { font-family: inherit; }
         <button class="hb-btn" id="pairBtn"><span>⇄</span><span>Reference</span></button>
         <button class="hb-btn"><span>↷</span><span>Redo</span></button>
         <button class="hb-btn"><span>⬇</span><span>Export</span></button>
-        <div class="fab">+</div>
+        <!-- The FAB floats above the hotbar, so anything anchored to the hotbar
+             collides with it. The app already solves this: Hotbar.jsx hides the
+             FAB while a menu panel is open on mobile (`fabHidden`). Same rule,
+             extended to hotbar popovers. -->
+        <div class="fab" id="fab">+</div>
       </div>
 
       <!-- Hotbar reference picker (state 5) -->
@@ -443,6 +466,27 @@ input { font-family: inherit; }
         <div class="hb-pop-item hb-pop-item--on">⇄ Akaya — Draft 2 <span class="book-meta" style="margin-left:auto">2h ago</span></div>
         <div class="hb-pop-item">⇄ Sable Street — v3 <span class="book-meta" style="margin-left:auto">yesterday</span></div>
         <div class="hb-pop-item" style="color:var(--muted2)">✕ Unpair</div>
+      </div>
+
+      <!-- ═══ Settings, showing where the lander route now lives ═══ -->
+      <div class="sheet hidden" id="settingsSheet">
+        <div class="sheet-head">
+          <span class="sheet-title">Settings</span>
+          <button class="sheet-close" data-goto="consol">×</button>
+        </div>
+        <div class="sheet-body">
+          <div class="sheet-scroll">
+            <input class="inp" placeholder="Filter settings…" style="width:100%;flex:none" />
+            <div class="set-sec">Editing &amp; Entries <span>▾</span></div>
+            <div class="set-sec">Appearance &amp; Accessibility <span>▾</span></div>
+            <div class="set-sec">Layout &amp; Controls <span>▾</span></div>
+            <div class="set-sec">System <span>▾</span></div>
+          </div>
+          <!-- Note 2: not a section, just a button at the foot of the panel. -->
+          <div class="sheet-foot">
+            <button class="foot-btn" style="border-color:var(--border2)">Return to Landing Page?</button>
+          </div>
+        </div>
       </div>
 
       <!-- ═══ The proposed mobile title menu ═══ -->
@@ -516,8 +560,11 @@ input { font-family: inherit; }
             <div class="drop">
               <span class="drop-icon">⬆</span>
               Tap to choose a file<br />
-              <span style="font-size:.6875rem;color:var(--muted)">JSON or TXT · or <u>paste text instead</u></span>
+              <span style="font-size:.6875rem;color:var(--muted)">JSON or TXT</span>
             </div>
+            <!-- Its own 44px button, outside the drop zone, with a gap: a miss
+                 lands on nothing rather than opening the file picker. -->
+            <button class="paste-btn">⌨ Paste text instead</button>
             <div class="sub-label">Reika — Test Book.json · 29 entries</div>
             <div class="imp-opt imp-opt--on">
               <span class="imp-radio"></span>
@@ -535,8 +582,8 @@ input { font-family: inherit; }
           </div>
 
           <div class="sheet-foot" id="sheetFoot">
-            <button class="foot-btn">＋ New</button>
-            <button class="foot-btn foot-btn--accent" id="homeBtn">⌂ Home</button>
+            <button class="foot-btn foot-btn--accent">＋ New</button>
+            <button class="foot-btn foot-btn--ref is-on" id="refBtn">⇄ Reference</button>
           </div>
         </div>
       </div>
@@ -578,12 +625,14 @@ const NOTES = {
       <li><b>⇄ per book is the #123 fix.</b> Pairing is a property of a book, so it
         belongs on the book's row — not in a <code>&lt;select&gt;</code> in a panel elsewhere.
         <span class="good">REF</span> marks the paired one.</li>
-      <li><b>⌂ Home restores the lander route</b> that the hidden <code>×</code> took away.
-        ＋ New covers book creation, ⋯ covers rename and delete.</li>
+      <li><b>The active tab and ＋ New both take the accent</b>, so tab, FAB and
+        primary action read as one family — and all three follow a custom theme,
+        since <code>--accent</code> is themeable. <b>⇄ Reference</b> takes the slot the
+        lander route used to hold; that route moved to Settings (state 6).</li>
       <li>Every row here is ≥44px, and the sort toggle keeps desktop's Recent/A–Z pair
         so the two surfaces cannot disagree about order.</li>
-      <li class="q">The open question: is the second tab worth it, given the hotbar
-        already reaches Import and Export? That is state 4.</li>
+      <li class="q">One thing still to pin down: with per-row ⇄ doing the pairing,
+        what does the footer's <b>⇄ Reference</b> do? See the note under state 4.</li>
     </ul>`,
   import: `
     <h3>3 · Option A, the Import tab</h3>
@@ -595,26 +644,34 @@ const NOTES = {
         so the four dispositions and the JSON-backup-before-replace all come free.</li>
       <li>"Replace <b>with</b> 29 entries" — the count is always what is arriving,
         never what is being deleted. Same wording rule as 13C.</li>
-      <li>Paste stays behind a link rather than taking half the drop zone.</li>
-      <li class="q">Judgement call: this is a second route to a flow the hotbar's
-        Import button already opens. 13C decided one shared flow across many
-        surfaces is fine — this is that decision applied again, or the argument
-        for option B.</li>
+      <li><b>Paste is its own 44px button, outside the drop zone, with a gap.</b>
+        As a link inside the zone, a near-miss opened the file picker — the worst
+        possible failure, because the user gets a modal they did not ask for and
+        no clue why paste never appeared. Outside the zone, a miss costs nothing.</li>
+      <li><b>This tab is why A wins.</b> The hotbar is user-configurable, so nothing
+        permanently lives there — reassign those two slots and mobile has no route
+        to import at all. That makes the second tab coverage, not duplication.</li>
     </ul>`,
   menuB: `
-    <h3>4 · Option B — books and Home only</h3>
-    <p>The lean version: no segmented head, no second tab. Import and Export stay
-    where they already work, on the hotbar.</p>
+    <h3>4 · Option B — books only</h3>
+    <p>The lean version: no segmented head, no second tab. Kept for comparison,
+    but <b>the case for it has collapsed</b> — it rested on Import and Export being
+    reachable from the hotbar, and the hotbar is user-configurable, so that route
+    is not guaranteed to exist for any given user.</p>
     <ul class="legend">
-      <li>Closes <b>everything that is actually broken</b> — #123's picker, the lander
-        route, create/rename/delete — with roughly half the surface area of A.</li>
-      <li>Costs the parity: a returning desktop user taps the name expecting
-        Import to be in there, and it is one row further away instead.</li>
-      <li>Nothing here forecloses A. The tabs can be added later without moving
-        anything that ships in B.</li>
+      <li>Still closes what is broken — #123's picker, create/rename/delete — with
+        about half A's surface area.</li>
+      <li>But a user who has re-pinned their hotbar slots would have <span class="bad">no
+        path to import on mobile at all</span>. That is a coverage hole, not a
+        preference.</li>
+      <li>Nothing here forecloses A; the tabs could be added later without moving
+        what ships in B. The question is only whether to ship a known gap first.</li>
     </ul>
-    <p style="margin-top:10px">Flip between 2 and 4 — the question is only whether the
-    second tab earns its place at this width.</p>`,
+    <p style="margin-top:10px"><b>Open question carried over from state 2:</b> what does
+    the footer's ⇄ Reference do, given each row already has a ⇄ that pairs?
+    Three readings — it toggles the mode and reveals the row controls; it opens
+    Browse on the already-paired book; or it replaces the per-row ⇄ with a single
+    "choose a reference" list.</p>`,
   consol: `
     <h3>5 · The 14C consolidation, and the hotbar pair action</h3>
     <p>Not part of 14B's decision, shown so the title menu is judged against the
@@ -631,10 +688,41 @@ const NOTES = {
       <li>The dashed blue box on the gear is decision 2 made visible: a 24px glyph
         carrying a 44px target. Most of the 57 undersized controls fix this way,
         costing no layout height.</li>
+      <li><b>The FAB is gone while the popover is up.</b> It floats above the hotbar,
+        so anything anchored there collides with it — which is what the earlier
+        draft did. The app already hides the FAB for an open menu panel
+        (<code>fabHidden</code>, <code>Hotbar.jsx</code>); this is the same rule extended to
+        hotbar popovers, rather than a new one.</li>
     </ul>`,
+  settings: `
+    <h3>6 · Where the lander route lives</h3>
+    <p>A button at the foot of the Settings panel, not a section of its own and
+    not a row in the title menu.</p>
+    <ul class="legend">
+      <li><b>"Home" was the wrong word</b> — on a page that already has an entry list,
+        it reads as "go to the main screen", which is where the user already is.
+        <b>Return to Landing Page?</b> names the actual destination.</li>
+      <li>Leaving the builder is a heavy, rare action, so it belongs somewhere
+        deliberate rather than beside ＋ New. The freed footer slot goes to
+        ⇄ Reference.</li>
+      <li>Pinned to the foot of the panel rather than scrolling with the sections,
+        so it is reachable without hunting — and far from anything destructive.</li>
+      <li class="q">The trailing question mark is unusual on a button; it reads as a
+        prompt rather than a label. Worth a look in context — if it feels odd,
+        <b>Return to Landing Page</b> with a confirm step behind it is the other shape.</li>
+    </ul>
+    <p style="margin-top:10px"><b>One token clash to be aware of:</b> in this codebase
+    <code>--accent</code> and <code>--destructive</code> are <i>the same value</i> in every
+    theme (<code>style.css:36/41</code>, and the custom theme sets
+    <code>--destructive: var(--accent)</code>). So a filled accent ＋ New and a destructive
+    action are the same red. That is pre-existing — the FAB has always been accent —
+    but filling more controls with it makes the collision easier to hit. Worth
+    deciding in 14C whether destructive gets its own hue.</p>`,
 };
 
 const els = {
+  fab: document.getElementById('fab'),
+  settingsSheet: document.getElementById('settingsSheet'),
   rulerTop: document.getElementById('rulerTop'),
   rulerTopTag: document.getElementById('rulerTopTag'),
   rulerBot: document.getElementById('rulerBot'),
@@ -662,10 +750,12 @@ const LABELS = {
   import: 'Proposed — option A, import tab',
   menuB:  'Proposed — title menu, option B',
   consol: 'Proposed — consolidated top bar',
+  settings: 'Proposed — Settings, foot of the panel',
 };
 
 function setState(state) {
-  const consolidated = state === 'consol';
+  const settings = state === 'settings';
+  const consolidated = state === 'consol' || settings;
   const menuOpen = state === 'menuA' || state === 'menuB' || state === 'import';
   // The menu states show the consolidated bar behind the sheet, since that is
   // the layout it will really open from.
@@ -677,18 +767,26 @@ function setState(state) {
   show(els.chipRow, !barOnTop);
   show(els.rowConsol, barOnTop);
 
-  show(els.rulerTop, state === 'today' || consolidated);
-  show(els.rulerBot, state === 'today' || consolidated);
+  show(els.rulerTop, state === 'today' || state === 'consol');
+  show(els.rulerBot, state === 'today' || state === 'consol');
 
-  show(els.backdrop, menuOpen);
   show(els.sheet, menuOpen);
   show(els.seg, state === 'menuA' || state === 'import');
   show(els.tabBooks, state !== 'import');
   show(els.tabImport, state === 'import');
+  document.getElementById('segBooks').classList.toggle('seg-btn--on', state !== 'import');
+  document.getElementById('segImport').classList.toggle('seg-btn--on', state === 'import');
 
-  show(els.hbPop, consolidated);
-  els.pairBtn.classList.toggle('hb-btn--on', consolidated);
-  els.gearBtn.classList.toggle('icon-btn--hit', consolidated);
+  show(els.settingsSheet, settings);
+  show(els.backdrop, menuOpen || settings);
+
+  const hotbarPopOpen = state === 'consol';
+  show(els.hbPop, hotbarPopOpen);
+  // Note 5: the FAB overlapped the popover anchored beside it. It hides for a
+  // hotbar popover the same way it already hides for an open menu panel.
+  show(els.fab, !hotbarPopOpen && !menuOpen && !settings);
+  els.pairBtn.classList.toggle('hb-btn--on', hotbarPopOpen);
+  els.gearBtn.classList.toggle('icon-btn--hit', state === 'consol');
   els.lbBarTop.classList.toggle('is-open', menuOpen);
 
   els.note.innerHTML = NOTES[state];
@@ -719,6 +817,10 @@ document.getElementById('lbBarTop').addEventListener('click', () => setState('me
 document.getElementById('lbBarBottom').addEventListener('click', () => setState('menuA'));
 document.getElementById('sheetClose').addEventListener('click', () => setState('consol'));
 document.getElementById('backdrop').addEventListener('click', () => setState('consol'));
+document.getElementById('gearBtn').addEventListener('click', () => setState('settings'));
+document.querySelectorAll('[data-goto]').forEach((b) => {
+  b.addEventListener('click', () => setState(b.dataset.goto));
+});
 document.getElementById('segImport').addEventListener('click', () => setState('import'));
 document.getElementById('segBooks').addEventListener('click', () => setState('menuA'));
 
