@@ -109,6 +109,14 @@ Fixing F1 does not fix this on its own: the panel can legitimately be open when
 the crossing happens. Phase 14 should decide whether crossing the breakpoint
 closes open layers or re-poses them.
 
+**Fixed in 14B (2026-08-14).** Decision 4: crossing closes every open layer,
+via `ui-store.closeAllLayers()` called from `use-close-layers-on-breakpoint.js`.
+Closing was chosen over re-posing because re-posing needs an answer for every
+layer and closing needs none — and a layer opened before a resize is not one
+the user is still reading. The scenario that recorded this behaviour has had
+its assertion inverted rather than deleted, and `Mobile: crossing the
+breakpoint closes whatever was open` covers both directions.
+
 Covered by `Mobile: settings panel open across the breakpoint`.
 
 **This also had a testing consequence.** `pairCrosstalk` in `verify/driver.mjs`

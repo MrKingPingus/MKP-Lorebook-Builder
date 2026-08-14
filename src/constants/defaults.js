@@ -67,8 +67,11 @@ export const DEFAULT_SETTINGS = {
   // Show the trigger/char stats on condensed rows, at a smaller size. Off by
   // default: condensed exists to shed chrome.
   condensedShowStats:       false,
-  // Show the read-only reference panel beside the active panel for cross-book search/find-replace
-  crosstalkEnabled:         false,
+  // NOTE: there is no `crosstalkEnabled` setting. Crosstalk is on exactly when a
+  // reference lorebook is paired — see hooks/use-reference-lorebook.js for why
+  // the toggle was removed rather than moved. A stale key in an existing stored
+  // settings blob is inert: nothing reads it.
+  //
   // Crosstalk pane behaviour:
   //   'click-to-edit'        — clicking the reference pane swaps roles AND visually swaps panes (default)
   //   'fixed-active-left'    — active pinned to the left column; a Swap button trades books between roles

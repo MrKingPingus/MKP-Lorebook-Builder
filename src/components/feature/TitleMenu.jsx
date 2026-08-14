@@ -7,7 +7,7 @@
 //
 // Portaled to document.body because `.floating-window` sets `overflow: hidden`
 // — a menu anchored inside the header would be clipped at the header's bottom
-// edge. Same reason ScaleMenu and LorebookSwitchPopover portal.
+// edge. Same reason ScaleMenu and ExportMenu portal.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSortedLorebooks }  from '../../hooks/use-sorted-lorebooks.js';

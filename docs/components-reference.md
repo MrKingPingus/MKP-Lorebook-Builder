@@ -21,7 +21,11 @@ Use this to identify which file to look at based on what's visible on screen.
 | The floating window itself (dark bordered frame with golden corners) | `src/components/layout/FloatingWindow.jsx` |
 | The top bar: the lorebook title field (hover-highlighted; click opens the title menu, double-click renames in place), the gear, and close. Owns the title menu's open/close orchestration | `src/components/layout/WindowHeader.jsx` |
 | The dual-column dropdown under the title — saved lorebooks on the left, import/export on the right. Portalled to `document.body`; the book column collapses to a rail once an import takes over | `src/components/feature/TitleMenu.jsx` |
+| The mobile equivalent, opened by tapping the lorebook name in the role bar — same two destinations as two tabs rather than two columns, because 390px has no room for two of anything. Carries the per-book ⋯ menu (pair / rename / delete) and the ＋ New and ⇄ Reference footer | `src/components/feature/MobileTitleMenu.jsx` |
+| The reference-lorebook chooser — what is paired, what can be paired, and a line saying what a reference lorebook *is*. Mounted once at the app root; opened from the mobile title menu, a book's ⋯ menu, the hotbar action, the Lorebooks panel and Settings | `src/components/feature/ReferenceChooser.jsx` |
+| Which of those doors is open, and the candidate list behind it | `src/hooks/use-reference-chooser.js` |
 | The order books are listed in, snapshotted on open so a list can't reshuffle under the pointer (`recent` default, `alpha` opt-in) | `src/hooks/use-sorted-lorebooks.js` |
+| Closing every open layer when the viewport crosses the mobile breakpoint — the settings panel is a 320px column above it and a full-screen overlay below, and nothing re-poses between the two | `src/hooks/use-close-layers-on-breakpoint.js` |
 | The bottom toolbar with action icons (add entry, undo, redo, etc.) | `src/components/layout/Hotbar.jsx` |
 | The thin status bar below the hotbar (save state, `⤢ Size`) — desktop only. Holds app state and view controls; content actions belong in the hotbar | `src/components/layout/StatusFooter.jsx` |
 | The `⤢ Size` menu and its flyouts (window size, text size, entry height, FAB size) — portalled to `document.body` so flyouts can open rightward past the window's `overflow: hidden` | `src/components/feature/ScaleMenu.jsx` |

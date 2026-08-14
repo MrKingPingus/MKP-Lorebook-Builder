@@ -46,10 +46,12 @@ export const HOTBAR_ACTIONS = [
     title:   'Append entries from file or text',
   },
   {
+    // Opens the reference chooser rather than flipping a mode. The id is kept
+    // because it is persisted in every user's `hotbarSlots` array.
     id:      'toggle_crosstalk',
     label:   'Reference',
     icon:    '⇆',
-    title:   'Show/hide reference panel',
+    title:   'Pair a reference lorebook',
   },
 ];
 

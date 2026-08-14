@@ -57,7 +57,22 @@ Two, and they run in this order:
   - `pairCrosstalk(page)` — the full two-book pose: primary fixture active, the
     derived variant as the read-only reference. Loads the variant *first*,
     because importing a book as new makes it active, so importing the primary
-    second leaves the primary active.
+    second leaves the primary active. Viewport-agnostic since 14B: it pairs
+    through the reference chooser, which exists on both sides of the
+    breakpoint, and waits on whichever surface that viewport renders
+    (`.reference-panel-entries` on desktop, `.role-swap-segmented` on mobile).
+  - `openReferenceChooser(page)` — open the chooser via Settings → Layout &
+    Controls. The route that works at any width; before 14B the only picker in
+    the app was a `<select>` in a side panel mobile could not reach, which is
+    why this file had no mobile crosstalk pathway at all.
+  - `pairCrosstalkMobile(page)` — pairs the way a phone user does: title menu →
+    the book's ⋯ menu → **Pair as reference**. Walks the rows to find the one
+    offering it, since the active book cannot reference itself.
+  - `openMobileTitleMenu(page, tab?)` / `closeMobileTitleMenu(page)` — the
+    mobile title menu, opened by tapping the lorebook name. Works in both
+    role-bar poses: solo renders `.lorebook-bar-title-btn`, and once a
+    reference is paired the active segment's name carries the same door.
+    Pass a tab substring (`'Import'`) to land on the other tab.
   - `importBookAsNew(page, path)` — import a file as a second lorebook rather
     than appending it to the current one.
   - `openSettingsSection(page, title)` — expand a Settings accordion section.
@@ -117,6 +132,15 @@ Pass `scope` whenever a layer is open. It restricts the interactive rules to tha
 layer, so controls legitimately sitting behind a full-screen panel are not each
 reported as occluded. Without it, opening Settings on mobile reports every
 builder control underneath as unreachable.
+
+Unscoped sweeps still grade a cover down to `occluded-by-overlay` (a note) when
+the covering element is recognisably a layer. Two tests, and the second is the
+one that matters: either the covering element's class names read as a backdrop,
+**or** its nearest `position: fixed` ancestor does not contain the covered
+element — structurally, "a layer is open over this". The second test is there
+because the first is markup-dependent in a battery that is otherwise
+structure-agnostic: every portalled dialog the mobile overhaul adds would
+otherwise read as a hard `occluded` failure for everything beneath it.
 
 ### Adding a pose
 

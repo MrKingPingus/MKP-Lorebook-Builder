@@ -3,13 +3,13 @@ import { useEffect, useMemo, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
+import { ReferenceChooser }      from './components/feature/ReferenceChooser.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
 import { useTheme }              from './hooks/use-theme.js';
 import { useAccessibility }      from './hooks/use-accessibility.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
 import { useKeybindings }        from './hooks/use-keybindings.js';
 import { useDismissLayer }       from './hooks/use-dismiss-layer.js';
-import { useSettings }           from './hooks/use-settings.js';
 import { useReferenceLorebook }  from './hooks/use-reference-lorebook.js';
 import { useEntries }            from './hooks/use-entries.js';
 import { useUndoRedo }           from './hooks/use-undo-redo.js';
@@ -22,6 +22,7 @@ import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
 import { useViewportResize }     from './hooks/use-viewport-resize.js';
+import { useCloseLayersOnBreakpoint } from './hooks/use-close-layers-on-breakpoint.js';
 import { usePickFromReference }  from './hooks/use-pick-from-reference.js';
 import {
   LOREBOOK_INDEX_KEY,
@@ -134,12 +135,12 @@ export default function App() {
   useTheme();
   useAccessibility();
   useViewportResize();
+  useCloseLayersOnBreakpoint();
 
   const { addEntry }   = useEntries();
   const { undo, redo } = useUndoRedo();
   const { bindings }   = useKeybindings();
-  const { crosstalkEnabled, setCrosstalkEnabled } = useSettings();
-  const { referenceLorebook, swapReference } = useReferenceLorebook();
+  const { referenceLorebook, swapReference, crosstalkEnabled } = useReferenceLorebook();
   const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
 
   // ui-store setters used by the wired hotkey handlers + the Escape stack.
@@ -153,6 +154,7 @@ export default function App() {
   const requestImportPick  = useUiStore((s) => s.requestImportPick);
   const openExportMenuCentered = useUiStore((s) => s.openExportMenuCentered);
   const toggleKeyboardHelp = useUiStore((s) => s.toggleKeyboardHelp);
+  const setReferenceChooserOpen = useUiStore((s) => s.setReferenceChooserOpen);
 
   // Expand / collapse all — mirror the Filter bar toggle: fire the opposite
   // pulse to whatever the last bulk action was.
@@ -174,13 +176,17 @@ export default function App() {
     deselect_all:        () => useUiStore.getState().clearSelection(),
     focus_search:        () => requestSearchFocus(),
     focus_find_replace:  () => requestFindFocus(),
-    toggle_reference:    () => setCrosstalkEnabled(!useSettingsStore.getState().crosstalkEnabled),
+    // Opens the chooser rather than flipping a flag — there is no reference
+    // mode to toggle any more, only a book to pair. The action id is kept as
+    // `toggle_reference` because users' custom chords are stored against it;
+    // renaming it would silently drop anyone's rebound Alt+R.
+    toggle_reference:    () => setReferenceChooserOpen(true),
     swap_reference:      () => { if (referenceLorebook) swapReference(); },
     export:              () => openExportMenuCentered(),
     import_entries:      () => requestImportPick(),
     open_settings:       () => setActiveMenuPanel('settings'),
     keyboard_help:       () => toggleKeyboardHelp(),
-  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, requestFindFocus, setCrosstalkEnabled, referenceLorebook, swapReference, openExportMenuCentered, requestImportPick, setActiveMenuPanel, toggleKeyboardHelp]);
+  }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, requestFindFocus, setReferenceChooserOpen, referenceLorebook, swapReference, openExportMenuCentered, requestImportPick, setActiveMenuPanel, toggleKeyboardHelp]);
 
   // Any hotkey (other than the help toggle itself) also dismisses the open
   // cheat sheet — you press the shortcut you just looked up and the guide gets
@@ -217,6 +223,9 @@ export default function App() {
   return (
     <div className="app-root">
       <FloatingWindow />
+      {/* At the root, not inside whatever opened it — the title menu, the
+          hotbar and the Lorebooks panel all have `overflow: hidden` ancestors. */}
+      <ReferenceChooser />
       <KeyboardHelpOverlay />
       <Analytics />
     </div>

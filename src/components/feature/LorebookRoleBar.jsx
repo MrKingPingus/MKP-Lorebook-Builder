@@ -18,13 +18,15 @@ import { useLorebookStore }            from '../../state/lorebook-store.js';
 import { useLorebook }                 from '../../hooks/use-lorebook.js';
 import { useReferenceLorebook }        from '../../hooks/use-reference-lorebook.js';
 import { useUi }                       from '../../hooks/use-ui.js';
-import { LorebookSwitchPopover }       from './LorebookSwitchPopover.jsx';
+import { useReferenceChooser }         from '../../hooks/use-reference-chooser.js';
 
 export function LorebookRoleBar() {
   const { activeLorebook, renameLorebook } = useLorebook();
   const { referenceLorebook, crosstalkEnabled, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const setReferenceBrowseOpen = useUi((s) => s.setReferenceBrowseOpen);
   const activeSide             = useUi((s) => s.activeSide);
+  const openMobileTitleMenu    = useUi((s) => s.openMobileTitleMenu);
+  const { openChooser: openReferenceChooser } = useReferenceChooser();
   const lorebooks              = useLorebookStore((s) => s.lorebooks);
 
   // Inline rename state
@@ -50,19 +52,19 @@ export function LorebookRoleBar() {
   // Reference menu state
   const [refMenuOpen,    setRefMenuOpen]    = useState(false);
   const [refMenuAnchor,  setRefMenuAnchor]  = useState(null);
-  const [refSwitchOpen,  setRefSwitchOpen]  = useState(false);
-  const [refSwitchAnchor, setRefSwitchAnchor] = useState(null);
   const refMenuBtnRef = useRef(null);
 
   function openRefMenu() {
     setRefMenuAnchor(refMenuBtnRef.current?.getBoundingClientRect() ?? null);
     setRefMenuOpen(true);
   }
+  // Changing the reference goes to the same chooser as every other pairing
+  // route, rather than to a bare list of book names. Whoever is standing here
+  // already knows what a reference is, but a second pairing UI that drifts from
+  // the first is how #123 happened in the first place.
   function openChangeRef() {
-    const anchor = refMenuBtnRef.current?.getBoundingClientRect() ?? refMenuAnchor;
     setRefMenuOpen(false);
-    setRefSwitchAnchor(anchor);
-    setRefSwitchOpen(true);
+    openReferenceChooser();
   }
   function openBrowseRef() {
     setRefMenuOpen(false);
@@ -73,14 +75,6 @@ export function LorebookRoleBar() {
     setReferenceLorebookId(null);
   }
 
-  // Solo lorebook switcher state
-  const [switchOpen,   setSwitchOpen]   = useState(false);
-  const [switchAnchor, setSwitchAnchor] = useState(null);
-  const switchBtnRef = useRef(null);
-  function openSwitch() {
-    setSwitchAnchor(switchBtnRef.current?.getBoundingClientRect() ?? null);
-    setSwitchOpen(true);
-  }
 
   // Close all on Escape — single global handler for whichever popover is up.
   // Only consumes Escape while something is actually open, so an Escape with
@@ -130,7 +124,18 @@ export function LorebookRoleBar() {
                   spellCheck={false}
                 />
               ) : (
-                <span className="role-swap-segment-name">{book?.name || '(unnamed)'}</span>
+                // Same door as the solo bar's — the title menu is reachable
+                // from the active book's name in both poses, so the route
+                // doesn't disappear the moment a reference is paired.
+                <button
+                  type="button"
+                  className="role-swap-segment-name role-swap-segment-name--btn"
+                  onClick={() => openMobileTitleMenu()}
+                  aria-haspopup="dialog"
+                >
+                  {book?.name || '(unnamed)'}
+                  <span className="lorebook-bar-caret" aria-hidden="true">▼</span>
+                </button>
               )}
             </div>
           ) : (
@@ -196,14 +201,6 @@ export function LorebookRoleBar() {
           </>,
           document.body,
         )}
-        {refSwitchOpen && (
-          <LorebookSwitchPopover
-            anchorRect={refSwitchAnchor}
-            onClose={() => setRefSwitchOpen(false)}
-            onPick={(id) => setReferenceLorebookId(id)}
-            title="Reference lorebook…"
-          />
-        )}
       </>
     );
   }
@@ -222,7 +219,21 @@ export function LorebookRoleBar() {
           spellCheck={false}
         />
       ) : (
-        <span className="lorebook-bar-name">{activeLorebook?.name || '(unnamed)'}</span>
+        // The name is the door to the title menu, which is where every
+        // destination a phone previously could not reach now lives. The ▼ rides
+        // inside the same button rather than beside it: a name on its own does
+        // not read as tappable, and two adjacent controls that both open
+        // something about the lorebook is the ambiguity this phase is removing.
+        <button
+          className="lorebook-bar-title-btn"
+          onClick={() => openMobileTitleMenu()}
+          type="button"
+          aria-haspopup="dialog"
+          title="Lorebooks, import and export"
+        >
+          <span className="lorebook-bar-name">{activeLorebook?.name || '(unnamed)'}</span>
+          <span className="lorebook-bar-caret" aria-hidden="true">▼</span>
+        </button>
       )}
       {!renameOpen && (
         <button
@@ -234,23 +245,6 @@ export function LorebookRoleBar() {
         >
           ✏️
         </button>
-      )}
-      <button
-        ref={switchBtnRef}
-        className="lorebook-bar-action"
-        onClick={openSwitch}
-        aria-label="Switch lorebook"
-        title="Switch lorebook"
-        type="button"
-      >
-        ▼
-      </button>
-      {switchOpen && (
-        <LorebookSwitchPopover
-          anchorRect={switchAnchor}
-          onClose={() => setSwitchOpen(false)}
-          excludeIds={referenceLorebook ? [referenceLorebook.id] : []}
-        />
       )}
     </div>
   );

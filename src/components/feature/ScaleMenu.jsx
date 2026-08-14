@@ -5,7 +5,7 @@
 // a readout.
 //
 // Menu and flyouts are portalled to document.body and positioned `fixed` from
-// their anchor's rect, the same way ExportMenu / LorebookSwitchPopover already
+// their anchor's rect, the same way ExportMenu already
 // escape the window. That matters here: .floating-window sets overflow:hidden,
 // so an in-window flyout could only open LEFT (back over the menu) without
 // being clipped. Portalled, flyouts open RIGHT into the page and flip left only

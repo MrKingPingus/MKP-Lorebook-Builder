@@ -3,6 +3,22 @@
 Adapts Phase 9 lorebook crosstalk to mobile. Replaces the desktop side-by-side
 pane model with an overlay/annotation model. Desktop crosstalk is unchanged.
 
+> **Historical, from here down (noted 2026-08-14).** Two things below are no
+> longer true after Phase 14B, and the rest is described against them:
+>
+> - **There is no `crosstalkEnabled` setting and no pairing toggle.** Crosstalk
+>   is derived from whether a reference book is paired. Every condition written
+>   below as `crosstalkEnabled && referenceLorebook` is now just the pairing.
+>   The setting label this document argues about — "Pair with reference
+>   lorebook" — no longer exists at all.
+> - **`LorebookSwitchPopover.jsx` has been deleted.** The mobile title menu
+>   superseded it; pairing goes through `ReferenceChooser.jsx`.
+>
+> The *model* this document describes — reference felt rather than visited,
+> annotations plus a one-deep peek — is intact and shipped, and Phase 14 locked
+> decision 6 confirmed the redesign stays parked because that model works once
+> it is reachable. Read this for the reasoning, not for the wiring.
+
 ---
 
 ## Core Philosophy

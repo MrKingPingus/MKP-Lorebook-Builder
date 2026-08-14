@@ -4,6 +4,7 @@ import { useUndoRedo }      from './use-undo-redo.js';
 import { useEntries }       from './use-entries.js';
 import { useUi }            from './use-ui.js';
 import { useSettings }      from './use-settings.js';
+import { useReferenceLorebook } from './use-reference-lorebook.js';
 import { HOTBAR_ACTIONS, HOTBAR_ACTION_MAP } from '../constants/hotbar-actions.js';
 
 // Each resolver receives shared hook outputs and returns { execute, disabled }
@@ -43,8 +44,12 @@ const RESOLVERS = {
     execute:  () => setShowAppendImport(true),
     disabled: false,
   }),
-  toggle_crosstalk: ({ crosstalkEnabled, setCrosstalkEnabled }) => ({
-    execute:  () => setCrosstalkEnabled(!crosstalkEnabled),
+  // Opens the chooser instead of flipping a flag. The old version turned
+  // crosstalk on and left the user to find the picker in a panel it had just
+  // opened — which is the trap #123 fell into. `active` means a book is
+  // actually paired, not that a mode is nominally on.
+  toggle_crosstalk: ({ openReferenceChooser, crosstalkEnabled }) => ({
+    execute:  () => openReferenceChooser(),
     disabled: false,
     active:   crosstalkEnabled,
   }),
@@ -55,13 +60,16 @@ export function useHotbarActions() {
   const { addEntry, clearAllEntries, makeAllPublic, makeAllPrivate } = useEntries();
   const setShowAppendImport                         = useUi((s) => s.setShowAppendImport);
   const openExportMenu                              = useUi((s) => s.openExportMenu);
-  const { hotbarSlots, crosstalkEnabled, setCrosstalkEnabled } = useSettings();
+  const setReferenceChooserOpen                     = useUi((s) => s.setReferenceChooserOpen);
+  const { hotbarSlots }        = useSettings();
+  const { crosstalkEnabled }   = useReferenceLorebook();
 
   const context = {
     undo, redo, canUndo, canRedo,
     clearAllEntries, makeAllPublic, makeAllPrivate,
     setShowAppendImport, openExportMenu,
-    crosstalkEnabled, setCrosstalkEnabled,
+    crosstalkEnabled,
+    openReferenceChooser: () => setReferenceChooserOpen(true),
   };
 
   const slots = hotbarSlots.map((id) => {

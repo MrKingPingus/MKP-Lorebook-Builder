@@ -1,7 +1,6 @@
 // Read and persist all user preference fields through settings-store and storage-service
 import { useSettingsStore } from '../state/settings-store.js';
 import { useUiStore }       from '../state/ui-store.js';
-import { useLorebookStore } from '../state/lorebook-store.js';
 import { writeJson }        from '../services/storage-service.js';
 import { SETTINGS_KEY }     from '../constants/storage-keys.js';
 
@@ -28,7 +27,6 @@ export function useSettings() {
   const fabQuickMenuEnabled      = useSettingsStore((s) => s.fabQuickMenuEnabled);
   const rollbackDefaultEnabled   = useSettingsStore((s) => s.rollbackDefaultEnabled);
   const keepMenuOpenAfterImport  = useSettingsStore((s) => s.keepMenuOpenAfterImport);
-  const crosstalkEnabled         = useSettingsStore((s) => s.crosstalkEnabled);
   const crosstalkSwapMode        = useSettingsStore((s) => s.crosstalkSwapMode);
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const funnyFishEnabled         = useSettingsStore((s) => s.funnyFishEnabled);
@@ -63,7 +61,6 @@ export function useSettings() {
       fabQuickMenuEnabled,
       rollbackDefaultEnabled,
       keepMenuOpenAfterImport,
-      crosstalkEnabled,
       crosstalkSwapMode,
       thesaurusEnabled,
       funnyFishEnabled,
@@ -107,7 +104,6 @@ export function useSettings() {
     fabQuickMenuEnabled,
     rollbackDefaultEnabled,
     keepMenuOpenAfterImport,
-    crosstalkEnabled,
     crosstalkSwapMode,
     thesaurusEnabled,
     funnyFishEnabled,
@@ -137,13 +133,6 @@ export function useSettings() {
     setFabQuickMenuEnabled:      (v) => updateSetting('fabQuickMenuEnabled', v),
     setRollbackDefaultEnabled:   (v) => updateSetting('rollbackDefaultEnabled', v),
     setKeepMenuOpenAfterImport:  (v) => updateSetting('keepMenuOpenAfterImport', v),
-    setCrosstalkEnabled: (v) => {
-      updateSetting('crosstalkEnabled', v);
-      // Turning crosstalk off nulls the reference id so a re-show starts
-      // fresh. Active id and selection stay put — the active book doesn't
-      // change when the panel is hidden.
-      if (!v) useLorebookStore.getState().setReferenceLorebookId(null);
-    },
     setThesaurusEnabled:         (v) => updateSetting('thesaurusEnabled', v),
     setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
     setFunnyFishEnabled:         (v) => updateSetting('funnyFishEnabled', v),

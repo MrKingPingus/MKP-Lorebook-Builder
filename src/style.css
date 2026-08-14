@@ -211,7 +211,7 @@ input:focus, textarea:focus, select:focus {
 /* Disable the iOS double-tap-zoom delay on tappable surfaces. Pinch-to-zoom
    still works; this only kills the gesture that fires when two taps land
    close in time (e.g. tap chip → tap row in popover). */
-button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
+button, [role="button"], .chip, .switcher-item,
 .entry-card, .reference-entry-card, .chip-conflict-entry {
   touch-action: manipulation;
 }
@@ -1366,6 +1366,20 @@ img.logo-icon {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+/* The active segment's name, as the same door the solo bar offers. */
+.role-swap-segment-name--btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+}
+
 .role-swap-segment-action {
   flex-shrink: 0;
   width: 28px;
@@ -1448,6 +1462,147 @@ img.logo-icon {
   pointer-events: auto;
 }
 
+/* §REFERENCE-CHOOSER
+   The one pairing surface, opened from the mobile title menu footer, the
+   hotbar's Reference action, the Lorebooks panel and Settings. Centred rather
+   than anchored precisely because it has four callers — anchoring to any one
+   of them would put it somewhere odd for the other three. */
+.ref-chooser {
+  position: fixed;
+  z-index: 1000;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(560px, calc(100dvh - 64px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.ref-chooser-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ref-chooser-title { font-size: 0.875rem; font-weight: 700; color: var(--text); }
+.ref-chooser-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.ref-chooser-close:hover { color: var(--text); }
+
+/* The sentence that says what the feature is. Leading, not buried — see the
+   component's header comment. */
+.ref-chooser-blurb {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--muted2);
+}
+
+.ref-chooser-current {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ref-chooser-current-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ref-chooser-current-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-chooser-badge {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--passive-agree);
+  color: var(--bg);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.ref-chooser-current-actions { display: flex; gap: 8px; }
+.ref-chooser-btn {
+  flex: 1;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ref-chooser-btn:hover { background: var(--surface2); }
+.ref-chooser-btn--unpair { color: var(--destructive); border-color: var(--destructive); }
+
+.ref-chooser-none,
+.ref-chooser-empty {
+  padding: 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+.ref-chooser-list-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ref-chooser-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.ref-chooser-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.ref-chooser-row:hover { background: var(--surface3); border-color: var(--border2); }
+.ref-chooser-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-chooser-row-time { flex: none; font-size: 0.625rem; color: var(--muted); }
+
 /* Reference menu popover (Change / Browse / Unpair) */
 .role-swap-ref-menu {
   position: fixed;
@@ -1500,6 +1655,29 @@ img.logo-icon {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The name and its caret are one control — the door to the title menu. */
+.lorebook-bar-title-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch-floor);
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+}
+.lorebook-bar-caret {
+  flex: none;
+  font-size: 0.625rem;
+  color: var(--muted);
+}
+.lorebook-bar-title-btn:hover .lorebook-bar-caret { color: var(--text); }
+
 .lorebook-bar-rename-input {
   flex: 1;
   min-width: 0;
@@ -3377,6 +3555,24 @@ img.logo-icon {
   transition: color var(--transition);
 }
 .import-flow-swap:hover { color: var(--text); }
+/* The one that sits under the drop zone. A separated, full-height button
+   rather than an underlined link sharing an edge with the file picker — see
+   the component for why the near-miss mattered. The margin is the gap. */
+.import-flow-swap--paste {
+  align-self: stretch;
+  margin-top: 10px;
+  min-height: var(--touch-floor);
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.import-flow-swap--paste:hover { background: var(--surface3); border-color: var(--border2); color: var(--text); }
 .import-flow-textarea {
   width: 100%;
   min-height: calc(110px * var(--ui-scale));
@@ -3549,69 +3745,6 @@ img.logo-icon {
   color: var(--muted);
 }
 
-.lorebook-switch-popover {
-  min-width: 200px;
-  max-width: 260px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  z-index: 9000;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.lorebook-switch-popover-title {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  padding: 2px 4px 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.lorebook-switch-empty {
-  font-size: 0.75rem;
-  color: var(--muted);
-  padding: 4px 6px;
-}
-.lorebook-switch-list {
-  max-height: 240px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.lorebook-switch-list::-webkit-scrollbar { width: 4px; }
-.lorebook-switch-list::-webkit-scrollbar-track { background: transparent; }
-.lorebook-switch-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-.lorebook-switch-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: var(--radius);
-  font-size: 0.75rem;
-  color: var(--text);
-  text-align: left;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background var(--transition);
-}
-.lorebook-switch-item:hover { background: var(--surface3); }
-.lorebook-switch-item-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-.lorebook-switch-item-time {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  flex-shrink: 0;
-}
 .chip-label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4844,6 +4977,47 @@ img.logo-icon {
 }
 .settings-label { font-size: 0.75rem; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .settings-hint { font-size: 0.6875rem; color: var(--muted); line-height: 1.6; }
+/* A settings control that is a *route* rather than a value — it opens a
+   surface instead of changing something in place. Reads as a button, not a
+   row with a widget on the end, so it doesn't get mistaken for a toggle. */
+.settings-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-floor);
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.settings-action-btn:hover { background: var(--surface3); border-color: var(--border2); }
+
+/* The route back to the lander, at the very foot of the panel. Given room
+   above it so it reads as leaving rather than as one more setting. */
+.settings-lander-btn {
+  margin: 20px 0 4px;
+  padding: 12px;
+  min-height: var(--touch-floor);
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.settings-lander-btn:hover { color: var(--text); border-color: var(--text); }
+
 .settings-row { display: flex; gap: 12px; }
 .settings-row label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted2); }
 .settings-row input[type="number"] { width: 72px; padding: 3px 6px; font-size: 0.75rem; }
@@ -5604,6 +5778,315 @@ kbd {
 /* ============================================================
    Mobile — max-width: 767px
    ============================================================ */
+/* §MOBILE-TITLE-MENU
+   Full-screen because 390px has no room for a dropdown carrying two
+   destinations — and because this is a place you *go*, not a thing you peek
+   at. Sized in dvh for the same reason .app-root is: 100vh on iOS Safari is
+   the large viewport, so the footer would sit under the URL bar. */
+.mtm {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  height: 100vh;   /* fallback */
+  height: 100dvh;
+}
+.mtm-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.mtm-tabs { display: flex; flex: 1; gap: 6px; min-width: 0; }
+.mtm-tab {
+  flex: 1;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+/* The active tab takes the accent, matching the FAB and ＋ New so the three
+   read as one family and all follow a custom theme. */
+.mtm-tab--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.mtm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mtm-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mtm-sort { display: flex; gap: 6px; }
+
+.mtm-row-wrap { display: flex; flex-direction: column; }
+.mtm-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.mtm-row--active { border-color: var(--passive-agree); }
+.mtm-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.mtm-row-main:disabled { cursor: default; }
+.mtm-row-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A badge only has to be recognised after it has been explained — which the
+   reference chooser does — so unlike a bare glyph it can be this terse. */
+.mtm-row-badge {
+  flex: none;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--passive-agree);
+  color: var(--bg);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.mtm-row-time { flex: none; font-size: 0.625rem; color: var(--muted); }
+.mtm-row-menu-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.mtm-row-menu-btn:hover { color: var(--text); }
+.mtm-rename-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--focus-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.mtm-row-menu {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 0 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.mtm-row-menu-item {
+  min-height: var(--touch-floor);
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.mtm-row-menu-item:last-child { border-bottom: none; }
+.mtm-row-menu-item:hover { background: var(--surface2); }
+.mtm-row-menu-item--danger { color: var(--destructive); }
+
+.mtm-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0 12px;
+  padding: 10px;
+  background: var(--surface3);
+  border: 1px solid var(--destructive);
+  border-radius: var(--radius);
+}
+.mtm-confirm-label { font-size: 0.75rem; color: var(--text); }
+.mtm-confirm-actions { display: flex; gap: 8px; }
+.mtm-confirm-btn {
+  flex: 1;
+  min-height: var(--touch-floor);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mtm-confirm-btn--danger { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+
+.mtm-section { display: flex; flex-direction: column; gap: 8px; }
+.mtm-section-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mtm-section-note { font-size: 0.625rem; text-transform: none; letter-spacing: 0; }
+.mtm-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.mtm-filename-row { display: flex; align-items: center; gap: 8px; }
+.mtm-filename-row label { flex: none; font-size: 0.6875rem; color: var(--muted2); }
+.mtm-filename-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 1rem;
+}
+.mtm-btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mtm-btn {
+  flex: 1 1 calc(50% - 4px);
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mtm-btn--outline { background: transparent; color: var(--muted2); }
+.mtm-btn:hover { background: var(--surface3); border-color: var(--border2); }
+
+.mtm-foot {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.mtm-foot-btn {
+  flex: 1;
+  min-height: var(--touch-floor);
+  padding: 10px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mtm-foot-btn--ref {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+/* Primary action, so it matches the FAB rather than competing with it. */
+.mtm-foot-btn--new {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+}
+
+/* §TOUCH-FLOOR */
+/* The 44px hit-area floor, as two opt-in utilities. See
+   constants/viewport.js for why this is expressed as hit area and not as
+   min-height — the short version is that growing 57 controls visually would
+   fight 14C's reclaiming of 238px of chrome, and growing their *targets*
+   costs no layout height at all.
+
+   .touch-floor      — stretches an invisible tap region out from the control
+                       to the floor in both axes, without moving the control or
+                       changing the row it sits in. For small glyph buttons
+                       inside a taller row (⋯, ✏️, ×, chips).
+   .touch-floor-box  — the honest version: the control really is 44px. For
+                       controls that sit alone and have the room, where a
+                       stretched overlay would just overlap its neighbours.
+
+   `position: relative` is on the utility itself, so applying it to a control
+   whose own positioning matters is a visible mistake rather than a silent one. */
+:root { --touch-floor: 44px; }
+
+.touch-floor {
+  position: relative;
+  /* Not `touch-action: manipulation` here — §RESET already sets that globally. */
+}
+.touch-floor::before {
+  content: '';
+  position: absolute;
+  top:  50%;
+  left: 50%;
+  width:  max(100%, var(--touch-floor));
+  height: max(100%, var(--touch-floor));
+  transform: translate(-50%, -50%);
+  /* Above the control's own background, below anything it renders. The control
+     is the click target either way — this pseudo-element belongs to it. */
+  z-index: 0;
+}
+/* Anything the control actually draws sits above the overlay, so the overlay
+   never eats a nested control's own hit test. */
+.touch-floor > * { position: relative; z-index: 1; }
+
+.touch-floor-box {
+  min-width:  var(--touch-floor);
+  min-height: var(--touch-floor);
+}
+
 /* §MOBILE */
 @media (max-width: 767px) {
   body { font-size: 0.875rem; }
@@ -5842,23 +6325,6 @@ kbd {
   padding: 9px 12px;
   text-align: center;
   flex-shrink: 0;
-}
-
-.lorebook-panel-reference-picker {
-  display: block;
-  width: calc(100% - 24px);
-  margin: -2px 12px 8px;
-  padding: 8px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 0.8125rem;
-  flex-shrink: 0;
-}
-.lorebook-panel-reference-picker:focus {
-  outline: none;
-  border-color: var(--focus-border);
 }
 
 /* ============================================================

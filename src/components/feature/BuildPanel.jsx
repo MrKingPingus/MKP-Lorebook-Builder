@@ -16,6 +16,7 @@ import { usePickFromReference } from '../../hooks/use-pick-from-reference.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { EntryList }            from './EntryList.jsx';
 import { LorebookRoleBar }      from './LorebookRoleBar.jsx';
+import { MobileTitleMenu }      from './MobileTitleMenu.jsx';
 
 export function BuildPanel() {
   const { entries }                              = useEntries();
@@ -67,6 +68,9 @@ export function BuildPanel() {
       )}
 
       {isMobile && !pickFromReferenceMode && <LorebookRoleBar />}
+      {/* Portals to the body, so mounting it beside the bar that opens it is
+          only about keeping the two in one place to read. */}
+      {isMobile && <MobileTitleMenu />}
 
       {isMobile && pickFromReferenceMode && (
         <div className="pick-from-reference-banner">

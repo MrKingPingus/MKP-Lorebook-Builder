@@ -7,6 +7,7 @@ import { useMobile }            from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { useReferenceChooser }  from '../../hooks/use-reference-chooser.js';
 import { LOREBOOK_SORT_OPTIONS } from '../../constants/sort-modes.js';
 
 export function LorebookPanel() {
@@ -17,7 +18,7 @@ export function LorebookPanel() {
   // screen through a switch, so a live re-sort would rearrange the list under
   // the pointer at the exact moment it was clicked.
   const panelOpen = useUi((s) => s.activeMenuPanel) === 'lorebooks';
-  const { crosstalkEnabled, setCrosstalkEnabled, lorebookSort, setLorebookSort } = useSettings();
+  const { lorebookSort, setLorebookSort } = useSettings();
   const { items, sorted, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } =
     useSortedLorebooks({ mode: lorebookSort, open: panelOpen });
   const [pendingId, setPendingId]             = useState(null);
@@ -29,12 +30,8 @@ export function LorebookPanel() {
   const { exportJson: doExportJson, exportTxt: doExportTxt, defaultExportFilename } = useExport();
   const isMobile           = useMobile();
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
-  const { referenceLorebook, setReferenceLorebookId } = useReferenceLorebook();
-
-  // Mobile-only reference picker: lives directly under the toggle so
-  // the pairing relationship is owned by the Lorebooks tab. On desktop
-  // the picker stays in the ReferencePanel pane header.
-  const referencePickerItems = items.filter((item) => !item.isActive);
+  const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();
+  const { openChooser: openReferenceChooser }   = useReferenceChooser();
 
   // On mobile the menu is a full-screen overlay, so selecting a lorebook should
   // drop the user back to the entries they just switched to.
@@ -114,27 +111,19 @@ export function LorebookPanel() {
 
   return (
     <div className="lorebook-panel">
+      {/* One of the three doors into the reference chooser. It used to be a
+          toggle sitting above a `<select>` that only rendered on mobile — the
+          combination #123 was reported against, since mobile had no route to
+          this panel at all. Now it says what it does and opens the one surface
+          that does it. */}
       <button
         className={`footer-btn footer-btn--toggle lorebook-panel-toggle${crosstalkEnabled ? ' footer-btn--active' : ''}`}
-        onClick={() => setCrosstalkEnabled(!crosstalkEnabled)}
+        onClick={openReferenceChooser}
       >
-        Select Reference Lorebook
+        {crosstalkEnabled
+          ? `Reference: ${referenceLorebook?.name || '(unnamed)'}`
+          : 'Pair a reference lorebook…'}
       </button>
-
-      {isMobile && crosstalkEnabled && (
-        <select
-          className="lorebook-panel-reference-picker"
-          value={referenceLorebook?.id ?? ''}
-          onChange={(e) => setReferenceLorebookId(e.target.value || null)}
-        >
-          <option value="">— Pick a reference lorebook —</option>
-          {referencePickerItems.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name || '(unnamed)'}
-            </option>
-          ))}
-        </select>
-      )}
 
       {pendingId && (
         <div className="lorebook-panel-prompt">

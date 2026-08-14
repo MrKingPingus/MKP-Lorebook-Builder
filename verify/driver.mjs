@@ -93,40 +93,109 @@ export async function importBookAsNew(page, fixturePath) {
 // The variant is loaded FIRST because importing a book as new makes it active —
 // so importing the primary second leaves the primary active, which is the
 // arrangement every crosstalk scenario wants. Returns the two book names.
+// Open the reference chooser through Settings. That route exists on both sides
+// of the breakpoint, which the old one did not: before 14B the only picker in
+// the app was a `<select>` inside the Lorebooks side panel, and mobile had no
+// way to reach that panel at all — the reason this file had no mobile crosstalk
+// pathway, and the reason #123 looked like a broken feature rather than an
+// unreachable one.
+export async function openReferenceChooser(page) {
+  if ((await page.locator('.ref-chooser').count()) > 0) return;
+  await openSettings(page);
+  // Settings is an accordion and collapsed sections render no children, so the
+  // section has to be open before the button inside it exists in the DOM.
+  const section = await openSettingsSection(page, 'Layout & Controls');
+  await section.locator('.settings-action-btn').first().click();
+  await page.locator('.ref-chooser').waitFor({ timeout: 4000 });
+}
+
+// Import both fixtures and pair the second as reference. Viewport-agnostic:
+// the chooser and the route to it are the same on both sides of the
+// breakpoint, so what differs is only which surface renders once paired —
+// `.reference-panel` on desktop, the two-segment role bar on mobile.
 export async function pairCrosstalk(page) {
   await openBuilderWithFixture(page, VARIANT_FIXTURE);
   await importBookAsNew(page, FIXTURE);
 
-  // Turn on the reference panel. Settings is an accordion and collapsed
-  // sections don't render their children, so the section has to be opened
-  // before its controls exist in the DOM.
-  await openSettings(page);
-  await openSettingsSection(page, 'Layout & Controls');
-  const toggle = page.locator('label:has-text("Show reference panel") input[type="checkbox"]');
-  await toggle.waitFor({ timeout: 4000 });
-  await toggle.check();
+  await openReferenceChooser(page);
 
-  // Close via the panel's own close button, and wait for it. Escape does *not*
-  // close the settings panel — the mobile sweep caught this — so the Escape that
-  // used to stand here left the panel open for the rest of the pose. Harmless on
-  // desktop, where the panel sits beside the builder, but below the breakpoint
-  // the same panel is a full-screen overlay covering everything under test.
-  await page.locator('.menu-panel-close').first().click();
-  await page.locator('.menu-panel--expanded').waitFor({ state: 'detached', timeout: 4000 });
-  await page.locator('.reference-panel').waitFor({ timeout: 4000 });
+  const rows = page.locator('.ref-chooser-row');
+  if ((await rows.count()) === 0) throw new Error('No reference lorebook candidates available');
+  const referenceName = (await rows.first().locator('.ref-chooser-row-name').innerText()).trim();
+  await rows.first().click();
+  await page.locator('.ref-chooser').waitFor({ state: 'detached', timeout: 4000 });
 
-  // Pick the variant as the reference. The picker excludes the active book, so
-  // the only remaining option is the one we want.
-  const picker = page.locator('.reference-panel .pane-header-picker');
-  const options = await picker.locator('option').evaluateAll(
-    (els) => els.map((e) => ({ value: e.value, label: e.textContent.trim() })).filter((o) => o.value)
-  );
-  if (options.length === 0) throw new Error('No reference lorebook options available');
-  await picker.selectOption(options[0].value);
-  await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+  // The chooser is reached through Settings, which on mobile is a full-screen
+  // overlay covering everything under test. Escape does *not* close it — the
+  // 14A sweep caught that — so it goes out through its own control.
+  if ((await page.locator('.menu-panel--expanded').count()) > 0) {
+    await page.locator('.menu-panel-close').first().click();
+    await page.locator('.menu-panel--expanded').waitFor({ state: 'detached', timeout: 4000 });
+  }
+
+  if (isMobileViewport(page)) {
+    await page.locator('.role-swap-segmented').waitFor({ timeout: 4000 });
+  } else {
+    await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+  }
 
   const activeName = await page.locator('.build-panel .pane-header-picker').inputValue().catch(() => null);
-  return { activeName, referenceName: options[0].label };
+  return { activeName, referenceName };
+}
+
+// The mobile title menu, opened the way a phone user opens it — by tapping the
+// lorebook name. Works in both role-bar poses: solo renders
+// `.lorebook-bar-title-btn`, and once a reference is paired the active
+// segment's name carries the same door.
+export async function openMobileTitleMenu(page, tab) {
+  if ((await page.locator('.mtm').count()) === 0) {
+    await tap(page, page.locator('.lorebook-bar-title-btn, .role-swap-segment-name--btn').first());
+    await page.locator('.mtm').waitFor({ timeout: 4000 });
+  }
+  if (tab) {
+    await tap(page, page.locator('.mtm-tab', { hasText: tab }).first());
+    await settle(page, 200);
+  }
+}
+
+export async function closeMobileTitleMenu(page) {
+  if ((await page.locator('.mtm').count()) === 0) return;
+  await tap(page, page.locator('.mtm-close').first());
+  await page.locator('.mtm').waitFor({ state: 'detached', timeout: 4000 });
+}
+
+// Pair a reference the way a phone user actually would: title menu → the
+// book's ⋯ menu → "Pair as reference". Distinct from pairCrosstalk above,
+// which goes through Settings — this is the route the mobile UI is built
+// around, and the one that has to keep working.
+export async function pairCrosstalkMobile(page) {
+  await openBuilderWithFixture(page, VARIANT_FIXTURE);
+  await importBookAsNew(page, FIXTURE);
+  await settle(page, 300);
+
+  await openMobileTitleMenu(page);
+
+  // The active book's row offers no pairing item (a book cannot reference
+  // itself), so find the row that does.
+  const rows = page.locator('.mtm-row-wrap');
+  const count = await rows.count();
+  for (let i = 0; i < count; i += 1) {
+    const row = rows.nth(i);
+    await tap(page, row.locator('.mtm-row-menu-btn').first());
+    await settle(page, 150);
+    const pairItem = row.locator('.mtm-row-menu-item', { hasText: 'Pair as reference' });
+    if ((await pairItem.count()) > 0) {
+      const referenceName = (await row.locator('.mtm-row-name').innerText()).trim();
+      await tap(page, pairItem.first());
+      await settle(page, 300);
+      await closeMobileTitleMenu(page);
+      await page.locator('.role-swap-segmented').waitFor({ timeout: 4000 });
+      return { referenceName };
+    }
+    await tap(page, row.locator('.mtm-row-menu-btn').first()); // close and try the next
+    await settle(page, 120);
+  }
+  throw new Error('No lorebook row offered "Pair as reference"');
 }
 
 // Expand a Settings accordion section by its visible title. Collapsed sections

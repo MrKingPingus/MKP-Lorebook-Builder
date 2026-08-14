@@ -14,7 +14,7 @@
 // The grading exists because this suite was written to *find* the quirks in the
 // pre-overhaul mobile UI, not to pin them. A suite that failed on all of them
 // would be red from its first run and would bury any real regression.
-import { launch, openBuilderWithFixture, openSettings, openSettingsSection, enterSelectMode, selectCards, pairCrosstalk, settle, tap, longPress, openEntryDetail, closeEntryDetail, openFilterPopover, dismissPopover, seedStorage, parkMouse } from './driver.mjs';
+import { launch, openBuilderWithFixture, importBookAsNew, openSettings, openSettingsSection, enterSelectMode, selectCards, pairCrosstalk, pairCrosstalkMobile, openMobileTitleMenu, settle, tap, longPress, openEntryDetail, closeEntryDetail, openFilterPopover, dismissPopover, seedStorage, parkMouse, VARIANT_FIXTURE } from './driver.mjs';
 import { sweep, watchErrors } from './layout-invariants.mjs';
 import { writePreset, LIMITS } from '../fixtures/build-stress-book.mjs';
 import { fileURLToPath } from 'node:url';
@@ -203,10 +203,12 @@ const SCENARIOS = [
 
   // ── The mobile-only crosstalk surfaces ────────────────────────────────────
   //
-  // Pairing is a desktop-only pathway — below the breakpoint there is no
-  // reference panel to pick a book in — so this pairs at desktop width and then
-  // shrinks. That is also the only route that exercises the live breakpoint
-  // crossing, which `useMobile` handles on a bare `resize` listener.
+  // Deliberately still pairs at desktop width and then shrinks, even though
+  // 14B made pairing reachable on a phone (see `pairCrosstalkMobile`, and the
+  // #123 scenario below). This is the pose that arrives at the mobile crosstalk
+  // surface *through* a live breakpoint crossing rather than starting there,
+  // which is the only thing exercising `useMobile`'s bare `resize` listener
+  // against a book that is already paired.
   scenario('Mobile sweep: reference sheet and entry overlay', async (page, check, sweepPose, quirk) => {
     await pairCrosstalk(page);
     await settle(page, 400);
@@ -341,7 +343,15 @@ const SCENARIOS = [
   // overlay below the breakpoint, and nothing reconciles the two when the
   // viewport crosses — which is a phone rotating, or a desktop window being
   // dragged narrow.
-  scenario('Mobile: settings panel open across the breakpoint', async (page, check, sweepPose, quirk) => {
+  // Written in 14A to record the *old* behaviour — the panel stayed open and
+  // silently became a full-screen takeover. 14B decision 4 closes every layer
+  // at the crossing, so the assertion inverts: what this now pins is that the
+  // builder is left usable, and specifically that it is not left under a
+  // panel the user never asked to open. The behavioural half of the rule
+  // (both directions, from a phone start) is the "crossing the breakpoint
+  // closes whatever was open" scenario further down; this one keeps the sweep
+  // of what the builder looks like on the far side.
+  scenario('Mobile: settings panel open across the breakpoint', async (page, check, sweepPose) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);
     await openSettings(page);
@@ -350,16 +360,11 @@ const SCENARIOS = [
     await page.setViewportSize({ width: 390, height: 844 });
     await settle(page, 700);
 
-    check('the panel is still open after crossing to mobile',
-      await page.locator('.menu-panel--expanded').count(), 1);
-    await sweepPose('settings panel after crossing the breakpoint', { scope: '.menu-panel' });
-
-    // Whatever the panel does, the builder beneath it must not be left in a
-    // state the user cannot get out of.
-    await page.locator('.menu-panel-close').first().click();
-    await settle(page, 500);
-    check('and closes again on mobile', await page.locator('.menu-panel--expanded').count(), 0);
-    await sweepPose('builder after closing the panel on mobile');
+    check('the panel closes on crossing to mobile',
+      await page.locator('.menu-panel--expanded').count(), 0);
+    check('and the builder is what is left',
+      await page.locator('.entry-card--mobile').count() > 0, true);
+    await sweepPose('builder after crossing the breakpoint with a panel open');
   }, { mobile: true, width: 1280, height: 900 }),
 
   // ── A desktop window size carried into a phone viewport ───────────────────
@@ -428,6 +433,165 @@ const SCENARIOS = [
       (await page.locator('.replace-all-btn').first().innerText()).includes('(0)'), true);
     check('and the new text is in the book',
       await page.evaluate(() => document.body.innerText.includes('Zephyr')), true);
+  }),
+
+  // ── The 14B navigation spine ───────────────────────────────────────────
+  //
+  // These four pin the destinations a phone had no route to before 14B. The
+  // 14A sweep could not have caught any of them: it tested what was reachable,
+  // and the defect was that these were not.
+
+  scenario('Mobile: the title menu reaches lorebooks and import/export', async (page, check, sweepPose) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+
+    // The door is the lorebook name. Nothing else on a phone leads here.
+    check('the lorebook name is a control', await page.locator('.lorebook-bar-title-btn').count(), 1);
+    await openMobileTitleMenu(page);
+    check('the menu opens', await page.locator('.mtm').count(), 1);
+    check('it carries both destinations', await page.locator('.mtm-tab').count(), 2);
+    check('and lists every saved book', await page.locator('.mtm-row').count(), 2);
+
+    // It is a full-screen surface, so nothing may hang off the edge of it.
+    const box = await page.locator('.mtm').boundingBox();
+    const vp  = page.viewportSize();
+    check('it fills the viewport width', box.width, vp.width);
+    check('and does not overhang it',    box.x >= 0 && box.x + box.width <= vp.width, true);
+
+    // The FAB floats above the hotbar and would otherwise sit on top of this.
+    check('the FAB is out of the way', await page.locator('.fab').first().isVisible(), false);
+    await sweepPose('mobile title menu, lorebooks tab');
+
+    await openMobileTitleMenu(page, 'Import');
+    check('the import tab has a paste button, not a link',
+      await page.locator('.mtm .import-flow-swap--paste').count(), 1);
+    // Decision 11: the gap is the whole point — as a link sharing an edge with
+    // the drop zone, a near-miss opened the OS file picker.
+    const paste = await page.locator('.mtm .import-flow-swap--paste').boundingBox();
+    const drop  = await page.locator('.mtm .drop-zone').first().boundingBox();
+    check('paste clears the drop zone', paste.y > drop.y + drop.height, true);
+    check('and is at the touch floor',  paste.height >= 44, true);
+    await sweepPose('mobile title menu, import tab');
+  }),
+
+  scenario('Mobile: pairing a reference from the title menu (#123)', async (page, check, sweepPose) => {
+    // The root of #123: before 14B a phone could turn the feature on in
+    // Settings and nothing whatsoever would change, because the only picker in
+    // the app lived in a panel mobile had no route to.
+    const { referenceName } = await pairCrosstalkMobile(page);
+    check('pairing produces the two-segment role bar',
+      await page.locator('.role-swap-segment').count(), 2);
+    check('and names the book that was paired',
+      (await page.locator('.role-swap-segmented').innerText()).includes(referenceName), true);
+
+    // Reopening shows the pairing as state, not just as an effect elsewhere.
+    await openMobileTitleMenu(page);
+    check('the paired book is badged in the list', await page.locator('.mtm-row-badge').count(), 1);
+    await sweepPose('mobile title menu with a paired reference');
+
+    // The footer button opens the one chooser, and it explains itself.
+    await tap(page, page.locator('.mtm-foot-btn--ref').first());
+    await page.locator('.ref-chooser').waitFor({ timeout: 4000 });
+    check('the chooser says what a reference lorebook is',
+      (await page.locator('.ref-chooser-blurb').innerText()).length > 40, true);
+    check('and shows what is currently paired', await page.locator('.ref-chooser-current').count(), 1);
+    const cbox = await page.locator('.ref-chooser').boundingBox();
+    const vp   = page.viewportSize();
+    check('the chooser fits on screen',
+      cbox.x >= 0 && cbox.x + cbox.width <= vp.width, true);
+    await sweepPose('reference chooser');
+
+    // Unpairing is the only "off" there is — decision 9 removed the toggle, so
+    // this is what has to take the crosstalk UI away.
+    await tap(page, page.locator('.ref-chooser-btn--unpair').first());
+    await settle(page, 500);
+    check('unpairing ends crosstalk',   await page.locator('.role-swap-segment').count(), 0);
+    check('and restores the solo bar',  await page.locator('.lorebook-bar-solo').count(), 1);
+  }),
+
+  scenario('Mobile: create, rename and delete a book that is not the active one', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await importBookAsNew(page, VARIANT_FIXTURE);
+    await settle(page, 400);
+
+    await openMobileTitleMenu(page);
+    const before = await page.locator('.mtm-row').count();
+
+    // Create. A new book prompts for its name, so that has to be answered
+    // before the title menu is reachable again — the modal is the app's own
+    // behaviour, not something in the way.
+    await tap(page, page.locator('.mtm-foot-btn--new').first());
+    await page.locator('.lb-name-modal-input').waitFor({ timeout: 4000 });
+    await page.locator('.lb-name-modal-input').fill('Made By Test');
+    await page.locator('.lb-name-modal-input').press('Enter');
+    await settle(page, 500);
+    await openMobileTitleMenu(page);
+    check('＋ New adds a lorebook', await page.locator('.mtm-row').count(), before + 1);
+
+    // Rename a *non-active* book — the case that had no route at all before.
+    const target = page.locator('.mtm-row-wrap').filter({ hasNot: page.locator('.mtm-row--active') }).first();
+    await tap(page, target.locator('.mtm-row-menu-btn').first());
+    await settle(page, 150);
+    await tap(page, target.locator('.mtm-row-menu-item', { hasText: 'Rename' }).first());
+    await settle(page, 200);
+    await page.locator('.mtm-rename-input').first().fill('Renamed By Test');
+    await page.locator('.mtm-rename-input').first().press('Enter');
+    await settle(page, 400);
+    check('a non-active book can be renamed',
+      (await page.locator('.mtm-body').innerText()).includes('Renamed By Test'), true);
+
+    // Delete it again.
+    const renamed = page.locator('.mtm-row-wrap').filter({ hasText: 'Renamed By Test' }).first();
+    await tap(page, renamed.locator('.mtm-row-menu-btn').first());
+    await settle(page, 150);
+    await tap(page, renamed.locator('.mtm-row-menu-item', { hasText: 'Delete' }).first());
+    await settle(page, 200);
+    check('deleting asks first', await page.locator('.mtm-confirm').count(), 1);
+    await tap(page, page.locator('.mtm-confirm-btn--danger').first());
+    await settle(page, 500);
+    check('and then deletes', await page.locator('.mtm-row').count(), before);
+  }),
+
+  scenario('Mobile: Settings carries the only route back to the lander', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+    check('the builder is showing', await page.locator('.lander').count(), 0);
+
+    await tap(page, page.locator('.menu-btn--gear').first());
+    await settle(page, 400);
+    check('Settings offers the route', await page.locator('.settings-lander-btn').count(), 1);
+
+    await tap(page, page.locator('.settings-lander-btn').first());
+    await settle(page, 600);
+    check('it returns to the lander', await page.locator('.lander').count(), 1);
+    // Leaving Settings open would land the user back in it on re-entry.
+    check('and closes the panel behind it',
+      await page.locator('.menu-panel--expanded').count(), 0);
+  }),
+
+  scenario('Mobile: crossing the breakpoint closes whatever was open', async (page, check) => {
+    // Decision 4. The settings panel is a 320px column above the breakpoint and
+    // a full-screen overlay below it, and nothing reconciles the two mid-drag —
+    // so a desktop window dragged narrow used to produce a takeover the user
+    // never asked for.
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+    await tap(page, page.locator('.menu-btn--gear').first());
+    await settle(page, 400);
+    check('a layer is open at phone width', await page.locator('.menu-panel--expanded').count(), 1);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await settle(page, 600);
+    check('crossing up closes it', await page.locator('.menu-panel--expanded').count(), 0);
+
+    // And back the other way, which is the direction the sweep found.
+    await page.locator('.menu-btn--gear').first().click();
+    await settle(page, 400);
+    check('a layer is open at desktop width', await page.locator('.menu-panel--expanded').count(), 1);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await settle(page, 600);
+    check('crossing down closes it too', await page.locator('.menu-panel--expanded').count(), 0);
   }),
 
   scenario('Mobile: reordering by drag is disabled', async (page, check) => {

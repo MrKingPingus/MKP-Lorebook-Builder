@@ -173,9 +173,22 @@ function collect({ scope, tapMin, tapHard, interactiveSelector }) {
     if (hit === el || el.contains(hit) || hit.contains(el)) continue;
 
     const hitCls = typeof hit.className === 'string' ? hit.className : '';
-    const backdropish = /backdrop|overlay|scrim/i.test(hitCls);
+    // Two ways a cover is *expected*. The first is a named backdrop. The
+    // second is structural and so survives markup churn: the thing on top
+    // lives inside a fixed-position layer that the target is not part of —
+    // i.e. an open dialog, sheet or menu, which is supposed to cover the page
+    // behind it. Without this, every portalled layer the overhaul adds reads
+    // as a hard occlusion failure for everything underneath it, which is noise
+    // rather than signal.
+    let inFixedLayer = false;
+    for (let node = hit; node && node !== document.body; node = node.parentElement) {
+      if (getComputedStyle(node).position !== 'fixed') continue;
+      if (!node.contains(el)) { inFixedLayer = true; }
+      break;
+    }
+    const backdropish = /backdrop|overlay|scrim/i.test(hitCls) || inFixedLayer;
     violations.push({
-      // A backdrop covering a control is expected while a layer is open, so it
+      // A layer covering a control is expected while that layer is open, so it
       // is graded down unless the caller scoped the sweep to the active layer.
       rule: backdropish && !scope ? 'occluded-by-overlay' : 'occluded',
       selector: path(el),
