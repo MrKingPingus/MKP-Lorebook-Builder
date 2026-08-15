@@ -177,15 +177,23 @@ input, select { font-family: inherit; }
 .card {
   background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--gold);
   border-radius: var(--radius); padding: 8px 10px;
+  /* `flex: none` matters: the list is a flex column, so without it a long list
+     shrinks its own rows to fit and the mockup reports more visible rows than
+     the real app would ever show. Caught by measuring — the condensed rows were
+     rendering 36px against a designed 46px. */
+  flex: none;
 }
-.card-idx { font-size: .625rem; color: var(--muted); }
-.card-row { display: flex; align-items: center; gap: 8px; }
+/* Explicit heights so a full card lands on the app's measured 81px rather than
+   on whatever this file's line-heights happen to produce. Parts measured from
+   the running app at 360px: index 17, name row 31, type label 18. */
+.card-idx { font-size: .625rem; color: var(--muted); line-height: 17px; }
+.card-row { display: flex; align-items: center; gap: 8px; min-height: 31px; }
 .card-nm { flex: 1; min-width: 0; font-weight: 700; font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-meta { font-size: .625rem; color: var(--green); text-align: right; line-height: 1.3; }
 .card-chev { color: var(--muted); font-size: .875rem; }
-.card-type { font-size: .6875rem; color: var(--muted); }
+.card-type { font-size: .6875rem; color: var(--muted); line-height: 18px; }
 
-/* Bulk bar (select mode) */
+/* Bulk bar (select mode, today) */
 .bulk { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .bulk-b {
   height: 26px; padding: 0 9px; border: 1px solid var(--border2); border-radius: 4px;
@@ -193,6 +201,32 @@ input, select { font-family: inherit; }
   display: flex; align-items: center;
 }
 .bulk-b--apply { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+
+/* The one control that replaces the bulk bar: the count IS the menu. */
+.countb {
+  height: 33px; flex: none; padding: 0 11px;
+  background: var(--surface3); border: 1px solid var(--blue); border-radius: var(--radius);
+  color: var(--blue); font-size: .8125rem; font-weight: 700;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* Condensed row — name and selection state only. The type colour is already
+   the left border, which is why the type label is the first thing that can go.
+   46px keeps it clear of the 44px touch floor. */
+.card--cond { padding: 0 10px; height: 46px; display: flex; align-items: center; gap: 8px; }
+.card--cond .card-nm { font-size: .8125rem; }
+.card--sel { border-color: var(--blue); background: #16233a; }
+.tick {
+  width: 20px; height: 20px; flex: none; border-radius: 4px;
+  border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center;
+  font-size: .6875rem; color: var(--bg);
+}
+.tick--on { background: var(--blue); border-color: var(--blue); }
+.typesel {
+  height: 27px; flex: none; padding: 0 8px; border-radius: 4px;
+  background: var(--surface3); border: 1px solid var(--blue); color: var(--text);
+  font-size: .6875rem; display: flex; align-items: center; gap: 4px;
+}
 
 /* Hotbar */
 .hot {
@@ -404,41 +438,49 @@ input, select { font-family: inherit; }
 <!-- ══════════════ STATE 3 — select ══════════════ -->
 <div class="state" data-state="2">
   <div class="state-note">
-    <b>Select mode is the worst case today — the first card sits at y=374, 58% of the screen.</b>
-    Two changes. The <b>“N selected” readout goes</b>: it is 190px of the row that blocks the Filter
-    button, and the bulk bar already prints its own count two rows below — the same number, twice,
-    one of them costing the layout dearly. And the bulk bar’s eight buttons wrap into a tighter
-    block. Nothing loses a control; the count simply stops being said twice.
-    The ruler below is measured live — compare it against <b>374px</b> today. Select mode is where
-    this phase pays best, and it is also the mode where you are looking at the most rows at once.
+    <b>Select mode is the worst case today: the first card sits at y=374, and exactly two rows are
+    visible.</b> Two changes, and the second is the bigger one.<br><br>
+    <b>The bulk bar becomes one control.</b> Its four “change a property” buttons are the same
+    control four times — each opens a chip row and sets one field — so they collapse into a menu,
+    and <b>the count is the button that opens it</b>. <code>× Exit</code> goes: switching the mode
+    select back to Search already exits, so it was a second control for one action.<br><br>
+    <b>Rows condense.</b> A mobile card is <code>#N</code> (17px) + name row (31px) + type label
+    (18px) + padding = 81px. In select mode you are choosing between entries by name, and the type
+    is already carried by the left border colour — so the index and the type label go, leaving a
+    46px row that still clears the 44px touch floor. <b>A selected row keeps its type dropdown</b>,
+    growing only while selected, which preserves per-row staged types and doubles as a selection cue.
+    A setting restores full rows for anyone who wants them.
   </div>
   <div class="rack">
     <div class="col">
-      <div class="col-label col-label--new">Proposed — Select</div>
-      <div class="phone" id="p-sel">
+      <div class="col-label col-label--now">Select — today</div>
+      <div class="phone" id="p-selnow">
         <div class="hdr">
           <div class="logo"></div>
-          <div class="title-pill title-pill--inhdr"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+          <div class="wordmark">LOREBOOK BUILDER</div>
+          <div class="hdr-spacer"></div>
           <div class="ring"></div>
           <div class="gear">⚙</div>
         </div>
         <div class="fstack">
           <div class="frow"><div class="inp">Search entries…</div><div class="sortb">↕</div></div>
-          <div class="frow">
-            <div class="modesel">Select <span style="color:var(--muted)">▾</span></div>
-            <div class="filterb">Filter ▾</div>
-          </div>
+          <div class="frow"><div class="selcount">3 selected</div><div class="modesel">Select <span style="color:var(--muted)">▾</span></div></div>
           <div class="bulk">
+            <div class="bulk-b">Change Type… ▾</div>
+            <div class="bulk-b">Set Public/Private… ▾</div>
+            <div class="bulk-b">Hide from Export… ▾</div>
+            <div class="bulk-b">Move to folder… ▾</div>
             <div class="bulk-b">3 selected</div>
-            <div class="bulk-b">Set type ▾</div>
-            <div class="bulk-b bulk-b--apply">Apply</div>
-            <div class="bulk-b">Move to folder</div>
-            <div class="bulk-b">Make public</div>
-            <div class="bulk-b">Make private</div>
-            <div class="bulk-b">Exit</div>
+            <div class="bulk-b">Select All Visible</div>
+            <div class="bulk-b">Deselect All</div>
+            <div class="bulk-b">× Exit</div>
           </div>
+          <div class="frow frow--band"><div class="filterb filterb--own">Filter ▾</div></div>
         </div>
-        <div class="list" id="l-sel">
+        <div class="bar-row">
+          <div class="title-pill"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+        </div>
+        <div class="list" id="l-selnow">
           <div class="card">
             <div class="card-idx">#1</div>
             <div class="card-row"><span class="card-nm">Akaya's Apartment</span>
@@ -451,6 +493,64 @@ input, select { font-family: inherit; }
               <span class="card-meta">6/25 trg<br>523/1500 chr</span><span class="card-chev">›</span></div>
             <div class="card-type">Location</div>
           </div>
+          <div class="card">
+            <div class="card-idx">#3</div>
+            <div class="card-row"><span class="card-nm">Books</span>
+              <span class="card-meta">6/25 trg<br>412/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Item</div>
+          </div>
+        </div>
+        <div class="hot">
+          <div class="hot-g"><div class="hot-b">↶ Undo</div><div class="hot-b">↷ Redo</div></div>
+          <div class="hot-g"><div class="hot-b">⬇ Import</div><div class="hot-b">⇆ Reference</div></div>
+        </div>
+        <div class="fab">＋</div>
+      </div>
+      <div class="ruler" id="r-selnow"></div>
+    </div>
+
+    <div class="col">
+      <div class="col-label col-label--new">Select — proposed</div>
+      <div class="phone" id="p-sel">
+        <div class="hdr">
+          <div class="logo"></div>
+          <div class="title-pill title-pill--inhdr"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+          <div class="ring"></div>
+          <div class="gear">⚙</div>
+        </div>
+        <div class="fstack">
+          <div class="frow"><div class="inp">Search entries…</div><div class="sortb">↕</div></div>
+          <div class="frow">
+            <div class="modesel modesel--slim">Select <span style="color:var(--muted)">▾</span></div>
+            <div class="countb">3 selected <span style="color:var(--muted2)">▾</span></div>
+            <div class="filterb">Filter ▾</div>
+          </div>
+        </div>
+        <div class="list" id="l-sel">
+          <div class="card card--cond card--sel" style="border-left-color:var(--gold)">
+            <span class="tick tick--on">✓</span><span class="card-nm">Akaya's Apartment</span>
+            <span class="typesel">Location ▾</span>
+          </div>
+          <div class="card card--cond" style="border-left-color:var(--gold)">
+            <span class="tick"></span><span class="card-nm">Ashika City</span></div>
+          <div class="card card--cond" style="border-left-color:var(--blue)">
+            <span class="tick"></span><span class="card-nm">Books</span></div>
+          <div class="card card--cond card--sel" style="border-left-color:var(--green)">
+            <span class="tick tick--on">✓</span><span class="card-nm">Reika Hirahara</span>
+            <span class="typesel">Character ▾</span>
+          </div>
+          <div class="card card--cond" style="border-left-color:var(--gold)">
+            <span class="tick"></span><span class="card-nm">Chiyo's Bakery</span></div>
+          <div class="card card--cond" style="border-left-color:var(--coral)">
+            <span class="tick"></span><span class="card-nm">The Festival</span></div>
+          <div class="card card--cond" style="border-left-color:var(--blue)">
+            <span class="tick"></span><span class="card-nm">Grandmother's Locket</span></div>
+          <div class="card card--cond" style="border-left-color:var(--green)">
+            <span class="tick"></span><span class="card-nm">Kaito Mori</span></div>
+          <div class="card card--cond" style="border-left-color:var(--gold)">
+            <span class="tick"></span><span class="card-nm">Nakamura Shrine</span></div>
+          <div class="card card--cond" style="border-left-color:var(--coral)">
+            <span class="tick"></span><span class="card-nm">The Long Winter</span></div>
         </div>
         <div class="hot">
           <div class="hot-g"><div class="hot-b">↶ Undo</div><div class="hot-b">↷ Redo</div></div>
@@ -461,6 +561,7 @@ input, select { font-family: inherit; }
       <div class="ruler" id="r-sel"></div>
     </div>
   </div>
+  <div class="verdict" id="verdict-sel"></div>
 </div>
 
 <!-- ══════════════ STATE 4 — accent vs destructive ══════════════ -->
@@ -503,6 +604,36 @@ input, select { font-family: inherit; }
 </div>
 
 <script>
+/* ── Filler rows ──────────────────────────────────────────────────────
+   The "whole rows visible" figure is only meaningful if each list holds
+   more rows than can fit. Authoring them by hand risked the two columns
+   of a comparison drifting apart, so every full-card list is filled from
+   this one array — the columns are guaranteed to show the same book. */
+const BOOK = [
+  ['Akaya\'s Apartment', 'Location',  'gold',  '5/25 trg',  '335/1500 chr'],
+  ['Ashika City',        'Location',  'gold',  '6/25 trg',  '523/1500 chr'],
+  ['Books',              'Item',      'blue',  '6/25 trg',  '412/1500 chr'],
+  ['Reika Hirahara',     'Character', 'green', '18/25 trg', '1204/1500 chr'],
+  ['Chiyo\'s Bakery',    'Location',  'gold',  '4/25 trg',  '288/1500 chr'],
+  ['The Festival',       'PlotEvent', 'coral', '9/25 trg',  '761/1500 chr'],
+  ['Grandmother\'s Locket', 'Item',   'blue',  '3/25 trg',  '190/1500 chr'],
+  ['Kaito Mori',         'Character', 'green', '12/25 trg', '904/1500 chr'],
+  ['Nakamura Shrine',    'Location',  'gold',  '7/25 trg',  '655/1500 chr'],
+  ['The Long Winter',    'PlotEvent', 'coral', '8/25 trg',  '598/1500 chr'],
+];
+function fillFullList(id) {
+  const list = document.getElementById(id);
+  if (!list) return;
+  list.innerHTML = BOOK.map(([name, type, colour, trg, chr], i) => `
+    <div class="card" style="border-left-color:var(--${colour})">
+      <div class="card-idx">#${i + 1}</div>
+      <div class="card-row"><span class="card-nm">${name}</span>
+        <span class="card-meta">${trg}<br>${chr}</span><span class="card-chev">›</span></div>
+      <div class="card-type">${type}</div>
+    </div>`).join('');
+}
+['l-now', 'l-new', 'l-fr', 'l-selnow'].forEach(fillFullList);
+
 /* ── State switching ─────────────────────────────────────────────── */
 const STATES = ['1 · Search — before/after', '2 · Find/Replace', '3 · Select', '4 · Accent vs destructive'];
 const switcher = document.getElementById('switcher');
@@ -538,6 +669,18 @@ function measureOne(phoneId, listId, rulerId, tone) {
   const total = above + below;
   const pct   = Math.round((total / pr.height) * 100);
 
+  // Chrome percentage is the honest headline, but rows-you-can-actually-see is
+  // the number a user feels. Counted, not asserted: a card only counts if it
+  // sits wholly between the top of the list and the top of the hotbar.
+  const hotTop = hot.getBoundingClientRect().top;
+  const listTop = list.getBoundingClientRect().top;
+  const cards = [...list.querySelectorAll('.card')];
+  const visible = cards.filter((c) => {
+    const r = c.getBoundingClientRect();
+    return r.top >= listTop - 1 && r.bottom <= hotTop + 1;
+  }).length;
+  const cardH = Math.round(card.getBoundingClientRect().height);
+
   ruler.innerHTML = `
     <div class="ruler-line">
       <span class="ruler-swatch" style="background:var(--${tone === 'now' ? 'coral' : 'green'})"></span>
@@ -553,22 +696,36 @@ function measureOne(phoneId, listId, rulerId, tone) {
       <span class="ruler-swatch" style="background:transparent"></span>
       <span class="ruler-num ruler-num--${tone}">${pct}%</span>
       <span class="ruler-txt">of the screen is chrome (${total}px of ${Math.round(pr.height)})</span>
+    </div>
+    <div class="ruler-line">
+      <span class="ruler-swatch" style="background:transparent"></span>
+      <span class="ruler-num ruler-num--${tone}">${visible}</span>
+      <span class="ruler-txt">whole rows visible (${cardH}px each)</span>
     </div>`;
-  return { above, below, total, pct };
+  return { above, below, total, pct, visible, cardH };
 }
 
 function measure() {
   const now = measureOne('p-now', 'l-now', 'r-now', 'now');
   const nw  = measureOne('p-new', 'l-new', 'r-new', 'new');
   measureOne('p-fr',  'l-fr',  'r-fr',  'new');
-  measureOne('p-sel', 'l-sel', 'r-sel', 'new');
+  const sNow = measureOne('p-selnow', 'l-selnow', 'r-selnow', 'now');
+  const sNew = measureOne('p-sel',    'l-sel',    'r-sel',    'new');
 
   const v = document.getElementById('verdict');
   if (now && nw && v) {
     const saved = now.above - nw.above;
     v.innerHTML = `Measured live from the two frames above: <b>${saved}px</b> reclaimed above the fold `
-      + `(${now.above} → ${nw.above}), and total chrome <b>${now.pct}% → ${nw.pct}%</b>. `
-      + `That is roughly one extra entry card visible without scrolling on a 640px screen.`;
+      + `(${now.above} → ${nw.above}), total chrome <b>${now.pct}% → ${nw.pct}%</b>, `
+      + `and <b>${now.visible} → ${nw.visible}</b> whole rows on screen.`;
+  }
+
+  const vs = document.getElementById('verdict-sel');
+  if (sNow && sNew && vs) {
+    vs.innerHTML = `Measured live: chrome <b>${sNow.above}px → ${sNew.above}px</b> above the fold `
+      + `(<b>${sNow.pct}% → ${sNew.pct}%</b> of the screen), row height `
+      + `<b>${sNow.cardH}px → ${sNew.cardH}px</b>, and <b>${sNow.visible} → ${sNew.visible}</b> whole `
+      + `rows visible at once. The consolidation and the condensing contribute roughly half each.`;
   }
 }
 
