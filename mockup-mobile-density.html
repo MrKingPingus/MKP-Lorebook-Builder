@@ -139,9 +139,12 @@ input, select { font-family: inherit; }
   background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text); font-size: .8125rem; display: flex; align-items: center; justify-content: space-between;
 }
-.modesel--slim { width: 104px; }
+/* In select mode this control only ever displays the word "Select", so it does
+   not need the width that fitting "Find/Replace" demands. The 104px version
+   squeezed the count readout to 46px and truncated it at a count of 3. */
+.modesel--slim { width: 82px; }
 .filterb {
-  height: 33px; flex: none; padding: 0 12px;
+  height: 33px; flex: none; padding: 0 9px;
   background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--muted2); font-size: .8125rem; display: flex; align-items: center; gap: 6px;
 }
@@ -202,9 +205,31 @@ input, select { font-family: inherit; }
 }
 .bulk-b--apply { background: var(--destructive); border-color: var(--destructive); color: #fff; }
 
-/* The one control that replaces the bulk bar: the count IS the menu. */
-.countb {
-  height: 33px; flex: none; padding: 0 11px;
+/* The count is a READOUT, not the menu. It was the menu in the first cut, and
+   the objection is right: a label describing state does not tell anyone how to
+   act on that state. So the count states the fact, and a separate labelled
+   button offers the verb. The readout is the flexible element in the row — it
+   absorbs whatever the three fixed controls leave, so the row can never
+   overflow no matter how large the count gets. */
+.countro {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  color: var(--blue); font-size: .8125rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden;
+  text-align: center;
+}
+/* "128 selected" needs 94px and the smallest phone can only spare ~72 once the
+   three fixed controls have taken theirs. Rather than ellipsising a readout
+   into "128 select…", the WORD drops at the tightest width and the tick keeps
+   it unambiguous. Every phone wider than 360 shows the full phrase.
+
+   A container query, not a media query — the thing that ran out of room is the
+   row, not the viewport, and in a mockup the phone frames are 360px inside a
+   1100px window, so a media query would measure the wrong box entirely. */
+.fstack { container-type: inline-size; }
+@container (max-width: 355px) { .countro .cword { display: none; } }
+.actionsb {
+  height: 33px; flex: none; padding: 0 9px;
   background: var(--surface3); border: 1px solid var(--blue); border-radius: var(--radius);
   color: var(--blue); font-size: .8125rem; font-weight: 700;
   display: flex; align-items: center; gap: 6px;
@@ -441,9 +466,16 @@ input, select { font-family: inherit; }
     <b>Select mode is the worst case today: the first card sits at y=374, and exactly two rows are
     visible.</b> Two changes, and the second is the bigger one.<br><br>
     <b>The bulk bar becomes one control.</b> Its four “change a property” buttons are the same
-    control four times — each opens a chip row and sets one field — so they collapse into a menu,
-    and <b>the count is the button that opens it</b>. <code>× Exit</code> goes: switching the mode
-    select back to Search already exits, so it was a second control for one action.<br><br>
+    control four times — each opens a chip row and sets one field — so they collapse behind a
+    labelled <b>Actions ▾</b> button, with the count as a plain readout beside it. The count was
+    the menu trigger in the first cut; it is not, because a label describing <i>state</i> never
+    tells anyone how to <i>act</i> on it. <code>× Exit</code> goes: switching the mode select back
+    to Search already exits, so it was a second control for one action.<br><br>
+    <b>On the smallest phone the readout drops its word</b> — “✓ 128” rather than “✓ 128 selected”.
+    Four controls and a full phrase genuinely do not fit 360px: the three fixed controls leave 78px
+    and the phrase wants 106. Dropping a word beats ellipsising a readout into “128 select…”, and
+    every phone wider than 360 shows it in full. It is a <i>container</i> query, not a media query
+    — what ran out of room is the row.<br><br>
     <b>Rows condense.</b> A mobile card is <code>#N</code> (17px) + name row (31px) + type label
     (18px) + padding = 81px. In select mode you are choosing between entries by name, and the type
     is already carried by the left border colour — so the index and the type label go, leaving a
@@ -520,9 +552,10 @@ input, select { font-family: inherit; }
         </div>
         <div class="fstack">
           <div class="frow"><div class="inp">Search entries…</div><div class="sortb">↕</div></div>
-          <div class="frow">
+          <div class="frow" id="sel-row">
             <div class="modesel modesel--slim">Select <span style="color:var(--muted)">▾</span></div>
-            <div class="countb">3 selected <span style="color:var(--muted2)">▾</span></div>
+            <div class="countro"><span aria-hidden="true">✓</span><span class="cnum">3</span><span class="cword">selected</span></div>
+            <div class="actionsb">Actions <span style="color:var(--muted2)">▾</span></div>
             <div class="filterb">Filter ▾</div>
           </div>
         </div>
