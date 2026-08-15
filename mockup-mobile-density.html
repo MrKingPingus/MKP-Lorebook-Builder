@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MKP Lorebook Builder — Mobile Density Mockup (Phase 14C)</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   Design tokens — copied verbatim from src/style.css :root (dark only).
+   Deliberately dark-theme-only and throwaway, same as
+   mockup-ui-overhaul.html and mockup-mobile-overhaul.html.
+
+   Frames are 360×640 — the SMALLEST viewport in the verify matrix, not
+   the middle one. 14C is about whether the layout survives its worst
+   case, so the mockup is drawn at the worst case.
+
+   The "today" column reproduces geometry measured from the running app
+   at 360×640 on 2026-08-15: 236px of chrome above the first card, 57px
+   below, 46% of the screen. The rulers below each phone MEASURE
+   THEMSELVES at runtime rather than printing typed numbers — the last
+   mockup asserted a figure that turned out to be wrong by 34px.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg:       #0f172a;
+  --surface:  #111827;
+  --surface2: #1f2937;
+  --surface3: #1e293b;
+  --border:   #374151;
+  --border2:  #4b5563;
+  --text:     #e5e7eb;
+  --muted:    #6b7280;
+  --muted2:   #9ca3af;
+  --coral:    #f87171;
+  --green:    #34d399;
+  --yellow:   #f59e0b;
+  --red:      #ef4444;
+  --blue:     #60a5fa;
+  --gold:     #eab308;
+  --accent:   #ef4444;
+  --destructive: #ef4444;
+  --passive-agree: #60a5fa;
+  --radius:   5px;
+  --radius-lg: 8px;
+  --shadow:   0 12px 40px rgba(0,0,0,.7), 0 2px 8px rgba(0,0,0,.5);
+  --font:     'Inter', system-ui, -apple-system, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #070b14; color: var(--text); font-family: var(--font);
+  font-size: 14px; line-height: 1.5; padding: 24px 20px 60px;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, select { font-family: inherit; }
+
+/* ── Page chrome (not part of the app) ── */
+.page-head { max-width: 980px; width: 100%; text-align: center; }
+.page-title { font-size: 1.125rem; font-weight: 800; letter-spacing: .02em; }
+.page-sub { color: var(--muted2); font-size: .8125rem; margin-top: 6px; }
+.state-switcher { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.state-btn {
+  padding: 7px 13px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--muted2); font-size: .75rem; font-weight: 600;
+}
+.state-btn--on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.state { display: none; flex-direction: column; align-items: center; gap: 18px; }
+.state--on { display: flex; }
+.state-note {
+  max-width: 820px; color: var(--muted2); font-size: .8125rem; line-height: 1.65;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: var(--radius);
+  padding: 12px 16px;
+}
+.state-note b { color: var(--text); }
+.state-note code { font-family: ui-monospace, monospace; font-size: .75rem; color: var(--yellow); }
+
+.rack { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.col-label { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.col-label--now { color: var(--muted); }
+.col-label--new { color: var(--green); }
+
+/* ── The phone ── */
+.phone {
+  position: relative;
+  width: 360px; height: 640px;
+  background: var(--bg);
+  border: 1px solid var(--border2); border-radius: 14px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  font-size: 14px;
+}
+
+/* Header */
+.hdr {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.logo {
+  width: 34px; height: 34px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 38% 34%, #e8eaed 0 22%, #9aa3ad 23% 52%, #5b6570 53% 100%);
+  border: 1px solid #2b3340;
+}
+.wordmark { font-size: .9375rem; font-weight: 800; color: var(--coral); letter-spacing: .02em; white-space: nowrap; }
+.hdr-spacer { flex: 1; }
+.ring { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--green); flex: none; opacity: .85; }
+.gear { width: 26px; height: 26px; border-radius: 5px; background: var(--surface3); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center; font-size: .875rem; flex: none; }
+
+/* The title pill, as it exists today in the lorebook bar and as it would
+   exist inside the header. Same treatment either way — it is desktop's
+   .title-field, which is the point. */
+.title-pill {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 6px 14px;
+  background: transparent; border: 1px solid var(--accent); border-radius: var(--radius);
+  color: var(--text); font-weight: 600; font-size: .875rem;
+  min-width: 0;
+}
+.title-pill .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.title-pill .cr { color: var(--muted); font-size: .625rem; flex: none; }
+.title-pill--inhdr { flex: 1; min-height: 38px; }
+.bar-row { padding: 8px 12px 0; display: flex; }
+.bar-row .title-pill { flex: 1; }
+
+/* Filter stack */
+.fstack { padding: 8px 12px 0; display: flex; flex-direction: column; gap: 6px; }
+.frow { display: flex; align-items: center; gap: 8px; }
+.inp {
+  flex: 1; min-width: 0; height: 33px; padding: 0 10px;
+  background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--muted); font-size: .8125rem; display: flex; align-items: center;
+}
+.sortb { width: 28px; height: 28px; flex: none; border: 1px solid var(--border); border-radius: 4px;
+         background: var(--surface3); color: var(--muted2); display: flex; align-items: center; justify-content: center; font-size: .8125rem; }
+.modesel {
+  width: 140px; height: 33px; flex: none; padding: 0 10px;
+  background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-size: .8125rem; display: flex; align-items: center; justify-content: space-between;
+}
+.modesel--slim { width: 104px; }
+.filterb {
+  height: 33px; flex: none; padding: 0 12px;
+  background: var(--surface3); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--muted2); font-size: .8125rem; display: flex; align-items: center; gap: 6px;
+}
+/* In the app the mobile Filter button is 26px tall but sits in its own 39px
+   band (`.type-filter-bar` carries the padding). The "today" column has to
+   reproduce that faithfully or the comparison flatters the proposal. */
+.frow--band { height: 39px; }
+.filterb--own { height: 26px; }
+.replb {
+  height: 33px; flex: none; padding: 0 10px;
+  background: var(--surface3); border: 1px solid var(--border2); border-radius: var(--radius);
+  color: var(--text); font-size: .75rem; font-weight: 600; display: flex; align-items: center;
+}
+.selcount { flex: 1; min-width: 0; color: var(--blue); font-size: .8125rem; font-weight: 600; }
+
+/* A band highlight, to show which rows are being removed */
+.band-x { position: relative; }
+.band-x::after {
+  content: ''; position: absolute; inset: -3px -6px;
+  border: 1px dashed var(--red); border-radius: 6px; pointer-events: none;
+}
+/* Annotation, not app UI — but it still has to stay inside the frame, or the
+   overflow check that guards every other mockup has to be told to ignore it. */
+.band-tag {
+  position: absolute; right: 0; top: -12px; z-index: 2;
+  font-size: .5625rem; font-weight: 800; letter-spacing: .04em;
+  color: var(--red); background: var(--bg); padding: 0 4px;
+  white-space: nowrap;
+}
+
+/* Entry list */
+.list { flex: 1; min-height: 0; overflow: hidden; padding: 8px 12px 0; display: flex; flex-direction: column; gap: 8px; }
+.card {
+  background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--gold);
+  border-radius: var(--radius); padding: 8px 10px;
+}
+.card-idx { font-size: .625rem; color: var(--muted); }
+.card-row { display: flex; align-items: center; gap: 8px; }
+.card-nm { flex: 1; min-width: 0; font-weight: 700; font-size: .875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-meta { font-size: .625rem; color: var(--green); text-align: right; line-height: 1.3; }
+.card-chev { color: var(--muted); font-size: .875rem; }
+.card-type { font-size: .6875rem; color: var(--muted); }
+
+/* Bulk bar (select mode) */
+.bulk { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.bulk-b {
+  height: 26px; padding: 0 9px; border: 1px solid var(--border2); border-radius: 4px;
+  background: var(--surface3); color: var(--text); font-size: .6875rem; font-weight: 600;
+  display: flex; align-items: center;
+}
+.bulk-b--apply { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+
+/* Hotbar */
+.hot {
+  height: 57px; flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; gap: 8px; border-top: 1px solid var(--border); background: var(--surface);
+}
+.hot-g { display: flex; gap: 8px; }
+.hot-b { height: 34px; padding: 0 12px; background: var(--surface2); border: 1px solid var(--border);
+         border-radius: var(--radius); font-size: .6875rem; font-weight: 600; color: var(--text);
+         display: flex; align-items: center; }
+.fab {
+  position: absolute; right: 14px; bottom: 66px; width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.5);
+}
+
+/* ── Self-measuring rulers ── */
+.ruler { width: 360px; display: flex; flex-direction: column; gap: 4px; font-size: .6875rem; }
+.ruler-line { display: flex; align-items: center; gap: 8px; }
+.ruler-swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.ruler-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.ruler-num--now { color: var(--coral); }
+.ruler-num--new { color: var(--green); }
+.ruler-txt { color: var(--muted2); }
+.verdict {
+  margin-top: 4px; padding: 8px 10px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted2); font-size: .75rem;
+}
+.verdict b { color: var(--green); }
+
+/* Accent/destructive comparison */
+.swatches { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
+.sw-col { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 200px; }
+.sw-title { font-size: .75rem; font-weight: 700; color: var(--muted2); }
+.sw-pair { display: flex; gap: 8px; }
+.sw-btn { height: 38px; padding: 0 14px; border-radius: var(--radius); font-size: .75rem; font-weight: 700;
+          display: flex; align-items: center; color: #fff; }
+.sw-note { font-size: .6875rem; color: var(--muted); text-align: center; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <div class="page-title">Phase 14C — Mobile density &amp; layout</div>
+  <div class="page-sub">
+    Drawn at <b>360×640</b>, the smallest viewport in the verify matrix. The “today” column reproduces
+    geometry measured from the running app; every ruler below measures itself at runtime.
+  </div>
+</div>
+
+<div class="state-switcher" id="switcher"></div>
+
+<!-- ══════════════ STATE 1 — search mode, before and after ══════════════ -->
+<div class="state" data-state="0">
+  <div class="state-note">
+    <b>The proposal, in one picture.</b> Two of the four bands above the entry list disappear.
+    The <b>Filter button joins the mode row</b> (#122 ask 1), removing a 39px band that held one
+    69px control. The <b>lorebook bar merges into the header</b> — which answers #122 ask 2’s
+    “bring the mobile header in line with desktop” literally, because desktop’s header
+    <i>is</i> logo + title + controls. That costs the <code>LOREBOOK BUILDER</code> wordmark, which
+    is currently 211px of a 360px screen with 55px of dead space beside it.
+  </div>
+
+  <div class="rack">
+    <div class="col">
+      <div class="col-label col-label--now">Today</div>
+      <div class="phone" id="p-now">
+        <div class="hdr">
+          <div class="logo"></div>
+          <div class="wordmark">LOREBOOK BUILDER</div>
+          <div class="hdr-spacer"></div>
+          <div class="ring"></div>
+          <div class="gear">⚙</div>
+        </div>
+        <div class="fstack">
+          <div class="frow"><div class="inp">Search entries…</div><div class="sortb">↕</div></div>
+          <div class="frow band-x"><span class="band-tag">one control, one row</span><div class="modesel">Search <span style="color:var(--muted)">▾</span></div></div>
+          <div class="frow frow--band band-x"><span class="band-tag">one control, one row</span><div class="filterb filterb--own">Filter ▾</div></div>
+        </div>
+        <div class="bar-row band-x">
+          <span class="band-tag">below the filters</span>
+          <div class="title-pill"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+        </div>
+        <div class="list" id="l-now">
+          <div class="card">
+            <div class="card-idx">#1</div>
+            <div class="card-row"><span class="card-nm">Akaya's Apartment</span>
+              <span class="card-meta">5/25 trg<br>335/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+          <div class="card">
+            <div class="card-idx">#2</div>
+            <div class="card-row"><span class="card-nm">Ashika City</span>
+              <span class="card-meta">6/25 trg<br>523/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+        </div>
+        <div class="hot">
+          <div class="hot-g"><div class="hot-b">↶ Undo</div><div class="hot-b">↷ Redo</div></div>
+          <div class="hot-g"><div class="hot-b">⬇ Import</div><div class="hot-b">⇆ Reference</div></div>
+        </div>
+        <div class="fab">＋</div>
+      </div>
+      <div class="ruler" id="r-now"></div>
+    </div>
+
+    <div class="col">
+      <div class="col-label col-label--new">Proposed</div>
+      <div class="phone" id="p-new">
+        <div class="hdr">
+          <div class="logo"></div>
+          <div class="title-pill title-pill--inhdr"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+          <div class="ring"></div>
+          <div class="gear">⚙</div>
+        </div>
+        <div class="fstack">
+          <div class="frow"><div class="inp">Search entries…</div><div class="sortb">↕</div></div>
+          <div class="frow">
+            <div class="modesel">Search <span style="color:var(--muted)">▾</span></div>
+            <div class="filterb">Filter ▾</div>
+          </div>
+        </div>
+        <div class="list" id="l-new">
+          <div class="card">
+            <div class="card-idx">#1</div>
+            <div class="card-row"><span class="card-nm">Akaya's Apartment</span>
+              <span class="card-meta">5/25 trg<br>335/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+          <div class="card">
+            <div class="card-idx">#2</div>
+            <div class="card-row"><span class="card-nm">Ashika City</span>
+              <span class="card-meta">6/25 trg<br>523/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+          <div class="card">
+            <div class="card-idx">#3</div>
+            <div class="card-row"><span class="card-nm">Books</span>
+              <span class="card-meta">6/25 trg<br>412/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Item</div>
+          </div>
+        </div>
+        <div class="hot">
+          <div class="hot-g"><div class="hot-b">↶ Undo</div><div class="hot-b">↷ Redo</div></div>
+          <div class="hot-g"><div class="hot-b">⬇ Import</div><div class="hot-b">⇆ Reference</div></div>
+        </div>
+        <div class="fab">＋</div>
+      </div>
+      <div class="ruler" id="r-new"></div>
+    </div>
+  </div>
+  <div class="verdict" id="verdict"></div>
+</div>
+
+<!-- ══════════════ STATE 2 — find/replace ══════════════ -->
+<div class="state" data-state="1">
+  <div class="state-note">
+    <b>Find/Replace is the tight one.</b> Its second row already carries the Replace button (114px)
+    beside the mode select (140px) — 254px of 336px. Adding the 69px Filter button leaves about
+    nothing, and the Replace button grows with the match count (<code>Replace (128)… ▾</code>).
+    So the mode control goes <b>slim</b> here: it drops to an abbreviation, because the row it
+    sits in already says which mode you are in. Shown at the worst case — a four-digit count.
+  </div>
+  <div class="rack">
+    <div class="col">
+      <div class="col-label col-label--new">Proposed — Find/Replace</div>
+      <div class="phone" id="p-fr">
+        <div class="hdr">
+          <div class="logo"></div>
+          <div class="title-pill title-pill--inhdr"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+          <div class="ring"></div>
+          <div class="gear">⚙</div>
+        </div>
+        <div class="fstack">
+          <div class="frow">
+            <div class="inp">Find…</div><div class="inp">Replace with…</div><div class="sortb">↕</div>
+          </div>
+          <div class="frow">
+            <div class="replb">Replace (128)… ▾</div>
+            <div class="modesel modesel--slim">F&amp;R <span style="color:var(--muted)">▾</span></div>
+            <div class="filterb">Filter ▾</div>
+          </div>
+        </div>
+        <div class="list" id="l-fr">
+          <div class="card">
+            <div class="card-idx">#1</div>
+            <div class="card-row"><span class="card-nm">Akaya's Apartment</span>
+              <span class="card-meta">5/25 trg<br>335/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+          <div class="card">
+            <div class="card-idx">#2</div>
+            <div class="card-row"><span class="card-nm">Ashika City</span>
+              <span class="card-meta">6/25 trg<br>523/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+        </div>
+        <div class="hot">
+          <div class="hot-g"><div class="hot-b">↶ Undo</div><div class="hot-b">↷ Redo</div></div>
+          <div class="hot-g"><div class="hot-b">⬇ Import</div><div class="hot-b">⇆ Reference</div></div>
+        </div>
+        <div class="fab">＋</div>
+      </div>
+      <div class="ruler" id="r-fr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ STATE 3 — select ══════════════ -->
+<div class="state" data-state="2">
+  <div class="state-note">
+    <b>Select mode is the worst case today — the first card sits at y=374, 58% of the screen.</b>
+    Two changes. The <b>“N selected” readout goes</b>: it is 190px of the row that blocks the Filter
+    button, and the bulk bar already prints its own count two rows below — the same number, twice,
+    one of them costing the layout dearly. And the bulk bar’s eight buttons wrap into a tighter
+    block. Nothing loses a control; the count simply stops being said twice.
+    The ruler below is measured live — compare it against <b>374px</b> today. Select mode is where
+    this phase pays best, and it is also the mode where you are looking at the most rows at once.
+  </div>
+  <div class="rack">
+    <div class="col">
+      <div class="col-label col-label--new">Proposed — Select</div>
+      <div class="phone" id="p-sel">
+        <div class="hdr">
+          <div class="logo"></div>
+          <div class="title-pill title-pill--inhdr"><span class="nm">Reika Hirahara V2</span><span class="cr">▾</span></div>
+          <div class="ring"></div>
+          <div class="gear">⚙</div>
+        </div>
+        <div class="fstack">
+          <div class="frow"><div class="inp">Search entries…</div><div class="sortb">↕</div></div>
+          <div class="frow">
+            <div class="modesel">Select <span style="color:var(--muted)">▾</span></div>
+            <div class="filterb">Filter ▾</div>
+          </div>
+          <div class="bulk">
+            <div class="bulk-b">3 selected</div>
+            <div class="bulk-b">Set type ▾</div>
+            <div class="bulk-b bulk-b--apply">Apply</div>
+            <div class="bulk-b">Move to folder</div>
+            <div class="bulk-b">Make public</div>
+            <div class="bulk-b">Make private</div>
+            <div class="bulk-b">Exit</div>
+          </div>
+        </div>
+        <div class="list" id="l-sel">
+          <div class="card">
+            <div class="card-idx">#1</div>
+            <div class="card-row"><span class="card-nm">Akaya's Apartment</span>
+              <span class="card-meta">5/25 trg<br>335/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+          <div class="card">
+            <div class="card-idx">#2</div>
+            <div class="card-row"><span class="card-nm">Ashika City</span>
+              <span class="card-meta">6/25 trg<br>523/1500 chr</span><span class="card-chev">›</span></div>
+            <div class="card-type">Location</div>
+          </div>
+        </div>
+        <div class="hot">
+          <div class="hot-g"><div class="hot-b">↶ Undo</div><div class="hot-b">↷ Redo</div></div>
+          <div class="hot-g"><div class="hot-b">⬇ Import</div><div class="hot-b">⇆ Reference</div></div>
+        </div>
+        <div class="fab">＋</div>
+      </div>
+      <div class="ruler" id="r-sel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ STATE 4 — accent vs destructive ══════════════ -->
+<div class="state" data-state="3">
+  <div class="state-note">
+    <b>Decision 12’s parked caveat.</b> <code>--accent</code> and <code>--destructive</code> are the
+    same value in every theme (<code>style.css:36/41</code>), and the custom theme sets
+    <code>--destructive: var(--accent)</code> outright. It has always been true — the FAB has always
+    been accent — but 14B filled more controls with accent, so the collision is easier to meet:
+    the button that <i>creates</i> and the button that <i>destroys</i> are the same red, sometimes
+    on the same screen. Below: the collision, and the smallest fix that keeps a custom accent
+    working.
+  </div>
+  <div class="swatches">
+    <div class="sw-col">
+      <div class="sw-title">Today</div>
+      <div class="sw-pair">
+        <div class="sw-btn" style="background:var(--accent)">＋ New</div>
+        <div class="sw-btn" style="background:var(--destructive)">Delete</div>
+      </div>
+      <div class="sw-note">Identical. Only position and wording separate “make a thing” from “destroy a thing”.</div>
+    </div>
+    <div class="sw-col">
+      <div class="sw-title">Option A — destructive goes amber-red</div>
+      <div class="sw-pair">
+        <div class="sw-btn" style="background:var(--accent)">＋ New</div>
+        <div class="sw-btn" style="background:#b91c1c">Delete</div>
+      </div>
+      <div class="sw-note">Destructive gets a fixed, darker red that never follows the theme. Reads as “heavier”, and survives any custom accent.</div>
+    </div>
+    <div class="sw-col">
+      <div class="sw-title">Option B — destructive is outlined</div>
+      <div class="sw-pair">
+        <div class="sw-btn" style="background:var(--accent)">＋ New</div>
+        <div class="sw-btn" style="background:transparent;border:1px solid var(--destructive);color:var(--destructive)">Delete</div>
+      </div>
+      <div class="sw-note">Fill means “do the main thing”, outline means “this one is irreversible”. Works at any hue, including a custom accent that happens to be red.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State switching ─────────────────────────────────────────────── */
+const STATES = ['1 · Search — before/after', '2 · Find/Replace', '3 · Select', '4 · Accent vs destructive'];
+const switcher = document.getElementById('switcher');
+const states = [...document.querySelectorAll('.state')];
+STATES.forEach((label, i) => {
+  const b = document.createElement('button');
+  b.className = 'state-btn';
+  b.textContent = label;
+  b.onclick = () => show(i);
+  switcher.appendChild(b);
+});
+function show(i) {
+  states.forEach((s, n) => s.classList.toggle('state--on', n === i));
+  [...switcher.children].forEach((b, n) => b.classList.toggle('state-btn--on', n === i));
+  requestAnimationFrame(measure);
+}
+
+/* ── Rulers that measure themselves ──────────────────────────────────
+   The previous mockup printed a typed figure for this and was wrong by
+   34px. Nothing here is typed: every number is read off the rendered
+   boxes, so the mockup cannot lie about its own geometry.            */
+function measureOne(phoneId, listId, rulerId, tone) {
+  const phone = document.getElementById(phoneId);
+  const list  = document.getElementById(listId);
+  const ruler = document.getElementById(rulerId);
+  if (!phone || !list || !ruler) return null;
+
+  const pr = phone.getBoundingClientRect();
+  const card = list.querySelector('.card');
+  const hot  = phone.querySelector('.hot');
+  const above = Math.round(card.getBoundingClientRect().top - pr.top);
+  const below = Math.round(pr.bottom - hot.getBoundingClientRect().top);
+  const total = above + below;
+  const pct   = Math.round((total / pr.height) * 100);
+
+  ruler.innerHTML = `
+    <div class="ruler-line">
+      <span class="ruler-swatch" style="background:var(--${tone === 'now' ? 'coral' : 'green'})"></span>
+      <span class="ruler-num ruler-num--${tone}">${above}px</span>
+      <span class="ruler-txt">above the first card</span>
+    </div>
+    <div class="ruler-line">
+      <span class="ruler-swatch" style="background:var(--border2)"></span>
+      <span class="ruler-num ruler-num--${tone}">${below}px</span>
+      <span class="ruler-txt">below (hotbar down)</span>
+    </div>
+    <div class="ruler-line">
+      <span class="ruler-swatch" style="background:transparent"></span>
+      <span class="ruler-num ruler-num--${tone}">${pct}%</span>
+      <span class="ruler-txt">of the screen is chrome (${total}px of ${Math.round(pr.height)})</span>
+    </div>`;
+  return { above, below, total, pct };
+}
+
+function measure() {
+  const now = measureOne('p-now', 'l-now', 'r-now', 'now');
+  const nw  = measureOne('p-new', 'l-new', 'r-new', 'new');
+  measureOne('p-fr',  'l-fr',  'r-fr',  'new');
+  measureOne('p-sel', 'l-sel', 'r-sel', 'new');
+
+  const v = document.getElementById('verdict');
+  if (now && nw && v) {
+    const saved = now.above - nw.above;
+    v.innerHTML = `Measured live from the two frames above: <b>${saved}px</b> reclaimed above the fold `
+      + `(${now.above} → ${nw.above}), and total chrome <b>${now.pct}% → ${nw.pct}%</b>. `
+      + `That is roughly one extra entry card visible without scrolling on a 640px screen.`;
+  }
+}
+
+show(0);
+window.addEventListener('resize', () => requestAnimationFrame(measure));
+</script>
+</body>
+</html>
