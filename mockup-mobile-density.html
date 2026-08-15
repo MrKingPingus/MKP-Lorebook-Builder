@@ -211,12 +211,19 @@ input, select { font-family: inherit; }
    button offers the verb. The readout is the flexible element in the row — it
    absorbs whatever the three fixed controls leave, so the row can never
    overflow no matter how large the count gets. */
+/* `flex: 0 1 auto` — shrink if it must, never grow. `flex: 1` gave the same
+   overflow guarantee but made the readout absorb all the row's slack, so at a
+   count of 3 it was ~30px of text centred in 78px of box: a wedge between
+   Select and Actions that read like an empty input field.
+
+   `margin-left: auto` decides where the slack goes instead — it collects after
+   the mode select, leaving Select anchored left and the readout snug against
+   the pair of buttons it belongs with. */
 .countro {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; justify-content: center; gap: 4px;
+  flex: 0 1 auto; min-width: 0; margin-left: auto;
+  display: flex; align-items: center; gap: 4px;
   color: var(--blue); font-size: .8125rem; font-weight: 700;
   white-space: nowrap; overflow: hidden;
-  text-align: center;
 }
 /* "128 selected" needs 94px and the smallest phone can only spare ~72 once the
    three fixed controls have taken theirs. Rather than ellipsising a readout
@@ -472,10 +479,14 @@ input, select { font-family: inherit; }
     tells anyone how to <i>act</i> on it. <code>× Exit</code> goes: switching the mode select back
     to Search already exits, so it was a second control for one action.<br><br>
     <b>On the smallest phone the readout drops its word</b> — “✓ 128” rather than “✓ 128 selected”.
-    Four controls and a full phrase genuinely do not fit 360px: the three fixed controls leave 78px
-    and the phrase wants 106. Dropping a word beats ellipsising a readout into “128 select…”, and
-    every phone wider than 360 shows it in full. It is a <i>container</i> query, not a media query
-    — what ran out of room is the row.<br><br>
+    Four controls and a full phrase genuinely do not fit 360px: the fixed controls leave 78px and
+    the phrase wants 106. Dropping a word beats ellipsising a readout into “128 select…”, and every
+    phone wider than 360 shows it in full. It is a <i>container</i> query, not a media query — what
+    ran out of room is the row.<br><br>
+    The readout is sized to its own text (<code>flex: 0 1 auto</code>) and pushed right, so the
+    row’s spare width collects after <b>Select</b> rather than inside the readout. It was
+    <code>flex: 1</code> first, which gave the same can’t-overflow guarantee but parked 30px of text
+    in the middle of a 78px box — a wedge between Select and Actions that read like an empty input.<br><br>
     <b>Rows condense.</b> A mobile card is <code>#N</code> (17px) + name row (31px) + type label
     (18px) + padding = 81px. In select mode you are choosing between entries by name, and the type
     is already carried by the left border colour — so the index and the type label go, leaving a
