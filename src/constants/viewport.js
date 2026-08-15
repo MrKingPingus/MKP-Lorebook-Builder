@@ -18,4 +18,18 @@ export const MOBILE_BREAKPOINT_PX = 768;
 // 57 undersized controls. Read as a *visual* floor those two fight over the
 // same pixels; read as a hit-area floor most of the 57 cost no layout height at
 // all. The CSS side is --touch-floor / .touch-floor in style.css §TOUCH-FLOOR.
+//
+// Two things learned the hard way, both worth knowing before reaching for the
+// utility (the long version is in docs/plan.md under 14D):
+//
+//   1. Prefer making a control the size it needs over overlaying a hit region
+//      onto one that is too small. The overlay is for controls that genuinely
+//      cannot grow; absorbing a parent's padding with a negative margin is
+//      usually available and is honest about what the target is.
+//   2. `.touch-floor` is inert on an element with `overflow: hidden`, because
+//      an element clips its own ::before. Keep the ellipsis one layer in.
+//
+// verify/layout-invariants.mjs measures the *effective* hit area by probing
+// rather than reading a bounding box, so both mistakes fail the sweep instead
+// of shipping quietly.
 export const TOUCH_TARGET_MIN_PX = 44;

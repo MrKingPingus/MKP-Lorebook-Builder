@@ -111,9 +111,9 @@ export function LorebookRoleBar() {
       return (
         <div className={`role-swap-segment${isActive ? ' role-swap-segment--active' : ''}`}>
           {isActive ? (
-            <div className="role-swap-segment-content">
-              <span className="role-swap-segment-role">{role}</span>
-              {renameOpen ? (
+            renameOpen ? (
+              <div className="role-swap-segment-content">
+                <span className="role-swap-segment-role">{role}</span>
                 <input
                   ref={renameInputRef}
                   className="role-swap-rename-input"
@@ -123,21 +123,36 @@ export function LorebookRoleBar() {
                   onKeyDown={onRenameKey}
                   spellCheck={false}
                 />
-              ) : (
-                // Same door as the solo bar's — the title menu is reachable
-                // from the active book's name in both poses, so the route
-                // doesn't disappear the moment a reference is paired.
-                <button
-                  type="button"
-                  className="role-swap-segment-name role-swap-segment-name--btn"
-                  onClick={() => openMobileTitleMenu()}
-                  aria-haspopup="dialog"
-                >
-                  {book?.name || '(unnamed)'}
-                  <span className="lorebook-bar-caret" aria-hidden="true">▼</span>
-                </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              // The whole segment content is the door, the same shape the solo
+              // bar takes — role label and name together, not the name alone.
+              //
+              // It started as just the name with a `.touch-floor` overlay, and
+              // that could not work here: the bar is 44px tall, so a 44px hit
+              // region centred on a name sitting in the lower half of it has to
+              // escape the bar, and the bar clips. A control that *is* the
+              // height it needs beats an overlay reaching for it. The ACTIVE
+              // label reads as part of the button because it describes exactly
+              // what the button is about.
+              //
+              // The ellipsis stays on the inner span rather than the button: an
+              // element with `overflow: hidden` clips its own ::before, so any
+              // future `.touch-floor` here would be silently inert.
+              <button
+                type="button"
+                className="role-swap-segment-content role-swap-segment-content--btn"
+                onClick={() => openMobileTitleMenu()}
+                aria-haspopup="dialog"
+                title="Lorebooks, import and export"
+              >
+                <span className="role-swap-segment-role">{role}</span>
+                <span className="role-swap-segment-name-row">
+                  <span className="role-swap-segment-name">{book?.name || '(unnamed)'}</span>
+                  <span className="lorebook-bar-caret" aria-hidden="true">▾</span>
+                </span>
+              </button>
+            )
           ) : (
             <button
               className="role-swap-segment-tap"
@@ -206,46 +221,35 @@ export function LorebookRoleBar() {
   }
 
   // === Solo (no crosstalk or no reference paired) ===
+  //
+  // The whole bar is the button, wearing desktop's `.title-field` treatment —
+  // accent ring, name, caret. Two reasons it is one control and not a name
+  // beside a pencil:
+  //
+  // Desktop already learned this lesson and the fix did not get carried over.
+  // `.title-field`'s own comment says it: "A borderless title read as text
+  // rather than a control — people didn't know it was clickable." The first
+  // pass here put an invisible button inside a bordered card next to a pencil
+  // that *did* look like a button, so the row read as label-plus-button with
+  // the label being the actual action.
+  //
+  // And a button cannot be nested inside a button. Once the bar itself is the
+  // control, an inline rename affordance would have to be a div with a click
+  // handler — worse for keyboards and screen readers than simply routing
+  // rename through the title menu's ⋯ menu, where it already exists for every
+  // book including this one. That costs two taps and buys an unambiguous row.
   return (
     <div className="lorebook-bar-solo">
-      {renameOpen ? (
-        <input
-          ref={renameInputRef}
-          className="lorebook-bar-rename-input"
-          value={renameDraft}
-          onChange={(e) => setRenameDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={onRenameKey}
-          spellCheck={false}
-        />
-      ) : (
-        // The name is the door to the title menu, which is where every
-        // destination a phone previously could not reach now lives. The ▼ rides
-        // inside the same button rather than beside it: a name on its own does
-        // not read as tappable, and two adjacent controls that both open
-        // something about the lorebook is the ambiguity this phase is removing.
-        <button
-          className="lorebook-bar-title-btn"
-          onClick={() => openMobileTitleMenu()}
-          type="button"
-          aria-haspopup="dialog"
-          title="Lorebooks, import and export"
-        >
-          <span className="lorebook-bar-name">{activeLorebook?.name || '(unnamed)'}</span>
-          <span className="lorebook-bar-caret" aria-hidden="true">▼</span>
-        </button>
-      )}
-      {!renameOpen && (
-        <button
-          className="lorebook-bar-action"
-          onClick={openRename}
-          aria-label="Rename lorebook"
-          title="Rename"
-          type="button"
-        >
-          ✏️
-        </button>
-      )}
+      <button
+        className="lorebook-bar-title-btn"
+        onClick={() => openMobileTitleMenu()}
+        type="button"
+        aria-haspopup="dialog"
+        title="Lorebooks, import and export"
+      >
+        <span className="lorebook-bar-name">{activeLorebook?.name || '(unnamed)'}</span>
+        <span className="lorebook-bar-caret" aria-hidden="true">▾</span>
+      </button>
     </div>
   );
 }

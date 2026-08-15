@@ -6,7 +6,7 @@
 
 ### New
 
-- **Tap your lorebook's name on a phone to open the lorebook menu.** Two tabs — every book you've saved, and import/export — the same two destinations the title menu has always offered on a desktop. Switch books, start a new one, rename or delete any of them, download a copy or grab a template. On a phone none of that was reachable before: the header gear goes straight to Settings, and every other route into those screens was desktop-only.
+- **Tap your lorebook's name on a phone to open the lorebook menu** — it now wears the same outlined style the title has on a desktop, so it reads as something you press rather than a caption. Two tabs — every book you've saved, and import/export — the same two destinations the title menu has always offered on a desktop. Switch books, start a new one, rename or delete any of them, download a copy or grab a template. On a phone none of that was reachable before: the header gear goes straight to Settings, and every other route into those screens was desktop-only.
 - **A reference lorebook chooser, in one place, reached from anywhere.** It shows what's paired now, what you can pair instead, and — because this is the moment you're likely asking — a line explaining what a reference lorebook actually does. Open it from the lorebook menu, a book's **⋯** menu, the hotbar's **Reference** button, the Lorebooks panel, or Settings.
 - **Settings has a way back to the landing page**, at the bottom. On a phone this was previously unreachable without reloading, which meant no route to **New lorebook**, your recent books, **What's new** or **Learn** once you were in the builder.
 
@@ -17,6 +17,7 @@
 - **Pairing is spelled out in words** — **Pair as reference** in each book's **⋯** menu — rather than a **⇄** symbol next to it. The symbol was tested on someone who knew the feature existed and still didn't read it as "choose a reference book".
 - **"or paste entries instead" is a proper button with a gap below the drop zone**, not a link tucked against its edge. A near-miss used to open the file browser, which is a confusing thing to have happen when you were trying to paste.
 - **Resizing the window across the phone/desktop boundary now closes any open panel.** The Settings panel is a narrow column on a desktop and a full-screen overlay on a phone, so dragging a window narrow used to leave you with a takeover you never asked for.
+- **Renaming your lorebook on a phone moved into the lorebook menu**, alongside rename for every other book. The pencil next to the title is gone — the name itself is the button now, and it takes the whole row.
 
 ### Fixed
 
@@ -29,6 +30,7 @@
 - **The `crosstalkEnabled` setting is gone.** It's derived from whether a reference book is paired. A stored value from an older version is ignored, and nobody could have had a pairing saved with the setting off — turning it off always cleared the pairing.
 - **A 44px touch-target floor is defined as a shared token**, expressed as hit area rather than visual size, so a small control can carry a full-size tap region without growing the row it sits in.
 - **The layout-check suite grades occlusion structurally.** A control covered by an open dialog is now recognised as covered *by a layer* rather than reported as a fault, without the check having to know that layer's markup.
+- **It also measures tap targets by the area that actually responds to a tap**, probing the page rather than reading each control's box. Measuring boxes would have failed controls that carry a correct target through padding, and passed ones merely made bigger to look right.
 
 ---
 

@@ -1366,19 +1366,35 @@ img.logo-icon {
   text-overflow: ellipsis;
   max-width: 100%;
 }
-/* The active segment's name, as the same door the solo bar offers. */
-.role-swap-segment-name--btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
+/* The active segment's content, as a button — the same door the solo bar
+   offers. Full segment height, so the tap target is real rather than an
+   overlay straining against a 44px bar that clips. Deliberately does NOT clip:
+   the ellipsis lives on `.role-swap-segment-name` inside. */
+.role-swap-segment-content--btn {
+  align-self: stretch;
+  /* Absorb the segment's own padding rather than sitting inside it: the bar is
+     44px tall and the segment's 6px/8px inset is the only thing between this
+     control and that full height. Reclaiming it is what takes the target from
+     28px to the floor without growing the bar by a single pixel — which is the
+     hit-area-not-visual-size rule doing real work. */
+  margin: -6px -8px;
+  padding: 6px 8px;
   background: transparent;
   border: none;
   color: inherit;
   font-family: var(--font);
   text-align: left;
   cursor: pointer;
+  justify-content: center;
 }
+.role-swap-segment-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.role-swap-segment-name-row > .role-swap-segment-name { min-width: 0; }
 
 .role-swap-segment-action {
   flex-shrink: 0;
@@ -1635,18 +1651,44 @@ img.logo-icon {
 }
 
 /* Solo variant — single row when crosstalk is off or no reference paired */
+/* Layout only. The bar used to be a card with the real control invisible
+   inside it, which is what made the title read as a caption. */
 .lorebook-bar-solo {
   display: flex;
-  align-items: center;
-  gap: 6px;
   margin: 8px 12px 0;
-  padding: 8px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+}
+
+/* Mobile's door to the title menu, wearing desktop's `.title-field` treatment
+   deliberately — same accent ring, same centred name-and-caret, so the control
+   that opens the same destinations looks the same on both surfaces. Desktop
+   sizes its pill to its contents inside a wide header; here it takes the full
+   row, because on a phone the row is the only thing at that altitude and a
+   full-width target is free. */
+.lorebook-bar-title-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch-floor);
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition),
+              box-shadow var(--transition);
+}
+.lorebook-bar-title-btn:hover,
+.lorebook-bar-title-btn:active {
+  background: var(--surface2);
+  color: var(--text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .lorebook-bar-name {
-  flex: 1;
   min-width: 0;
   font-size: 0.875rem;
   font-weight: 600;
@@ -1654,22 +1696,6 @@ img.logo-icon {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-/* The name and its caret are one control — the door to the title menu. */
-.lorebook-bar-title-btn {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: var(--touch-floor);
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-family: var(--font);
-  text-align: left;
-  cursor: pointer;
 }
 .lorebook-bar-caret {
   flex: none;
@@ -1688,24 +1714,6 @@ img.logo-icon {
   border: 1px solid var(--focus-border);
   border-radius: 3px;
   padding: 2px 6px;
-}
-.lorebook-bar-action {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted2);
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-.lorebook-bar-action:hover {
-  background: var(--border);
-  color: var(--text);
 }
 
 /* ============================================================
@@ -6059,7 +6067,16 @@ kbd {
                        stretched overlay would just overlap its neighbours.
 
    `position: relative` is on the utility itself, so applying it to a control
-   whose own positioning matters is a visible mistake rather than a silent one. */
+   whose own positioning matters is a visible mistake rather than a silent one.
+
+   **The one real trap: `.touch-floor` is inert on an element with
+   `overflow: hidden`** — an element clips its own ::before, so the overlay can
+   never exceed the visual box. Truncating labels are precisely the small
+   controls that want a floor, so the rule is to keep the ellipsis one layer in:
+   put `.touch-floor` on the button and `overflow: hidden` on a span inside it.
+   The layout-invariants battery measures effective hit area by probing rather
+   than reading getBoundingClientRect, so a mistake here is caught rather than
+   quietly shipped. */
 :root { --touch-floor: 44px; }
 
 .touch-floor {

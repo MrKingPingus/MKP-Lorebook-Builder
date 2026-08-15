@@ -149,7 +149,7 @@ export async function pairCrosstalk(page) {
 // segment's name carries the same door.
 export async function openMobileTitleMenu(page, tab) {
   if ((await page.locator('.mtm').count()) === 0) {
-    await tap(page, page.locator('.lorebook-bar-title-btn, .role-swap-segment-name--btn').first());
+    await tap(page, page.locator('.lorebook-bar-title-btn, .role-swap-segment-content--btn').first());
     await page.locator('.mtm').waitFor({ timeout: 4000 });
   }
   if (tab) {

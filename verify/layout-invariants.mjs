@@ -154,11 +154,39 @@ function collect({ scope, tapMin, tapHard, interactiveSelector }) {
     if (!shown) continue;
     if (style.pointerEvents === 'none') continue;
 
-    // Tap target size.
+    // Tap target size — measured as **hit area**, not as the visual box.
+    //
+    // WCAG 2.5.5 and the Apple HIG are both about the region that responds to
+    // a tap, and the overhaul's touch-floor decision leans on that: a 24px chip
+    // is allowed to carry a 44px target through padding or a stretched
+    // ::before, so that growing 57 undersized controls does not fight the
+    // density work reclaiming vertical space.
+    //
+    // Reading getBoundingClientRect alone made that decision unenforceable, and
+    // worse than unenforceable — it would have failed the correct
+    // implementation and passed only controls grown visually, which is the
+    // opposite of the rule. So when the visual box is short, probe whether the
+    // control actually owns the points a finger would land on. Four
+    // elementFromPoint calls, and only for controls that fail on the box, so
+    // the common case costs nothing.
     const w = Math.round(rect.width), h = Math.round(rect.height);
-    if (w < tapHard || h < tapHard) {
+    const meetsFloor = (floor) => {
+      if (w >= floor && h >= floor) return true;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const r  = floor / 2 - 1;
+      const owns = (x, y) => {
+        const hit = document.elementFromPoint(x, y);
+        return !!hit && (hit === el || el.contains(hit));
+      };
+      return owns(cx - r, cy) && owns(cx + r, cy) && owns(cx, cy - r) && owns(cx, cy + r);
+    };
+    // `via hit area` in the detail is the tell that a control looked big enough
+    // on paper and was not — i.e. someone put `.touch-floor` on an element that
+    // clips its own overlay.
+    if (!meetsFloor(tapHard)) {
       violations.push({ rule: 'tap-target-hard', selector: path(el), detail: `${w}x${h}px (hard floor ${tapHard})` });
-    } else if (w < tapMin || h < tapMin) {
+    } else if (!meetsFloor(tapMin)) {
       violations.push({ rule: 'tap-target', selector: path(el), detail: `${w}x${h}px (recommended ${tapMin})` });
     }
 

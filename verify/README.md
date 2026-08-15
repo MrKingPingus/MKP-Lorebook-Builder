@@ -71,8 +71,8 @@ Two, and they run in this order:
   - `openMobileTitleMenu(page, tab?)` / `closeMobileTitleMenu(page)` — the
     mobile title menu, opened by tapping the lorebook name. Works in both
     role-bar poses: solo renders `.lorebook-bar-title-btn`, and once a
-    reference is paired the active segment's name carries the same door.
-    Pass a tab substring (`'Import'`) to land on the other tab.
+    reference is paired `.role-swap-segment-content--btn` carries the same
+    door. Pass a tab substring (`'Import'`) to land on the other tab.
   - `importBookAsNew(page, path)` — import a file as a second lorebook rather
     than appending it to the current one.
   - `openSettingsSection(page, title)` — expand a Settings accordion section.
@@ -97,7 +97,16 @@ Two, and they run in this order:
   "nothing is ever lost" invariant on every path.
 - **`mobile-checks.mjs`** — the mobile scenarios and layout sweeps. See below.
 - **`layout-invariants.mjs`** — the sweep battery: structure-agnostic layout
-  rules, usable at any viewport.
+  rules, usable at any viewport. Its `tap-target` rules measure **effective hit
+  area, not the visual box** — when a control fails on its bounding rect the
+  rule probes `elementFromPoint` half a floor out in each direction before
+  reporting. That is required rather than nice-to-have: the overhaul's touch
+  floor is deliberately expressed as hit area so that enlarging targets does
+  not fight the density work for vertical space, and a rule reading bounding
+  boxes would have failed every correct implementation of it while passing
+  controls that had merely been made visually bigger. It also catches the
+  silent failure mode of `.touch-floor` — an element with `overflow: hidden`
+  clips its own `::before`, so the overlay does nothing.
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
 
 ## The mobile suite
