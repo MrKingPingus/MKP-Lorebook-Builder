@@ -19,9 +19,9 @@ Use this to identify which file to look at based on what's visible on screen.
 | What you see | File |
 |---|---|
 | The floating window itself (dark bordered frame with golden corners) | `src/components/layout/FloatingWindow.jsx` |
-| The top bar: the lorebook title field (hover-highlighted; click opens the title menu, double-click renames in place), the gear, and close. Owns the title menu's open/close orchestration | `src/components/layout/WindowHeader.jsx` |
+| The top bar: the lorebook title field (hover-highlighted; click opens the title menu, double-click renames in place), the gear, and close. Owns the title menu's open/close orchestration. **On mobile it carries the title too** (14C) — same control, minus the wordmark, which is 211px of a 360px screen | `src/components/layout/WindowHeader.jsx` |
 | The dual-column dropdown under the title — saved lorebooks on the left, import/export on the right. Portalled to `document.body`; the book column collapses to a rail once an import takes over | `src/components/feature/TitleMenu.jsx` |
-| The mobile equivalent, opened by tapping the lorebook name in the role bar — same two destinations as two tabs rather than two columns, because 390px has no room for two of anything. Carries the per-book ⋯ menu (pair / rename / delete) and the ＋ New and ⇄ Reference footer | `src/components/feature/MobileTitleMenu.jsx` |
+| The mobile equivalent, opened by tapping the lorebook name in the header — same two destinations as two tabs rather than two columns, because 390px has no room for two of anything. Carries the per-book ⋯ menu (pair / rename / delete) and the ＋ New and ⇄ Reference footer | `src/components/feature/MobileTitleMenu.jsx` |
 | The reference-lorebook chooser — what is paired, what can be paired, and a line saying what a reference lorebook *is*. Mounted once at the app root; opened from the mobile title menu, a book's ⋯ menu, the hotbar action, the Lorebooks panel and Settings | `src/components/feature/ReferenceChooser.jsx` |
 | Which of those doors is open, and the candidate list behind it | `src/hooks/use-reference-chooser.js` |
 | The order books are listed in, snapshotted on open so a list can't reshuffle under the pointer (`recent` default, `alpha` opt-in) | `src/hooks/use-sorted-lorebooks.js` |
@@ -44,7 +44,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | What you see | File |
 |---|---|
 | The search bar at the top of the entry list | `src/components/feature/SearchBar.jsx` |
-| The row of type filter pills (Character, Location, etc.) | `src/components/feature/TypeFilterBar.jsx` |
+| The row of type filter pills (Character, Location, etc.); on mobile a single `Filter ▾` button, handed into `SearchBar` by `GlobalFilterBar` so it shares the mode row rather than owning a band (14C, #122) | `src/components/feature/TypeFilterBar.jsx` |
 | An entry card (collapsed or expanded, with name/type/triggers/description) | `src/components/feature/EntryCard.jsx` |
 | The scrollable list of all entry cards | `src/components/feature/EntryList.jsx` |
 | A folder header row in the entry list (collapse, colour, name, count, delete) | `src/components/feature/FolderHeader.jsx` |
@@ -61,7 +61,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | The suggestion tray below triggers (lightbulb + reroll) | `src/components/feature/SuggestionsTray.jsx` |
 | Find & replace bar | `src/components/feature/FindReplace.jsx` |
 | Phrase builder mode (pill row with drag reorder) | `src/components/feature/PhraseBuilder.jsx` |
-| The bulk action bar (select all, delete selected, etc.) | `src/components/feature/BulkActionBar.jsx` |
+| The bulk action bar. Desktop lays every action out flat; mobile is `display: contents` and renders a count readout plus one `Actions ▾` menu as members of the filter row, because the flat bar is 891px of content in a 336px row (14C) | `src/components/feature/BulkActionBar.jsx` |
 | The lorebook tab switcher at the top | `src/components/feature/LorebookSwitcher.jsx` |
 | The full lorebook management panel | `src/components/feature/LorebookPanel.jsx` |
 | The "new lorebook name" popup | `src/components/feature/LorebookNameModal.jsx` |

@@ -447,7 +447,8 @@ const SCENARIOS = [
     await settle(page, 400);
 
     // The door is the lorebook name. Nothing else on a phone leads here.
-    check('the lorebook name is a control', await page.locator('.lorebook-bar-title-btn').count(), 1);
+    check('the lorebook name is a control in the header',
+      await page.locator('.window-header .title-field--mobile').count(), 1);
     await openMobileTitleMenu(page);
     check('the menu opens', await page.locator('.mtm').count(), 1);
     check('it carries both destinations', await page.locator('.mtm-tab').count(), 2);
@@ -507,7 +508,8 @@ const SCENARIOS = [
     await tap(page, page.locator('.ref-chooser-btn--unpair').first());
     await settle(page, 500);
     check('unpairing ends crosstalk',   await page.locator('.role-swap-segment').count(), 0);
-    check('and restores the solo bar',  await page.locator('.lorebook-bar-solo').count(), 1);
+    check('and puts the title back in the header',
+      await page.locator('.window-header .title-field--mobile').count(), 1);
   }),
 
   scenario('Mobile: create, rename and delete a book that is not the active one', async (page, check) => {

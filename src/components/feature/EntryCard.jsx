@@ -69,7 +69,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [suppressChecked, setSuppressChecked] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
-  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats } = useSettings();
+  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats, fullCardsInSelectMode } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -314,6 +314,38 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
   // ── Mobile card — slim tap-to-open row ──────────────────────────────────────
   if (isMobile) {
+    // Select mode condenses to name + selection state. Note the mobile card has
+    // never read `density` — that is a folder-collapse concept and this branch
+    // returns before it — so this is its own thing rather than a reuse.
+    //
+    // What goes: the `#N` index (17px) and the type label (18px), taking an 81px
+    // card to 46px. The type is not lost, it is the row's left border colour;
+    // and while you are choosing *between* entries the name is what you are
+    // choosing on. `fullCardsInSelectMode` puts them back.
+    //
+    // A *selected* row keeps its staged-type dropdown and so stays tall. That
+    // is deliberate twice over: it preserves per-row staged types, which the
+    // bulk "Change type" cannot express (it sets one type for everything), and
+    // the height change is itself a selection cue.
+    const condensed = isSelectMode && !fullCardsInSelectMode && !isSelected;
+
+    if (condensed) {
+      return (
+        <div
+          id={`entry-${entry.id}`}
+          className="entry-card entry-card--mobile entry-card--mobile-condensed"
+          style={{ '--type-color': typeColor }}
+          onClick={() => toggleSelected(entry.id, 'active')}
+        >
+          <span className="entry-card-mobile-tick" aria-hidden="true" />
+          <span className="entry-card-mobile-name entry-card-mobile-name--condensed">
+            {entry.name || '(unnamed)'}
+          </span>
+          {entry.hiddenFromExport && <ExportOffIcon />}
+        </div>
+      );
+    }
+
     return (
       <div
         id={`entry-${entry.id}`}
@@ -321,6 +353,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         style={{ '--type-color': typeColor }}
         onClick={() => isSelectMode ? toggleSelected(entry.id, 'active') : openEntry(entry.id)}
       >
+        {isSelectMode && <span className="entry-card-mobile-tick entry-card-mobile-tick--on" aria-hidden="true" />}
         <div className="entry-card-mobile-index">#{index}</div>
         <div className="entry-card-mobile-row">
           <span className="entry-card-mobile-name">

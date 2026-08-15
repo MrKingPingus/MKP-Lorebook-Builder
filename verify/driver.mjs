@@ -145,11 +145,11 @@ export async function pairCrosstalk(page) {
 
 // The mobile title menu, opened the way a phone user opens it — by tapping the
 // lorebook name. Works in both role-bar poses: solo renders
-// `.lorebook-bar-title-btn`, and once a reference is paired the active
-// segment's name carries the same door.
+// `.title-field--mobile` in the window header (14C moved it there), and once a
+// reference is paired the role bar's active segment carries the same door.
 export async function openMobileTitleMenu(page, tab) {
   if ((await page.locator('.mtm').count()) === 0) {
-    await tap(page, page.locator('.lorebook-bar-title-btn, .role-swap-segment-content--btn').first());
+    await tap(page, page.locator('.title-field--mobile, .role-swap-segment-content--btn').first());
     await page.locator('.mtm').waitFor({ timeout: 4000 });
   }
   if (tab) {
@@ -394,7 +394,15 @@ export function settle(page, ms) {
 
 export async function enterSelectMode(page) {
   await page.locator('.search-mode-select').first().selectOption('select');
-  await page.locator('.bulk-action-bar').first().waitFor({ timeout: 4000 });
+  // Two different things to wait for since 14C. On mobile the bulk bar is
+  // `display: contents` — its children lay out in the filter row rather than in
+  // a box of its own — so it has no bounding box and Playwright reads it as
+  // hidden. The Actions button is the thing that actually appears there.
+  if (isMobileViewport(page)) {
+    await page.locator('.bulk-actions-btn').first().waitFor({ timeout: 4000 });
+  } else {
+    await page.locator('.bulk-action-bar').first().waitFor({ timeout: 4000 });
+  }
 }
 
 // Export the active book as JSON via the hotbar Export button, capturing the

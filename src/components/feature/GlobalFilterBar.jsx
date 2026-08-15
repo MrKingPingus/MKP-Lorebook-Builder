@@ -9,11 +9,13 @@ import { useSelection }         from '../../hooks/use-selection.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useDisplayEntries }    from '../../hooks/use-display-entries.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { useMobile }            from '../../hooks/use-mobile.js';
 import { SearchBar }            from './SearchBar.jsx';
 import { TypeFilterBar }        from './TypeFilterBar.jsx';
 
 export function GlobalFilterBar() {
   const { entries } = useEntries();
+  const isMobile    = useMobile();
   const { referenceLorebook } = useReferenceLorebook();
   const active    = useDisplayEntries(entries);
   const reference = useDisplayEntries(referenceLorebook?.entries ?? [], { isReference: true });
@@ -45,6 +47,14 @@ export function GlobalFilterBar() {
     });
   }
 
+  // GitHub #122, ask 1: on a phone the type filter moves up beside the mode
+  // select instead of occupying a 39px band of its own for one 69px control.
+  // It is passed *into* SearchBar rather than SearchBar importing it, so this
+  // file stays the one place that decides what the filter bar is made of —
+  // otherwise "which row is the filter button on" would be answered in two
+  // components at once.
+  const typeFilter = <TypeFilterBar entries={entries} />;
+
   return (
     <div className="global-filter-bar">
       <SearchBar
@@ -54,8 +64,9 @@ export function GlobalFilterBar() {
         referenceMatchDetails={reference.displayMatchDetails}
         visibleIds={active.displayEntries.map((e) => e.id)}
         referenceVisibleIds={reference.displayEntries.map((e) => e.id)}
+        filterControl={isMobile ? typeFilter : null}
       />
-      <TypeFilterBar entries={entries} />
+      {!isMobile && typeFilter}
     </div>
   );
 }

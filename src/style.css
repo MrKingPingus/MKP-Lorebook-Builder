@@ -34,12 +34,33 @@
   --blue:     #60a5fa;
   --gold:     #eab308;
   --accent:        #ef4444;
-  /* Semantic color tokens — see docs/constants-reference.md for the rule.
+  /* §DESTRUCTIVE
+     Semantic color tokens — see docs/constants-reference.md for the rule.
      destructive  = irreversible/overwrite actions (Replace, Delete, Apply, Confirm).
      passive-agree = stateful toggle is on; user actively chose this state.
-     accent kept as the primary-emphasis exception (FAB, lander hero buttons). */
-  --destructive:        #ef4444;
-  --destructive-hover:  #dc2626;
+     accent kept as the primary-emphasis exception (FAB, lander hero buttons).
+
+     **The treatment is half the rule.** Primary actions are filled at rest;
+     destructive ones are outlined and fill only on hover. Two reds cannot be
+     told apart by hue alone, so fill-versus-outline is what actually carries
+     "create" versus "destroy" — and it keeps working in the high-contrast
+     theme, where the two are deliberately the same colour, and under a custom
+     accent the user may have set to anything at all.
+
+     The one standing exception is `.import-flow-confirm--danger`, the terminal
+     Replace in the import flow: it is the primary action of a screen that
+     exists to confirm it, with no create-action anywhere near it, and
+     outlining it would make the dangerous choice quieter than the Back button
+     beside it. */
+  /* Hotter and more saturated than --accent (#ef4444), and deliberately not
+     equal to it. They were the same value in every theme, so a filled ＋ New
+     and a Delete were the same red — always true, but 14B filled more controls
+     with accent and made it easy to meet. Hue alone cannot fully separate two
+     reds, so the treatment carries the rest of the weight: destructive controls
+     are outlined and fill only on hover, while primary actions are filled at
+     rest. See §DESTRUCTIVE. */
+  --destructive:        #ff2e2e;
+  --destructive-hover:  #d61f1f;
   --passive-agree:        #60a5fa;
   --passive-agree-hover:  #3b82f6;
   --focus-border:  #a0b5d6;
@@ -104,8 +125,8 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --blue:     #2563eb;
   --gold:     #ca8a04;
   --accent:        #dc2626;
-  --destructive:        #dc2626;
-  --destructive-hover:  #b91c1c;
+  --destructive:        #e60000;
+  --destructive-hover:  #b00000;
   --passive-agree:        #2563eb;
   --passive-agree-hover:  #1d4ed8;
   --focus-border:  #2563eb;
@@ -130,6 +151,10 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --blue:     #0033cc;
   --gold:     #7a5c00;
   --accent:        #b3001b;
+  /* Deliberately still equal to --accent. In high contrast, hue is the least
+     reliable signal and every colour has to clear a contrast bar first; the
+     outline-vs-fill treatment separates create from destroy without asking
+     anyone to distinguish two dark reds. */
   --destructive:        #b3001b;
   --destructive-hover:  #7a0012;
   --passive-agree:        #0033cc;
@@ -148,8 +173,13 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --surface3: color-mix(in srgb, var(--surface) 84%, var(--text));
   --border2:  color-mix(in srgb, var(--border) 65%, var(--text));
   --muted2:   color-mix(in srgb, var(--muted) 60%, var(--text));
-  --destructive:        var(--accent);
-  --destructive-hover:  color-mix(in srgb, var(--accent) 82%, #000);
+  /* Fixed rather than derived, unlike everything else here. Deriving it from
+     --accent is precisely the collision: a user whose accent is red would get a
+     Delete button identical to their New button, and one whose accent is green
+     would get a green Delete. Destructive is the one role that must not follow
+     a preference. */
+  --destructive:        #e5252b;
+  --destructive-hover:  #b81b20;
   --passive-agree:        var(--blue);
   --passive-agree-hover:  color-mix(in srgb, var(--blue) 82%, #000);
   --focus-border:  var(--blue);
@@ -437,6 +467,22 @@ img.logo-icon {
   color: var(--muted);
   font-size: 0.625rem;
   flex-shrink: 0;
+}
+
+/* The same control on a phone, in the header rather than in its own bar.
+   Desktop's is absolutely centred inside `.lorebook-name-sizer` and sized to
+   its contents; on a phone it is an ordinary flex child taking whatever the
+   logo mark, the storage ring and the gear leave. Deliberately the same
+   treatment — accent ring, name, caret — because it is the same control
+   opening the same destinations, and matching desktop is what made it legible
+   as a button in the first place. */
+.title-field--mobile {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 4px 12px;
+  font-size: 0.875rem;
+  color: var(--text);
 }
 
 /* Lorebook count badge */
@@ -1285,10 +1331,10 @@ img.logo-icon {
   font-style: italic;
 }
 
-/* Consolidated lorebook role bar (mobile). In crosstalk mode renders as
-   two segments — ACTIVE | REFERENCE — with inline rename on active and a
-   ⋯ menu on reference (Change / Browse / Unpair). Outside crosstalk uses
-   the .lorebook-bar-solo variant below. */
+/* Consolidated lorebook role bar (mobile) — the crosstalk pose only, since
+   14C. Two segments, ACTIVE | REFERENCE; the active one opens the title menu
+   and the reference one has a ⋯ menu (Change / Browse / Unpair). Outside
+   crosstalk this renders nothing and the title lives in the window header. */
 .role-swap-segmented {
   display: flex;
   margin: 8px 12px 0;
@@ -1639,58 +1685,12 @@ img.logo-icon {
 }
 
 /* Solo variant — single row when crosstalk is off or no reference paired */
-/* Layout only. The bar used to be a card with the real control invisible
-   inside it, which is what made the title read as a caption. */
-.lorebook-bar-solo {
-  display: flex;
-  margin: 8px 12px 0;
-}
-
-/* Mobile's door to the title menu, wearing desktop's `.title-field` treatment
-   deliberately — same accent ring, same centred name-and-caret, so the control
-   that opens the same destinations looks the same on both surfaces. Desktop
-   sizes its pill to its contents inside a wide header; here it takes the full
-   row, because on a phone the row is the only thing at that altitude and a
-   full-width target is free. */
-.lorebook-bar-title-btn {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: var(--touch-floor);
-  padding: 6px 16px;
-  background: transparent;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  color: var(--muted2);
-  font-family: var(--font);
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition),
-              box-shadow var(--transition);
-}
-.lorebook-bar-title-btn:hover,
-.lorebook-bar-title-btn:active {
-  background: var(--surface2);
-  color: var(--text);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-.lorebook-bar-name {
-  min-width: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .lorebook-bar-caret {
   flex: none;
   font-size: 0.625rem;
   color: var(--muted);
 }
-.lorebook-bar-title-btn:hover .lorebook-bar-caret { color: var(--text); }
+.role-swap-segment-content--btn:hover .lorebook-bar-caret { color: var(--text); }
 
 /* ============================================================
    Search Bar
@@ -2035,16 +2035,117 @@ img.logo-icon {
 }
 
 /* Mobile find-replace second row */
+/* The mobile second row: mode select, whatever the mode adds, and the type
+   filter. `container-type: inline-size` because the select-mode readout drops
+   its trailing word when this row runs out of room — and what runs out of room
+   is the row, not the viewport, so a media query would be measuring the wrong
+   box. */
 .search-bar-row2 {
+  position: relative;   /* anchors the Actions menu, which escapes no further */
   display: flex;
+  flex-wrap: wrap;      /* lets the chip row break onto a line of its own */
   align-items: center;
   gap: 6px;
   margin-top: 6px;
+  container-type: inline-size;
 }
+.search-bar-row2 .bulk-action-chips { flex-basis: 100%; }
 .search-bar-row2 .replace-btn-wrap    { flex-shrink: 0; }
 .search-bar-row2 .replace-all-btn    { white-space: nowrap; }
 .search-bar-row2 .search-mode-select { flex-shrink: 0; }
 .search-bar-row2 .match-counter      { flex: 1; min-width: 0; }
+/* The type filter comes in as a flex child of this row rather than owning a
+   band below it (#122 ask 1). It keeps its own wrapper so the popover anchor
+   and the badge logic are untouched — only the box it sits in changed. */
+.search-bar-row2 .type-filter-bar--mobile { padding: 0; flex-shrink: 0; }
+
+/* In select mode the control only ever displays "Select", so it does not need
+   the width that fitting "Find/Replace" demands — and that width is what the
+   count readout beside it needs. */
+/* `min-width` alone does nothing here — a native select sizes itself to its
+   widest *option*, which is "Find/Replace", so the closed control was 140px
+   whatever the minimum said. The width has to be set outright.
+   `--slim` is select mode, where the control only ever reads "Select".
+   `--fr` is find/replace, where it reads "Find/Replace" and so needs more —
+   just not the 140px that fitting that option *plus* the widest one demands. */
+.search-mode-select--slim { min-width: 0; width: 96px; }
+.search-mode-select--fr   { min-width: 0; width: 122px; }
+
+/* §BULK-ACTIONS-MOBILE
+   Select mode's bulk bar on a phone: a count readout and one Actions menu,
+   sharing the mode row rather than wrapping into 132px of buttons below it. */
+/* Doubled class so this beats the plain `.bulk-action-bar` block further down
+   the file — same specificity otherwise, and source order would have handed it
+   `display: flex` back. */
+.bulk-action-bar--mobile.bulk-action-bar--mobile {
+  display: contents;
+}
+/* `display: contents` above means these three are direct flex children of
+   `.search-bar-row2`, so they lay out in the row alongside the mode select and
+   the filter — without the component having to hand its pieces upward. The
+   chip row is the exception; it needs to break onto its own line. */
+.bulk-count-readout {
+  /* Shrink if it must, never grow: growing made it absorb all the row's slack
+     and park a few characters in the middle of an empty box, which read like a
+     text input sitting between two controls. */
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--passive-agree);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+@container (max-width: 355px) { .bulk-count-word { display: none; } }
+
+.bulk-actions-btn {
+  flex-shrink: 0;
+  min-height: 33px;
+  padding: 5px 7px;
+  background: var(--surface2);
+  border: 1px solid var(--passive-agree);
+  border-radius: var(--radius);
+  color: var(--passive-agree);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bulk-actions-btn--open { background: var(--surface3); }
+
+.bulk-actions-menu {
+  position: absolute;
+  z-index: 1000;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.bulk-actions-menu-item {
+  min-height: var(--touch-floor);
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.bulk-actions-menu-item:hover:not(:disabled) { background: var(--surface3); }
+.bulk-actions-menu-item:disabled { color: var(--muted); cursor: default; }
+.bulk-actions-menu-divider { height: 1px; background: var(--border); }
 
 /* Select-mode counter (e.g. "3 selected") reuses .match-counter typography */
 .match-counter--select { color: var(--accent); }
@@ -3812,6 +3913,57 @@ img.logo-icon {
   user-select: none;
 }
 .entry-card--mobile:active { opacity: 0.7; }
+
+/* Condensed select-mode row: name and selection state, nothing else. 46px
+   against the full card's 81px, which is what takes select mode from two
+   visible rows to eight. Still clear of the 44px touch floor, so this is a
+   density change rather than an ergonomics regression. */
+.entry-card--mobile-condensed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-floor);
+  padding: 0 12px;
+}
+.entry-card-mobile-name--condensed {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+}
+/* The checkbox is drawn rather than rendered as an <input>: the whole row is
+   already the toggle, and a real checkbox inside it would be a second control
+   claiming the same tap. */
+.entry-card-mobile-tick {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: transparent;
+}
+.entry-card-mobile-tick--on {
+  border-color: var(--passive-agree);
+  background: var(--passive-agree);
+  position: relative;
+}
+.entry-card-mobile-tick--on::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+/* The tick sits on the full card's first line rather than above it. */
+.entry-card--mobile > .entry-card-mobile-tick--on {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+}
+.entry-card--mobile { position: relative; }
 
 .entry-card-mobile-index {
   font-size: 0.6875rem;
@@ -5953,7 +6105,15 @@ kbd {
   font-weight: 600;
   cursor: pointer;
 }
-.mtm-confirm-btn--danger { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+/* Outlined at rest, filled on hover — the same treatment the desktop title
+   menu's delete confirm already used. The two menus offer the same action on
+   the same object, so they should not look different while doing it. */
+.mtm-confirm-btn--danger {
+  background: transparent;
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+.mtm-confirm-btn--danger:hover { background: var(--destructive); color: #fff; }
 
 .mtm-section { display: flex; flex-direction: column; gap: 8px; }
 .mtm-section-label {

@@ -5,8 +5,12 @@
 // activeSide flag so the books stay pinned to their physical slots while
 // the active highlight (and editing target) moves to the tapped side.
 //
-// The active book's name is the door to the mobile title menu in both poses —
-// a whole-row button in solo, the whole segment content once paired. The
+// **Renders only the paired pose.** 14C moved the solo title into the window
+// header, where desktop has always kept it, so this component is now exactly
+// the thing a header cannot hold: two books at once. Outside crosstalk it
+// returns null and the header carries the title instead.
+//
+// The active segment's content is the door to the mobile title menu. The
 // reference segment keeps a ⋯ menu (Change reference / Browse reference /
 // Unpair).
 //
@@ -183,34 +187,8 @@ export function LorebookRoleBar() {
 
   // === Solo (no crosstalk or no reference paired) ===
   //
-  // The whole bar is the button, wearing desktop's `.title-field` treatment —
-  // accent ring, name, caret. Two reasons it is one control and not a name
-  // beside a pencil:
-  //
-  // Desktop already learned this lesson and the fix did not get carried over.
-  // `.title-field`'s own comment says it: "A borderless title read as text
-  // rather than a control — people didn't know it was clickable." The first
-  // pass here put an invisible button inside a bordered card next to a pencil
-  // that *did* look like a button, so the row read as label-plus-button with
-  // the label being the actual action.
-  //
-  // And a button cannot be nested inside a button. Once the bar itself is the
-  // control, an inline rename affordance would have to be a div with a click
-  // handler — worse for keyboards and screen readers than simply routing
-  // rename through the title menu's ⋯ menu, where it already exists for every
-  // book including this one. That costs two taps and buys an unambiguous row.
-  return (
-    <div className="lorebook-bar-solo">
-      <button
-        className="lorebook-bar-title-btn"
-        onClick={() => openMobileTitleMenu()}
-        type="button"
-        aria-haspopup="dialog"
-        title="Lorebooks, import and export"
-      >
-        <span className="lorebook-bar-name">{activeLorebook?.name || '(unnamed)'}</span>
-        <span className="lorebook-bar-caret" aria-hidden="true">▾</span>
-      </button>
-    </div>
-  );
+  // Nothing. 14C moved the title into the header, where desktop has always kept
+  // it — see WindowHeader. This component now renders only the two-book pose,
+  // which is the one thing a header cannot hold.
+  return null;
 }

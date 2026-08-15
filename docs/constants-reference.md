@@ -11,7 +11,7 @@
 - `tour-steps.js` — the feature tour: `TOUR_RELEASE` (which folder of images to serve), `TOUR_CAPTURE_SCALE`, and `TOUR_STEPS`. Single source for both the in-app tour and `verify/screenshots.mjs`. **Array order is the badge numbering** — the generator draws badge `i + 1` for entry `i` and the tour renders the same array as a numbered list, so marks must be written in the order they scan on the image. See `screenshots/README.md`
 - `settings-search.js` — the filter index behind the Settings panel's search box
 - `storage-keys.js` — all localStorage key strings
-- `defaults.js` — default shapes for new entries, lorebooks, settings, window size
+- `defaults.js` — default shapes for new entries, lorebooks, settings, window size. Also `fullCardsInSelectMode` (off) — mobile select mode condenses entry rows to name + tick at 46px against the full card's 81px, which is the difference between seeing two entries and eight; on restores the full cards. **There is no `crosstalkEnabled`** — see `stores-reference.md`
 - `hotbar-actions.js` — action definitions for the hotbar toolbar
 - `scaling.js` — the option sets behind the footer's `⤢ Size` menu: `FAB_SIZES` (the px map `Hotbar.jsx` renders from), `FAB_SIZE_OPTIONS`, `ENTRY_HEADER_SIZE_OPTIONS`, and `WINDOW_SIZE_PRESETS` (`width: null` keeps the current width, `height: 'viewport'` resolves at apply time). `WINDOW_PRESET_TOLERANCE` is the px slop that keeps a preset's checkmark lit after re-centring rounds a dimension
 - `drag.js` — drop-target vocabulary (`DROP_KINDS`, `DROP_EDGES`, `DRAG_KINDS`), the spring-open delay for tucked folders, and the auto-scroll zone/speed
@@ -29,9 +29,9 @@ The CSS palette has both raw color vars (`--red`, `--blue`, `--green`, etc.) and
 
 | Token | Hex | Use for |
 |-------|-----|---------|
-| `--destructive` | `#ef4444` | Irreversible/overwrite actions: Replace, Delete-confirm, Apply, Clear All, the "Switch anyway" prompt button. Pair with `--destructive-hover` (`#dc2626`). |
+| `--destructive` | `#ff2e2e` | Irreversible/overwrite actions: Replace, Delete-confirm, Apply, Clear All, the "Switch anyway" prompt button. Pair with `--destructive-hover` (`#d61f1f`). **Outlined at rest, filled on hover** — two reds cannot be told apart by hue alone, so the treatment is what separates destroy from create, and it keeps working in high contrast (where the two tokens are deliberately equal) and under any custom accent. In the custom theme this token is fixed rather than derived: destructive is the one role that must not follow a preference. |
 | `--passive-agree` | `#60a5fa` | Stateful toggle is **on** because the user actively chose this state: hotbar toggles (`.footer-btn--active`), Find/Replace scope chips, sort-mode active, the currently-open lorebook row in the switcher, the open menu-dropdown item, the selected format tab. Pair with `--passive-agree-hover` (`#3b82f6`). |
-| `--accent` | `#ef4444` | **Primary-emphasis exception only** — kept for the FAB (`+` add-entry) and the lander hero buttons because their visual prominence is the whole point. Don't reach for `--accent` for new UI; pick `--destructive` or `--passive-agree` instead. |
+| `--accent` | `#ef4444` | **Primary-emphasis exception only** — filled at rest, which is what distinguishes it from `--destructive`. — kept for the FAB (`+` add-entry) and the lander hero buttons because their visual prominence is the whole point. Don't reach for `--accent` for new UI; pick `--destructive` or `--passive-agree` instead. |
 
 #### Toggle button visual contract
 

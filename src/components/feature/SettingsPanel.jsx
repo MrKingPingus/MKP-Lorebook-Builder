@@ -106,6 +106,8 @@ export function SettingsPanel() {
     setFolderCollapseStages,
     condensedShowStats,
     setCondensedShowStats,
+    fullCardsInSelectMode,
+    setFullCardsInSelectMode,
     crosstalkSwapMode,
     setCrosstalkSwapMode,
     thesaurusEnabled,
@@ -319,6 +321,27 @@ export function SettingsPanel() {
             Turn this on to keep them, rendered smaller to fit the row.
           </div>
         </SettingsGroup>
+
+        {/* Mobile-only, so it renders only there — a desktop user toggling this
+            would see nothing happen. */}
+        {isMobile && (
+          <SettingsGroup id="fullCardsSelect" query={query}>
+            <label className="settings-label">
+              <span>Show full entry cards while selecting</span>
+              <input
+                type="checkbox"
+                checked={fullCardsInSelectMode}
+                onChange={(e) => setFullCardsInSelectMode(e.target.checked)}
+              />
+            </label>
+            <div className="settings-hint">
+              Select mode normally shrinks entries to just their name and a checkbox, which
+              roughly quadruples how many fit on screen — the entry type still shows as the
+              colour down the left edge. Turn this on to keep the full cards, with their
+              trigger and character counts, while you select.
+            </div>
+          </SettingsGroup>
+        )}
 
         {/* Private-entry marker */}
         <SettingsGroup id="privateMarker" query={query}>

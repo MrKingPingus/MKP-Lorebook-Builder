@@ -6,6 +6,8 @@
 
 ### New
 
+- **On a phone, your lorebook's name now sits in the title bar** — the same place it lives on a desktop, and the same button. It used to have a row of its own below the search and filter controls, which meant meeting the filters before the book they filter. The **LOREBOOK BUILDER** wordmark steps aside to make room; the logo stays.
+- **Selecting entries shows them condensed** — just the name and a checkbox, with the entry type still shown as the colour down the left edge. About four times as many fit on screen. Settings → Editing & Entries → **Show full entry cards while selecting** brings the full cards back.
 - **Tap your lorebook's name on a phone to open the lorebook menu** — it now wears the same outlined style the title has on a desktop, so it reads as something you press rather than a caption. Two tabs — every book you've saved, and import/export — the same two destinations the title menu has always offered on a desktop. Switch books, start a new one, rename or delete any of them, download a copy or grab a template. On a phone none of that was reachable before: the header gear goes straight to Settings, and every other route into those screens was desktop-only.
 - **A reference lorebook chooser, in one place, reached from anywhere.** It shows what's paired now, what you can pair instead, and — because this is the moment you're likely asking — a line explaining what a reference lorebook actually does. Open it from the lorebook menu, a book's **⋯** menu, the hotbar's **Reference** button, the Lorebooks panel, or Settings.
 - **Settings has a way back to the landing page**, at the bottom. On a phone this was previously unreachable without reloading, which meant no route to **New lorebook**, your recent books, **What's new** or **Learn** once you were in the builder.
@@ -16,6 +18,9 @@
 - **The hotbar's Reference button opens the chooser** instead of flipping a mode and leaving you to find the picker. It lights up when a book is genuinely paired, not merely when a mode is on. **Alt+R** does the same.
 - **Pairing is spelled out in words** — **Pair as reference** in each book's **⋯** menu — rather than a **⇄** symbol next to it. The symbol was tested on someone who knew the feature existed and still didn't read it as "choose a reference book".
 - **"or paste entries instead" is a proper button with a gap below the drop zone**, not a link tucked against its edge. A near-miss used to open the file browser, which is a confusing thing to have happen when you were trying to paste.
+- **A phone gives you far more of your entries and far less toolbar.** The filter controls now share a row instead of stacking three deep, and the chrome above your first entry is down from 236px to 147px on a small phone — from 46% of the screen to 32%.
+- **Select mode's toolbar is a single Actions menu** rather than eight buttons wrapping across three lines. Change type, set public/private, hide from export, move to folder, select all and deselect all are all in it, with the number selected shown beside it. **× Exit** is gone: switching the mode dropdown back to Search was already the way out. Select mode went from showing two entries at a time to eight. On a desktop the toolbar is unchanged.
+- **Delete and other irreversible buttons no longer look like the ＋ New button.** They were the same red in every theme — and in a custom theme, *literally* the same colour, so a red accent gave you an identical Delete. Destructive buttons are now outlined rather than filled, in their own hotter red, and only fill in when you hover them.
 - **Resizing the window across the phone/desktop boundary now closes any open panel.** The Settings panel is a narrow column on a desktop and a full-screen overlay on a phone, so dragging a window narrow used to leave you with a takeover you never asked for.
 - **Renaming your lorebook on a phone moved into the lorebook menu**, alongside rename for every other book. The pencil beside the title is gone in both layouts — the name itself is the button now, and it takes the whole space it sits in.
 
@@ -27,6 +32,7 @@
 
 ### Under the hood
 
+- **`--destructive` is no longer tied to `--accent`.** It has its own value per theme, and in the custom theme it is deliberately fixed rather than derived from the user's accent — destructive is the one role that must not follow a preference. The high-contrast theme keeps them equal on purpose, where contrast matters more than hue and the outline-versus-fill treatment does the separating.
 - **The `crosstalkEnabled` setting is gone.** It's derived from whether a reference book is paired. A stored value from an older version is ignored, and nobody could have had a pairing saved with the setting off — turning it off always cleared the pairing.
 - **A 44px touch-target floor is defined as a shared token**, expressed as hit area rather than visual size, so a small control can carry a full-size tap region without growing the row it sits in.
 - **The layout-check suite grades occlusion structurally.** A control covered by an open dialog is now recognised as covered *by a layer* rather than reported as a fault, without the check having to know that layer's markup.

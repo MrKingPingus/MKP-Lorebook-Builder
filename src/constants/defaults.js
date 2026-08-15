@@ -67,6 +67,12 @@ export const DEFAULT_SETTINGS = {
   // Show the trigger/char stats on condensed rows, at a smaller size. Off by
   // default: condensed exists to shed chrome.
   condensedShowStats:       false,
+  // Mobile select mode condenses entry rows to name + selection state: you are
+  // choosing between entries, and the type is already carried by the row's left
+  // border colour. Off by default because condensing is the point — 46px rows
+  // instead of 81px is the difference between seeing two entries and eight.
+  // On restores the full cards for anyone who wants the stats while selecting.
+  fullCardsInSelectMode:    false,
   // NOTE: there is no `crosstalkEnabled` setting. Crosstalk is on exactly when a
   // reference lorebook is paired — see hooks/use-reference-lorebook.js for why
   // the toggle was removed rather than moved. A stale key in an existing stored
