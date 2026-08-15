@@ -17,7 +17,7 @@
 - **Pairing is spelled out in words** — **Pair as reference** in each book's **⋯** menu — rather than a **⇄** symbol next to it. The symbol was tested on someone who knew the feature existed and still didn't read it as "choose a reference book".
 - **"or paste entries instead" is a proper button with a gap below the drop zone**, not a link tucked against its edge. A near-miss used to open the file browser, which is a confusing thing to have happen when you were trying to paste.
 - **Resizing the window across the phone/desktop boundary now closes any open panel.** The Settings panel is a narrow column on a desktop and a full-screen overlay on a phone, so dragging a window narrow used to leave you with a takeover you never asked for.
-- **Renaming your lorebook on a phone moved into the lorebook menu**, alongside rename for every other book. The pencil next to the title is gone — the name itself is the button now, and it takes the whole row.
+- **Renaming your lorebook on a phone moved into the lorebook menu**, alongside rename for every other book. The pencil beside the title is gone in both layouts — the name itself is the button now, and it takes the whole space it sits in.
 
 ### Fixed
 

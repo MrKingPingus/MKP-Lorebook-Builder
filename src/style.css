@@ -1413,18 +1413,6 @@ img.logo-icon {
 .role-swap-segment-action:hover {
   background: rgba(255, 255, 255, 0.18);
 }
-.role-swap-rename-input {
-  font-size: 1rem;
-  font-weight: 600;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--focus-border);
-  border-radius: 3px;
-  padding: 2px 6px;
-  width: 100%;
-  min-width: 0;
-}
-
 /* Pick from Reference banner — replaces the role-swap segmented bar while
    in pose. Reminds the user the books are temporarily swapped and gives a
    one-tap Cancel path. The matching Cancel/Commit also live in
@@ -1703,18 +1691,6 @@ img.logo-icon {
   color: var(--muted);
 }
 .lorebook-bar-title-btn:hover .lorebook-bar-caret { color: var(--text); }
-
-.lorebook-bar-rename-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--focus-border);
-  border-radius: 3px;
-  padding: 2px 6px;
-}
 
 /* ============================================================
    Search Bar

@@ -5,10 +5,18 @@
 // activeSide flag so the books stay pinned to their physical slots while
 // the active highlight (and editing target) moves to the tapped side.
 //
-// Each segment has an icon button to its right. The active segment shows
-// ✏️ → inline rename. The reference segment shows ⋯ → small menu (Change
-// reference / Browse reference / Unpair). Outside crosstalk renders a
-// single solo row with rename + lorebook switcher.
+// The active book's name is the door to the mobile title menu in both poses —
+// a whole-row button in solo, the whole segment content once paired. The
+// reference segment keeps a ⋯ menu (Change reference / Browse reference /
+// Unpair).
+//
+// **No rename here, in either pose.** It used to be a ✏️ beside the name. Two
+// reasons it went: a button cannot be nested inside a button, and once the name
+// itself is the control an inline rename affordance would have to be a div with
+// a click handler — worse for keyboards and screen readers. And rename already
+// exists in the title menu's per-book ⋯ menu for every book including this one,
+// so the pencil was a second route to a place you could already get to. Costs
+// two taps on a rare action; buys a row with exactly one meaning.
 //
 // Replaces the previous LOREBOOK NAME / REFERENCE / segmented-control
 // stack in BuildPanel — saves four rows of vertical chrome on mobile.
@@ -21,33 +29,13 @@ import { useUi }                       from '../../hooks/use-ui.js';
 import { useReferenceChooser }         from '../../hooks/use-reference-chooser.js';
 
 export function LorebookRoleBar() {
-  const { activeLorebook, renameLorebook } = useLorebook();
+  const { activeLorebook } = useLorebook();
   const { referenceLorebook, crosstalkEnabled, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const setReferenceBrowseOpen = useUi((s) => s.setReferenceBrowseOpen);
   const activeSide             = useUi((s) => s.activeSide);
   const openMobileTitleMenu    = useUi((s) => s.openMobileTitleMenu);
   const { openChooser: openReferenceChooser } = useReferenceChooser();
   const lorebooks              = useLorebookStore((s) => s.lorebooks);
-
-  // Inline rename state
-  const [renameOpen,  setRenameOpen]  = useState(false);
-  const [renameDraft, setRenameDraft] = useState('');
-  const renameInputRef = useRef(null);
-
-  function openRename() {
-    setRenameDraft(activeLorebook?.name ?? '');
-    setRenameOpen(true);
-    setTimeout(() => renameInputRef.current?.focus(), 0);
-  }
-  function commitRename() {
-    const trimmed = renameDraft.trim();
-    if (trimmed && trimmed !== activeLorebook?.name) renameLorebook(trimmed);
-    setRenameOpen(false);
-  }
-  function onRenameKey(e) {
-    if (e.key === 'Enter')  { e.preventDefault(); commitRename(); }
-    if (e.key === 'Escape') { e.preventDefault(); setRenameOpen(false); }
-  }
 
   // Reference menu state
   const [refMenuOpen,    setRefMenuOpen]    = useState(false);
@@ -76,20 +64,19 @@ export function LorebookRoleBar() {
   }
 
 
-  // Close all on Escape — single global handler for whichever popover is up.
-  // Only consumes Escape while something is actually open, so an Escape with
-  // nothing up still reaches the window dispatcher / dismiss stack.
+  // Close the reference menu on Escape. Only consumes Escape while the menu is
+  // actually open, so an Escape with nothing up still reaches the window
+  // dispatcher / dismiss stack.
   useEffect(() => {
-    if (!refMenuOpen && !renameOpen) return undefined;
+    if (!refMenuOpen) return undefined;
     function onKey(e) {
       if (e.key !== 'Escape') return;
       e.stopPropagation();
       setRefMenuOpen(false);
-      setRenameOpen(false);
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [refMenuOpen, renameOpen]);
+  }, [refMenuOpen]);
 
   // === Crosstalk + reference paired: two segments pinned to slots ===
   if (crosstalkEnabled && referenceLorebook) {
@@ -111,48 +98,33 @@ export function LorebookRoleBar() {
       return (
         <div className={`role-swap-segment${isActive ? ' role-swap-segment--active' : ''}`}>
           {isActive ? (
-            renameOpen ? (
-              <div className="role-swap-segment-content">
-                <span className="role-swap-segment-role">{role}</span>
-                <input
-                  ref={renameInputRef}
-                  className="role-swap-rename-input"
-                  value={renameDraft}
-                  onChange={(e) => setRenameDraft(e.target.value)}
-                  onBlur={commitRename}
-                  onKeyDown={onRenameKey}
-                  spellCheck={false}
-                />
-              </div>
-            ) : (
-              // The whole segment content is the door, the same shape the solo
-              // bar takes — role label and name together, not the name alone.
-              //
-              // It started as just the name with a `.touch-floor` overlay, and
-              // that could not work here: the bar is 44px tall, so a 44px hit
-              // region centred on a name sitting in the lower half of it has to
-              // escape the bar, and the bar clips. A control that *is* the
-              // height it needs beats an overlay reaching for it. The ACTIVE
-              // label reads as part of the button because it describes exactly
-              // what the button is about.
-              //
-              // The ellipsis stays on the inner span rather than the button: an
-              // element with `overflow: hidden` clips its own ::before, so any
-              // future `.touch-floor` here would be silently inert.
-              <button
-                type="button"
-                className="role-swap-segment-content role-swap-segment-content--btn"
-                onClick={() => openMobileTitleMenu()}
-                aria-haspopup="dialog"
-                title="Lorebooks, import and export"
-              >
-                <span className="role-swap-segment-role">{role}</span>
-                <span className="role-swap-segment-name-row">
-                  <span className="role-swap-segment-name">{book?.name || '(unnamed)'}</span>
-                  <span className="lorebook-bar-caret" aria-hidden="true">▾</span>
-                </span>
-              </button>
-            )
+            // The whole segment content is the door, the same shape the solo
+            // bar takes — role label and name together, not the name alone.
+            //
+            // It started as just the name with a `.touch-floor` overlay, and
+            // that could not work here: the bar is 44px tall, so a 44px hit
+            // region centred on a name sitting in the lower half of it has to
+            // escape the bar, and the bar clips. A control that *is* the
+            // height it needs beats an overlay reaching for it. The ACTIVE
+            // label reads as part of the button because it describes exactly
+            // what the button is about.
+            //
+            // The ellipsis stays on the inner span rather than the button: an
+            // element with `overflow: hidden` clips its own ::before, so any
+            // future `.touch-floor` here would be silently inert.
+            <button
+              type="button"
+              className="role-swap-segment-content role-swap-segment-content--btn"
+              onClick={() => openMobileTitleMenu()}
+              aria-haspopup="dialog"
+              title="Lorebooks, import and export"
+            >
+              <span className="role-swap-segment-role">{role}</span>
+              <span className="role-swap-segment-name-row">
+                <span className="role-swap-segment-name">{book?.name || '(unnamed)'}</span>
+                <span className="lorebook-bar-caret" aria-hidden="true">▾</span>
+              </span>
+            </button>
           ) : (
             <button
               className="role-swap-segment-tap"
@@ -162,17 +134,6 @@ export function LorebookRoleBar() {
             >
               <span className="role-swap-segment-role">{role}</span>
               <span className="role-swap-segment-name">{book?.name || '(unnamed)'}</span>
-            </button>
-          )}
-          {isActive && !renameOpen && (
-            <button
-              className="role-swap-segment-action"
-              onClick={openRename}
-              aria-label="Rename active lorebook"
-              title="Rename"
-              type="button"
-            >
-              ✏️
             </button>
           )}
           {!isActive && (
