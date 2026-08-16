@@ -246,7 +246,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
         </span>
       )}
       {!readOnly && (
-        <button className="chip-delete" onClick={onDelete} title="Remove trigger">×</button>
+        <button className="chip-delete touch-floor" onClick={onDelete} title="Remove trigger">×</button>
       )}
 
       {/* Conflict popover — rendered via portal to escape overflow:hidden on .entry-card */}

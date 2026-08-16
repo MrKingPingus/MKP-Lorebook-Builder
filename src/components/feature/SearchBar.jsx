@@ -202,7 +202,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const sortBtn = (
     <div className="sort-btn-wrap" ref={sortWrapRef} onPointerDown={(e) => e.stopPropagation()}>
       <button
-        className={`sort-btn${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
+        className={`sort-btn touch-floor${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
         onClick={() => setSortOpen((v) => !v)}
         onWheel={onSortWheel}
         title="Sort entries (Shift+scroll to cycle)"

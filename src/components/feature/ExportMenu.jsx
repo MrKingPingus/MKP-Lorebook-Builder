@@ -82,7 +82,7 @@ export function ExportMenu() {
     >
       <div className="export-menu-header">
         <span className="export-menu-title">Export book</span>
-        <button className="export-menu-close" onClick={closeExportMenu} title="Close">×</button>
+        <button className="export-menu-close touch-floor" onClick={closeExportMenu} title="Close">×</button>
       </div>
       <label className="export-menu-field-label" htmlFor="export-menu-filename">Filename</label>
       <input

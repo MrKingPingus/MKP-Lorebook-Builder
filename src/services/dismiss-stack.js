@@ -16,6 +16,10 @@ export const DISMISS_PRIORITY = {
   compare:             50,
   pickFromReference:   45,
   select:              40,
+  // The mobile entry editor is a destination rather than a layer — it is the
+  // whole screen and anything else that opens sits on top of it — so it must
+  // lose to every popover and sheet above it, and still beat the lander.
+  entryDetail:         20,
   lander:              10,
 };
 

@@ -57,7 +57,7 @@ export function MenuButton() {
     return (
       <div className="menu-btn-wrap" onPointerDown={(e) => e.stopPropagation()}>
         <button
-          className={`menu-btn menu-btn--gear${settingsOpen ? ' menu-btn--open' : ''}`}
+          className={`menu-btn menu-btn--gear touch-floor${settingsOpen ? ' menu-btn--open' : ''}`}
           onClick={() => setActiveMenuPanel(settingsOpen ? null : 'settings')}
           title="Settings"
           aria-label="Settings"

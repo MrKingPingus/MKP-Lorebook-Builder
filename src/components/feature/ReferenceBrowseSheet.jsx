@@ -9,6 +9,8 @@ import { useReferenceLorebook }   from '../../hooks/use-reference-lorebook.js';
 import { useDisplayEntries }      from '../../hooks/use-display-entries.js';
 import { TypeColorDot }           from '../ui/TypeColorDot.jsx';
 import { ENTRY_TYPES }            from '../../constants/entry-types.js';
+import { useDismissLayer }        from '../../hooks/use-dismiss-layer.js';
+import { DISMISS_PRIORITY }       from '../../services/dismiss-stack.js';
 
 export function ReferenceBrowseSheet() {
   const open                    = useUi((s) => s.referenceBrowseOpen);
@@ -16,6 +18,8 @@ export function ReferenceBrowseSheet() {
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
   const { referenceLorebook }   = useReferenceLorebook();
   const { displayEntries }      = useDisplayEntries(referenceLorebook?.entries ?? [], { isReference: true });
+
+  useDismissLayer('reference-browse', open, DISMISS_PRIORITY.modal, () => setOpen(false));
 
   if (!open) return null;
 
@@ -25,7 +29,7 @@ export function ReferenceBrowseSheet() {
   return (
     <div className="reference-browse-sheet">
       <div className="reference-browse-sheet-header">
-        <button className="reference-browse-sheet-back" onClick={close}>
+        <button className="reference-browse-sheet-back touch-floor" onClick={close}>
           ← Back
         </button>
         <span className="reference-browse-sheet-title">

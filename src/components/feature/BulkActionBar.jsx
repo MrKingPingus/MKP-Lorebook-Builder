@@ -274,7 +274,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
 
         <button
           type="button"
-          className={`bulk-actions-btn${menuOpen ? ' bulk-actions-btn--open' : ''}`}
+          className={`bulk-actions-btn touch-floor${menuOpen ? ' bulk-actions-btn--open' : ''}`}
           onClick={() => { setOpenPicker(null); setMenuOpen((v) => !v); }}
           aria-haspopup="menu"
           aria-expanded={menuOpen}

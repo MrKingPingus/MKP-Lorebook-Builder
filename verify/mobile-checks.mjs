@@ -187,6 +187,64 @@ const SCENARIOS = [
     }
   }),
 
+  // ── F5: the always-mounted layers, while closed ───────────────────────────
+  //
+  // `.entry-detail-panel` and `.menu-panel` are in the DOM whether or not they
+  // are showing — only a modifier class says which. The finding asked whether a
+  // closed one is *hidden from assistive technology* or merely sized to zero,
+  // since the second would leave a screen reader walking a whole second copy of
+  // the app that no sighted user can see.
+  //
+  // The answer turned out to be that both were already right, for reasons that
+  // were load-bearing for something else: the detail panel is `display: none`
+  // and the settings panel is `visibility: hidden` (chosen so its width can
+  // animate, per the note in style.css). Both remove an element from the
+  // accessibility tree and the focus order. So this scenario changes nothing —
+  // it pins it, because both properties are one careless edit from becoming
+  // `opacity: 0` or `width: 0`, which look identical and are not.
+  scenario('Mobile: the closed always-mounted layers are hidden, not just flat', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+
+    const hiding = (sel) => page.evaluate((s) => {
+      const el = document.querySelector(s);
+      if (!el) return 'missing';
+      const st = getComputedStyle(el);
+      // The two properties that actually prune the accessibility tree. Zero
+      // width, zero height and zero opacity do not.
+      if (st.display === 'none') return 'display:none';
+      if (st.visibility === 'hidden' || st.visibility === 'collapse') return 'visibility:hidden';
+      return `visible (${st.width} x ${st.height}, opacity ${st.opacity})`;
+    }, sel);
+
+    check('the closed entry detail panel is pruned from the a11y tree',
+      await hiding('.entry-detail-panel'), 'display:none');
+    check('the closed settings panel is pruned from the a11y tree',
+      await hiding('.menu-panel'), 'visibility:hidden');
+
+    // And neither is reachable by tab while closed — the same fact from the
+    // other side, and the one a keyboard user would actually notice.
+    //
+    // Asked by trying to focus each control and seeing whether focus lands,
+    // rather than by measuring boxes: a `visibility: hidden` subtree still
+    // reports client rects for every child, so anything geometric answers this
+    // question wrongly and confidently. Only the browser knows what is
+    // focusable, so let it say.
+    check('neither holds a focusable control while closed',
+      await page.evaluate(() => {
+        const sel = 'button, a[href], select, input, textarea, [tabindex]:not([tabindex="-1"])';
+        const els = ['.entry-detail-panel', '.menu-panel']
+          .flatMap((s) => [...(document.querySelector(s)?.querySelectorAll(sel) ?? [])]);
+        let reachable = 0;
+        for (const el of els) {
+          el.focus();
+          if (document.activeElement === el) reachable += 1;
+        }
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        return reachable;
+      }), 0);
+  }),
+
   scenario('Mobile sweep: import and export surfaces', async (page, check, sweepPose) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);

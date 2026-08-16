@@ -96,6 +96,14 @@ calls `stopPropagation`, so the one layer that behaves correctly does so by
 bypassing the mechanism built for exactly this. The fix is one hook call per
 layer, whenever someone is in there anyway.
 
+**Fixed in 14D (2026-08-16).** All six register now, and the private listener is
+gone — the stack gives the same answer, because `popover` outranks every mode
+beneath it. The entry detail panel needed a new priority, `entryDetail: 20`: it
+is a destination rather than a layer, so it must lose to every popover and sheet
+above it while still beating the lander. It dismisses through the same
+collapse-intent prompt as the Back button rather than around it, so Escape
+cannot discard a draft that Back would have caught. Three suite quirks cleared.
+
 ## F2 — A panel left open across the breakpoint becomes a full-screen overlay
 
 **Severity: real, and a consequence of F1 more than a bug of its own.**
@@ -156,6 +164,17 @@ Failing on it would mean a permanently red suite reporting one fact 227 times.
 Once the overhaul sets a floor, raise `TAP_TARGET_HARD` to it and promote the
 rule.
 
+**Fixed in 14D (2026-08-16).** Zero controls now fall below 44px of hit area on
+any swept pose, and `tap-target` is a **hard failure** with a single 44px floor
+— the 32px tier is gone, since keeping it would have made 33px a passing size.
+14B and 14C had already absorbed about twenty of the offenders; 14D took the
+remaining 52. Roughly half were free via `.touch-floor`; the rest had to grow,
+which cost +23px of chrome at 360×640. The three reasons the overlay could not
+carry them all — replaced elements, ancestor clipping, and neighbour theft —
+are in `docs/plan.md` under 14D and in `style.css` §TOUCH-FLOOR. One control is
+deliberately exempt with its reasoning recorded in `TAP_TARGET_EXEMPT`:
+`.chip-delete` at 28px.
+
 ## F4 — Landscape: out of scope, by decision
 
 **Resolved 2026-08-11: not a finding. Recorded so it is not re-discovered.**
@@ -184,6 +203,18 @@ silently wrong — this cost time during 14A and is now documented in
 
 Worth confirming during the overhaul that a closed-but-mounted panel is hidden
 from assistive technology, not merely sized to zero.
+
+**Confirmed in 14D (2026-08-16) — both were already correct, and by accident of
+something else.** The detail panel is `display: none` when closed; the settings
+panel is `visibility: hidden`, chosen so its width can animate (a panel arriving
+from `display: none` has no laid-out start width). Both prune the accessibility
+tree *and* the focus order, so neither is "merely sized to zero". Nothing
+changed; a scenario now pins it, because both properties are one careless edit
+from becoming `opacity: 0` or `width: 0`, which look identical on screen and are
+not. **If you write that check yourself: a `visibility: hidden` subtree still
+reports client rects for every child**, so a geometric test answers this wrongly
+and confidently — the first version of the scenario did exactly that. Ask the
+browser what can take focus instead.
 
 ---
 

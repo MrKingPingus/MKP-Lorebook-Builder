@@ -47,7 +47,7 @@ export function StorageUsageRing() {
       <button
         ref={btnRef}
         type="button"
-        className={`storage-usage-ring tier-${tier}`}
+        className={`storage-usage-ring touch-floor tier-${tier}`}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
         onClick={onClick}

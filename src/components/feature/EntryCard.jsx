@@ -358,28 +358,35 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         <div className="entry-card-mobile-row">
           <span className="entry-card-mobile-name">
             {entry.name || '(unnamed)'}
-            {sameNameRefId && (
-              pickFromReferenceMode ? (
-                // During Pick from Reference pose, books are swapped — a name
-                // match means this reference-side entry is also in the user's
-                // original active book, i.e. copying it would duplicate.
-                <span
-                  className="entry-ref-badge entry-ref-badge--in-active"
-                  title="Same-named entry already exists in your active book — copying would duplicate"
-                >
-                  in active
-                </span>
-              ) : (
-                <button
-                  className="entry-ref-badge"
-                  onClick={(e) => { e.stopPropagation(); setPeekReferenceEntryId(sameNameRefId); }}
-                  title="Same-named entry exists in the reference book — tap to peek"
-                >
-                  ref <span className="entry-ref-badge-arrow">↗</span>
-                </button>
-              )
-            )}
           </span>
+          {/* A sibling of the name rather than a child of it: the name span
+              truncates, and an element with `overflow: hidden` clips its own
+              ::before, so a badge inside it can never carry a tap target
+              bigger than its 52×19 ink. Out here it can — and it also stops
+              being ellipsised away on a long name, which it never should have
+              been: the badge is the part of the row you cannot reconstruct by
+              reading the rest of it. */}
+          {sameNameRefId && (
+            pickFromReferenceMode ? (
+              // During Pick from Reference pose, books are swapped — a name
+              // match means this reference-side entry is also in the user's
+              // original active book, i.e. copying it would duplicate.
+              <span
+                className="entry-ref-badge entry-ref-badge--in-active touch-floor"
+                title="Same-named entry already exists in your active book — copying would duplicate"
+              >
+                in active
+              </span>
+            ) : (
+              <button
+                className="entry-ref-badge touch-floor"
+                onClick={(e) => { e.stopPropagation(); setPeekReferenceEntryId(sameNameRefId); }}
+                title="Same-named entry exists in the reference book — tap to peek"
+              >
+                ref <span className="entry-ref-badge-arrow">↗</span>
+              </button>
+            )
+          )}
           <div className="entry-card-mobile-right">
             {entry.isPublic === true && <PublicEyeIcon />}
             {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
@@ -482,7 +489,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         {!isCondensed && entry.hiddenFromExport && <ExportOffIcon />}
         {!isCondensed && sameNameRefId && (
           <button
-            className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
+            className={`entry-ref-badge entry-ref-badge--header touch-floor${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
             onClick={onBadgeClick}
             title={
               matchedIsEqual
@@ -733,7 +740,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           {!isComparing && (<>
           <div className="rollback-footer">
             <button
-              className={`rollback-toggle-btn${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
+              className={`rollback-toggle-btn touch-floor${rollback.enabled ? '' : ' rollback-toggle-btn--disabled'}`}
               onClick={() => {
                 if (rollback.enabled) {
                   setRollbackOpen((o) => !o);
@@ -749,14 +756,14 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             </button>
             <MoveToFolderButton entry={entry} />
             <button
-              className={`entry-public-btn${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
+              className={`entry-public-btn touch-floor${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
               onClick={() => update({ isPublic: entry.isPublic !== true }, true)}
               title={entry.isPublic === true ? 'Public on CharSnap — click to make private' : 'Private on CharSnap — click to make public'}
             >
               {entry.isPublic === true ? 'Public' : 'Private'}
             </button>
             <button
-              className={`hide-from-export-btn${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
+              className={`hide-from-export-btn touch-floor${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
               onClick={() => update({ hiddenFromExport: !entry.hiddenFromExport }, true)}
               title="Exclude entry from JSON export"
             >

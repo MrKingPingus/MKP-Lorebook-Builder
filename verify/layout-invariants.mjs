@@ -9,27 +9,56 @@
 // Every rule returns *all* offenders, not the first, because the output is meant
 // to be read as a findings list rather than a pass/fail gate.
 
-// Apple HIG and WCAG 2.5.5 both land on 44px. Between HARD and MIN a control is
-// awkward; below HARD it is a genuine miss-target, so the two are graded apart.
-export const TAP_TARGET_MIN  = 44;
-export const TAP_TARGET_HARD = 32;
+// Apple HIG and WCAG 2.5.5 both land on 44px, and as of 14D the app meets it,
+// so there is one floor rather than two.
+//
+// It was graded in two tiers — 44 recommended, 32 hard — for as long as the app
+// was built from sub-32px controls and the sweep was a findings list. A split
+// like that is scaffolding for a migration: it says "this half is urgent, the
+// rest is aspiration". Once the aspiration is met, keeping the lower number
+// around only invites drift back down to it, because 33px would be *passing*.
+// Mirrors TOUCH_TARGET_MIN_PX in src/constants/viewport.js.
+export const TAP_TARGET_FLOOR = 44;
 
 // Rules that fail a scenario outright. Everything else is recorded as a note:
 // a discovery suite that failed on all of it would bury real regressions under
 // known quirks.
 //
-// Tap-target size is deliberately *not* in here. The first run showed the app is
-// built almost entirely from sub-32px controls — a desktop-density design
-// carried across the breakpoint unchanged — so failing on it would mean a
-// permanently red suite reporting one systemic fact several hundred times. It is
-// a note, graded into two levels, and belongs in the overhaul's brief rather
-// than in a regression gate.
-const HARD_RULES = new Set(['page-error', 'body-overflow-x', 'offscreen-right', 'offscreen-left', 'occluded']);
+// **`tap-target` joined this set in 14D.** It spent 14A–14C as a note for a good
+// reason — the first sweep found 227 undersized controls, and a gate that is red
+// on arrival gates nothing, it just teaches everyone to skim past it. It is a
+// failure now because the count is zero, which is the only moment a rule like
+// this can be promoted: not when someone decides it matters, but when the app
+// has actually met it and the only thing the gate can catch is a regression.
+const HARD_RULES = new Set([
+  'page-error', 'body-overflow-x', 'offscreen-right', 'offscreen-left', 'occluded', 'tap-target',
+]);
 
 const INTERACTIVE = 'button, a[href], select, input, textarea, [role="button"], [role="menuitem"], [tabindex]:not([tabindex="-1"])';
 
+// Controls that will not meet the floor, on purpose, with the reason written
+// down. This list is the price of promoting tap-target to a hard failure: a
+// gate with no way to say "this one is deliberate" gets switched off the first
+// time it is inconvenient, and then it is gating nothing.
+//
+// The bar for being on this list is that meeting the floor would make the
+// control *worse*, not merely that meeting it is awkward. Each entry names a
+// CSS class and must carry a reason; adding one is a design decision, not a
+// way to clear a red run.
+export const TAP_TARGET_EXEMPT = [
+  {
+    cls: 'chip-delete',
+    floor: 28,
+    why: 'The × inside a trigger chip. Chips cap at 180px wide, so a 44px target '
+       + 'would be a quarter of the chip and would swallow the label beside it — '
+       + 'the label being what the user reads to decide whether to delete at all. '
+       + 'At 28px it clears the 24px WCAG 2.5.8 AA minimum, and the destructive '
+       + 'action it guards is undoable.',
+  },
+];
+
 // Serialised into the page, so it must be self-contained.
-function collect({ scope, tapMin, tapHard, interactiveSelector }) {
+function collect({ scope, tapFloor, interactiveSelector, exempt }) {
   const violations = [];
   const root = (scope && document.querySelector(scope)) || document.body;
   const vw = window.innerWidth;
@@ -154,6 +183,48 @@ function collect({ scope, tapMin, tapHard, interactiveSelector }) {
     if (!shown) continue;
     if (style.pointerEvents === 'none') continue;
 
+    // Is anything covering this control? Asked *before* size, because the two
+    // questions are not independent: a control behind an open menu fails every
+    // hit-area probe no matter how big it is, since the probe is asking which
+    // element receives a tap and the honest answer is "the menu". Grading it
+    // undersized would be a lie in the one direction that matters — it reads as
+    // work to do, and no amount of growing the control would clear it.
+    //
+    // Found when 14D's first pass left five header controls failing in exactly
+    // the poses where the title menu was open and nowhere else.
+    const cx = (shown.left + shown.right) / 2;
+    const cy = (shown.top + shown.bottom) / 2;
+    if (cx < 0 || cy < 0 || cx > vw || cy > vh) continue; // centre off-screen; the containment rules already caught it
+    const hit = document.elementFromPoint(cx, cy);
+    if (!hit) continue;
+    const covered = !(hit === el || el.contains(hit) || hit.contains(el));
+
+    if (covered) {
+      const hitCls = typeof hit.className === 'string' ? hit.className : '';
+      // Two ways a cover is *expected*. The first is a named backdrop. The
+      // second is structural and so survives markup churn: the thing on top
+      // lives inside a fixed-position layer that the target is not part of —
+      // i.e. an open dialog, sheet or menu, which is supposed to cover the page
+      // behind it. Without this, every portalled layer the overhaul adds reads
+      // as a hard occlusion failure for everything underneath it, which is noise
+      // rather than signal.
+      let inFixedLayer = false;
+      for (let node = hit; node && node !== document.body; node = node.parentElement) {
+        if (getComputedStyle(node).position !== 'fixed') continue;
+        if (!node.contains(el)) { inFixedLayer = true; }
+        break;
+      }
+      const backdropish = /backdrop|overlay|scrim/i.test(hitCls) || inFixedLayer;
+      violations.push({
+        // A layer covering a control is expected while that layer is open, so it
+        // is graded down unless the caller scoped the sweep to the active layer.
+        rule: backdropish && !scope ? 'occluded-by-overlay' : 'occluded',
+        selector: path(el),
+        detail: `centre hit ${path(hit)} instead`,
+      });
+      continue;
+    }
+
     // Tap target size — measured as **hit area**, not as the visual box.
     //
     // WCAG 2.5.5 and the Apple HIG are both about the region that responds to
@@ -172,56 +243,48 @@ function collect({ scope, tapMin, tapHard, interactiveSelector }) {
     const w = Math.round(rect.width), h = Math.round(rect.height);
     const meetsFloor = (floor) => {
       if (w >= floor && h >= floor) return true;
+
+      // A form control wrapped in a <label> is tapped *through the label* — so
+      // the label's box is the target, and a region centred on the input is the
+      // wrong shape to measure. A settings checkbox sits at the right-hand end
+      // of a 300px row: probing 22px either side of a 13px box runs off the end
+      // of the label and reports a miss, while every one of those 300px is live.
+      // Measure what the user actually hits.
+      if (el.matches('input, select, textarea')) {
+        const label = el.closest('label');
+        if (label) {
+          const lr = label.getBoundingClientRect();
+          if (Math.round(lr.width) >= floor && Math.round(lr.height) >= floor) return true;
+        }
+      }
+
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const r  = floor / 2 - 1;
       const owns = (x, y) => {
         const hit = document.elementFromPoint(x, y);
-        return !!hit && (hit === el || el.contains(hit));
+        if (!hit) return false;
+        return hit === el || el.contains(hit);
       };
       return owns(cx - r, cy) && owns(cx + r, cy) && owns(cx, cy - r) && owns(cx, cy + r);
     };
-    // `via hit area` in the detail is the tell that a control looked big enough
-    // on paper and was not — i.e. someone put `.touch-floor` on an element that
-    // clips its own overlay.
-    if (!meetsFloor(tapHard)) {
-      violations.push({ rule: 'tap-target-hard', selector: path(el), detail: `${w}x${h}px (hard floor ${tapHard})` });
-    } else if (!meetsFloor(tapMin)) {
-      violations.push({ rule: 'tap-target', selector: path(el), detail: `${w}x${h}px (recommended ${tapMin})` });
-    }
+    // A declared exemption lowers this control's floor to its own stated figure
+    // rather than removing it from the sweep — so an exempt control that shrinks
+    // below the size its reason was written for still fails.
+    const waiver = (exempt || []).find((x) => el.classList.contains(x.cls));
+    const floor  = waiver ? waiver.floor : tapFloor;
 
-    // Occlusion: is the thing actually tappable where it is drawn? Catches the
-    // classic mobile failure — a backdrop or portal layer with the wrong
-    // z-index silently eating every tap in a region.
-    const cx = (shown.left + shown.right) / 2;
-    const cy = (shown.top + shown.bottom) / 2;
-    if (cx < 0 || cy < 0 || cx > vw || cy > vh) continue; // centre off-screen; the containment rules already caught it
-    const hit = document.elementFromPoint(cx, cy);
-    if (!hit) continue;
-    if (hit === el || el.contains(hit) || hit.contains(el)) continue;
-
-    const hitCls = typeof hit.className === 'string' ? hit.className : '';
-    // Two ways a cover is *expected*. The first is a named backdrop. The
-    // second is structural and so survives markup churn: the thing on top
-    // lives inside a fixed-position layer that the target is not part of —
-    // i.e. an open dialog, sheet or menu, which is supposed to cover the page
-    // behind it. Without this, every portalled layer the overhaul adds reads
-    // as a hard occlusion failure for everything underneath it, which is noise
-    // rather than signal.
-    let inFixedLayer = false;
-    for (let node = hit; node && node !== document.body; node = node.parentElement) {
-      if (getComputedStyle(node).position !== 'fixed') continue;
-      if (!node.contains(el)) { inFixedLayer = true; }
-      break;
+    if (!meetsFloor(floor)) {
+      violations.push({
+        rule: 'tap-target',
+        selector: path(el),
+        // A box already at or over the floor here means the *hit area* was the
+        // thing missing — the control looked big enough on paper and was not.
+        // That is the signature of `.touch-floor` on an element that clips its
+        // own overlay, or of one control's overlay losing to its neighbour's.
+        detail: `${w}x${h}px (floor ${floor}${w >= floor || h >= floor ? ', hit area short of it' : ''})`,
+      });
     }
-    const backdropish = /backdrop|overlay|scrim/i.test(hitCls) || inFixedLayer;
-    violations.push({
-      // A layer covering a control is expected while that layer is open, so it
-      // is graded down unless the caller scoped the sweep to the active layer.
-      rule: backdropish && !scope ? 'occluded-by-overlay' : 'occluded',
-      selector: path(el),
-      detail: `centre hit ${path(hit)} instead`,
-    });
   }
 
   return violations;
@@ -244,9 +307,10 @@ export function watchErrors(page) {
 // `scope` restricts the interactive rules to the currently-active layer — pass
 // it when a panel, popover or sheet is open, so controls legitimately sitting
 // behind a backdrop are not reported as unreachable.
-export async function sweep(page, { scope = null, tapMin = TAP_TARGET_MIN, tapHard = TAP_TARGET_HARD, errors = [] } = {}) {
+export async function sweep(page, { scope = null, tapFloor = TAP_TARGET_FLOOR, errors = [] } = {}) {
   const violations = await page.evaluate(collect, {
-    scope, tapMin, tapHard, interactiveSelector: INTERACTIVE,
+    scope, tapFloor, interactiveSelector: INTERACTIVE,
+    exempt: TAP_TARGET_EXEMPT.map(({ cls, floor }) => ({ cls, floor })),
   });
 
   for (const message of errors) {

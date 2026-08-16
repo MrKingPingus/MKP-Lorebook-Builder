@@ -58,7 +58,7 @@ export function AppendImportPanel() {
         <div className="append-import-header">
           <span className="append-import-title">Import</span>
           <button
-            className="append-import-close"
+            className="append-import-close touch-floor"
             onClick={flow.cancel}
             title="Close"
             aria-label="Close import"

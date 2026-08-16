@@ -97,7 +97,7 @@ Two, and they run in this order:
   "nothing is ever lost" invariant on every path.
 - **`mobile-checks.mjs`** — the mobile scenarios and layout sweeps. See below.
 - **`layout-invariants.mjs`** — the sweep battery: structure-agnostic layout
-  rules, usable at any viewport. Its `tap-target` rules measure **effective hit
+  rules, usable at any viewport. Its `tap-target` rule measures **effective hit
   area, not the visual box** — when a control fails on its bounding rect the
   rule probes `elementFromPoint` half a floor out in each direction before
   reporting. That is required rather than nice-to-have: the overhaul's touch
@@ -105,8 +105,30 @@ Two, and they run in this order:
   not fight the density work for vertical space, and a rule reading bounding
   boxes would have failed every correct implementation of it while passing
   controls that had merely been made visually bigger. It also catches the
-  silent failure mode of `.touch-floor` — an element with `overflow: hidden`
-  clips its own `::before`, so the overlay does nothing.
+  silent failure modes of `.touch-floor` — clipped by an `overflow: hidden`
+  ancestor, absent entirely on a form control, or beaten by a neighbour's
+  overlay. A detail line reading `hit area short of it` is the tell.
+
+  Four things about this rule are worth knowing before changing it:
+
+  - **One floor, 44px, and it is a hard failure** as of 14D. It graded in two
+    tiers (44 recommended / 32 hard) while the app was being migrated; that
+    split is scaffolding, and leaving it in place after the app met the higher
+    number would have made 33px a *passing* size.
+  - **Cover is asked before size.** A control behind an open menu fails every
+    hit-area probe regardless of how large it is, because the probe asks which
+    element receives a tap and the answer is "the menu". Covered controls are
+    graded for occlusion and skipped for size — otherwise the rule reports work
+    that cannot be done.
+  - **A wrapping `<label>` is measured as the target**, because that is what a
+    tap actually hits. A 13px checkbox in a 300px label row is fine, and the
+    only alternatives were a waiver or a checkbox the size of a button.
+  - **`TAP_TARGET_EXEMPT`** declares controls that will not meet the floor on
+    purpose, each with a written reason. An exemption *lowers* that control's
+    floor to a stated figure rather than removing it from the sweep, so an
+    exempt control that shrinks further still fails. The bar for being on the
+    list is that meeting the floor would make the control worse — not that it
+    is awkward.
 - **`run.mjs`** — `npm run verify` entry point (server lifecycle + exit code).
 
 ## The mobile suite
@@ -125,7 +147,8 @@ Two kinds of assertion, graded apart:
   run.
 - **`sweepPose(label, { scope })`** — runs the whole invariant battery against
   whatever is on screen right now. Hard rules (off-screen, body overflow-x,
-  occlusion, page errors) fail; everything else is recorded as a **note**.
+  occlusion, tap-target, page errors) fail; everything else is recorded as a
+  **note**.
 - **`quirk(label, got, want)`** — asserts what the app *should* do without
   failing when it doesn't. Use it for known-wrong behaviour: writing `check`
   against today's output would pin the bug as correct, so that a fix would have

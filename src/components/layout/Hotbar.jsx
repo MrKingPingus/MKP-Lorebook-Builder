@@ -54,7 +54,7 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
   return (
     <button
-      className={`footer-btn${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
+      className={`footer-btn touch-floor${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
       onClick={handleClick}
       disabled={disabled}
       title={chord ? `${descriptor.title} (${chord})` : descriptor.title}

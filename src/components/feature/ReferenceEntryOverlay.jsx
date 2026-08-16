@@ -8,6 +8,8 @@ import { usePeekOverlay } from '../../hooks/use-peek-overlay.js';
 import { useUi }          from '../../hooks/use-ui.js';
 import { TypeColorDot }   from '../ui/TypeColorDot.jsx';
 import { ENTRY_TYPES }    from '../../constants/entry-types.js';
+import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 
 export function ReferenceEntryOverlay() {
   const { peekEntry, closePeek, copyToActive, visitEntry } = usePeekOverlay();
@@ -20,6 +22,15 @@ export function ReferenceEntryOverlay() {
       document.activeElement.blur();
     }
   }, [peekEntry?.id]);
+
+  // Above the browse sheet it usually opens from, so Escape peels the peek off
+  // and leaves the sheet standing rather than closing both at once.
+  useDismissLayer(
+    'reference-peek',
+    !!peekEntry && !pickFromReferenceMode,
+    DISMISS_PRIORITY.popover,
+    closePeek,
+  );
 
   // During Pick from Reference pose, the user is already browsing the
   // reference book directly — peek would be redundant and disorienting.

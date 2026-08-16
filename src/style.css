@@ -6205,39 +6205,181 @@ kbd {
    `position: relative` is on the utility itself, so applying it to a control
    whose own positioning matters is a visible mistake rather than a silent one.
 
-   **The one real trap: `.touch-floor` is inert on an element with
-   `overflow: hidden`** — an element clips its own ::before, so the overlay can
-   never exceed the visual box. Truncating labels are precisely the small
-   controls that want a floor, so the rule is to keep the ellipsis one layer in:
-   put `.touch-floor` on the button and `overflow: hidden` on a span inside it.
-   The layout-invariants battery measures effective hit area by probing rather
-   than reading getBoundingClientRect, so a mistake here is caught rather than
-   quietly shipped. */
+   **Three ways `.touch-floor` silently does nothing. All three were found by
+   measuring, none by reading, and the battery catches all three because it
+   probes hit area rather than reading getBoundingClientRect:**
+
+   1. **`overflow: hidden` on the control itself** — an element clips its own
+      ::before, so the overlay can never exceed the visual box. Truncating
+      labels are precisely the small controls that want a floor, so keep the
+      ellipsis one layer in: `.touch-floor` on the button, `overflow: hidden`
+      on a span inside it.
+   2. **Replaced elements generate no pseudo-element at all.** `<input>`,
+      `<select>` and `<textarea>` never render a ::before, so the class is pure
+      decoration on a form control — and the give-away is subtle, since the
+      computed style still reports the declared `max(100%, 44px)` rather than a
+      resolved pixel width. **Form controls have to actually grow**, which is
+      why the row heights below are set rather than overlaid.
+   3. **A neighbour that paints later wins the overlap.** Two overlays 39px
+      apart, or one overlay reaching into the entry list, resolve to whichever
+      element comes later in paint order. This one is a real finding rather
+      than a workaround to route around: an overlay that reaches into another
+      control is *stealing* that control's taps, so the honest fixes are to
+      widen the gap (dead space is fair game) or to grow the control. Never
+      raise the overlay's z-index to win the fight — that ships the theft. */
 :root { --touch-floor: 44px; }
 
-.touch-floor {
-  position: relative;
-  /* Not `touch-action: manipulation` here — §RESET already sets that globally. */
-}
-.touch-floor::before {
-  content: '';
-  position: absolute;
-  top:  50%;
-  left: 50%;
-  width:  max(100%, var(--touch-floor));
-  height: max(100%, var(--touch-floor));
-  transform: translate(-50%, -50%);
-  /* Above the control's own background, below anything it renders. The control
-     is the click target either way — this pseudo-element belongs to it. */
-  z-index: 0;
-}
-/* Anything the control actually draws sits above the overlay, so the overlay
-   never eats a nested control's own hit test. */
-.touch-floor > * { position: relative; z-index: 1; }
+/* Both utilities are **gated to the mobile breakpoint**, and the class in the
+   JSX is therefore a declaration of intent rather than an effect: "this control
+   wants a floor where a floor is a thing". Three reasons it is scoped rather
+   than global:
 
-.touch-floor-box {
-  min-width:  var(--touch-floor);
-  min-height: var(--touch-floor);
+   1. Most of these controls are shared with desktop. A stretched overlay is
+      invisible but not inert — it takes clicks in the space around a control,
+      which on a 10px-gapped desktop header is a behaviour change nobody asked
+      for and no desktop scenario is watching (the invariants battery runs on
+      the mobile poses only).
+   2. `.touch-floor-box` changes layout outright, so applied globally it would
+      grow desktop chrome to phone proportions.
+   3. The app's mobile posture is width-derived everywhere else — `useMobile()`
+      is `innerWidth < 768` and nothing consults a pointer type — so a floor
+      that appeared on a wide touchscreen would be the one part of the UI
+      disagreeing with the rest about what device it is on. 767px here is the
+      same line as §MOBILE and `MOBILE_BREAKPOINT_PX`. */
+@media (max-width: 767px) {
+  .touch-floor {
+    position: relative;
+    /* Not `touch-action: manipulation` here — §RESET already sets that globally. */
+  }
+  .touch-floor::before {
+    content: '';
+    position: absolute;
+    top:  50%;
+    left: 50%;
+    width:  max(100%, var(--touch-floor));
+    height: max(100%, var(--touch-floor));
+    transform: translate(-50%, -50%);
+    /* Above the control's own background, below anything it renders. The control
+       is the click target either way — this pseudo-element belongs to it. */
+    z-index: 0;
+  }
+  /* Anything the control actually draws sits above the overlay, so the overlay
+     never eats a nested control's own hit test. */
+  .touch-floor > * { position: relative; z-index: 1; }
+
+  .touch-floor-box {
+    min-width:  var(--touch-floor);
+    min-height: var(--touch-floor);
+  }
+
+  /* §TOUCH-GROWN
+     The controls the overlay cannot reach, grown instead. Every rule here costs
+     layout height, so each one is here because measurement said the cheap
+     option was unavailable — not by preference.
+
+     **What this costs: +22px of chrome above the first card at 360×640, against
+     the 89px 14C reclaimed.** Both rows below go to 44px, and the header is
+     unaffected because its title *is* a button and takes an overlay for free.
+     That is the whole of 14D's bill, and it buys a genuine 44px target for
+     every control on the two poses a phone user spends their time in. */
+
+  /* Row 1. A text field cannot carry an overlay (trap 2), and 44px is the right
+     height for one on a phone regardless of the floor. */
+  .search-input { min-height: var(--touch-floor); }
+
+  /* Row 2. Same reason for the select; the filter button beside it is a real
+     button, but its overlay reached 9px into the entry list and lost to it
+     (trap 3) — and had it won, it would have been eating taps meant for the
+     first card. Both grow, so the row is honestly 44 tall. */
+  .search-mode-select { min-height: var(--touch-floor); }
+  .search-bar-row2 .type-filter-button { min-height: var(--touch-floor); }
+
+  /* The header's two glyph buttons sit 10px apart, which is closer than two
+     44px overlays can coexist: each needs 22px from its centre, so anything
+     under a 16px gap means the later one in paint order swallows the earlier
+     one's right-hand probe. Widening the gap is free — it spends dead space
+     rather than height, and the taps it hands out were going nowhere before. */
+  .header-right { gap: 18px; }
+
+  /* Every remaining form control, for trap 2 — no pseudo-element, no overlay,
+     no choice. These all sit inside panels and sheets rather than in the list
+     chrome, so the height they take is not the scarce kind. */
+  .entry-name-field,
+  .type-selector,
+  .trigger-input,
+  .entry-card-mobile-type,
+  .delimiter-select,
+  .settings-search-input,
+  .export-menu-input { min-height: var(--touch-floor); }
+
+  /* Rows in a list, for trap 3. A stacked row is closer to the row above it
+     than a floor by construction — that is what makes it a list — so an
+     overlay here is never claiming dead space, it is claiming the neighbouring
+     row's taps. Which is worse than the original problem: mis-tapping a menu
+     currently does nothing, and with overlays it would pick the wrong entry. */
+  .search-dropdown-item,
+  .type-filter-popover-row,
+  .reference-browse-sheet-row,
+  .settings-section-header,
+  .theme-option,
+  .a11y-scale-btn,
+  .kbd-capture-btn,
+  .export-menu-btn,
+  .fab-quick-menu-add,
+  .fab-quick-menu-chip,
+  .tm-sort-btn { min-height: var(--touch-floor); }
+  /* The sort buttons are the one pair narrower than they are tall. */
+  .tm-sort-btn { min-width: var(--touch-floor); }
+
+  /* The paired role bar. `.role-swap-segmented` is `overflow: hidden` for its
+     rounded ends, which is trap 1 one level further out than the 14C note
+     described — the clip is on the *grandparent*, so both segments' overlays
+     were being cut to the bar's own height. Nothing to overlay around here
+     anyway: the ⋯ sits 4px from the name button, so the two would only have
+     been taking each other's taps. Both grow, and the bar's padding moves onto
+     the buttons so the pose gains 6px rather than 16. */
+  .role-swap-segment { padding: 0 8px; gap: 8px; }
+  .role-swap-segment-tap,
+  .role-swap-segment-content { min-height: var(--touch-floor); justify-content: center; }
+  .role-swap-segment-action {
+    width:  var(--touch-floor);
+    height: var(--touch-floor);
+  }
+
+  /* The suggestions tray: a header row of three buttons 17–21px tall, and a
+     wrapped row of chips. Both are rows of neighbours, so trap 3 again — and
+     the chips are the tray's whole point, which makes 21px the least defensible
+     size in the app. */
+  .suggestions-toggle,
+  .suggestions-phrase-btn,
+  .suggestion-chip { min-height: var(--touch-floor); }
+  .suggestions-reroll {
+    min-height: var(--touch-floor);
+    min-width:  var(--touch-floor);
+  }
+  /* Growing the two buttons took the room the label was using, and
+     "TRIGGER WORD SUGGESTIONS" wrapped to two lines inside its own button —
+     which looked like a bug rather than a heading. The header wraps instead:
+     the disclosure control takes the full first line, the two actions sit
+     under it. Same height as the accidental version, on purpose this time. */
+  .suggestions-header { flex-wrap: wrap; }
+  .suggestions-toggle { flex: 1 0 100%; }
+  /* The auto margin held +Phrase against the right edge, which read as balance
+     while the label filled the row and as a gap once the label moved above it.
+     The two are the section's actions; they group. */
+  .suggestions-phrase-btn { margin-left: 0; }
+
+  /* The settings checkboxes are 13px and stay 13px — the <label> around them is
+     the target, which the battery now understands. But it only understands it
+     if the label is actually floor-sized, and these were laying out at their
+     text height. This is the rule that makes the other 30-odd checkboxes in
+     Settings honest, rather than a waiver. */
+  .settings-label { min-height: var(--touch-floor); }
+
+  /* The reference badge now sits beside the truncating name rather than inside
+     it, so its overlay is no longer clipped; it just needs to keep its width in
+     a flex row that would otherwise squeeze it. */
+  .entry-card-mobile-row > .entry-ref-badge { flex-shrink: 0; }
 }
 
 /* §MOBILE */

@@ -189,7 +189,7 @@ export function ReferencePanel() {
                         #{idx + 1}: {entry.name || '(unnamed)'}
                       </span>
                       <button
-                        className={`entry-ref-badge entry-ref-badge--header entry-ref-badge--diff${isComparingHere ? ' entry-ref-badge--comparing' : ''}`}
+                        className={`entry-ref-badge entry-ref-badge--header entry-ref-badge--diff touch-floor${isComparingHere ? ' entry-ref-badge--comparing' : ''}`}
                         onMouseDown={stopSwap}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -295,7 +295,7 @@ export function ReferencePanel() {
                       const isComparing = compareEntryId === sameNameActiveId;
                       return (
                         <button
-                          className={`entry-ref-badge entry-ref-badge--header${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
+                          className={`entry-ref-badge entry-ref-badge--header touch-floor${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
                           onMouseDown={stopSwap}
                           onClick={(e) => {
                             e.stopPropagation();

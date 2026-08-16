@@ -136,7 +136,7 @@ export function WindowHeader() {
       {isMobile && !crosstalkEnabled && (
         <button
           ref={titleBtnRef}
-          className={`title-field title-field--mobile${titleOpen ? ' title-field--open' : ''}`}
+          className={`title-field title-field--mobile touch-floor${titleOpen ? ' title-field--open' : ''}`}
           onClick={() => openMobileTitleMenu()}
           aria-haspopup="dialog"
           title="Lorebooks, import and export"
