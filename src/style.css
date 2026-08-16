@@ -6307,7 +6307,12 @@ kbd {
   .entry-name-field,
   .type-selector,
   .trigger-input,
-  .entry-card-mobile-type,
+  /* `select` qualifier, not decoration: the same class is a plain <div> holding
+     the type name on an ordinary card, and it is only a control in select mode.
+     Without the qualifier this floors a piece of static text and adds 26px to
+     every card in the list — a third of the card, for a tap target on something
+     that does not take taps. */
+  select.entry-card-mobile-type,
   .delimiter-select,
   .settings-search-input,
   .export-menu-input { min-height: var(--touch-floor); }
@@ -6380,6 +6385,15 @@ kbd {
      it, so its overlay is no longer clipped; it just needs to keep its width in
      a flex row that would otherwise squeeze it. */
   .entry-card-mobile-row > .entry-ref-badge { flex-shrink: 0; }
+
+  /* The card is `overflow: hidden`, so the badge's 44px overlay is clipped to
+     the row plus the card's padding — 31 + 7 + 5 = 43, one pixel short. Scoped
+     with `:has()` so it costs 3px on the rows that actually carry a badge (a
+     paired reference, name matching) rather than on every card in the list.
+     The un-scoped version of this rule is how the type label came to add 26px
+     to every card: a floor applied one selector wider than the thing that
+     needed it. */
+  .entry-card-mobile-row:has(.entry-ref-badge) { min-height: 34px; }
 }
 
 /* §MOBILE */
