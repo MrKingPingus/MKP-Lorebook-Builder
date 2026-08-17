@@ -56,6 +56,32 @@ export function writeJson(key, value) {
   }
 }
 
+// ── lorebook persistence ────────────────────────────────────────────────────
+// Lorebooks go through these two rather than `writeJson` directly, because one
+// rule has to hold across every write site and there are eight of them: **an
+// ephemeral lorebook never reaches localStorage.**
+//
+// Ephemeral books are the feature tour's samples. They have to behave like real
+// lorebooks everywhere else — the title menu lists them, the reference chooser
+// offers them, the entry list renders them — so they live in the store like any
+// other book. What they must not do is outlive the session.
+//
+// The first version deleted them on exit instead, which worked in the suite and
+// failed in the wild: exit only runs if the user reaches it, and a tab closed
+// mid-tour left two sample books sitting in a real library. **Not writing them is
+// the fix; deleting them afterwards was a cleanup step that could be skipped.**
+// Nothing to clean up now, and a crash mid-tour is a reload away from correct.
+export function saveLorebook(lorebook) {
+  if (!lorebook?.id) return false;
+  if (lorebook.ephemeral) return true; // by design, not a failure
+  return writeJson(LOREBOOK_KEY_PREFIX + lorebook.id, lorebook);
+}
+
+/** Persist the index, minus any ephemeral entries. */
+export function saveLorebookIndex(index) {
+  return writeJson(LOREBOOK_INDEX_KEY, (index ?? []).filter((e) => !e.ephemeral));
+}
+
 export function removeItem(key) {
   try {
     localStorage.removeItem(key);

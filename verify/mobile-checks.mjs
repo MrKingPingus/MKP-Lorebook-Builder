@@ -773,6 +773,48 @@ const SCENARIOS = [
     }
   }),
 
+  scenario('Mobile: the tour\'s sample books never reach storage', async (page, check) => {
+    // The regression that shipped: sample books turning up in a real library.
+    // The first design created them as ordinary lorebooks and deleted them on
+    // exit, which passes any test that reaches the exit — and leaves two books
+    // behind for anyone who closes the tab mid-tour. They are ephemeral now, so
+    // the write never happens and there is nothing to clean up.
+    //
+    // Reloading mid-tour is the case delete-on-exit could not cover, so that is
+    // what this asserts.
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+
+    await openSettings(page);
+    await page.locator('.settings-lander-btn').scrollIntoViewIfNeeded();
+    await tap(page, page.locator('.settings-lander-btn').first());
+    await settle(page, 600);
+    const before = await page.locator('.lander-recent-name').allTextContents();
+
+    await page.locator('.lander-tour-btn').first().scrollIntoViewIfNeeded();
+    await tap(page, page.locator('.lander-tour-btn').first());
+    await page.locator('.tour-bubble').waitFor({ timeout: 6000 });
+    await settle(page, 700);
+
+    // Real enough to drive: the samples have to behave like lorebooks in every
+    // way except being written down.
+    check('the sample book is live in the builder',
+      (await page.locator('.title-field--mobile').first().textContent())?.includes('Camelot'), true);
+    check('and its entries render', (await page.locator('.entry-card').count()) > 0, true);
+
+    // Walk far enough that autosave has fired on a sample book more than once.
+    for (let i = 0; i < 3; i++) {
+      await tap(page, page.locator('.tour-btn--primary'));
+      await settle(page, 800);
+    }
+
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 900);
+    check('a reload mid-tour leaves the library exactly as it was',
+      (await page.locator('.lander-recent-name').allTextContents()).join(' | '), before.join(' | '));
+    check('and no tour is left running', await page.locator('.tour-layer').count(), 0);
+  }),
+
   scenario('Mobile: the guided tour walks the app and cleans up after itself', async (page, check) => {
     // Everything here is a premise of the design rather than a detail of it: if
     // the spotlight is not tappable the tour is a slideshow, if Escape closes

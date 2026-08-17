@@ -6,16 +6,22 @@
 // without disturbing the user's own.
 //
 // ── the demo set ────────────────────────────────────────────────────────────
-// Loaded for real rather than held in memory. The memory-only version would
-// have to suppress `autosave.js` mid-tour, and that is a debounced timer
-// deliberately living outside React — surgery on it to guard against "the user
-// closed the tab during a five-step tour" is the wrong trade. Loading for real
-// means the worst case is a leftover book with "(tour sample)" in its name that
-// the user can delete, not lost work.
+// The samples are **ephemeral lorebooks**: real in the store, so the title menu
+// lists them and the reference chooser offers them and the entry list renders
+// them, but flagged so `storage-service.js` refuses to write them. See
+// `saveLorebook` there — the rule lives at the single write point rather than at
+// the eight call sites that would each have to remember it.
 //
-// Cleanup is safe in any order: 14B made crosstalk *derived* from whether a
-// reference book resolves, so a `referenceLorebookId` left pointing at a
-// deleted sample is correctly not-crosstalk rather than a dangling pairing.
+// The first version created them as ordinary books and deleted them on exit.
+// That passed the suite and failed on a real phone: exit only runs if the user
+// reaches it, and a tab closed mid-tour left two sample books in a real library.
+// **Not writing them is the fix. Deleting them afterwards was a cleanup step,
+// and cleanup steps get skipped.** `close()` still removes them from the store
+// so the session ends tidy, but nothing depends on that having run.
+//
+// Removal is safe in any order: 14B made crosstalk *derived* from whether a
+// reference book resolves, so a `referenceLorebookId` left pointing at a removed
+// sample is correctly not-crosstalk rather than a dangling pairing.
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useMobile }        from './use-mobile.js';
 import { useLorebook }      from './use-lorebook.js';
@@ -230,7 +236,7 @@ export function useTour() {
         // arrive without ids, and React keys and every id-addressed feature
         // (selection, the detail editor) fail quietly on them.
         const entries = book.entries.map((e) => createEmptyEntry(e));
-        importAsNewLorebook({ entries, name: book.name });
+        importAsNewLorebook({ entries, name: book.name, ephemeral: true });
         const id = useLorebookStore.getState().activeLorebookId;
         if (id) ids.push(id);
         if (cancelled) break;

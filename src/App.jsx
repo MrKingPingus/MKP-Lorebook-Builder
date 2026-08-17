@@ -14,7 +14,7 @@ import { useDismissLayer }       from './hooks/use-dismiss-layer.js';
 import { useReferenceLorebook }  from './hooks/use-reference-lorebook.js';
 import { useEntries }            from './hooks/use-entries.js';
 import { useUndoRedo }           from './hooks/use-undo-redo.js';
-import { readJson, writeJson, detectQuotaProfile } from './services/storage-service.js';
+import { readJson, writeJson, saveLorebook, saveLorebookIndex, detectQuotaProfile } from './services/storage-service.js';
 import { migrateLegacyHotkeys }  from './services/keychord.js';
 import { DISMISS_PRIORITY }      from './services/dismiss-stack.js';
 import { createEmptyLorebook }   from './services/entry-factory.js';
@@ -121,8 +121,8 @@ function useBootstrap() {
       setLorebook(lb);
       setLorebookIndex(newIdx ?? []);
       setActiveLorebookId(lb.id);
-      writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
-      writeJson(LOREBOOK_INDEX_KEY, newIdx ?? []);
+      saveLorebook(lb);
+      saveLorebookIndex(newIdx ?? []);
       useUiStore.getState().setPendingFocusLorebookName(true);
     }
   // Run once on mount

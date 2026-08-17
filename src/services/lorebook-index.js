@@ -12,14 +12,23 @@ function allocateKey(index) {
 
 /** Add a new lorebook entry to the index. Returns updated index or null if full. */
 export function addToIndex(index, lorebook) {
-  if (index.length >= MAX_LOREBOOKS) return null;
-  const key = allocateKey(index);
-  if (key === null) return null;
+  // Ephemeral books are exempt from the cap. They never reach storage, so they
+  // consume none of what the cap protects — and with a full library the tour
+  // would otherwise fail to load its samples and show a user their own books
+  // being driven, which is the exact thing the samples exist to prevent.
+  const exempt = lorebook.ephemeral === true;
+  if (!exempt && index.length >= MAX_LOREBOOKS) return null;
+  const key = exempt ? null : allocateKey(index);
+  if (!exempt && key === null) return null;
   const entry = {
     id:        lorebook.id,
     name:      lorebook.name,
     key,
     updatedAt: Date.now(),
+    // Carried onto the entry as well as the book, because the index is written
+    // as a whole and `saveLorebookIndex` filters on this to keep the tour's
+    // sample books out of storage.
+    ...(lorebook.ephemeral ? { ephemeral: true } : {}),
   };
   return [entry, ...index];
 }
