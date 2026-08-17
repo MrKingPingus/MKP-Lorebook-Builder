@@ -132,8 +132,12 @@ export const TOUR_STEPS_MOBILE = [
   {
     id:     'reference',
     target: '.ref-chooser-current',
-    title:  'Keep a second book open beside your own',
-    body:   'A reference book you can read from and copy out of while you write. Here it is paired with a set of style notes.',
+    // Careful with this one: the feature is old, only the way in is new. An
+    // earlier draft read like an announcement of reference books themselves,
+    // which tells anyone already using them that we have not been paying
+    // attention.
+    title:  'Reference books are easier to reach',
+    body:   'Picking the book you read alongside your own now happens in one place — from the hotbar, a book\'s ⋯ menu, or Settings. Here Camelot is paired with some style notes.',
     arrive: async (api) => {
       await api.setSearchMode('search');
       await api.pairSampleReference('Style Notes');

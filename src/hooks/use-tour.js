@@ -328,7 +328,11 @@ export function useTour() {
       }
 
       const next = measure(step.target);
-      if (next.length === 0) { setLost(true); return; }
+      // Losing the target clears the spotlight as well as raising the flag. Left
+      // in place, closing the Actions menu left a ring drawn around the space the
+      // menu used to occupy — the tour outlining a stretch of empty entry list as
+      // though something were still open there.
+      if (next.length === 0) { setLost(true); setRects([]); return; }
       setRects((prev) => (same(prev, next) ? prev : next));
       setLost(false);
     };

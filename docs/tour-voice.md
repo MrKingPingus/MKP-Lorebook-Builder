@@ -28,26 +28,34 @@ user that we shipped something broken. A tour is not the place to apologise. If
 the old behaviour genuinely helps them understand the new one, one short clause
 is the budget — and check the claim is even true before making it.
 
-**4. Point at what is on screen, in the words that are on screen.** If the button
+**4. Know whether the feature is new or only newly reachable.** Much of what a
+release does is move an existing thing somewhere better. Announcing that as new
+tells everyone already using it that we have not been paying attention. The
+reference-book step is the case that made this a rule: reference lorebooks are
+old, and what 0.10.0 changed is that choosing one now happens in a single place
+you can get to. Write the change, not the feature.
+
+**5. Point at what is on screen, in the words that are on screen.** If the button
 says **Filter**, the caption says Filter. Slide 3's first draft said "search,
 mode and filters share a row" when what a user can see is *two* controls, because
 search and its mode are one dropdown. Describe the picture, not the code behind
 it.
 
-**5. One idea per step.** If a caption needs a semicolon and a list, it is two
+**6. One idea per step.** If a caption needs a semicolon and a list, it is two
 steps or it is one step with less in it. The tour is not a feature inventory.
 
-**6. Invite the tap.** The tour's whole point is that the highlighted thing
+**7. Invite the tap.** The tour's whole point is that the highlighted thing
 really works. Where a step is worth trying, say so plainly — "Give it a tap" —
 and let `advanceOn` carry them forward. A caption that only describes is a
 caption that could have been a screenshot.
 
-**7. Under 220 characters, and under 160 is better.** Not a style preference:
-the caption bubble is placed by a flip heuristic that only holds while the bubble
-is shorter than half the screen, and a long caption is how it ends up covering
-the thing it points at. See `src/constants/tour-steps.js`.
+**8. Under 220 characters, and under 160 is better.** Not a style preference:
+the bubble goes in whichever gap around the spotlight has room for it, so a
+caption long enough to fit *neither* gap gets clamped into the viewport on top of
+something. On a 640px-tall phone the budget is real. See `place()` in
+`src/components/feature/FeatureTour.jsx`.
 
-**8. Warm, plain, unhurried.** Contractions are fine. Second person throughout.
+**9. Warm, plain, unhurried.** Contractions are fine. Second person throughout.
 No exclamation marks, no "simply", no "just", no "powerful", no "seamlessly".
 
 ## A worked example

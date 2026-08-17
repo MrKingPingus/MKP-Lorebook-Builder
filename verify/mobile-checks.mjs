@@ -835,6 +835,20 @@ const SCENARIOS = [
       if (i === 4) {
         check('the Actions step still has entries selected',
           await page.locator('.bulk-count-num').textContent(), '2');
+
+        // Closing the menu again must take the spotlight with it. It did not at
+        // first: the ring stayed drawn around the space the menu had occupied,
+        // outlining a stretch of empty entry list as though something were open.
+        await tap(page, page.locator('.bulk-actions-btn'));
+        await settle(page, 700);
+        check('closing the menu clears the ring',
+          await page.locator('.tour-ring').count(), 0);
+        check('and offers to show it again',
+          await page.locator('.tour-recover').count(), 1);
+        await tap(page, page.locator('.tour-recover'));
+        await settle(page, 700);
+        check('which puts the menu and its ring back',
+          await page.locator('.tour-ring').count(), 1);
       }
       if (i === 5) {
         check('the reference step shows a paired book, not an empty chooser',
