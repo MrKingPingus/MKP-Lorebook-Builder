@@ -78,7 +78,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | Mobile entry detail view (tapping an entry on mobile) | `src/components/feature/EntryDetailPanel.jsx` |
 | The landing page (shown before opening a lorebook), including its *What's new* panel | `src/components/feature/Lander.jsx` |
 | The "what changed" notice shown once per release on return | `src/components/feature/UpdateNotice.jsx` |
-| The click-through tour of a release's annotated screenshots, opened from that notice or from *Take the tour* | `src/components/feature/FeatureTour.jsx` |
+| The guided tour of a release's new features — spotlights a real control and lets you tap it, opened from the update notice or *Take the tour* | `src/components/feature/FeatureTour.jsx` (state in `src/hooks/use-tour.js`) |
 | Whether the notice is due, and the release it should show — reads the lorebook index from storage rather than the store, since the store hydrates after first render and a first-time user would otherwise be shown an update notice | `src/hooks/use-release-notes.js` |
 
 ### UI Primitives

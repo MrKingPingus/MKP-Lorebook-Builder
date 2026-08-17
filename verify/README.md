@@ -158,6 +158,12 @@ The notes are the point, not a consolation prize — the suite was written to fi
 the pre-overhaul quirks, and a run ends with a roll-up by rule. See
 `docs/mobile-findings.md`.
 
+**A pose that does not exist grades nothing.** The mobile suite was built against
+the builder and its layers, so the lander went unswept from 14A until 14E added a
+pose for it — and that one pose immediately found five controls under the touch
+floor, on the first screen every user sees. The battery is only as wide as the
+list of places you point it. Adding a surface to the app means adding a pose.
+
 ### `scope`, and why it matters
 
 Pass `scope` whenever a layer is open. It restricts the interactive rules to that

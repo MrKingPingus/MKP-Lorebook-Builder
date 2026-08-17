@@ -61,8 +61,9 @@ export function UpdateNotice({ release, onClose, onShowTour }) {
         </div>
 
         <div className="update-notice-actions">
-          {/* The tour is optional — a release with no captured screenshots
-              shows the notes alone rather than a button leading nowhere. */}
+          {/* The tour is optional — a release that changed nothing on this
+              platform has no step list, and shows the notes alone rather than a
+              button leading nowhere. */}
           {onShowTour && (
             <button type="button" className="update-notice-btn update-notice-btn--primary" onClick={onShowTour}>
               Show me the new features

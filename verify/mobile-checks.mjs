@@ -14,7 +14,7 @@
 // The grading exists because this suite was written to *find* the quirks in the
 // pre-overhaul mobile UI, not to pin them. A suite that failed on all of them
 // would be red from its first run and would bury any real regression.
-import { launch, openBuilderWithFixture, importBookAsNew, openSettings, openSettingsSection, enterSelectMode, selectCards, pairCrosstalk, pairCrosstalkMobile, openMobileTitleMenu, settle, tap, longPress, openEntryDetail, closeEntryDetail, openFilterPopover, dismissPopover, seedStorage, parkMouse, VARIANT_FIXTURE } from './driver.mjs';
+import { launch, BASE_URL, openBuilderWithFixture, importBookAsNew, openSettings, openSettingsSection, enterSelectMode, selectCards, pairCrosstalk, pairCrosstalkMobile, openMobileTitleMenu, settle, tap, longPress, openEntryDetail, closeEntryDetail, openFilterPopover, dismissPopover, seedStorage, parkMouse, VARIANT_FIXTURE } from './driver.mjs';
 import { sweep, watchErrors } from './layout-invariants.mjs';
 import { writePreset, LIMITS } from '../fixtures/build-stress-book.mjs';
 import { fileURLToPath } from 'node:url';
@@ -746,6 +746,97 @@ const SCENARIOS = [
     await enterSelectMode(page);
     await selectCards(page, '.build-panel', [0, 1]);
     await sweepPose('select mode over maxed entries');
+  }),
+
+  // ── The lander, and the tour launched from it ──────────────────────────────
+  // The lander had never been swept. 14A built the battery against the builder
+  // and its layers, and the one mobile scenario that touched the lander only
+  // checked that Settings' route back arrives there. So containment, occlusion
+  // and tap targets on the app's *first* screen were ungraded at every viewport
+  // — a 14A gap rather than a tour gap, closed here because 14E made the lander
+  // the tour's front door.
+  scenario('Mobile sweep: the lander and the update notice', async (page, check, sweepPose) => {
+    await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+    await settle(page, 500);
+    check('the lander is showing', await page.locator('.lander').count(), 1);
+    await sweepPose('lander', { scope: '.lander' });
+
+    // The notice is shown over the lander once per release, so it is a pose of
+    // its own rather than something the lander sweep happens to include.
+    await page.evaluate(() => localStorage.removeItem('mkp_last_seen_release'));
+    await page.reload({ waitUntil: 'networkidle' });
+    await settle(page, 600);
+    if (await page.locator('.update-notice').count()) {
+      await sweepPose('update notice', { scope: '.update-notice' });
+    } else {
+      check('skipped the notice — the newest release is internal-only', true, true);
+    }
+  }),
+
+  scenario('Mobile: the guided tour walks the app and cleans up after itself', async (page, check) => {
+    // Everything here is a premise of the design rather than a detail of it: if
+    // the spotlight is not tappable the tour is a slideshow, if Escape closes
+    // the tour instead of the layer the ordering is inverted, and if the sample
+    // books survive the exit the tour has edited the user's library.
+    await openBuilderWithFixture(page);
+    await settle(page, 400);
+    const ownBook = await page.locator('.title-field--mobile').first().textContent();
+
+    await openSettings(page);
+    await page.locator('.settings-lander-btn').scrollIntoViewIfNeeded();
+    await tap(page, page.locator('.settings-lander-btn').first());
+    await settle(page, 600);
+
+    const tourBtn = page.locator('.lander-tour-btn');
+    check('the lander offers the tour on a phone', await tourBtn.count(), 1);
+    await tourBtn.first().scrollIntoViewIfNeeded();
+    await tap(page, tourBtn.first());
+    // The sample books load through a dynamic import, so the first step cannot
+    // paint until that resolves.
+    await page.locator('.tour-bubble').waitFor({ timeout: 6000 });
+    await settle(page, 600);
+
+    check('it runs on its own sample book, not the user\'s',
+      (await page.locator('.title-field--mobile').first().textContent())?.includes('Camelot'), true);
+    check('step 1 of the mobile list', await page.locator('.tour-progress').textContent(), '1 of 6');
+
+    // The spotlight passes taps through — the whole reason it is a live tour.
+    await tap(page, page.locator('.title-field--mobile').first());
+    await settle(page, 700);
+    check('tapping the spotlit control really opens the menu',
+      await page.locator('.mtm-body').count(), 1);
+    check('and the tour follows it forward',
+      await page.locator('.tour-progress').textContent(), '2 of 6');
+
+    // Escape must take the layer, not the tour. Getting this backwards leaves
+    // the menu open with no tour to explain it.
+    await page.keyboard.press('Escape');
+    await settle(page, 500);
+    check('Escape closes what the tour opened', await page.locator('.mtm-body').count(), 0);
+    check('and leaves the tour standing', await page.locator('.tour-bubble').count(), 1);
+    check('which offers a way back to it', await page.locator('.tour-recover').count(), 1);
+
+    // Walk the rest with Next, so every step's arrival is exercised.
+    for (let i = 2; i < 6; i++) {
+      await tap(page, page.locator('.tour-btn--primary'));
+      await settle(page, 700);
+      check(`step ${i + 1} found its target`, await page.locator('.tour-spot').count(), 1);
+    }
+    check('the last step offers Done',
+      (await page.locator('.tour-btn--primary').textContent())?.trim(), 'Done');
+
+    await tap(page, page.locator('.tour-btn--primary'));
+    await settle(page, 900);
+    check('the tour is gone', await page.locator('.tour-layer').count(), 0);
+    check('and the user is back in their own book',
+      (await page.locator('.title-field--mobile').first().textContent()), ownBook);
+
+    // The sample books must not survive. Read the list through the UI rather
+    // than localStorage, which is LZ-compressed.
+    await tap(page, page.locator('.title-field--mobile').first());
+    await settle(page, 500);
+    const names = (await page.locator('.mtm-row-name').allTextContents()).join(' | ');
+    check('no sample book is left behind', /Camelot|Style Notes/.test(names), false);
   }),
 ];
 

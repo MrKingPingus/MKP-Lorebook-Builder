@@ -92,7 +92,7 @@ Added since Phase 8:
 - A status bar along the bottom: save state, entry count, storage use, build version, feedback links, and one `⤢ Size` menu holding window size, text size, entry height and FAB size (Phase 13A)
 - Settings regrouped from six sections into four, by what you're changing rather than which feature introduced the setting, with a filter box (Phase 13B)
 - The lorebook title as a menu — saved books on the left, import/export on the right; double-click to rename. One shared import flow behind all three import surfaces (Phase 13C)
-- Release notes rendered in-app: a *What's new* panel on the lander and a once-per-release update notice, plus a click-through tour of annotated screenshots (Phase 13D)
+- Release notes rendered in-app: a *What's new* panel on the lander and a once-per-release update notice, plus a guided tour that spotlights the real interface a step at a time (Phase 13D, rebuilt in 14E)
 
 ## What's Next
 

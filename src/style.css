@@ -6394,6 +6394,23 @@ kbd {
      to every card: a floor applied one selector wider than the thing that
      needed it. */
   .entry-card-mobile-row:has(.entry-ref-badge) { min-height: 34px; }
+
+  /* The lander and the update notice — found by 14E, not 14D, because no sweep
+     pose opened them until then. 14A built the battery against the builder and
+     its layers, so the app's *first* screen went ungraded through the whole
+     overhaul: a recent-book row was 33px, the tour link 21px, and the notice's
+     own buttons 30px with a 28px close. Nothing here can take an overlay — the
+     rows and buttons all sit flush against neighbours — so they grow. The
+     notice absorbs it without moving anything: its body is the scroll container,
+     which is also why it never suffered the clipping the retired tour panel did
+     at a raised text size. */
+  .lander-recent-item { min-height: var(--touch-floor); }
+  .lander-tour-btn    { min-height: var(--touch-floor); }
+  .update-notice-btn  { min-height: var(--touch-floor); }
+  .update-notice-close {
+    min-height: var(--touch-floor);
+    min-width:  var(--touch-floor);
+  }
 }
 
 /* §MOBILE */

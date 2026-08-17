@@ -7,7 +7,7 @@ See `docs/plan.md`. Work phases in order. Do not build ahead.
 ## Changelog
 `CHANGELOG.md` (repo root) is **release notes, not a development log.** It is rendered in-app twice — the lander's What's New panel, and the update notice that opens once per release — so it is written for users, not for us.
 
-**One section per public release, not per phase or per day of work.** Add entries to the current unreleased section as you go; do not open a new one for each phase. The heading is `## <version> — <date>` (e.g. `## 0.9.0 — 2026-07-30`), and the version comes from `package.json`. The heading text is the identifier the update notice stores, so it must not change once shipped. Ship-time steps — version bump, screenshots, tagging — are in `docs/releasing.md`.
+**One section per public release, not per phase or per day of work.** Add entries to the current unreleased section as you go; do not open a new one for each phase. The heading is `## <version> — <date>` (e.g. `## 0.9.0 — 2026-07-30`), and the version comes from `package.json`. The heading text is the identifier the update notice stores, so it must not change once shipped. Ship-time steps — version bump and tagging — are in `docs/releasing.md`.
 
 **Entries describe the delta from the last *released* version.** Not from the last commit. Two rules follow, and both matter:
 
@@ -33,7 +33,6 @@ npm run build     # production build → dist/
 npm run preview   # serve the production build locally
 npm run verify    # browser-driven behavioural checks (Playwright) — see verify/README.md
 npm run verify -- folders          # only scenarios whose name matches (a full run takes minutes)
-node verify/screenshots.mjs        # annotated feature screenshots for release notes
 ```
 No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`. Pass a name substring to run a subset — a full run launches a fresh browser per scenario and takes several minutes. Set `VERIFY_URL` to test a production build (`vite preview`) rather than the dev server; CI does this.
 
