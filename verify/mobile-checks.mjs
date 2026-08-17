@@ -798,7 +798,7 @@ const SCENARIOS = [
 
     check('it runs on its own sample book, not the user\'s',
       (await page.locator('.title-field--mobile').first().textContent())?.includes('Camelot'), true);
-    check('step 1 of the mobile list', await page.locator('.tour-progress').textContent(), '1 of 6');
+    check('step 1 of the mobile list', await page.locator('.tour-progress').textContent(), '1 of 8');
 
     // The spotlight passes taps through — the whole reason it is a live tour.
     await tap(page, page.locator('.title-field--mobile').first());
@@ -806,7 +806,9 @@ const SCENARIOS = [
     check('tapping the spotlit control really opens the menu',
       await page.locator('.mtm-body').count(), 1);
     check('and the tour follows it forward',
-      await page.locator('.tour-progress').textContent(), '2 of 6');
+      await page.locator('.tour-progress').textContent(), '2 of 8');
+    check('the step highlights both controls its caption names',
+      await page.locator('.tour-ring').count(), 2);
 
     // Escape must take the layer, not the tour. Getting this backwards leaves
     // the menu open with no tour to explain it.
@@ -816,11 +818,28 @@ const SCENARIOS = [
     check('and leaves the tour standing', await page.locator('.tour-bubble').count(), 1);
     check('which offers a way back to it', await page.locator('.tour-recover').count(), 1);
 
-    // Walk the rest with Next, so every step's arrival is exercised.
-    for (let i = 2; i < 6; i++) {
+    // Walk the rest with Next, so every step's arrival is exercised. A step that
+    // cannot find its target clears the spotlight and skips, so a ring on every
+    // step is the check that no selector has rotted.
+    for (let i = 2; i < 8; i++) {
       await tap(page, page.locator('.tour-btn--primary'));
-      await settle(page, 700);
-      check(`step ${i + 1} found its target`, await page.locator('.tour-spot').count(), 1);
+      await settle(page, 800);
+      check(`step ${i + 1} found its target`,
+        (await page.locator('.tour-ring').count()) > 0, true);
+
+      // Two steps carry state their caption depends on, so they are asserted
+      // rather than assumed. `arrive` runs again on Back and on recovery, so a
+      // non-idempotent one shows up here: the first version toggled selection,
+      // which deselected on the way into the Actions step and left the menu
+      // reading "0 selected" under a caption about the number you picked.
+      if (i === 4) {
+        check('the Actions step still has entries selected',
+          await page.locator('.bulk-count-num').textContent(), '2');
+      }
+      if (i === 5) {
+        check('the reference step shows a paired book, not an empty chooser',
+          await page.locator('.ref-chooser-current').count(), 1);
+      }
     }
     check('the last step offers Done',
       (await page.locator('.tour-btn--primary').textContent())?.trim(), 'Done');

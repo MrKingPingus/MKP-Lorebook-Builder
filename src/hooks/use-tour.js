@@ -19,6 +19,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useMobile }        from './use-mobile.js';
 import { useLorebook }      from './use-lorebook.js';
+import { useReferenceLorebook } from './use-reference-lorebook.js';
 import { createEmptyEntry } from '../services/entry-factory.js';
 import { useUiStore }       from '../state/ui-store.js';
 import { useLorebookStore } from '../state/lorebook-store.js';
@@ -27,12 +28,59 @@ import { TOUR_STEP_SETTLE_MS, TOUR_TARGET_TIMEOUT_MS } from '../constants/limits
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Poll for a selector, since arrival is async and React has to commit first. */
-async function waitForTarget(selector, timeout = TOUR_TARGET_TIMEOUT_MS) {
+/** A step's `target` is one selector or several. Always read it as a list. */
+const targetList = (target) => (Array.isArray(target) ? target : [target]);
+
+/**
+ * Is this element actually on screen?
+ *
+ * A size check alone is not enough, and this is the trap 14D documented and 14E
+ * then walked into: the settings panel is **always mounted** at
+ * `visibility: hidden` so its width can animate, and a `visibility: hidden`
+ * subtree still reports client rects for every child. So `.settings-lander-btn`
+ * has a perfectly good box while Settings is closed, and a step pointing at it
+ * would spotlight thin air over the entry list.
+ *
+ * `visibility` is an inherited property, so reading it off the element itself
+ * correctly reports a hidden ancestor — no tree walk needed.
+ */
+function onScreen(el) {
+  const r = el.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return false;
+  return getComputedStyle(el).visibility !== 'hidden';
+}
+
+/** Rects for every selector a step points at, in declaration order. */
+function measure(target) {
+  return targetList(target)
+    .map((sel) => document.querySelector(sel))
+    .filter((el) => el && onScreen(el))
+    .map((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, left: r.left, right: r.right, bottom: r.bottom };
+    });
+}
+
+/** Rect lists are compared by value so the tracker can skip identical frames. */
+function same(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((r, i) =>
+    r.top === b[i].top && r.left === b[i].left
+    && r.right === b[i].right && r.bottom === b[i].bottom);
+}
+
+/**
+ * Poll until the *first* selector resolves, since arrival is async and React has
+ * to commit first. Only the first is required: a step may point at a control
+ * that is conditional (an ⋯ menu on a row that has one) without the whole step
+ * failing when it is absent.
+ */
+async function waitForTarget(target, timeout = TOUR_TARGET_TIMEOUT_MS) {
+  const first = targetList(target)[0];
   const deadline = Date.now() + timeout;
   for (;;) {
-    const el = document.querySelector(selector);
-    if (el && el.getBoundingClientRect().width > 0) return el;
+    const el = document.querySelector(first);
+    if (el && onScreen(el)) return el;
     if (Date.now() > deadline) return null;
     await wait(40);
   }
@@ -63,10 +111,14 @@ export function useTour() {
   const open     = useUiStore((s) => s.tourOpen);
   const setOpen  = useUiStore((s) => s.setTourOpen);
   const { importAsNewLorebook, switchLorebook, deleteLorebook } = useLorebook();
+  const { setReferenceLorebookId } = useReferenceLorebook();
 
   const steps = tourStepsFor({ isMobile });
   const [index, setIndex]   = useState(0);
-  const [rect, setRect]     = useState(null);
+  // One rect per selector the step points at. A step may highlight more than one
+  // control — the title menu's two tabs are one idea, not two steps — so this is
+  // a list rather than a single box.
+  const [rects, setRects]   = useState([]);
   // The target went away under the tour — the user closed what `arrive` opened.
   // Surfaced rather than auto-restored: re-opening it behind them would make
   // taps stop feeling like they work, which is the whole premise.
@@ -96,14 +148,44 @@ export function useTour() {
       useUiStore.getState().setSearchMode(mode);
       await wait(TOUR_STEP_SETTLE_MS);
     },
-    selectFirstEntry: async () => {
+    // Idempotent, which `toggleSelected` is not — and `arrive` is required to be,
+    // because it runs again on Back and on recovery. The first version called
+    // toggle directly, so walking from the select step to the Actions step ran it
+    // twice and *deselected* the entry: the menu opened reading "0 selected"
+    // under a caption about the number you picked.
+    selectFirstEntries: async (count = 2) => {
       const lb = useLorebookStore.getState();
-      const first = lb.lorebooks[lb.activeLorebookId]?.entries?.[0];
-      if (first) useUiStore.getState().toggleSelected(first.id);
+      const wanted = (lb.lorebooks[lb.activeLorebookId]?.entries ?? []).slice(0, count);
+      for (const e of wanted) {
+        // Re-read per iteration: `selectedIds` is replaced on every toggle, so a
+        // snapshot taken before the loop is stale by the second entry.
+        if (!useUiStore.getState().selectedIds.has(e.id)) {
+          useUiStore.getState().toggleSelected(e.id);
+        }
+      }
       await wait(TOUR_STEP_SETTLE_MS);
     },
-    openTitleMenu: async () => {
-      useUiStore.getState().openMobileTitleMenu('lorebooks');
+    openTitleMenu: async (tab = 'lorebooks') => {
+      useUiStore.getState().openMobileTitleMenu(tab);
+      await wait(TOUR_STEP_SETTLE_MS);
+    },
+    // Pair one sample book to the other, so the chooser step can show the
+    // *paired* state — what is paired, and Browse and Unpair beside it — rather
+    // than an empty chooser offering the user's own book as a candidate. Both
+    // books belong to the tour, so nothing of theirs is touched.
+    pairSampleReference: async (name) => {
+      const { lorebookIndex } = useLorebookStore.getState();
+      const book = lorebookIndex.find((b) => b.name === name);
+      if (book) setReferenceLorebookId(book.id);
+      await wait(TOUR_STEP_SETTLE_MS);
+    },
+    // The select-mode Actions menu has no store flag — it is local state in
+    // BulkActionBar — so the only honest way to open it is to press the button,
+    // which is also exactly what the user is being invited to do.
+    openSelectActions: async () => {
+      if (!document.querySelector('.bulk-actions-menu')) {
+        document.querySelector('.bulk-actions-btn')?.click();
+      }
       await wait(TOUR_STEP_SETTLE_MS);
     },
     openReferenceChooser: async () => {
@@ -121,7 +203,7 @@ export function useTour() {
       document.querySelector(selector)?.scrollIntoView({ block: 'center' });
       await wait(TOUR_STEP_SETTLE_MS);
     },
-  }), []);
+  }), [setReferenceLorebookId]);
 
   // ── entering and leaving the tour ────────────────────────────────────────
   useEffect(() => {
@@ -184,7 +266,7 @@ export function useTour() {
     restore.current = null;
     setOpen(false);
     setIndex(0);
-    setRect(null);
+    setRects([]);
     setLost(false);
   }, [switchLorebook, deleteLorebook, setOpen]);
 
@@ -196,6 +278,11 @@ export function useTour() {
     (async () => {
       setLost(false);
       arriving.current = true;
+      // Drop the previous step's spotlight before walking to the new one. Left
+      // in place it stays lit under the *new* caption for as long as arrival
+      // takes — up to the target timeout if a selector has rotted — which reads
+      // as the tour pointing confidently at the wrong control.
+      setRects([]);
       await step.arrive?.(api);
       const el = cancelled ? null : await waitForTarget(step.target);
       // Arm only if the user has not already done the thing this step invites.
@@ -211,7 +298,7 @@ export function useTour() {
         setIndex((i) => (i + 1 < steps.length ? i + 1 : i));
         return;
       }
-      setRect(el.getBoundingClientRect());
+      setRects(measure(step.target));
     })();
 
     return () => { cancelled = true; };
@@ -240,14 +327,9 @@ export function useTour() {
         return;
       }
 
-      const el = document.querySelector(step.target);
-      if (!el) { setLost(true); return; }
-      const next = el.getBoundingClientRect();
-      setRect((prev) =>
-        prev && prev.top === next.top && prev.left === next.left
-          && prev.width === next.width && prev.height === next.height
-          ? prev
-          : next);
+      const next = measure(step.target);
+      if (next.length === 0) { setLost(true); return; }
+      setRects((prev) => (same(prev, next) ? prev : next));
       setLost(false);
     };
 
@@ -268,7 +350,7 @@ export function useTour() {
     step,
     index,
     total: steps.length,
-    rect,
+    rects,
     lost,
     first: index === 0,
     last:  index === steps.length - 1,
@@ -280,7 +362,7 @@ export function useTour() {
       if (!step) return;
       await step.arrive?.(api);
       const el = await waitForTarget(step.target);
-      if (el) { setRect(el.getBoundingClientRect()); setLost(false); }
+      if (el) { setRects(measure(step.target)); setLost(false); }
     }, [step, api]),
   };
 }

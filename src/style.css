@@ -8310,28 +8310,32 @@ kbd {
   pointer-events: none;
 }
 
-/* The scrim IS this element's box-shadow — a 9999px spread around a transparent
-   box. No mask, no clip-path, no four-band arithmetic, and the ring cannot
-   disagree with the hole about where the target is because they are one element. */
-.tour-spot {
+/* One masked rect for the scrim, one <rect> per hole. The first version used
+   `box-shadow: 0 0 0 9999px` on a transparent div, which is a tidy trick for a
+   single hole and cannot do two — a second such div darkens the first one's hole.
+   Steps that point at two controls (the title menu's two tabs are one idea, not
+   two steps) need N holes, so the scrim became a mask. */
+.tour-scrim {
   position: fixed;
-  border-radius: var(--radius);
-  border: 2px solid var(--accent);
-  box-shadow:
-    0 0 0 9999px rgba(0, 0, 0, 0.72),
-    0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
-  transition: left var(--transition), top var(--transition),
-              width var(--transition), height var(--transition);
+  left: 0;
+  top: 0;
+}
+.tour-scrim-fill { fill: rgba(0, 0, 0, 0.72); }
+.tour-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
 }
 
-/* Placed by use-anchored-position.js, which supplies `position: fixed` plus
-   either `top` or `bottom` — so the side it takes is not decided here. Width is
-   set inline from the viewport: at phone widths the bubble spans the usable
-   width regardless, so it never sits *beside* a control, only above or below. */
+/* `top` comes from the component, which measures both gaps around the spotlight
+   and clamps into the viewport. At phone widths the bubble spans the usable width
+   regardless, so it never sits *beside* a control, only above or below. */
 .tour-bubble {
+  position: fixed;
+  left: 8px;
+  right: 8px;
   pointer-events: auto;
   box-sizing: border-box;
-  max-width: calc(100vw - 16px);
   padding: 13px 15px 12px;
   background: var(--surface2);
   border: 1px solid var(--border2);

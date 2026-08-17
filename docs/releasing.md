@@ -22,7 +22,8 @@ What a release does need is a **step list for the platform it changed**, in
 independent, and an empty list means the lander and the update notice offer no
 tour on that platform rather than offering an empty one. A release that changed
 only one surface fills in only that list — that is the intended state, not an
-oversight.
+oversight. **Read `docs/tour-voice.md` before writing a caption**; the first pass
+was written from the changelog and read like it.
 
 Because the tour points at live selectors, **a step whose `target` no longer
 matches is a rotted step**, and the runner skips it with a console warning in

@@ -33,7 +33,14 @@ export function useLorebook() {
     const lb = createEmptyLorebook(
       rollbackDefaultEnabled ? { rollback: { enabled: true, snapshotCount: 3 } } : {}
     );
-    const newIndex = addToIndex(lorebookIndex, lb);
+    // From getState(), not the hook closure — same reason switchLorebook and
+    // deleteLorebook do. Two creates in one tick (the tour loads two sample
+    // books back to back) both read the closure's pre-chain index, so the second
+    // addToIndex starts from an index that never had the first book in it and
+    // writes it back out — silently dropping a lorebook that had just been
+    // created and persisted. Found by the tour's reference step showing "no
+    // lorebook is paired" with an empty candidate list.
+    const newIndex = addToIndex(useLorebookStore.getState().lorebookIndex, lb);
     if (!newIndex) return; // full
     setLorebook(lb);
     setLorebookIndex(newIndex);

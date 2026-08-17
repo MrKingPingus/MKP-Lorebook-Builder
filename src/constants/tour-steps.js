@@ -20,16 +20,21 @@
 //
 // ── shape of a step ─────────────────────────────────────────────────────────
 //
-// `target`  CSS selector for the control to spotlight. One element; the first
-//           match wins. If it never appears the runner skips the step rather
-//           than spotlighting nothing.
+// `target`  CSS selector, or an array of them, for the controls to spotlight.
+//           The first match of each is used. **Only the first selector is
+//           required** — the rest may be absent without failing the step, which
+//           is what lets a step point at a control that is conditional. If the
+//           first never appears the runner skips the step rather than
+//           spotlighting nothing. Every selector named in the caption should be
+//           in here: a caption that mentions a control the scrim has dimmed into
+//           the background is worse than one that does not mention it.
 // `title`   Heading, a short claim.
-// `body`    The caption. **Keep it under ~300px rendered**, which in practice
-//           means under about 220 characters: `use-anchored-position.js` flips
-//           the bubble on which half of the viewport the target sits in rather
-//           than on a fit test, and that heuristic is only safe while the
-//           bubble is shorter than half the screen. A long caption is how the
-//           bubble ends up covering what it points at.
+// `body`    The caption. **Under 220 characters, and under 160 is better.** Not
+//           only a style rule: the bubble is placed in whichever gap around the
+//           spotlight has room for it, and a caption long enough to fit neither
+//           gap gets clamped into the viewport on top of something. See
+//           `docs/tour-voice.md` for how to write these — the first pass was
+//           written from CHANGELOG.md and read like it.
 // `advanceOn` Optional selector meaning *the user did the thing*. Once it
 //           appears, the tour moves to the next step on its own. This is what
 //           makes a real tap worth allowing: without it, tapping the spotlit
@@ -47,19 +52,25 @@
 //
 // ── two rules learned the hard way ──────────────────────────────────────────
 //
-// 1. **Spotlight a representative instance, never a container.** A target
-//    taller than about half the screen leaves the bubble nowhere to go on
-//    either side. Step 2 is about the filter row, not the list it sits above;
-//    step 3 is about one condensed card, not all eight of them.
-// 2. **The list is a path, not a set.** Because taps really work, step 4's
+// 1. **Spotlight a representative instance, not a container** — the filter row
+//    rather than the list it sits above, one book row rather than the whole
+//    menu. A target much taller than half the screen leaves the caption nowhere
+//    good to go. The one deliberate exception is `select-actions`, where the
+//    open menu *is* the subject; `place()` in FeatureTour.jsx exists to cope.
+// 2. **The list is a path, not a set.** Because taps really work, a later step's
 //    target does not exist until the app has been walked there. Steps cannot be
-//    reordered freely and cannot be jumped between — which is why the tour has
-//    Back and Next and no clickable step dots. A dot row that cannot honour a
-//    click is worse than the plain "3 of 5" it replaced.
+//    reordered freely or jumped between — which is why the tour has Back and Next
+//    and no clickable dots. A dot row that cannot honour a click is worse than
+//    the plain "3 of 8" it replaced.
+// 3. **A step that mentions a tap should invite one.** `advanceOn` is what makes
+//    the invitation real, and three steps here are built as invitation-then-
+//    payoff pairs: tap the title → what the menu holds; open Actions → what is
+//    in it; tap the gear → the way home. The payoff step's `arrive` still opens
+//    the thing itself, so Next works for someone who would rather not tap.
 //
-// Comparative claims are stated as numbers in the caption and never shown. A
-// live app can only ever be the *after*, and the numbers are the interesting
-// part anyway.
+// Comparisons to older versions are avoided, not just softened. "This was
+// unreachable before" means nothing to a new user and reads as an apology to a
+// returning one.
 
 /**
  * Mobile steps — everything 0.10.0 changed. Ordered as a walk through the app:
@@ -70,53 +81,79 @@ export const TOUR_STEPS_MOBILE = [
   {
     id:        'title',
     target:    '.title-field--mobile',
-    title:     'Your lorebook lives in the title',
-    body:      'It wears the same outlined style it has on a desktop, because it does the same thing. Give it a tap.',
+    title:     'Your lorebook name is a button',
+    body:      'It sits in the title bar, the way it does on a desktop. Give it a tap.',
     arrive:    async (api) => { await api.closeLayers(); },
     advanceOn: '.mtm-body',
   },
   {
+    // Two holes: the book list and the tab beside it. The tab is named in the
+    // caption, so it has to be visible and tappable — a caption that mentions a
+    // control the scrim has dimmed into the background is worse than not
+    // mentioning it.
     id:     'title-menu',
-    target: '.mtm-row-wrap',
+    target: ['.mtm-row-wrap', '.mtm-tab:not(.mtm-tab--on)'],
     title:  'Every book you have saved',
-    body:   'Switch between them, start a new one, or rename and delete any of them from the ⋯ menu. The second tab holds import and export. On a phone none of this was reachable before.',
-    arrive: async (api) => { await api.openTitleMenu(); },
+    body:   'Switch between them, or rename and delete from the ⋯ menu. Import and export live on the other tab.',
+    arrive: async (api) => { await api.openTitleMenu('lorebooks'); },
   },
   {
     id:     'filters',
     target: '.search-bar-row2',
-    title:  'One row, not three',
-    body:   'Search, mode and filters share a row now, and everything you tap here carries a full-size touch target. The chrome above your first entry went from 236px to 170px.',
+    title:  'More room for your entries',
+    body:   'Searching and filtering used to take three rows. Now it is one, so you see more of your work and less of the toolbar.',
     arrive: async (api) => { await api.closeLayers(); },
   },
   {
-    id:     'select',
-    target: '.bulk-actions-btn',
-    title:  'Selecting shows a condensed list',
-    body:   'Name and checkbox only, with the type still shown as the colour down the edge — and one Actions menu instead of eight buttons. Select mode went from two entries on screen to eight.',
-    arrive: async (api) => {
+    id:        'select',
+    target:    '.bulk-actions-btn',
+    title:     'Pick several entries at once',
+    body:      'Selecting shows a short list, so eight fit where two used to. Everything you can do to the ones you picked is under Actions — open it and see.',
+    arrive:    async (api) => {
       await api.closeLayers();
       await api.setSearchMode('select');
-      await api.selectFirstEntry();
+      await api.selectFirstEntries();
+    },
+    advanceOn: '.bulk-actions-menu',
+  },
+  {
+    // The menu the previous step invited. It opens downward and is tall, which is
+    // what caught the old placement code out — see `place()` in FeatureTour.jsx.
+    id:     'select-actions',
+    target: '.bulk-actions-menu',
+    title:  'Change type, file, hide, export',
+    body:   'All of it in one menu, with the number you picked beside it. This used to be eight buttons wrapped across three lines.',
+    arrive: async (api) => {
+      await api.setSearchMode('select');
+      await api.selectFirstEntries();
+      await api.openSelectActions();
     },
   },
   {
     id:     'reference',
-    target: '.ref-chooser-list',
-    title:  'Pair a reference lorebook from anywhere',
-    body:   'One chooser, reached from the lorebook menu, a book\'s ⋯ menu, the hotbar, the Lorebooks panel or Settings. It says what pairing does, so you can decide before committing.',
+    target: '.ref-chooser-current',
+    title:  'Keep a second book open beside your own',
+    body:   'A reference book you can read from and copy out of while you write. Here it is paired with a set of style notes.',
     arrive: async (api) => {
       await api.setSearchMode('search');
+      await api.pairSampleReference('Style Notes');
       await api.openReferenceChooser();
     },
   },
   {
+    id:        'gear',
+    target:    '.menu-btn--gear',
+    title:     'One more thing, behind the gear',
+    body:      'Tap it.',
+    arrive:    async (api) => { await api.closeLayers(); },
+    advanceOn: '.menu-panel--expanded',
+  },
+  {
     id:     'lander',
     target: '.settings-lander-btn',
-    title:  'And a way back out',
-    body:   'At the foot of Settings. On a phone this was previously unreachable without reloading — which meant no route to a new lorebook, your recent books, or What\'s new.',
+    title:  'The way back to your home screen',
+    body:   'Right at the bottom of Settings. That is where new lorebooks, your recent books and What\'s new live.',
     arrive: async (api) => {
-      await api.closeLayers();
       await api.openSettings();
       await api.scrollIntoView('.settings-lander-btn');
     },

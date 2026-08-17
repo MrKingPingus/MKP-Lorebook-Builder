@@ -80,6 +80,7 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 - `docs/constants-reference.md` — key constants and CSS theming details
 - `docs/project-summary.md` — plain-language project overview for planning
 - `docs/glossary.md` — domain vocabulary (entry, trigger, crosstalk, folder …)
+- `docs/tour-voice.md` — how to write feature-tour captions (read before adding or editing a tour step)
 
 ## Deployment
 GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions environment and sets the base path to `/<repo-name>/` automatically. Push to `main` triggers deploy via `.github/workflows/main.yml`.

@@ -51,3 +51,4 @@ export const POPOVER_EDGE_PAD_PX   = 8;  // keep the popover clear of the viewpo
 export const TOUR_STEP_SETTLE_MS    = 140;  // after each api action, before the next
 export const TOUR_TARGET_TIMEOUT_MS = 2500; // give up waiting for a step's target
 export const TOUR_SPOTLIGHT_PAD_PX  = 6;    // how far the spotlight ring sits outside its target
+export const TOUR_BUBBLE_GAP_PX     = 14;   // clear air between the spotlight and the caption

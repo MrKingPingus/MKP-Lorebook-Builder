@@ -35,6 +35,7 @@
 
 ### Under the hood
 
+- **Creating two lorebooks in the same instant could lose the first one.** The index was read from a stale copy, so the second create wrote back a list that had never contained the first book — it stayed on disk but vanished from your library. Nothing in the app did this before the tour, which loads two sample books back to back.
 - **The screenshot generator is gone**, along with `TOUR_RELEASE`, the capture-scale constant and the badge-placement scorer — about 400 lines. The tour points at live selectors instead, so a step whose target no longer matches is skipped with a console warning in development rather than silently showing the wrong picture. 0.9.0's six captures moved to `announcements/images/0.9.0/` so that release post keeps working; they no longer ship in the bundle, which takes 1.5MB off the deployed site.
 - **The landing page had never been layout-checked.** The mobile suite was built against the builder and its panels, so the app's first screen went through the entire overhaul ungraded. It now gets a sweep pose of its own, which immediately found five controls under the touch floor.
 - **`--destructive` is no longer tied to `--accent`.** It has its own value per theme, and in the custom theme it is deliberately fixed rather than derived from the user's accent — destructive is the one role that must not follow a preference. The high-contrast theme keeps them equal on purpose, where contrast matters more than hue and the outline-versus-fill treatment does the separating.
