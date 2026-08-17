@@ -1,168 +1,107 @@
-// Click-through tour of a release's new features.
+// Guided tour of a release's new features, spotlighting the real app.
 //
-// Deliberately not a live tour driving the real UI. The things worth pointing
-// at mostly don't exist until something is open — the book list only while the
-// title menu is up, the sizing controls only while that menu is — so a live
-// tour would have to drive app state, handle targets that aren't there yet, and
-// cope with the window moving underneath it. Annotated screenshots have none of
-// those failure modes, and a 0.9.0 screenshot stays correct for 0.9.0 forever.
+// Renders two things over the live interface: a scrim with a hole punched in it
+// around the current step's control, and a caption bubble beside it. All the
+// state — which step, getting the app there, where the control is — belongs to
+// `use-tour.js`; this file places boxes.
 //
-// The captions carry the information; the images support them. Text baked into
-// a PNG ignores the text-size setting, can't be selected, and is invisible to a
-// screen reader — so the words are real text and every image has alt text.
-import { useState, useEffect, useRef } from 'react';
-import { useDismissLayer }  from '../../hooks/use-dismiss-layer.js';
-import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
-import { TOUR_STEPS, TOUR_RELEASE, TOUR_CAPTURE_SCALE } from '../../constants/tour-steps.js';
-
-// Built from BASE_URL rather than a bare absolute path: the deployed site lives
-// under /<repo-name>/ on Pages, where "/screenshots/…" would 404.
-function imageUrl(file) {
-  return `${import.meta.env.BASE_URL}screenshots/${TOUR_RELEASE}/${file}`;
-}
-
-// The title, the caption and the numbered labels, as real text. Rendered in
-// both the panel and the enlarged view — the explanation used to be painted into
-// the image, so enlarging in order to read the screenshot took the words away
-// with it.
+// **Taps pass through.** The scrim is `pointer-events: none`, so the spotlit
+// control is not merely visible but usable: tapping the lorebook title really
+// opens the lorebook menu and the tour follows. Intercepting the tap instead
+// would make this a screenshot gallery with extra steps — the user would learn
+// the control is there but never that it works.
 //
-// The title sits here, under the screenshot, rather than in a header above it:
-// split across the image, the name of the step and the explanation of it were
-// too far apart to read as one thought.
-function StepNotes({ step, className = '', Heading = 'h2' }) {
-  return (
-    <div className={`tour-notes ${className}`.trim()}>
-      <Heading className="tour-step-title">{step.title}</Heading>
-      <p className="tour-body">{step.body}</p>
-      {step.marks?.length > 0 && (
-        <ol className="tour-marks">
-          {step.marks.map((m, i) => (
-            <li key={i}>
-              <span className="tour-mark-num" aria-hidden="true">{i + 1}</span>
-              {m.label}
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
-  );
-}
+// The bubble is placed by `use-anchored-position.js` rather than by measuring
+// itself first. That hook anchors the flipped case with `bottom`, so the bubble
+// grows upward on its own and never needs a height before it can be positioned
+// — no first-paint flicker. Its flip rule is which half of the viewport the
+// target sits in, which stays safe as long as captions stay short; see the note
+// in `constants/tour-steps.js`.
+//
+// Why a bubble and not a sheet docked to the screen's bottom edge: measured at
+// 360x640 against a top, middle and bottom target, a docked sheet's top edge
+// lands at y=461 while the hotbar runs 583-640 — it covers the control it is
+// describing. It also fails softly at the top, leaving the caption a full screen
+// away from its subject. One thing that measurement corrected: at 360px the
+// bubble is full-width-minus-margins regardless, so it never sits *beside* a
+// control, only above or below it.
+//
+// No step dots. Because taps really work, the steps are a path through the app
+// rather than a set — step 4's target does not exist until the app has been
+// walked there — so a dot row could not honour a click. The "3 of 5" readout
+// says the same thing without promising navigation it cannot do.
+import { useEffect, useRef } from 'react';
+import { useTour }              from '../../hooks/use-tour.js';
+import { useAnchoredPosition }  from '../../hooks/use-anchored-position.js';
+import { useDismissLayer }      from '../../hooks/use-dismiss-layer.js';
+import { DISMISS_PRIORITY }     from '../../services/dismiss-stack.js';
+import { TOUR_SPOTLIGHT_PAD_PX, POPOVER_EDGE_PAD_PX } from '../../constants/limits.js';
 
-export function FeatureTour({ onClose }) {
-  const [index, setIndex]    = useState(0);
-  const [zoomed, setZoomed]  = useState(false);
-  // Natural width of the current image, so the enlarged view can render it at
-  // the builder's true on-screen size. Captures are at TOUR_CAPTURE_SCALE, so
-  // showing them at raw pixel width reads as roughly 2x zoomed — well past
-  // being readable as a screenshot of an interface.
-  const [naturalWidth, setNaturalWidth] = useState(0);
-  // Whether the enlarged image is taller than the space it has, so the hint can
-  // say the view scrolls rather than leaving someone to discover it.
-  const [zoomOverflows, setZoomOverflows] = useState(false);
+export function FeatureTour() {
+  const { active, step, index, total, rect, lost, first, last, go, close, recover } = useTour();
   const nextRef = useRef(null);
-  const zoomRef = useRef(null);
 
-  const step  = TOUR_STEPS[index];
-  const first = index === 0;
-  const last  = index === TOUR_STEPS.length - 1;
+  // Lowest priority in the stack, so Escape closes whatever the tour opened
+  // before it closes the tour. See the comment on DISMISS_PRIORITY.tour.
+  useDismissLayer('feature-tour', active, DISMISS_PRIORITY.tour, close);
 
-  // Escape backs out of the enlarged view before it closes the tour, so a user
-  // who zoomed in doesn't lose their place in the sequence.
-  useDismissLayer('feature-tour', true, DISMISS_PRIORITY.modal,
-    () => (zoomed ? setZoomed(false) : onClose()));
+  useEffect(() => { if (active) nextRef.current?.focus(); }, [active, index]);
 
-  useEffect(() => { nextRef.current?.focus(); }, []);
+  // The bubble spans the viewport's usable width at any phone size, so the
+  // anchoring only has to decide the side. Computed unconditionally — the hook
+  // is a pure function and returns null for a null rect.
+  const width = typeof window === 'undefined'
+    ? 0
+    : window.innerWidth - POPOVER_EDGE_PAD_PX * 2;
+  const grown = rect ? {
+    top:    rect.top    - TOUR_SPOTLIGHT_PAD_PX,
+    bottom: rect.bottom + TOUR_SPOTLIGHT_PAD_PX,
+    left:   rect.left   - TOUR_SPOTLIGHT_PAD_PX,
+    right:  rect.right  + TOUR_SPOTLIGHT_PAD_PX,
+  } : null;
+  const bubbleStyle = useAnchoredPosition(grown, width);
 
-  // Fetch the next image while the current one is being read, so clicking
-  // through doesn't wait on the network each time. Nothing is preloaded until
-  // the tour is actually opened — the whole point of keeping it opt-in.
-  useEffect(() => {
-    const upcoming = TOUR_STEPS[index + 1];
-    if (!upcoming) return;
-    const img = new Image();
-    img.src = imageUrl(upcoming.file);
-  }, [index]);
-
-  // A mousedown anywhere in the enlarged view closes it — except on its own
-  // scrollbar, which reports as a click on the container and would otherwise
-  // dismiss the image the moment someone tried to scroll it.
-  function closeZoom(e) {
-    const box = e.currentTarget;
-    if (e.clientX - box.getBoundingClientRect().left >= box.clientWidth) return;
-    setZoomed(false);
-  }
-
-  function go(delta) {
-    setZoomed(false);
-    setNaturalWidth(0);
-    setIndex((i) => Math.min(TOUR_STEPS.length - 1, Math.max(0, i + delta)));
-  }
-
-  function onKeyDown(e) {
-    if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); go(-1); }
-  }
+  if (!active || !step) return null;
 
   return (
-    <div
-      className="tour-backdrop"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      onKeyDown={onKeyDown}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`What's new — step ${index + 1} of ${TOUR_STEPS.length}`}
-    >
-      <div className="tour-panel">
-        <div className="tour-topbar">
-          <p className="tour-progress">{index + 1} of {TOUR_STEPS.length}</p>
-          <button
-            type="button"
-            className="tour-close"
-            onClick={onClose}
-            title="Close"
-            aria-label="Close"
-          >
-            ×
+    <div className="tour-layer" role="dialog" aria-modal="false"
+         aria-label={`What's new — step ${index + 1} of ${total}`}>
+      {/* The scrim is this element's own huge box-shadow, so the "hole" needs no
+          mask, no clip-path and no four-band arithmetic. It carries the ring
+          too, which keeps them from ever disagreeing about where the target is. */}
+      {grown && (
+        <div
+          className="tour-spot"
+          style={{
+            left:   `${grown.left}px`,
+            top:    `${grown.top}px`,
+            width:  `${grown.right - grown.left}px`,
+            height: `${grown.bottom - grown.top}px`,
+          }}
+        />
+      )}
+
+      <div className="tour-bubble" style={bubbleStyle ?? undefined}>
+        <h2 className="tour-bubble-title">{step.title}</h2>
+        <p className="tour-bubble-body">{step.body}</p>
+
+        {/* The user closed what the step opened. Offered rather than silently
+            re-opened: putting it back behind them is what would make taps stop
+            feeling real. */}
+        {lost && (
+          <button type="button" className="tour-recover" onClick={recover}>
+            Show me that again
           </button>
-        </div>
+        )}
 
-        {/* Captured at 2x, so there is real detail to enlarge into. */}
-        <button
-          type="button"
-          className="tour-shot"
-          onClick={() => setZoomed(true)}
-          title="Click to enlarge"
-        >
-          <img
-            src={imageUrl(step.file)}
-            alt={step.alt}
-            onLoad={(e) => setNaturalWidth(e.currentTarget.naturalWidth)}
-          />
-          <span className="tour-zoom-hint" aria-hidden="true">Click to enlarge</span>
-        </button>
-
-        <StepNotes step={step} />
-
-        <div className="tour-actions">
-          <div className="tour-dots" role="tablist" aria-label="Steps">
-            {TOUR_STEPS.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                aria-selected={i === index}
-                aria-label={s.title}
-                className={`tour-dot${i === index ? ' tour-dot--on' : ''}`}
-                onClick={() => { setZoomed(false); setIndex(i); }}
-              />
-            ))}
-          </div>
-          <div className="tour-nav">
+        <div className="tour-bubble-actions">
+          <span className="tour-progress">{index + 1} of {total}</span>
+          <span className="tour-nav">
             <button type="button" className="tour-btn" onClick={() => go(-1)} disabled={first}>
               Back
             </button>
             {last ? (
-              <button ref={nextRef} type="button" className="tour-btn tour-btn--primary" onClick={onClose}>
+              <button ref={nextRef} type="button" className="tour-btn tour-btn--primary" onClick={close}>
                 Done
               </button>
             ) : (
@@ -170,40 +109,11 @@ export function FeatureTour({ onClose }) {
                 Next
               </button>
             )}
-          </div>
+          </span>
         </div>
-      </div>
 
-      {/* Enlarged view — the reason the captures are 2x rather than 1x. */}
-      {zoomed && (
-        <div
-          ref={zoomRef}
-          className="tour-zoom"
-          onMouseDown={closeZoom}
-          role="dialog"
-          aria-label={`${step.title} — enlarged`}
-        >
-          <div className="tour-zoom-figure">
-            <img
-              src={imageUrl(step.file)}
-              alt={step.alt}
-              style={naturalWidth ? { width: naturalWidth / TOUR_CAPTURE_SCALE } : undefined}
-              onLoad={(e) => {
-                const box = zoomRef.current;
-                setZoomOverflows(Boolean(box) && e.currentTarget.height > box.clientHeight);
-              }}
-            />
-          </div>
-          {/* Stops click-to-close firing when someone clicks into the notes to
-              read or select them. */}
-          <aside className="tour-zoom-aside" onMouseDown={(e) => e.stopPropagation()}>
-            <StepNotes step={step} className="tour-notes--aside" Heading="h3" />
-            <p className="tour-zoom-close">
-              {zoomOverflows ? 'Scroll to see the rest · click the image to close' : 'Click the image to close'}
-            </p>
-          </aside>
-        </div>
-      )}
+        <button type="button" className="tour-skip" onClick={close}>Skip the tour</button>
+      </div>
     </div>
   );
 }

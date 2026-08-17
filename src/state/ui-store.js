@@ -60,6 +60,11 @@ export const useUiStore = create((set) => ({
   referenceChooserOpen: false,   // the reference chooser. Both surfaces open this one component: the
                                  //   mobile title menu's footer button and the hotbar's Reference action
                                  //   (and on desktop, the Lorebooks panel button). One pairing UI, three doors.
+  tourOpen:            false,    // the guided feature tour. Lives here rather than in Lander's local
+                                 //   state because the tour spotlights the *builder* — it has to outlive
+                                 //   the lander that launches it. Deliberately absent from
+                                 //   closeAllLayers() below: the tour is not a layer to be shut when
+                                 //   another one opens, it is the thing doing the opening.
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setPanelAnimating: (panelAnimating) => set({ panelAnimating }),
@@ -194,6 +199,7 @@ export const useUiStore = create((set) => ({
   closeMobileTitleMenu: ()    => set({ mobileTitleMenuOpen: false }),
   setMobileTitleMenuTab: (mobileTitleMenuTab) => set({ mobileTitleMenuTab }),
   setReferenceChooserOpen: (referenceChooserOpen) => set({ referenceChooserOpen }),
+  setTourOpen: (tourOpen) => set({ tourOpen }),
 
   // Every dismissable layer, shut at once.
   //

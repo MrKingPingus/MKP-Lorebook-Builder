@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
 import { ReferenceChooser }      from './components/feature/ReferenceChooser.jsx';
+import { FeatureTour }           from './components/feature/FeatureTour.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
 import { useTheme }              from './hooks/use-theme.js';
 import { useAccessibility }      from './hooks/use-accessibility.js';
@@ -226,6 +227,9 @@ export default function App() {
       {/* At the root, not inside whatever opened it — the title menu, the
           hotbar and the Lorebooks panel all have `overflow: hidden` ancestors. */}
       <ReferenceChooser />
+      {/* Not inside the Lander that launches it: the tour spotlights the
+          builder, so it has to outlive the view it was started from. */}
+      <FeatureTour />
       <KeyboardHelpOverlay />
       <Analytics />
     </div>

@@ -21,6 +21,11 @@ export const DISMISS_PRIORITY = {
   // lose to every popover and sheet above it, and still beat the lander.
   entryDetail:         20,
   lander:              10,
+  // The guided tour paints above everything and must be dismissed *last* —
+  // paint order and dismiss order are deliberately opposite here. Escape during
+  // the tour should close the title menu the tour just opened and leave the tour
+  // standing; at any higher priority it closes the tour and leaves the menu.
+  tour:                 5,
 };
 
 export function registerDismissLayer(id, priority, onDismiss) {

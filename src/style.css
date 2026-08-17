@@ -8279,174 +8279,106 @@ kbd {
 }
 
 /* ── Feature tour ──────────────────────────────────────────────────────────
-   Click-through of a release's annotated screenshots, launched from the update
-   notice. Sits at the same level as the notice it replaces. */
-.tour-backdrop {
+   A guided tour of the real app: a scrim with a hole punched around the current
+   step's control, and a caption bubble beside it. Replaced a modal gallery of
+   screenshots in 0.10.0 — on a phone those rendered at 18–22% of life size, and
+   an image of a phone read on a phone is always smaller than the phone. */
+.tour-layer {
   position: fixed;
   inset: 0;
   z-index: 9500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.6);
+  /* The whole point: the spotlit control stays tappable, so the tour can let the
+     user drive the real app rather than mime it. The bubble re-enables events
+     for itself. */
+  pointer-events: none;
 }
-.tour-panel {
-  display: flex;
-  flex-direction: column;
-  /* Sized to what the captures actually render at, not to their full width.
-     They are portrait and height-constrained, so at 68vh they come out roughly
-     600-850px wide — a 1240px panel left wide empty margins either side. This
-     also keeps the caption to a readable measure rather than one long line. */
-  width: min(880px, 100%);
-  max-height: 100%;
+
+/* The scrim IS this element's box-shadow — a 9999px spread around a transparent
+   box. No mask, no clip-path, no four-band arithmetic, and the ring cannot
+   disagree with the hole about where the target is because they are one element. */
+.tour-spot {
+  position: fixed;
+  border-radius: var(--radius);
+  border: 2px solid var(--accent);
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.72),
+    0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: left var(--transition), top var(--transition),
+              width var(--transition), height var(--transition);
+}
+
+/* Placed by use-anchored-position.js, which supplies `position: fixed` plus
+   either `top` or `bottom` — so the side it takes is not decided here. Width is
+   set inline from the viewport: at phone widths the bubble spans the usable
+   width regardless, so it never sits *beside* a control, only above or below. */
+.tour-bubble {
+  pointer-events: auto;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  padding: 13px 15px 12px;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  overflow: hidden;
 }
-/* Only the step counter and the close button sit above the screenshot. The
-   title moved below it, next to the caption: with the title above and the
-   explanation below, the image separated two halves of the same thought. */
-.tour-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px 8px;
-  flex-shrink: 0;
-}
-.tour-step-title {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.tour-bubble-title {
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--text);
 }
-.tour-progress { margin: 0; font-size: 0.6875rem; color: var(--muted); }
-.tour-close {
-  flex-shrink: 0;
-  width: 28px; height: 28px;
-  border: none; border-radius: var(--radius);
-  background: transparent; color: var(--muted);
-  font-size: 1.375rem; line-height: 1; cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-.tour-close:hover { background: var(--surface3); color: var(--text); }
-
-/* Hugs the image rather than filling the panel: the captures are portrait (a
-   tall app window plus its legend), so a full-width box letterboxed them with
-   large empty bars either side. */
-.tour-shot {
-  display: block;
-  width: fit-content;
-  max-width: calc(100% - 36px);
-  margin: 0 auto;
-  padding: 0;
-  position: relative;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  cursor: zoom-in;
-  flex-shrink: 1;
-  min-height: 0;
-}
-.tour-shot img {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 68vh;
-}
-.tour-zoom-hint {
-  position: absolute;
-  right: 8px; bottom: 8px;
-  padding: 3px 8px;
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
-  font-size: 0.625rem;
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-.tour-shot:hover .tour-zoom-hint { opacity: 1; }
-
-/* The caption and the numbered labels. Both are real text rather than being
-   painted into the screenshot, so they survive enlarging, scale with the
-   text-size setting, and can be read by a screen reader. */
-.tour-notes { margin: 14px 18px 0; flex-shrink: 0; }
-.tour-marks {
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 5px;
-  font-size: 0.75rem;
-  line-height: 1.45;
+.tour-bubble-body {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--muted2);
 }
-.tour-marks li { display: flex; align-items: flex-start; gap: 8px; }
-/* Same pink as the badges painted on the shot, so a number in the list and a
-   number on the image read as the same thing. */
-.tour-mark-num {
-  flex-shrink: 0;
-  width: 17px; height: 17px;
-  margin-top: 1px;
-  border-radius: 50%;
-  background: #ff5c8a;
-  color: #fff;
-  font-size: 0.625rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-/* The caption carries the step — the image only supports it — but as plain
-   text under a large screenshot it was being skipped entirely. Given a panel of
-   its own with an accent edge so the eye lands on it. */
-.tour-body {
-  margin: 0;
-  padding: 11px 14px;
+/* Shown when the user has closed what the step opened. An offer, not an
+   auto-restore: reopening it behind them is what would make taps stop feeling
+   real. */
+.tour-recover {
+  margin: 11px 0 0;
+  min-height: var(--touch-floor);
+  width: 100%;
+  padding: 0 12px;
   background: var(--surface3);
   border: 1px solid var(--border2);
-  border-left: 3px solid var(--accent);
   border-radius: var(--radius);
-  font-size: 0.875rem;
-  line-height: 1.6;
   color: var(--text);
-  flex-shrink: 0;
+  font-size: 0.8125rem;
+  cursor: pointer;
 }
+.tour-recover:hover { background: var(--surface); }
 
-.tour-actions {
+.tour-bubble-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px 16px;
-  flex-shrink: 0;
+  margin-top: 13px;
 }
-.tour-dots { display: flex; gap: 6px; }
-.tour-dot {
-  width: 8px; height: 8px;
-  padding: 0;
-  border: none; border-radius: 50%;
-  background: var(--border2);
-  cursor: pointer;
-  transition: background var(--transition);
+.tour-progress {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-.tour-dot:hover { background: var(--muted); }
-.tour-dot--on { background: var(--accent); }
-
 .tour-nav { display: flex; gap: 8px; }
+
+/* Full touch floor rather than the ~30px these were as gallery controls. The
+   tour is a phone destination now, and 14D's tap-target rule is a hard failure
+   — which never graded the old tour because no sweep pose opened the lander. */
 .tour-btn {
-  padding: 7px 16px;
+  min-height: var(--touch-floor);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
   background: var(--surface3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
 }
@@ -8456,73 +8388,25 @@ kbd {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+  font-weight: 600;
 }
 .tour-btn--primary:hover { background: color-mix(in srgb, var(--accent) 82%, #000); }
 
-/* Enlarged view — what the 2x captures are for. */
-.tour-zoom {
-  position: fixed;
-  inset: 0;
-  z-index: 9600;
-  display: flex;
-  /* Centred with `margin: auto` on the child rather than `align-items: center`.
-     With centring on the container, an image taller than the viewport has its
-     top pushed outside the scrollable area — it is clipped by the top edge and
-     cannot be scrolled back to. `margin: auto` centres when there is room and
-     yields to the scroll when there isn't. */
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.88);
-  cursor: zoom-out;
-  overflow: auto;
-  overscroll-behavior: contain;
-  gap: 20px;
-  align-items: flex-start;
-}
-/* Image and notes side by side: a bar across the bottom would cover the shot,
-   which is exactly the problem the baked-in legend had. Wraps below on a narrow
-   screen. */
-.tour-zoom-figure { margin: auto; flex: 0 1 auto; min-width: 0; }
-.tour-zoom-aside {
-  flex: 0 0 300px;
-  position: sticky;
-  top: 0;
-  max-height: 100%;
-  overflow-y: auto;
-  padding: 14px 16px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  cursor: default;
-}
-.tour-notes--aside { margin: 0; }
-.tour-notes--aside .tour-step-title { font-size: 0.9375rem; }
-@media (max-width: 1100px) {
-  .tour-zoom { flex-wrap: wrap; }
-  .tour-zoom-aside { flex: 1 1 100%; position: static; }
-}
-/* Capped to the viewport in both axes: the inline `width` is the builder's true
-   size, and this only bites when the screen can't fit that. Better to show a
-   shot at 80% and whole than at 100% with the top scrolled off — and it means
-   the common case needs no scrolling at all. `margin: auto` still handles the
-   genuinely-too-tall case without clipping the top. */
-.tour-zoom img {
-  margin: auto;
-  max-width: 100%;
-  max-height: 100%;
-  height: auto;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  /* Width is set inline from naturalWidth / TOUR_CAPTURE_SCALE so the shot
-     appears at the size the builder actually is. Left to max-width alone it
-     rendered at close to raw capture pixels — about twice life size. */
-  flex-shrink: 0;
-}
-.tour-zoom-close {
-  margin: 12px 0 0;
+/* A named way out, because the tour has no backdrop to click: the scrim passes
+   clicks through to the app on purpose, so there is nothing inert to tap. */
+.tour-skip {
+  display: block;
+  width: 100%;
+  min-height: var(--touch-floor);
+  margin: 2px 0 0;
+  background: none;
+  border: none;
   color: var(--muted);
-  font-size: 0.6875rem;
-  line-height: 1.4;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
 }
+.tour-skip:hover { color: var(--text); }
 
 /* Re-entry to the feature tour from the lander, so dismissing the update
    notice isn't a one-way door. */
