@@ -155,8 +155,10 @@ Two kinds of assertion, graded apart:
   to delete the assertion.
 
 The notes are the point, not a consolation prize — the suite was written to find
-the pre-overhaul quirks, and a run ends with a roll-up by rule. See
-`docs/mobile-findings.md`.
+the pre-overhaul quirks, and a run ends with a roll-up by rule. The findings that
+came out of the original sweep are summarised in `docs/plan.md` under Phase 14;
+the working document that held each one's reproduction steps was deleted when the
+phase landed, and is in git history at `v0.10.x` if a detail is ever wanted.
 
 **A pose that does not exist grades nothing.** The mobile suite was built against
 the builder and its layers, so the lander went unswept from 14A until 14E added a
