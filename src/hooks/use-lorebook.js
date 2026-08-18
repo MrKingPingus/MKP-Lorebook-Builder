@@ -2,11 +2,11 @@
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore }  from '../state/history-store.js';
 import { useUiStore }       from '../state/ui-store.js';
-import { readJson, writeJson, removeItem } from '../services/storage-service.js';
+import { readJson, removeItem, saveLorebook, saveLorebookIndex } from '../services/storage-service.js';
 import { createEmptyLorebook, isPlaceholderLorebook } from '../services/entry-factory.js';
 import { useSettingsStore }                from '../state/settings-store.js';
 import { addToIndex, promoteInIndex } from '../services/lorebook-index.js';
-import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY } from '../constants/storage-keys.js';
+import { LOREBOOK_KEY_PREFIX } from '../constants/storage-keys.js';
 
 export function useLorebook() {
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
@@ -28,18 +28,29 @@ export function useLorebook() {
 
   const activeLorebook  = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
 
-  function createLorebook({ silent = false } = {}) {
+  // `ephemeral` marks a book that must never reach localStorage — the feature
+  // tour's samples. It rides on the lorebook and on its index entry, and
+  // `saveLorebook`/`saveLorebookIndex` are what enforce it; see storage-service.
+  function createLorebook({ silent = false, ephemeral = false } = {}) {
     const rollbackDefaultEnabled = useSettingsStore.getState().rollbackDefaultEnabled;
-    const lb = createEmptyLorebook(
-      rollbackDefaultEnabled ? { rollback: { enabled: true, snapshotCount: 3 } } : {}
-    );
-    const newIndex = addToIndex(lorebookIndex, lb);
+    const lb = createEmptyLorebook({
+      ...(rollbackDefaultEnabled ? { rollback: { enabled: true, snapshotCount: 3 } } : {}),
+      ...(ephemeral ? { ephemeral: true } : {}),
+    });
+    // From getState(), not the hook closure — same reason switchLorebook and
+    // deleteLorebook do. Two creates in one tick (the tour loads two sample
+    // books back to back) both read the closure's pre-chain index, so the second
+    // addToIndex starts from an index that never had the first book in it and
+    // writes it back out — silently dropping a lorebook that had just been
+    // created and persisted. Found by the tour's reference step showing "no
+    // lorebook is paired" with an empty candidate list.
+    const newIndex = addToIndex(useLorebookStore.getState().lorebookIndex, lb);
     if (!newIndex) return; // full
     setLorebook(lb);
     setLorebookIndex(newIndex);
     setActiveLorebookId(lb.id);
-    writeJson(LOREBOOK_KEY_PREFIX + lb.id, lb);
-    writeJson(LOREBOOK_INDEX_KEY, newIndex);
+    saveLorebook(lb);
+    saveLorebookIndex(newIndex);
     clearHistory();
     clearSelection();
     if (!silent) setPendingFocusLorebookName(true);
@@ -60,7 +71,7 @@ export function useLorebook() {
     const newIndex = promoteInIndex(state.lorebookIndex, id);
     setLorebookIndex(newIndex);
     setActiveLorebookId(id);
-    writeJson(LOREBOOK_INDEX_KEY, newIndex);
+    saveLorebookIndex(newIndex);
     clearHistory();
     clearSelection();
     setSearchQuery('');
@@ -79,7 +90,7 @@ export function useLorebook() {
     removeLorebook(id);
     const newIndex      = useLorebookStore.getState().lorebookIndex;
     const currentActive = useLorebookStore.getState().activeLorebookId;
-    writeJson(LOREBOOK_INDEX_KEY, newIndex);
+    saveLorebookIndex(newIndex);
 
     if (id === currentActive) {
       const next = newIndex[0];
@@ -104,19 +115,19 @@ export function useLorebook() {
   // popup's "Whole book from file" mode. Persists both the new lorebook and
   // the index synchronously so a quick tab-close doesn't lose the import
   // while autosave hasn't fired yet.
-  function importAsNewLorebook({ entries: importedEntries, name }) {
+  function importAsNewLorebook({ entries: importedEntries, name, ephemeral = false }) {
     const oldActive    = activeLorebook;
     const discardOldId = isPlaceholderLorebook(oldActive) ? oldActive.id : null;
 
-    createLorebook({ silent: name != null });
+    createLorebook({ silent: name != null, ephemeral });
     const newActiveId = useLorebookStore.getState().activeLorebookId;
     if (newActiveId) {
       useLorebookStore.getState().updateActiveEntries(importedEntries);
       if (name != null) updateActiveName(name);
       const finalLb    = useLorebookStore.getState().lorebooks[newActiveId];
       const finalIndex = useLorebookStore.getState().lorebookIndex;
-      writeJson(LOREBOOK_KEY_PREFIX + newActiveId, finalLb);
-      writeJson(LOREBOOK_INDEX_KEY, finalIndex);
+      saveLorebook(finalLb);
+      saveLorebookIndex(finalIndex);
     }
 
     if (discardOldId && discardOldId !== newActiveId) {
@@ -128,12 +139,12 @@ export function useLorebook() {
     renameLorebookByIdStore(id, name);
     // Persist the lorebook itself (read from memory or storage for non-active lorebooks)
     const lb = lorebooks[id] ?? readJson(LOREBOOK_KEY_PREFIX + id);
-    if (lb) writeJson(LOREBOOK_KEY_PREFIX + id, { ...lb, name });
+    if (lb) saveLorebook({ ...lb, name });
     // Persist updated index
     const newIndex = lorebookIndex.map((item) =>
       item.id === id ? { ...item, name, updatedAt: Date.now() } : item
     );
-    writeJson(LOREBOOK_INDEX_KEY, newIndex);
+    saveLorebookIndex(newIndex);
   }
 
   return {

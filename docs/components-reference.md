@@ -19,9 +19,14 @@ Use this to identify which file to look at based on what's visible on screen.
 | What you see | File |
 |---|---|
 | The floating window itself (dark bordered frame with golden corners) | `src/components/layout/FloatingWindow.jsx` |
-| The top bar: the lorebook title field (hover-highlighted; click opens the title menu, double-click renames in place), the gear, and close. Owns the title menu's open/close orchestration | `src/components/layout/WindowHeader.jsx` |
+| The top bar: the lorebook title field (hover-highlighted; click opens the title menu, double-click renames in place), the gear, and close. Owns the title menu's open/close orchestration. **On mobile it carries the title too** (14C) — same control, minus the wordmark, which is 211px of a 360px screen | `src/components/layout/WindowHeader.jsx` |
 | The dual-column dropdown under the title — saved lorebooks on the left, import/export on the right. Portalled to `document.body`; the book column collapses to a rail once an import takes over | `src/components/feature/TitleMenu.jsx` |
+| The mobile equivalent, opened by tapping the lorebook name in the header — same two destinations as two tabs rather than two columns, because 390px has no room for two of anything. Carries the per-book ⋯ menu (pair / rename / delete) and the ＋ New and ⇄ Reference footer | `src/components/feature/MobileTitleMenu.jsx` |
+| The reference-lorebook chooser — what is paired, what can be paired, and a line saying what a reference lorebook *is*. Mounted once at the app root; opened from the mobile title menu, a book's ⋯ menu, the hotbar action, the Lorebooks panel and Settings | `src/components/feature/ReferenceChooser.jsx` |
+| Which of those doors is open, and the candidate list behind it | `src/hooks/use-reference-chooser.js` |
+| Which layers Escape closes, and in what order — six mobile layers joined the stack in 14D; the entry editor registers at a new `entryDetail` priority, below every popover and sheet and above the lander | `src/services/dismiss-stack.js`, `src/hooks/use-dismiss-layer.js` |
 | The order books are listed in, snapshotted on open so a list can't reshuffle under the pointer (`recent` default, `alpha` opt-in) | `src/hooks/use-sorted-lorebooks.js` |
+| Closing every open layer when the viewport crosses the mobile breakpoint — the settings panel is a 320px column above it and a full-screen overlay below, and nothing re-poses between the two | `src/hooks/use-close-layers-on-breakpoint.js` |
 | The bottom toolbar with action icons (add entry, undo, redo, etc.) | `src/components/layout/Hotbar.jsx` |
 | The thin status bar below the hotbar (save state, `⤢ Size`) — desktop only. Holds app state and view controls; content actions belong in the hotbar | `src/components/layout/StatusFooter.jsx` |
 | The `⤢ Size` menu and its flyouts (window size, text size, entry height, FAB size) — portalled to `document.body` so flyouts can open rightward past the window's `overflow: hidden` | `src/components/feature/ScaleMenu.jsx` |
@@ -40,7 +45,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | What you see | File |
 |---|---|
 | The search bar at the top of the entry list | `src/components/feature/SearchBar.jsx` |
-| The row of type filter pills (Character, Location, etc.) | `src/components/feature/TypeFilterBar.jsx` |
+| The row of type filter pills (Character, Location, etc.); on mobile a single `Filter ▾` button, handed into `SearchBar` by `GlobalFilterBar` so it shares the mode row rather than owning a band (14C, #122) | `src/components/feature/TypeFilterBar.jsx` |
 | An entry card (collapsed or expanded, with name/type/triggers/description) | `src/components/feature/EntryCard.jsx` |
 | The scrollable list of all entry cards | `src/components/feature/EntryList.jsx` |
 | A folder header row in the entry list (collapse, colour, name, count, delete) | `src/components/feature/FolderHeader.jsx` |
@@ -57,7 +62,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | The suggestion tray below triggers (lightbulb + reroll) | `src/components/feature/SuggestionsTray.jsx` |
 | Find & replace bar | `src/components/feature/FindReplace.jsx` |
 | Phrase builder mode (pill row with drag reorder) | `src/components/feature/PhraseBuilder.jsx` |
-| The bulk action bar (select all, delete selected, etc.) | `src/components/feature/BulkActionBar.jsx` |
+| The bulk action bar. Desktop lays every action out flat; mobile is `display: contents` and renders a count readout plus one `Actions ▾` menu as members of the filter row, because the flat bar is 891px of content in a 336px row (14C) | `src/components/feature/BulkActionBar.jsx` |
 | The lorebook tab switcher at the top | `src/components/feature/LorebookSwitcher.jsx` |
 | The full lorebook management panel | `src/components/feature/LorebookPanel.jsx` |
 | The "new lorebook name" popup | `src/components/feature/LorebookNameModal.jsx` |
@@ -73,7 +78,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | Mobile entry detail view (tapping an entry on mobile) | `src/components/feature/EntryDetailPanel.jsx` |
 | The landing page (shown before opening a lorebook), including its *What's new* panel | `src/components/feature/Lander.jsx` |
 | The "what changed" notice shown once per release on return | `src/components/feature/UpdateNotice.jsx` |
-| The click-through tour of a release's annotated screenshots, opened from that notice or from *Take the tour* | `src/components/feature/FeatureTour.jsx` |
+| The guided tour of a release's new features — spotlights a real control and lets you tap it, opened from the update notice or *Take the tour* | `src/components/feature/FeatureTour.jsx` (state in `src/hooks/use-tour.js`) |
 | Whether the notice is due, and the release it should show — reads the lorebook index from storage rather than the store, since the store hydrates after first render and a first-time user would otherwise be shown an update notice | `src/hooks/use-release-notes.js` |
 
 ### UI Primitives

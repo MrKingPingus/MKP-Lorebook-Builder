@@ -55,6 +55,16 @@ export const useUiStore = create((set) => ({
   findFocusNonce:        0,      // bumped by the find/replace hotkey; SearchBar enters find-replace mode + focuses the find field
   pendingImportPick:     false,  // set by the import hotkey; AppendImportPanel switches to file mode + opens the OS picker, then clears
   pendingSettingsSection: null,  // accordion section id to auto-open next time the Settings panel mounts (deep-link); cleared once consumed
+  mobileTitleMenuOpen: false,    // mobile-only — the title menu (lorebooks + import/export) opened from the lorebook name
+  mobileTitleMenuTab:  'lorebooks', // 'lorebooks' | 'import-export' — which tab that menu is showing
+  referenceChooserOpen: false,   // the reference chooser. Both surfaces open this one component: the
+                                 //   mobile title menu's footer button and the hotbar's Reference action
+                                 //   (and on desktop, the Lorebooks panel button). One pairing UI, three doors.
+  tourOpen:            false,    // the guided feature tour. Lives here rather than in Lander's local
+                                 //   state because the tour spotlights the *builder* — it has to outlive
+                                 //   the lander that launches it. Deliberately absent from
+                                 //   closeAllLayers() below: the tour is not a layer to be shut when
+                                 //   another one opens, it is the thing doing the opening.
 
   setActiveMenuPanel: (id) => set((s) => ({ activeMenuPanel: s.activeMenuPanel === id ? null : id })),
   setPanelAnimating: (panelAnimating) => set({ panelAnimating }),
@@ -185,6 +195,37 @@ export const useUiStore = create((set) => ({
   openExportMenuCentered:   ()                      => set({ exportMenuAnchor: 'center' }),
   setPendingSettingsSection: (pendingSettingsSection) => set({ pendingSettingsSection }),
   openSettingsSection:      (section)                => set({ activeMenuPanel: 'settings', pendingSettingsSection: section }),
+  openMobileTitleMenu:  (tab = 'lorebooks') => set({ mobileTitleMenuOpen: true, mobileTitleMenuTab: tab }),
+  closeMobileTitleMenu: ()    => set({ mobileTitleMenuOpen: false }),
+  setMobileTitleMenuTab: (mobileTitleMenuTab) => set({ mobileTitleMenuTab }),
+  setReferenceChooserOpen: (referenceChooserOpen) => set({ referenceChooserOpen }),
+  setTourOpen: (tourOpen) => set({ tourOpen }),
+
+  // Every dismissable layer, shut at once.
+  //
+  // Called when the viewport crosses the mobile breakpoint (see
+  // hooks/use-close-layers-on-breakpoint.js). The layers do not survive the
+  // crossing because most of them are a different shape on each side of it —
+  // the settings panel is a 320px column above the breakpoint and a full-screen
+  // overlay below, and nothing reconciles the two mid-drag. Closing is the one
+  // rule that needs no per-layer re-posing logic, and a layer the user opened
+  // before resizing the window is not one they are still reading.
+  //
+  // The list lives here, next to the fields it clears, so adding a layer and
+  // forgetting to close it is a one-file mistake rather than a two-file one.
+  closeAllLayers: () => set({
+    activeMenuPanel:       null,
+    showAppendImport:      false,
+    exportMenuAnchor:      null,
+    activeEntryId:         null,
+    peekReferenceEntryId:  null,
+    referenceBrowseOpen:   false,
+    pickFromReferenceMode: false,
+    compareEntryId:        null,
+    keyboardHelpOpen:      false,
+    mobileTitleMenuOpen:   false,
+    referenceChooserOpen:  false,
+  }),
 
   setFolderFilter: (folderFilter) => set({ folderFilter }),
   toggleFolderFilter: (folderId) =>

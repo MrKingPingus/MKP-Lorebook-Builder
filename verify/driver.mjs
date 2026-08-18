@@ -93,33 +93,109 @@ export async function importBookAsNew(page, fixturePath) {
 // The variant is loaded FIRST because importing a book as new makes it active —
 // so importing the primary second leaves the primary active, which is the
 // arrangement every crosstalk scenario wants. Returns the two book names.
+// Open the reference chooser through Settings. That route exists on both sides
+// of the breakpoint, which the old one did not: before 14B the only picker in
+// the app was a `<select>` inside the Lorebooks side panel, and mobile had no
+// way to reach that panel at all — the reason this file had no mobile crosstalk
+// pathway, and the reason #123 looked like a broken feature rather than an
+// unreachable one.
+export async function openReferenceChooser(page) {
+  if ((await page.locator('.ref-chooser').count()) > 0) return;
+  await openSettings(page);
+  // Settings is an accordion and collapsed sections render no children, so the
+  // section has to be open before the button inside it exists in the DOM.
+  const section = await openSettingsSection(page, 'Layout & Controls');
+  await section.locator('.settings-action-btn').first().click();
+  await page.locator('.ref-chooser').waitFor({ timeout: 4000 });
+}
+
+// Import both fixtures and pair the second as reference. Viewport-agnostic:
+// the chooser and the route to it are the same on both sides of the
+// breakpoint, so what differs is only which surface renders once paired —
+// `.reference-panel` on desktop, the two-segment role bar on mobile.
 export async function pairCrosstalk(page) {
   await openBuilderWithFixture(page, VARIANT_FIXTURE);
   await importBookAsNew(page, FIXTURE);
 
-  // Turn on the reference panel. Settings is an accordion and collapsed
-  // sections don't render their children, so the section has to be opened
-  // before its controls exist in the DOM.
-  await openSettings(page);
-  await openSettingsSection(page, 'Layout & Controls');
-  const toggle = page.locator('label:has-text("Show reference panel") input[type="checkbox"]');
-  await toggle.waitFor({ timeout: 4000 });
-  await toggle.check();
-  await page.keyboard.press('Escape');
-  await page.locator('.reference-panel').waitFor({ timeout: 4000 });
+  await openReferenceChooser(page);
 
-  // Pick the variant as the reference. The picker excludes the active book, so
-  // the only remaining option is the one we want.
-  const picker = page.locator('.reference-panel .pane-header-picker');
-  const options = await picker.locator('option').evaluateAll(
-    (els) => els.map((e) => ({ value: e.value, label: e.textContent.trim() })).filter((o) => o.value)
-  );
-  if (options.length === 0) throw new Error('No reference lorebook options available');
-  await picker.selectOption(options[0].value);
-  await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+  const rows = page.locator('.ref-chooser-row');
+  if ((await rows.count()) === 0) throw new Error('No reference lorebook candidates available');
+  const referenceName = (await rows.first().locator('.ref-chooser-row-name').innerText()).trim();
+  await rows.first().click();
+  await page.locator('.ref-chooser').waitFor({ state: 'detached', timeout: 4000 });
+
+  // The chooser is reached through Settings, which on mobile is a full-screen
+  // overlay covering everything under test. Escape does *not* close it — the
+  // 14A sweep caught that — so it goes out through its own control.
+  if ((await page.locator('.menu-panel--expanded').count()) > 0) {
+    await page.locator('.menu-panel-close').first().click();
+    await page.locator('.menu-panel--expanded').waitFor({ state: 'detached', timeout: 4000 });
+  }
+
+  if (isMobileViewport(page)) {
+    await page.locator('.role-swap-segmented').waitFor({ timeout: 4000 });
+  } else {
+    await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+  }
 
   const activeName = await page.locator('.build-panel .pane-header-picker').inputValue().catch(() => null);
-  return { activeName, referenceName: options[0].label };
+  return { activeName, referenceName };
+}
+
+// The mobile title menu, opened the way a phone user opens it — by tapping the
+// lorebook name. Works in both role-bar poses: solo renders
+// `.title-field--mobile` in the window header (14C moved it there), and once a
+// reference is paired the role bar's active segment carries the same door.
+export async function openMobileTitleMenu(page, tab) {
+  if ((await page.locator('.mtm').count()) === 0) {
+    await tap(page, page.locator('.title-field--mobile, .role-swap-segment-content--btn').first());
+    await page.locator('.mtm').waitFor({ timeout: 4000 });
+  }
+  if (tab) {
+    await tap(page, page.locator('.mtm-tab', { hasText: tab }).first());
+    await settle(page, 200);
+  }
+}
+
+export async function closeMobileTitleMenu(page) {
+  if ((await page.locator('.mtm').count()) === 0) return;
+  await tap(page, page.locator('.mtm-close').first());
+  await page.locator('.mtm').waitFor({ state: 'detached', timeout: 4000 });
+}
+
+// Pair a reference the way a phone user actually would: title menu → the
+// book's ⋯ menu → "Pair as reference". Distinct from pairCrosstalk above,
+// which goes through Settings — this is the route the mobile UI is built
+// around, and the one that has to keep working.
+export async function pairCrosstalkMobile(page) {
+  await openBuilderWithFixture(page, VARIANT_FIXTURE);
+  await importBookAsNew(page, FIXTURE);
+  await settle(page, 300);
+
+  await openMobileTitleMenu(page);
+
+  // The active book's row offers no pairing item (a book cannot reference
+  // itself), so find the row that does.
+  const rows = page.locator('.mtm-row-wrap');
+  const count = await rows.count();
+  for (let i = 0; i < count; i += 1) {
+    const row = rows.nth(i);
+    await tap(page, row.locator('.mtm-row-menu-btn').first());
+    await settle(page, 150);
+    const pairItem = row.locator('.mtm-row-menu-item', { hasText: 'Pair as reference' });
+    if ((await pairItem.count()) > 0) {
+      const referenceName = (await row.locator('.mtm-row-name').innerText()).trim();
+      await tap(page, pairItem.first());
+      await settle(page, 300);
+      await closeMobileTitleMenu(page);
+      await page.locator('.role-swap-segmented').waitFor({ timeout: 4000 });
+      return { referenceName };
+    }
+    await tap(page, row.locator('.mtm-row-menu-btn').first()); // close and try the next
+    await settle(page, 120);
+  }
+  throw new Error('No lorebook row offered "Pair as reference"');
 }
 
 // Expand a Settings accordion section by its visible title. Collapsed sections
@@ -179,12 +255,130 @@ export async function closeScaleMenu(page) {
 // select mode the header also carries a type-change dropdown that calls
 // stopPropagation, and in a narrow crosstalk pane that dropdown sits right
 // under the card's midpoint, so a centre-click silently selects nothing.
+//
+// The mobile card is a different component with different internals — there is
+// no `.entry-label` on it at all — so the label target is chosen per viewport.
 export async function selectCards(page, containerSelector, indices) {
+  const label = isMobileViewport(page) ? '.entry-card-mobile-name' : '.entry-label';
   for (const i of indices) {
-    await page.locator(`${containerSelector} .entry-card`).nth(i).locator('.entry-label').first().click();
+    await page.locator(`${containerSelector} .entry-card`).nth(i).locator(label).first().click();
     await settle(page, 80);
   }
   await settle(page, 120);
+}
+
+// ── Mobile ───────────────────────────────────────────────────────────────────
+// The mobile layout is not a reflow of the desktop one: roughly a third of the
+// component tree branches on `useMobile()`, and two components
+// (ReferenceBrowseSheet, ReferenceEntryOverlay) exist only here. The pathways
+// below are the mobile equivalents of the desktop ones above.
+
+// The app's own breakpoint, from src/hooks/use-mobile.js. Kept in sync by hand;
+// there is no import path from verify/ into src/ constants.
+export const MOBILE_BREAKPOINT = 768;
+
+export function isMobileViewport(page) {
+  return (page.viewportSize()?.width ?? Infinity) < MOBILE_BREAKPOINT;
+}
+
+// Touch dispatch goes through a CDP session per page, and that session must have
+// touch emulation switched on explicitly — `Input.dispatchTouchEvent` is
+// silently dropped without it, which looks exactly like the app ignoring the
+// gesture. Playwright's own `hasTouch` context flag does not cover our session.
+const touchSessions = new WeakMap();
+
+async function touchSession(page) {
+  let session = touchSessions.get(page);
+  if (!session) {
+    session = await page.context().newCDPSession(page);
+    await session.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    touchSessions.set(page, session);
+  }
+  return session;
+}
+
+// Hold a touch on an element long enough to trip the app's long-press threshold
+// (THESAURUS_LONG_PRESS_MS, 450ms). Produces the real event sequence a phone
+// does — pointerdown/touchstart … pointerup/touchend/click, all with
+// pointerType 'touch' — which matters because the long-press handlers deliberately
+// suppress the trailing click, and a mouse-based fake would not prove that works.
+export async function longPress(page, locator, ms = 700) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('longPress: target not visible');
+  const session = await touchSession(page);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x, y, id: 1, radiusX: 12, radiusY: 12, force: 1 }],
+  });
+  await settle(page, ms);
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await settle(page, 250);
+}
+
+// A real touch tap, as opposed to a synthetic click.
+export async function tap(page, locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('tap: target not visible');
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await settle(page, 250);
+}
+
+// Open an entry's mobile detail panel by list position.
+//
+// `.entry-detail-panel` is always mounted — only the `--open` modifier says
+// whether it is actually showing — so anything checking for it must look for the
+// modifier, not the element.
+export async function openEntryDetail(page, index = 0) {
+  await tap(page, page.locator('.entry-card').nth(index));
+  await page.locator('.entry-detail-panel--open').waitFor({ timeout: 4000 });
+}
+
+export async function closeEntryDetail(page) {
+  await tap(page, page.locator('.entry-detail-back'));
+  await page.locator('.entry-detail-panel--open').waitFor({ state: 'detached', timeout: 4000 });
+}
+
+export function detailOpen(page) {
+  return page.locator('.entry-detail-panel--open').count().then((n) => n > 0);
+}
+
+// Open the mobile "Filter ▾" popover — the type pills, Group-by-type and the
+// folder filter are all collapsed into it below the breakpoint.
+export async function openFilterPopover(page) {
+  await tap(page, page.locator('.type-filter-button'));
+  await page.locator('.type-filter-popover').waitFor({ timeout: 4000 });
+}
+
+// Move the pointer somewhere harmless.
+//
+// A real phone has no hover, but Playwright's mouse stays wherever the last
+// click left it, and at desktop widths that can sit over a hover-activated
+// surface — the FAB quick menu opens this way — so a sweep would report a layer
+// no user could have opened.
+export async function parkMouse(page) {
+  await page.mouse.move(1, 1);
+  await settle(page, 350);
+}
+
+// Dismiss a popover the way the app expects: a pointerdown outside it. Note
+// that Escape does not close every mobile layer, so this is not interchangeable
+// with a keypress.
+export async function dismissPopover(page) {
+  await page.mouse.click(5, Math.round((page.viewportSize()?.height ?? 800) / 2));
+  await settle(page, 250);
+}
+
+// Seed localStorage before the app boots, for poses that depend on prior state —
+// notably a desktop-sized window persisted from a previous session then reopened
+// on a phone. Must be called before the first navigation to BASE_URL.
+export async function seedStorage(page, entries) {
+  await page.addInitScript((pairs) => {
+    for (const [k, v] of Object.entries(pairs)) {
+      window.localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+    }
+  }, entries);
 }
 
 // Every fixed wait in the suite goes through here so there's one dial for all
@@ -200,7 +394,15 @@ export function settle(page, ms) {
 
 export async function enterSelectMode(page) {
   await page.locator('.search-mode-select').first().selectOption('select');
-  await page.locator('.bulk-action-bar').first().waitFor({ timeout: 4000 });
+  // Two different things to wait for since 14C. On mobile the bulk bar is
+  // `display: contents` — its children lay out in the filter row rather than in
+  // a box of its own — so it has no bounding box and Playwright reads it as
+  // hidden. The Actions button is the thing that actually appears there.
+  if (isMobileViewport(page)) {
+    await page.locator('.bulk-actions-btn').first().waitFor({ timeout: 4000 });
+  } else {
+    await page.locator('.bulk-action-bar').first().waitFor({ timeout: 4000 });
+  }
 }
 
 // Export the active book as JSON via the hotbar Export button, capturing the

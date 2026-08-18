@@ -2,8 +2,10 @@
 // New Folder (desktop only).
 // On mobile the type pills + Group-by-type are collapsed into a single "Filter ▾"
 // button that opens a popover with checkboxes — saves two rows of vertical chrome.
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { createPortal }    from 'react-dom';
+import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import { ENTRY_TYPES }     from '../../constants/entry-types.js';
 import { useTypeFilter }   from '../../hooks/use-type-filter.js';
 import { useUi }           from '../../hooks/use-ui.js';
@@ -41,15 +43,12 @@ export function TypeFilterBar({ entries }) {
   const [anchor, setAnchor] = useState(null);
   const btnRef = useRef(null);
 
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    // Consume Escape (document fires before the window dispatcher) so it closes
-    // this popover only, not a dismissable mode beneath it.
-    function onKey(e) { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
+  // Close on Escape. This used to be a private document listener that consumed
+  // the event with stopPropagation — which got the ordering right by bypassing
+  // the mechanism built for exactly this, and so was the one layer that behaved
+  // correctly for the wrong reason. The stack gives the same answer: `popover`
+  // outranks every mode beneath it, so only this closes.
+  useDismissLayer('type-filter-popover', open, DISMISS_PRIORITY.popover, () => setOpen(false));
 
   function openPopover() {
     setAnchor(btnRef.current?.getBoundingClientRect() ?? null);

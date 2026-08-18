@@ -34,12 +34,33 @@
   --blue:     #60a5fa;
   --gold:     #eab308;
   --accent:        #ef4444;
-  /* Semantic color tokens — see docs/constants-reference.md for the rule.
+  /* §DESTRUCTIVE
+     Semantic color tokens — see docs/constants-reference.md for the rule.
      destructive  = irreversible/overwrite actions (Replace, Delete, Apply, Confirm).
      passive-agree = stateful toggle is on; user actively chose this state.
-     accent kept as the primary-emphasis exception (FAB, lander hero buttons). */
-  --destructive:        #ef4444;
-  --destructive-hover:  #dc2626;
+     accent kept as the primary-emphasis exception (FAB, lander hero buttons).
+
+     **The treatment is half the rule.** Primary actions are filled at rest;
+     destructive ones are outlined and fill only on hover. Two reds cannot be
+     told apart by hue alone, so fill-versus-outline is what actually carries
+     "create" versus "destroy" — and it keeps working in the high-contrast
+     theme, where the two are deliberately the same colour, and under a custom
+     accent the user may have set to anything at all.
+
+     The one standing exception is `.import-flow-confirm--danger`, the terminal
+     Replace in the import flow: it is the primary action of a screen that
+     exists to confirm it, with no create-action anywhere near it, and
+     outlining it would make the dangerous choice quieter than the Back button
+     beside it. */
+  /* Hotter and more saturated than --accent (#ef4444), and deliberately not
+     equal to it. They were the same value in every theme, so a filled ＋ New
+     and a Delete were the same red — always true, but 14B filled more controls
+     with accent and made it easy to meet. Hue alone cannot fully separate two
+     reds, so the treatment carries the rest of the weight: destructive controls
+     are outlined and fill only on hover, while primary actions are filled at
+     rest. See §DESTRUCTIVE. */
+  --destructive:        #ff2e2e;
+  --destructive-hover:  #d61f1f;
   --passive-agree:        #60a5fa;
   --passive-agree-hover:  #3b82f6;
   --focus-border:  #a0b5d6;
@@ -104,8 +125,8 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --blue:     #2563eb;
   --gold:     #ca8a04;
   --accent:        #dc2626;
-  --destructive:        #dc2626;
-  --destructive-hover:  #b91c1c;
+  --destructive:        #e60000;
+  --destructive-hover:  #b00000;
   --passive-agree:        #2563eb;
   --passive-agree-hover:  #1d4ed8;
   --focus-border:  #2563eb;
@@ -130,6 +151,10 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --blue:     #0033cc;
   --gold:     #7a5c00;
   --accent:        #b3001b;
+  /* Deliberately still equal to --accent. In high contrast, hue is the least
+     reliable signal and every colour has to clear a contrast bar first; the
+     outline-vs-fill treatment separates create from destroy without asking
+     anyone to distinguish two dark reds. */
   --destructive:        #b3001b;
   --destructive-hover:  #7a0012;
   --passive-agree:        #0033cc;
@@ -148,8 +173,13 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --surface3: color-mix(in srgb, var(--surface) 84%, var(--text));
   --border2:  color-mix(in srgb, var(--border) 65%, var(--text));
   --muted2:   color-mix(in srgb, var(--muted) 60%, var(--text));
-  --destructive:        var(--accent);
-  --destructive-hover:  color-mix(in srgb, var(--accent) 82%, #000);
+  /* Fixed rather than derived, unlike everything else here. Deriving it from
+     --accent is precisely the collision: a user whose accent is red would get a
+     Delete button identical to their New button, and one whose accent is green
+     would get a green Delete. Destructive is the one role that must not follow
+     a preference. */
+  --destructive:        #e5252b;
+  --destructive-hover:  #b81b20;
   --passive-agree:        var(--blue);
   --passive-agree-hover:  color-mix(in srgb, var(--blue) 82%, #000);
   --focus-border:  var(--blue);
@@ -211,7 +241,7 @@ input:focus, textarea:focus, select:focus {
 /* Disable the iOS double-tap-zoom delay on tappable surfaces. Pinch-to-zoom
    still works; this only kills the gesture that fires when two taps land
    close in time (e.g. tap chip → tap row in popover). */
-button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
+button, [role="button"], .chip, .switcher-item,
 .entry-card, .reference-entry-card, .chip-conflict-entry {
   touch-action: manipulation;
 }
@@ -220,7 +250,16 @@ button, [role="button"], .chip, .switcher-item, .lorebook-switch-item,
 /* --- App root --- */
 .app-root {
   width: 100vw;
+  /* `100vh` on iOS Safari is the LARGE viewport — it excludes the collapsing URL
+     bar — so the bottom ~60-90px of the app sat under the browser's own chrome,
+     which is exactly where the mobile hotbar and FAB live. `dvh` tracks the
+     visible viewport instead. The usual objection to `dvh` (the height changing
+     as the bar collapses) does not apply here: this element is `overflow: hidden`
+     and the entry list scrolls inside it, so the page never scrolls and the bar
+     never collapses. The `100vh` line above it is the fallback for browsers
+     without `dvh`. */
   height: 100vh;
+  height: 100dvh;
   position: relative;
   overflow: hidden;
   background: var(--bg);
@@ -428,6 +467,22 @@ img.logo-icon {
   color: var(--muted);
   font-size: 0.625rem;
   flex-shrink: 0;
+}
+
+/* The same control on a phone, in the header rather than in its own bar.
+   Desktop's is absolutely centred inside `.lorebook-name-sizer` and sized to
+   its contents; on a phone it is an ordinary flex child taking whatever the
+   logo mark, the storage ring and the gear leave. Deliberately the same
+   treatment — accent ring, name, caret — because it is the same control
+   opening the same destinations, and matching desktop is what made it legible
+   as a button in the first place. */
+.title-field--mobile {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 4px 12px;
+  font-size: 0.875rem;
+  color: var(--text);
 }
 
 /* Lorebook count badge */
@@ -1276,10 +1331,10 @@ img.logo-icon {
   font-style: italic;
 }
 
-/* Consolidated lorebook role bar (mobile). In crosstalk mode renders as
-   two segments — ACTIVE | REFERENCE — with inline rename on active and a
-   ⋯ menu on reference (Change / Browse / Unpair). Outside crosstalk uses
-   the .lorebook-bar-solo variant below. */
+/* Consolidated lorebook role bar (mobile) — the crosstalk pose only, since
+   14C. Two segments, ACTIVE | REFERENCE; the active one opens the title menu
+   and the reference one has a ⋯ menu (Change / Browse / Unpair). Outside
+   crosstalk this renders nothing and the title lives in the window header. */
 .role-swap-segmented {
   display: flex;
   margin: 8px 12px 0;
@@ -1357,6 +1412,36 @@ img.logo-icon {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+/* The active segment's content, as a button — the same door the solo bar
+   offers. Full segment height, so the tap target is real rather than an
+   overlay straining against a 44px bar that clips. Deliberately does NOT clip:
+   the ellipsis lives on `.role-swap-segment-name` inside. */
+.role-swap-segment-content--btn {
+  align-self: stretch;
+  /* Absorb the segment's own padding rather than sitting inside it: the bar is
+     44px tall and the segment's 6px/8px inset is the only thing between this
+     control and that full height. Reclaiming it is what takes the target from
+     28px to the floor without growing the bar by a single pixel — which is the
+     hit-area-not-visual-size rule doing real work. */
+  margin: -6px -8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  justify-content: center;
+}
+.role-swap-segment-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.role-swap-segment-name-row > .role-swap-segment-name { min-width: 0; }
+
 .role-swap-segment-action {
   flex-shrink: 0;
   width: 28px;
@@ -1374,18 +1459,6 @@ img.logo-icon {
 .role-swap-segment-action:hover {
   background: rgba(255, 255, 255, 0.18);
 }
-.role-swap-rename-input {
-  font-size: 1rem;
-  font-weight: 600;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--focus-border);
-  border-radius: 3px;
-  padding: 2px 6px;
-  width: 100%;
-  min-width: 0;
-}
-
 /* Pick from Reference banner — replaces the role-swap segmented bar while
    in pose. Reminds the user the books are temporarily swapped and gives a
    one-tap Cancel path. The matching Cancel/Commit also live in
@@ -1439,6 +1512,147 @@ img.logo-icon {
   pointer-events: auto;
 }
 
+/* §REFERENCE-CHOOSER
+   The one pairing surface, opened from the mobile title menu footer, the
+   hotbar's Reference action, the Lorebooks panel and Settings. Centred rather
+   than anchored precisely because it has four callers — anchoring to any one
+   of them would put it somewhere odd for the other three. */
+.ref-chooser {
+  position: fixed;
+  z-index: 1000;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(560px, calc(100dvh - 64px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.ref-chooser-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ref-chooser-title { font-size: 0.875rem; font-weight: 700; color: var(--text); }
+.ref-chooser-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.ref-chooser-close:hover { color: var(--text); }
+
+/* The sentence that says what the feature is. Leading, not buried — see the
+   component's header comment. */
+.ref-chooser-blurb {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--muted2);
+}
+
+.ref-chooser-current {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ref-chooser-current-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ref-chooser-current-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-chooser-badge {
+  flex: none;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--passive-agree);
+  color: var(--bg);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.ref-chooser-current-actions { display: flex; gap: 8px; }
+.ref-chooser-btn {
+  flex: 1;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ref-chooser-btn:hover { background: var(--surface2); }
+.ref-chooser-btn--unpair { color: var(--destructive); border-color: var(--destructive); }
+
+.ref-chooser-none,
+.ref-chooser-empty {
+  padding: 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+.ref-chooser-list-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ref-chooser-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.ref-chooser-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.ref-chooser-row:hover { background: var(--surface3); border-color: var(--border2); }
+.ref-chooser-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-chooser-row-time { flex: none; font-size: 0.625rem; color: var(--muted); }
+
 /* Reference menu popover (Change / Browse / Unpair) */
 .role-swap-ref-menu {
   position: fixed;
@@ -1471,55 +1685,12 @@ img.logo-icon {
 }
 
 /* Solo variant — single row when crosstalk is off or no reference paired */
-.lorebook-bar-solo {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 8px 12px 0;
-  padding: 8px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+.lorebook-bar-caret {
+  flex: none;
+  font-size: 0.625rem;
+  color: var(--muted);
 }
-.lorebook-bar-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.lorebook-bar-rename-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--focus-border);
-  border-radius: 3px;
-  padding: 2px 6px;
-}
-.lorebook-bar-action {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted2);
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-.lorebook-bar-action:hover {
-  background: var(--border);
-  color: var(--text);
-}
+.role-swap-segment-content--btn:hover .lorebook-bar-caret { color: var(--text); }
 
 /* ============================================================
    Search Bar
@@ -1749,13 +1920,17 @@ img.logo-icon {
 .replace-all-btn:hover:not(:disabled) { background: #dc2626; }
 .replace-all-btn:disabled { opacity: 0.4; cursor: default; }
 
-/* Replace scope popover */
+/* Replace scope popover.
+   Portalled to the body and positioned by `use-anchored-position` (position,
+   left and top/bottom all arrive as inline style). It used to be an
+   absolutely-positioned child of `.replace-btn-wrap` with `right: 0`, which put
+   it at left −211 on a 390px phone — the wrapper sits at x=12 and the popover is
+   360 wide, so right-aligning it hung 211px off the left edge. Every ancestor up
+   to #root is `overflow: hidden`, so that part was clipped away rather than
+   scrollable. Width is capped here and narrowed to the viewport by the caller. */
 .replace-scope-popover {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 260px;
-  max-width: 360px;
+  width: 360px;
+  max-width: calc(100vw - 16px);
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
@@ -1860,16 +2035,117 @@ img.logo-icon {
 }
 
 /* Mobile find-replace second row */
+/* The mobile second row: mode select, whatever the mode adds, and the type
+   filter. `container-type: inline-size` because the select-mode readout drops
+   its trailing word when this row runs out of room — and what runs out of room
+   is the row, not the viewport, so a media query would be measuring the wrong
+   box. */
 .search-bar-row2 {
+  position: relative;   /* anchors the Actions menu, which escapes no further */
   display: flex;
+  flex-wrap: wrap;      /* lets the chip row break onto a line of its own */
   align-items: center;
   gap: 6px;
   margin-top: 6px;
+  container-type: inline-size;
 }
+.search-bar-row2 .bulk-action-chips { flex-basis: 100%; }
 .search-bar-row2 .replace-btn-wrap    { flex-shrink: 0; }
 .search-bar-row2 .replace-all-btn    { white-space: nowrap; }
 .search-bar-row2 .search-mode-select { flex-shrink: 0; }
 .search-bar-row2 .match-counter      { flex: 1; min-width: 0; }
+/* The type filter comes in as a flex child of this row rather than owning a
+   band below it (#122 ask 1). It keeps its own wrapper so the popover anchor
+   and the badge logic are untouched — only the box it sits in changed. */
+.search-bar-row2 .type-filter-bar--mobile { padding: 0; flex-shrink: 0; }
+
+/* In select mode the control only ever displays "Select", so it does not need
+   the width that fitting "Find/Replace" demands — and that width is what the
+   count readout beside it needs. */
+/* `min-width` alone does nothing here — a native select sizes itself to its
+   widest *option*, which is "Find/Replace", so the closed control was 140px
+   whatever the minimum said. The width has to be set outright.
+   `--slim` is select mode, where the control only ever reads "Select".
+   `--fr` is find/replace, where it reads "Find/Replace" and so needs more —
+   just not the 140px that fitting that option *plus* the widest one demands. */
+.search-mode-select--slim { min-width: 0; width: 96px; }
+.search-mode-select--fr   { min-width: 0; width: 122px; }
+
+/* §BULK-ACTIONS-MOBILE
+   Select mode's bulk bar on a phone: a count readout and one Actions menu,
+   sharing the mode row rather than wrapping into 132px of buttons below it. */
+/* Doubled class so this beats the plain `.bulk-action-bar` block further down
+   the file — same specificity otherwise, and source order would have handed it
+   `display: flex` back. */
+.bulk-action-bar--mobile.bulk-action-bar--mobile {
+  display: contents;
+}
+/* `display: contents` above means these three are direct flex children of
+   `.search-bar-row2`, so they lay out in the row alongside the mode select and
+   the filter — without the component having to hand its pieces upward. The
+   chip row is the exception; it needs to break onto its own line. */
+.bulk-count-readout {
+  /* Shrink if it must, never grow: growing made it absorb all the row's slack
+     and park a few characters in the middle of an empty box, which read like a
+     text input sitting between two controls. */
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--passive-agree);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+@container (max-width: 355px) { .bulk-count-word { display: none; } }
+
+.bulk-actions-btn {
+  flex-shrink: 0;
+  min-height: 33px;
+  padding: 5px 7px;
+  background: var(--surface2);
+  border: 1px solid var(--passive-agree);
+  border-radius: var(--radius);
+  color: var(--passive-agree);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bulk-actions-btn--open { background: var(--surface3); }
+
+.bulk-actions-menu {
+  position: absolute;
+  z-index: 1000;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.bulk-actions-menu-item {
+  min-height: var(--touch-floor);
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.bulk-actions-menu-item:hover:not(:disabled) { background: var(--surface3); }
+.bulk-actions-menu-item:disabled { color: var(--muted); cursor: default; }
+.bulk-actions-menu-divider { height: 1px; background: var(--border); }
 
 /* Select-mode counter (e.g. "3 selected") reuses .match-counter typography */
 .match-counter--select { color: var(--accent); }
@@ -3364,6 +3640,24 @@ img.logo-icon {
   transition: color var(--transition);
 }
 .import-flow-swap:hover { color: var(--text); }
+/* The one that sits under the drop zone. A separated, full-height button
+   rather than an underlined link sharing an edge with the file picker — see
+   the component for why the near-miss mattered. The margin is the gap. */
+.import-flow-swap--paste {
+  align-self: stretch;
+  margin-top: 10px;
+  min-height: var(--touch-floor);
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.import-flow-swap--paste:hover { background: var(--surface3); border-color: var(--border2); color: var(--text); }
 .import-flow-textarea {
   width: 100%;
   min-height: calc(110px * var(--ui-scale));
@@ -3536,69 +3830,6 @@ img.logo-icon {
   color: var(--muted);
 }
 
-.lorebook-switch-popover {
-  min-width: 200px;
-  max-width: 260px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  z-index: 9000;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.lorebook-switch-popover-title {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  padding: 2px 4px 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.lorebook-switch-empty {
-  font-size: 0.75rem;
-  color: var(--muted);
-  padding: 4px 6px;
-}
-.lorebook-switch-list {
-  max-height: 240px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.lorebook-switch-list::-webkit-scrollbar { width: 4px; }
-.lorebook-switch-list::-webkit-scrollbar-track { background: transparent; }
-.lorebook-switch-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-.lorebook-switch-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: var(--radius);
-  font-size: 0.75rem;
-  color: var(--text);
-  text-align: left;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background var(--transition);
-}
-.lorebook-switch-item:hover { background: var(--surface3); }
-.lorebook-switch-item-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-.lorebook-switch-item-time {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  flex-shrink: 0;
-}
 .chip-label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3682,6 +3913,57 @@ img.logo-icon {
   user-select: none;
 }
 .entry-card--mobile:active { opacity: 0.7; }
+
+/* Condensed select-mode row: name and selection state, nothing else. 46px
+   against the full card's 81px, which is what takes select mode from two
+   visible rows to eight. Still clear of the 44px touch floor, so this is a
+   density change rather than an ergonomics regression. */
+.entry-card--mobile-condensed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch-floor);
+  padding: 0 12px;
+}
+.entry-card-mobile-name--condensed {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+}
+/* The checkbox is drawn rather than rendered as an <input>: the whole row is
+   already the toggle, and a real checkbox inside it would be a second control
+   claiming the same tap. */
+.entry-card-mobile-tick {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: transparent;
+}
+.entry-card-mobile-tick--on {
+  border-color: var(--passive-agree);
+  background: var(--passive-agree);
+  position: relative;
+}
+.entry-card-mobile-tick--on::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+/* The tick sits on the full card's first line rather than above it. */
+.entry-card--mobile > .entry-card-mobile-tick--on {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+}
+.entry-card--mobile { position: relative; }
 
 .entry-card-mobile-index {
   font-size: 0.6875rem;
@@ -4831,6 +5113,47 @@ img.logo-icon {
 }
 .settings-label { font-size: 0.75rem; font-weight: 600; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
 .settings-hint { font-size: 0.6875rem; color: var(--muted); line-height: 1.6; }
+/* A settings control that is a *route* rather than a value — it opens a
+   surface instead of changing something in place. Reads as a button, not a
+   row with a widget on the end, so it doesn't get mistaken for a toggle. */
+.settings-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--touch-floor);
+  padding: 8px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.settings-action-btn:hover { background: var(--surface3); border-color: var(--border2); }
+
+/* The route back to the lander, at the very foot of the panel. Given room
+   above it so it reads as leaving rather than as one more setting. */
+.settings-lander-btn {
+  margin: 20px 0 4px;
+  padding: 12px;
+  min-height: var(--touch-floor);
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.settings-lander-btn:hover { color: var(--text); border-color: var(--text); }
+
 .settings-row { display: flex; gap: 12px; }
 .settings-row label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted2); }
 .settings-row input[type="number"] { width: 72px; padding: 3px 6px; font-size: 0.75rem; }
@@ -5591,6 +5914,505 @@ kbd {
 /* ============================================================
    Mobile — max-width: 767px
    ============================================================ */
+/* §MOBILE-TITLE-MENU
+   Full-screen because 390px has no room for a dropdown carrying two
+   destinations — and because this is a place you *go*, not a thing you peek
+   at. Sized in dvh for the same reason .app-root is: 100vh on iOS Safari is
+   the large viewport, so the footer would sit under the URL bar. */
+.mtm {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  height: 100vh;   /* fallback */
+  height: 100dvh;
+}
+.mtm-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.mtm-tabs { display: flex; flex: 1; gap: 6px; min-width: 0; }
+.mtm-tab {
+  flex: 1;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted2);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+/* The active tab takes the accent, matching the FAB and ＋ New so the three
+   read as one family and all follow a custom theme. */
+.mtm-tab--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.mtm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: transparent;
+  border: none;
+  color: var(--muted2);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mtm-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mtm-sort { display: flex; gap: 6px; }
+
+.mtm-row-wrap { display: flex; flex-direction: column; }
+.mtm-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.mtm-row--active { border-color: var(--passive-agree); }
+.mtm-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.mtm-row-main:disabled { cursor: default; }
+.mtm-row-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A badge only has to be recognised after it has been explained — which the
+   reference chooser does — so unlike a bare glyph it can be this terse. */
+.mtm-row-badge {
+  flex: none;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--passive-agree);
+  color: var(--bg);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.mtm-row-time { flex: none; font-size: 0.625rem; color: var(--muted); }
+.mtm-row-menu-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--muted2);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.mtm-row-menu-btn:hover { color: var(--text); }
+.mtm-rename-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--focus-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.mtm-row-menu {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0 0 12px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.mtm-row-menu-item {
+  min-height: var(--touch-floor);
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.mtm-row-menu-item:last-child { border-bottom: none; }
+.mtm-row-menu-item:hover { background: var(--surface2); }
+.mtm-row-menu-item--danger { color: var(--destructive); }
+
+.mtm-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0 12px;
+  padding: 10px;
+  background: var(--surface3);
+  border: 1px solid var(--destructive);
+  border-radius: var(--radius);
+}
+.mtm-confirm-label { font-size: 0.75rem; color: var(--text); }
+.mtm-confirm-actions { display: flex; gap: 8px; }
+.mtm-confirm-btn {
+  flex: 1;
+  min-height: var(--touch-floor);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+/* Outlined at rest, filled on hover — the same treatment the desktop title
+   menu's delete confirm already used. The two menus offer the same action on
+   the same object, so they should not look different while doing it. */
+.mtm-confirm-btn--danger {
+  background: transparent;
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+.mtm-confirm-btn--danger:hover { background: var(--destructive); color: #fff; }
+
+.mtm-section { display: flex; flex-direction: column; gap: 8px; }
+.mtm-section-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mtm-section-note { font-size: 0.625rem; text-transform: none; letter-spacing: 0; }
+.mtm-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.mtm-filename-row { display: flex; align-items: center; gap: 8px; }
+.mtm-filename-row label { flex: none; font-size: 0.6875rem; color: var(--muted2); }
+.mtm-filename-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 1rem;
+}
+.mtm-btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mtm-btn {
+  flex: 1 1 calc(50% - 4px);
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mtm-btn--outline { background: transparent; color: var(--muted2); }
+.mtm-btn:hover { background: var(--surface3); border-color: var(--border2); }
+
+.mtm-foot {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.mtm-foot-btn {
+  flex: 1;
+  min-height: var(--touch-floor);
+  padding: 10px;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mtm-foot-btn--ref {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+}
+/* Primary action, so it matches the FAB rather than competing with it. */
+.mtm-foot-btn--new {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+}
+
+/* §TOUCH-FLOOR */
+/* The 44px hit-area floor, as two opt-in utilities. See
+   constants/viewport.js for why this is expressed as hit area and not as
+   min-height — the short version is that growing 57 controls visually would
+   fight 14C's reclaiming of 238px of chrome, and growing their *targets*
+   costs no layout height at all.
+
+   .touch-floor      — stretches an invisible tap region out from the control
+                       to the floor in both axes, without moving the control or
+                       changing the row it sits in. For small glyph buttons
+                       inside a taller row (⋯, ✏️, ×, chips).
+   .touch-floor-box  — the honest version: the control really is 44px. For
+                       controls that sit alone and have the room, where a
+                       stretched overlay would just overlap its neighbours.
+
+   `position: relative` is on the utility itself, so applying it to a control
+   whose own positioning matters is a visible mistake rather than a silent one.
+
+   **Three ways `.touch-floor` silently does nothing. All three were found by
+   measuring, none by reading, and the battery catches all three because it
+   probes hit area rather than reading getBoundingClientRect:**
+
+   1. **`overflow: hidden` on the control itself** — an element clips its own
+      ::before, so the overlay can never exceed the visual box. Truncating
+      labels are precisely the small controls that want a floor, so keep the
+      ellipsis one layer in: `.touch-floor` on the button, `overflow: hidden`
+      on a span inside it.
+   2. **Replaced elements generate no pseudo-element at all.** `<input>`,
+      `<select>` and `<textarea>` never render a ::before, so the class is pure
+      decoration on a form control — and the give-away is subtle, since the
+      computed style still reports the declared `max(100%, 44px)` rather than a
+      resolved pixel width. **Form controls have to actually grow**, which is
+      why the row heights below are set rather than overlaid.
+   3. **A neighbour that paints later wins the overlap.** Two overlays 39px
+      apart, or one overlay reaching into the entry list, resolve to whichever
+      element comes later in paint order. This one is a real finding rather
+      than a workaround to route around: an overlay that reaches into another
+      control is *stealing* that control's taps, so the honest fixes are to
+      widen the gap (dead space is fair game) or to grow the control. Never
+      raise the overlay's z-index to win the fight — that ships the theft. */
+:root { --touch-floor: 44px; }
+
+/* Both utilities are **gated to the mobile breakpoint**, and the class in the
+   JSX is therefore a declaration of intent rather than an effect: "this control
+   wants a floor where a floor is a thing". Three reasons it is scoped rather
+   than global:
+
+   1. Most of these controls are shared with desktop. A stretched overlay is
+      invisible but not inert — it takes clicks in the space around a control,
+      which on a 10px-gapped desktop header is a behaviour change nobody asked
+      for and no desktop scenario is watching (the invariants battery runs on
+      the mobile poses only).
+   2. `.touch-floor-box` changes layout outright, so applied globally it would
+      grow desktop chrome to phone proportions.
+   3. The app's mobile posture is width-derived everywhere else — `useMobile()`
+      is `innerWidth < 768` and nothing consults a pointer type — so a floor
+      that appeared on a wide touchscreen would be the one part of the UI
+      disagreeing with the rest about what device it is on. 767px here is the
+      same line as §MOBILE and `MOBILE_BREAKPOINT_PX`. */
+@media (max-width: 767px) {
+  .touch-floor {
+    position: relative;
+    /* Not `touch-action: manipulation` here — §RESET already sets that globally. */
+  }
+  .touch-floor::before {
+    content: '';
+    position: absolute;
+    top:  50%;
+    left: 50%;
+    width:  max(100%, var(--touch-floor));
+    height: max(100%, var(--touch-floor));
+    transform: translate(-50%, -50%);
+    /* Above the control's own background, below anything it renders. The control
+       is the click target either way — this pseudo-element belongs to it. */
+    z-index: 0;
+  }
+  /* Anything the control actually draws sits above the overlay, so the overlay
+     never eats a nested control's own hit test. */
+  .touch-floor > * { position: relative; z-index: 1; }
+
+  .touch-floor-box {
+    min-width:  var(--touch-floor);
+    min-height: var(--touch-floor);
+  }
+
+  /* §TOUCH-GROWN
+     The controls the overlay cannot reach, grown instead. Every rule here costs
+     layout height, so each one is here because measurement said the cheap
+     option was unavailable — not by preference.
+
+     **What this costs: +22px of chrome above the first card at 360×640, against
+     the 89px 14C reclaimed.** Both rows below go to 44px, and the header is
+     unaffected because its title *is* a button and takes an overlay for free.
+     That is the whole of 14D's bill, and it buys a genuine 44px target for
+     every control on the two poses a phone user spends their time in. */
+
+  /* Row 1. A text field cannot carry an overlay (trap 2), and 44px is the right
+     height for one on a phone regardless of the floor. */
+  .search-input { min-height: var(--touch-floor); }
+
+  /* Row 2. Same reason for the select; the filter button beside it is a real
+     button, but its overlay reached 9px into the entry list and lost to it
+     (trap 3) — and had it won, it would have been eating taps meant for the
+     first card. Both grow, so the row is honestly 44 tall. */
+  .search-mode-select { min-height: var(--touch-floor); }
+  .search-bar-row2 .type-filter-button { min-height: var(--touch-floor); }
+
+  /* The header's two glyph buttons sit 10px apart, which is closer than two
+     44px overlays can coexist: each needs 22px from its centre, so anything
+     under a 16px gap means the later one in paint order swallows the earlier
+     one's right-hand probe. Widening the gap is free — it spends dead space
+     rather than height, and the taps it hands out were going nowhere before. */
+  .header-right { gap: 18px; }
+
+  /* Every remaining form control, for trap 2 — no pseudo-element, no overlay,
+     no choice. These all sit inside panels and sheets rather than in the list
+     chrome, so the height they take is not the scarce kind. */
+  .entry-name-field,
+  .type-selector,
+  .trigger-input,
+  /* `select` qualifier, not decoration: the same class is a plain <div> holding
+     the type name on an ordinary card, and it is only a control in select mode.
+     Without the qualifier this floors a piece of static text and adds 26px to
+     every card in the list — a third of the card, for a tap target on something
+     that does not take taps. */
+  select.entry-card-mobile-type,
+  .delimiter-select,
+  .settings-search-input,
+  .export-menu-input { min-height: var(--touch-floor); }
+
+  /* Rows in a list, for trap 3. A stacked row is closer to the row above it
+     than a floor by construction — that is what makes it a list — so an
+     overlay here is never claiming dead space, it is claiming the neighbouring
+     row's taps. Which is worse than the original problem: mis-tapping a menu
+     currently does nothing, and with overlays it would pick the wrong entry. */
+  .search-dropdown-item,
+  .type-filter-popover-row,
+  .reference-browse-sheet-row,
+  .settings-section-header,
+  .theme-option,
+  .a11y-scale-btn,
+  .kbd-capture-btn,
+  .export-menu-btn,
+  .fab-quick-menu-add,
+  .fab-quick-menu-chip,
+  .tm-sort-btn { min-height: var(--touch-floor); }
+  /* The sort buttons are the one pair narrower than they are tall. */
+  .tm-sort-btn { min-width: var(--touch-floor); }
+
+  /* The paired role bar. `.role-swap-segmented` is `overflow: hidden` for its
+     rounded ends, which is trap 1 one level further out than the 14C note
+     described — the clip is on the *grandparent*, so both segments' overlays
+     were being cut to the bar's own height. Nothing to overlay around here
+     anyway: the ⋯ sits 4px from the name button, so the two would only have
+     been taking each other's taps. Both grow, and the bar's padding moves onto
+     the buttons so the pose gains 6px rather than 16. */
+  .role-swap-segment { padding: 0 8px; gap: 8px; }
+  .role-swap-segment-tap,
+  .role-swap-segment-content { min-height: var(--touch-floor); justify-content: center; }
+  .role-swap-segment-action {
+    width:  var(--touch-floor);
+    height: var(--touch-floor);
+  }
+
+  /* The suggestions tray: a header row of three buttons 17–21px tall, and a
+     wrapped row of chips. Both are rows of neighbours, so trap 3 again — and
+     the chips are the tray's whole point, which makes 21px the least defensible
+     size in the app. */
+  .suggestions-toggle,
+  .suggestions-phrase-btn,
+  .suggestion-chip { min-height: var(--touch-floor); }
+  .suggestions-reroll {
+    min-height: var(--touch-floor);
+    min-width:  var(--touch-floor);
+  }
+  /* Growing the two buttons took the room the label was using, and
+     "TRIGGER WORD SUGGESTIONS" wrapped to two lines inside its own button —
+     which looked like a bug rather than a heading. The header wraps instead:
+     the disclosure control takes the full first line, the two actions sit
+     under it. Same height as the accidental version, on purpose this time. */
+  .suggestions-header { flex-wrap: wrap; }
+  .suggestions-toggle { flex: 1 0 100%; }
+  /* The auto margin held +Phrase against the right edge, which read as balance
+     while the label filled the row and as a gap once the label moved above it.
+     The two are the section's actions; they group. */
+  .suggestions-phrase-btn { margin-left: 0; }
+
+  /* The settings checkboxes are 13px and stay 13px — the <label> around them is
+     the target, which the battery now understands. But it only understands it
+     if the label is actually floor-sized, and these were laying out at their
+     text height. This is the rule that makes the other 30-odd checkboxes in
+     Settings honest, rather than a waiver. */
+  .settings-label { min-height: var(--touch-floor); }
+
+  /* The reference badge now sits beside the truncating name rather than inside
+     it, so its overlay is no longer clipped; it just needs to keep its width in
+     a flex row that would otherwise squeeze it. */
+  .entry-card-mobile-row > .entry-ref-badge { flex-shrink: 0; }
+
+  /* The card is `overflow: hidden`, so the badge's 44px overlay is clipped to
+     the row plus the card's padding — 31 + 7 + 5 = 43, one pixel short. Scoped
+     with `:has()` so it costs 3px on the rows that actually carry a badge (a
+     paired reference, name matching) rather than on every card in the list.
+     The un-scoped version of this rule is how the type label came to add 26px
+     to every card: a floor applied one selector wider than the thing that
+     needed it. */
+  .entry-card-mobile-row:has(.entry-ref-badge) { min-height: 34px; }
+
+  /* The lander and the update notice — found by 14E, not 14D, because no sweep
+     pose opened them until then. 14A built the battery against the builder and
+     its layers, so the app's *first* screen went ungraded through the whole
+     overhaul: a recent-book row was 33px, the tour link 21px, and the notice's
+     own buttons 30px with a 28px close. Nothing here can take an overlay — the
+     rows and buttons all sit flush against neighbours — so they grow. The
+     notice absorbs it without moving anything: its body is the scroll container,
+     which is also why it never suffered the clipping the retired tour panel did
+     at a raised text size. */
+  .lander-recent-item { min-height: var(--touch-floor); }
+  .lander-tour-btn    { min-height: var(--touch-floor); }
+  .update-notice-btn  { min-height: var(--touch-floor); }
+  .update-notice-close {
+    min-height: var(--touch-floor);
+    min-width:  var(--touch-floor);
+  }
+}
+
 /* §MOBILE */
 @media (max-width: 767px) {
   body { font-size: 0.875rem; }
@@ -5605,7 +6427,13 @@ kbd {
     min-width: unset;
     min-height: unset;
     width: 100% !important;
+    /* `position: fixed` resolves against the initial containing block, which on
+       iOS Safari is the large viewport — so `inset: 0` alone reaches under the
+       URL bar no matter what `.app-root` says. Sizing in `dvh` here is what
+       actually keeps the hotbar on screen. With top, bottom and height all set,
+       CSS ignores `bottom`, so the height wins over `inset: 0`. */
     height: 100% !important;
+    height: 100dvh !important;
   }
 
   /* Hide desktop-only chrome */
@@ -5823,23 +6651,6 @@ kbd {
   padding: 9px 12px;
   text-align: center;
   flex-shrink: 0;
-}
-
-.lorebook-panel-reference-picker {
-  display: block;
-  width: calc(100% - 24px);
-  margin: -2px 12px 8px;
-  padding: 8px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 0.8125rem;
-  flex-shrink: 0;
-}
-.lorebook-panel-reference-picker:focus {
-  outline: none;
-  border-color: var(--focus-border);
 }
 
 /* ============================================================
@@ -7485,174 +8296,110 @@ kbd {
 }
 
 /* ── Feature tour ──────────────────────────────────────────────────────────
-   Click-through of a release's annotated screenshots, launched from the update
-   notice. Sits at the same level as the notice it replaces. */
-.tour-backdrop {
+   A guided tour of the real app: a scrim with a hole punched around the current
+   step's control, and a caption bubble beside it. Replaced a modal gallery of
+   screenshots in 0.10.0 — on a phone those rendered at 18–22% of life size, and
+   an image of a phone read on a phone is always smaller than the phone. */
+.tour-layer {
   position: fixed;
   inset: 0;
   z-index: 9500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.6);
+  /* The whole point: the spotlit control stays tappable, so the tour can let the
+     user drive the real app rather than mime it. The bubble re-enables events
+     for itself. */
+  pointer-events: none;
 }
-.tour-panel {
-  display: flex;
-  flex-direction: column;
-  /* Sized to what the captures actually render at, not to their full width.
-     They are portrait and height-constrained, so at 68vh they come out roughly
-     600-850px wide — a 1240px panel left wide empty margins either side. This
-     also keeps the caption to a readable measure rather than one long line. */
-  width: min(880px, 100%);
-  max-height: 100%;
+
+/* One masked rect for the scrim, one <rect> per hole. The first version used
+   `box-shadow: 0 0 0 9999px` on a transparent div, which is a tidy trick for a
+   single hole and cannot do two — a second such div darkens the first one's hole.
+   Steps that point at two controls (the title menu's two tabs are one idea, not
+   two steps) need N holes, so the scrim became a mask. */
+.tour-scrim {
+  position: fixed;
+  left: 0;
+  top: 0;
+}
+.tour-scrim-fill { fill: rgba(0, 0, 0, 0.72); }
+.tour-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+/* `top` comes from the component, which measures both gaps around the spotlight
+   and clamps into the viewport. At phone widths the bubble spans the usable width
+   regardless, so it never sits *beside* a control, only above or below. */
+.tour-bubble {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  pointer-events: auto;
+  box-sizing: border-box;
+  padding: 13px 15px 12px;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  overflow: hidden;
 }
-/* Only the step counter and the close button sit above the screenshot. The
-   title moved below it, next to the caption: with the title above and the
-   explanation below, the image separated two halves of the same thought. */
-.tour-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px 8px;
-  flex-shrink: 0;
-}
-.tour-step-title {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.tour-bubble-title {
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--text);
 }
-.tour-progress { margin: 0; font-size: 0.6875rem; color: var(--muted); }
-.tour-close {
-  flex-shrink: 0;
-  width: 28px; height: 28px;
-  border: none; border-radius: var(--radius);
-  background: transparent; color: var(--muted);
-  font-size: 1.375rem; line-height: 1; cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-.tour-close:hover { background: var(--surface3); color: var(--text); }
-
-/* Hugs the image rather than filling the panel: the captures are portrait (a
-   tall app window plus its legend), so a full-width box letterboxed them with
-   large empty bars either side. */
-.tour-shot {
-  display: block;
-  width: fit-content;
-  max-width: calc(100% - 36px);
-  margin: 0 auto;
-  padding: 0;
-  position: relative;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  cursor: zoom-in;
-  flex-shrink: 1;
-  min-height: 0;
-}
-.tour-shot img {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 68vh;
-}
-.tour-zoom-hint {
-  position: absolute;
-  right: 8px; bottom: 8px;
-  padding: 3px 8px;
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
-  font-size: 0.625rem;
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-.tour-shot:hover .tour-zoom-hint { opacity: 1; }
-
-/* The caption and the numbered labels. Both are real text rather than being
-   painted into the screenshot, so they survive enlarging, scale with the
-   text-size setting, and can be read by a screen reader. */
-.tour-notes { margin: 14px 18px 0; flex-shrink: 0; }
-.tour-marks {
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 5px;
-  font-size: 0.75rem;
-  line-height: 1.45;
+.tour-bubble-body {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--muted2);
 }
-.tour-marks li { display: flex; align-items: flex-start; gap: 8px; }
-/* Same pink as the badges painted on the shot, so a number in the list and a
-   number on the image read as the same thing. */
-.tour-mark-num {
-  flex-shrink: 0;
-  width: 17px; height: 17px;
-  margin-top: 1px;
-  border-radius: 50%;
-  background: #ff5c8a;
-  color: #fff;
-  font-size: 0.625rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-/* The caption carries the step — the image only supports it — but as plain
-   text under a large screenshot it was being skipped entirely. Given a panel of
-   its own with an accent edge so the eye lands on it. */
-.tour-body {
-  margin: 0;
-  padding: 11px 14px;
+/* Shown when the user has closed what the step opened. An offer, not an
+   auto-restore: reopening it behind them is what would make taps stop feeling
+   real. */
+.tour-recover {
+  margin: 11px 0 0;
+  min-height: var(--touch-floor);
+  width: 100%;
+  padding: 0 12px;
   background: var(--surface3);
   border: 1px solid var(--border2);
-  border-left: 3px solid var(--accent);
   border-radius: var(--radius);
-  font-size: 0.875rem;
-  line-height: 1.6;
   color: var(--text);
-  flex-shrink: 0;
+  font-size: 0.8125rem;
+  cursor: pointer;
 }
+.tour-recover:hover { background: var(--surface); }
 
-.tour-actions {
+.tour-bubble-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px 16px;
-  flex-shrink: 0;
+  margin-top: 13px;
 }
-.tour-dots { display: flex; gap: 6px; }
-.tour-dot {
-  width: 8px; height: 8px;
-  padding: 0;
-  border: none; border-radius: 50%;
-  background: var(--border2);
-  cursor: pointer;
-  transition: background var(--transition);
+.tour-progress {
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-.tour-dot:hover { background: var(--muted); }
-.tour-dot--on { background: var(--accent); }
-
 .tour-nav { display: flex; gap: 8px; }
+
+/* Full touch floor rather than the ~30px these were as gallery controls. The
+   tour is a phone destination now, and 14D's tap-target rule is a hard failure
+   — which never graded the old tour because no sweep pose opened the lander. */
 .tour-btn {
-  padding: 7px 16px;
+  min-height: var(--touch-floor);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
   background: var(--surface3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
 }
@@ -7662,73 +8409,25 @@ kbd {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+  font-weight: 600;
 }
 .tour-btn--primary:hover { background: color-mix(in srgb, var(--accent) 82%, #000); }
 
-/* Enlarged view — what the 2x captures are for. */
-.tour-zoom {
-  position: fixed;
-  inset: 0;
-  z-index: 9600;
-  display: flex;
-  /* Centred with `margin: auto` on the child rather than `align-items: center`.
-     With centring on the container, an image taller than the viewport has its
-     top pushed outside the scrollable area — it is clipped by the top edge and
-     cannot be scrolled back to. `margin: auto` centres when there is room and
-     yields to the scroll when there isn't. */
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.88);
-  cursor: zoom-out;
-  overflow: auto;
-  overscroll-behavior: contain;
-  gap: 20px;
-  align-items: flex-start;
-}
-/* Image and notes side by side: a bar across the bottom would cover the shot,
-   which is exactly the problem the baked-in legend had. Wraps below on a narrow
-   screen. */
-.tour-zoom-figure { margin: auto; flex: 0 1 auto; min-width: 0; }
-.tour-zoom-aside {
-  flex: 0 0 300px;
-  position: sticky;
-  top: 0;
-  max-height: 100%;
-  overflow-y: auto;
-  padding: 14px 16px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-lg);
-  cursor: default;
-}
-.tour-notes--aside { margin: 0; }
-.tour-notes--aside .tour-step-title { font-size: 0.9375rem; }
-@media (max-width: 1100px) {
-  .tour-zoom { flex-wrap: wrap; }
-  .tour-zoom-aside { flex: 1 1 100%; position: static; }
-}
-/* Capped to the viewport in both axes: the inline `width` is the builder's true
-   size, and this only bites when the screen can't fit that. Better to show a
-   shot at 80% and whole than at 100% with the top scrolled off — and it means
-   the common case needs no scrolling at all. `margin: auto` still handles the
-   genuinely-too-tall case without clipping the top. */
-.tour-zoom img {
-  margin: auto;
-  max-width: 100%;
-  max-height: 100%;
-  height: auto;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  /* Width is set inline from naturalWidth / TOUR_CAPTURE_SCALE so the shot
-     appears at the size the builder actually is. Left to max-width alone it
-     rendered at close to raw capture pixels — about twice life size. */
-  flex-shrink: 0;
-}
-.tour-zoom-close {
-  margin: 12px 0 0;
+/* A named way out, because the tour has no backdrop to click: the scrim passes
+   clicks through to the app on purpose, so there is nothing inert to tap. */
+.tour-skip {
+  display: block;
+  width: 100%;
+  min-height: var(--touch-floor);
+  margin: 2px 0 0;
+  background: none;
+  border: none;
   color: var(--muted);
-  font-size: 0.6875rem;
-  line-height: 1.4;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
 }
+.tour-skip:hover { color: var(--text); }
 
 /* Re-entry to the feature tour from the lander, so dismissing the update
    notice isn't a one-way door. */

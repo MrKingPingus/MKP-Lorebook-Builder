@@ -4,6 +4,8 @@
 // enters a pin flow: the real hotbar slots become armable drop targets — click
 // a slot to arm it, then click an action chip here to drop it in.
 import { useEffect, useRef } from 'react';
+import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 
 export function FabQuickMenu({
   actions,
@@ -19,6 +21,9 @@ export function FabQuickMenu({
   onAssign,
 }) {
   const menuRef = useRef(null);
+
+  // Mounted only while open, so registration is unconditional.
+  useDismissLayer('fab-quick-menu', true, DISMISS_PRIORITY.popover, onClose);
 
   useEffect(() => {
     function onPointerDown(e) {

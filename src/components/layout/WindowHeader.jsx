@@ -5,6 +5,7 @@ import { useLorebook }   from '../../hooks/use-lorebook.js';
 import { useMobile }     from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useSettings }          from '../../hooks/use-settings.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { MenuButton }           from './MenuButton.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { TitleMenu }            from '../feature/TitleMenu.jsx';
@@ -16,7 +17,9 @@ export function WindowHeader() {
   const { onPointerDown }                  = useDragWindow();
   const { activeLorebook, renameLorebook } = useLorebook();
   const { funnyFishEnabled }               = useSettings();
+  const { crosstalkEnabled }               = useReferenceLorebook();
   const setShowLander                      = useUi((s) => s.setShowLander);
+  const openMobileTitleMenu                = useUi((s) => s.openMobileTitleMenu);
   const [renaming, setRenaming] = useState(false);
 
   // Hover surfaces the menu, moving away dismisses it, a click pins it until
@@ -110,14 +113,40 @@ export function WindowHeader() {
       className="window-header"
       onPointerDown={isMobile ? undefined : onPointerDown}
     >
-      {/* Logo */}
+      {/* Logo. The wordmark is desktop-only: at 360px it is 211px of the
+          screen with 55px of dead space beside it, and the title has to live
+          somewhere. The mark alone still identifies the app, and a phone user
+          knows which app they opened. */}
       <div className="header-logo" onPointerDown={(e) => e.stopPropagation()}>
         {funnyFishEnabled
           ? <img className="logo-icon" src={logoUrl} alt="" />
           : <span className="logo-icon">📖</span>
         }
-        <span className="logo-text">LOREBOOK BUILDER</span>
+        {!isMobile && <span className="logo-text">LOREBOOK BUILDER</span>}
       </div>
+
+      {/* Mobile title — the same control desktop has, in the same place.
+          Before 14C this lived in its own 44px bar below the filter stack, which
+          is both a row of chrome and the wrong order: you met the filters before
+          you met the book they filter.
+
+          Only in the solo pose. Once a reference is paired there are two books
+          and the role bar below shows both; a header can hold one title, and
+          putting the active one here as well would say it twice. */}
+      {isMobile && !crosstalkEnabled && (
+        <button
+          ref={titleBtnRef}
+          className={`title-field title-field--mobile touch-floor${titleOpen ? ' title-field--open' : ''}`}
+          onClick={() => openMobileTitleMenu()}
+          aria-haspopup="dialog"
+          title="Lorebooks, import and export"
+        >
+          <span className="title-field-name">
+            {activeLorebook?.name || 'Untitled lorebook'}
+          </span>
+          <span className="title-field-caret" aria-hidden="true">▾</span>
+        </button>
+      )}
 
       {/* Lorebook title — desktop only; on mobile it lives in the build panel.
           The field is absolutely centred in the window (see CSS); the count

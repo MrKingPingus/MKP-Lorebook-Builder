@@ -4,7 +4,6 @@
 // every book the conflict involves so both sides stay in sync.
 import { useMemo } from 'react';
 import { useLorebookStore } from '../state/lorebook-store.js';
-import { useSettingsStore } from '../state/settings-store.js';
 import { scanCrosstalkAcrossBooks } from '../services/scan-service.js';
 
 export function useCrosstalk() {
@@ -12,10 +11,11 @@ export function useCrosstalk() {
   const activeLorebookId           = useLorebookStore((s) => s.activeLorebookId);
   const referenceLorebookId        = useLorebookStore((s) => s.referenceLorebookId);
   const updateAllowedOverlapsForId = useLorebookStore((s) => s.updateAllowedOverlapsForId);
-  const crosstalkEnabled           = useSettingsStore((s) => s.crosstalkEnabled);
 
   const activeLorebook    = activeLorebookId    ? lorebooks[activeLorebookId]    ?? null : null;
-  const referenceLorebook = (crosstalkEnabled && referenceLorebookId)
+  // A paired reference id *is* crosstalk being on — there is no separate flag
+  // to consult any more. See use-reference-lorebook.js.
+  const referenceLorebook = referenceLorebookId
     ? lorebooks[referenceLorebookId] ?? null
     : null;
 

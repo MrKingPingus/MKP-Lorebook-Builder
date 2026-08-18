@@ -41,7 +41,9 @@ export const KEYBINDINGS = [
   { id: 'focus_find_replace',  label: 'Focus find & replace',     category: 'navigate',  defaultChord: 'Alt+H', wired: true },
 
   // Reference & crosstalk
-  { id: 'toggle_reference',    label: 'Toggle reference panel',   category: 'reference', defaultChord: 'Alt+R', wired: true },
+  // The id still says "toggle" because users' rebound chords are stored against
+  // it; the action opens the reference chooser now — there is no mode to toggle.
+  { id: 'toggle_reference',    label: 'Choose reference lorebook', category: 'reference', defaultChord: 'Alt+R', wired: true },
   { id: 'swap_reference',      label: 'Swap reference ↔ active',  category: 'reference', defaultChord: 'Alt+W', wired: true, context: 'crosstalk' },
 
   // Import & export

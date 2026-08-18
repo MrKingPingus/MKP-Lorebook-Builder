@@ -4,6 +4,8 @@ import { LorebookPanel }   from '../feature/LorebookPanel.jsx';
 import { ImportPanel }     from '../feature/ImportPanel.jsx';
 import { ExportPanel }     from '../feature/ExportPanel.jsx';
 import { SettingsPanel }   from '../feature/SettingsPanel.jsx';
+import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 
 const PANEL_TITLES = {
   'lorebooks':     'Lorebooks',
@@ -32,6 +34,8 @@ export function MenuPanel() {
   // and easing, so the entry list beside it holds a constant width throughout.
   const expanded = activeMenuPanel !== null;
 
+  useDismissLayer('menu-panel', expanded, DISMISS_PRIORITY.modal, () => setActiveMenuPanel(null));
+
   return (
     <div className={`menu-panel${expanded ? ' menu-panel--expanded' : ''}`}>
       <div className="menu-panel-header">
@@ -39,7 +43,7 @@ export function MenuPanel() {
           {activeMenuPanel ? PANEL_TITLES[activeMenuPanel] : ''}
         </span>
         <button
-          className="menu-panel-close"
+          className="menu-panel-close touch-floor"
           onClick={() => setActiveMenuPanel(null)}
           title="Close panel"
         >

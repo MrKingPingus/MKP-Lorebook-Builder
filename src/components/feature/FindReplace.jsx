@@ -1,5 +1,8 @@
 // Find and Replace fields — rendered inside SearchBar's single row; receives state as props
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useAnchoredPosition } from '../../hooks/use-anchored-position.js';
+import { POPOVER_EDGE_PAD_PX } from '../../constants/limits.js';
 
 const SCOPE_CHIPS = [
   { key: 'all',         label: 'All' },
@@ -9,6 +12,11 @@ const SCOPE_CHIPS = [
 ];
 
 const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc' };
+
+// Widest the scope popover is allowed to be. Narrowed to whatever the viewport
+// can actually hold, because a fixed 360 at a 360px phone width has nowhere to
+// sit — see the width calculation below.
+const SCOPE_POPOVER_WIDTH_PX = 360;
 
 // row: 'all' (default) | 'inputs' (find+replace fields only) | 'actions' (replace button only)
 export function FindReplace({
@@ -21,15 +29,44 @@ export function FindReplace({
   scopeOpen, setScopeOpen,
   row = 'all',
 }) {
+  const wrapRef = useRef(null);
+  const btnRef = useRef(null);
   const popoverRef = useRef(null);
 
-  // Close popover on outside click
+  // The popover is portalled to the body, so it needs its anchor's rect. Captured
+  // on open rather than measured per render — the button does not move while the
+  // popover is up.
+  const [anchorRect, setAnchorRect] = useState(null);
+  const popoverStyle = useAnchoredPosition(
+    scopeOpen ? anchorRect : null,
+    Math.min(SCOPE_POPOVER_WIDTH_PX, window.innerWidth - POPOVER_EDGE_PAD_PX * 2),
+  );
+
+  // Measured off the button, not the wrapper: in the mobile row the wrapper is
+  // squeezed narrower than the button it holds, so the wrapper's rect would
+  // right-align the popover to an edge the user cannot see.
+  function toggleScopeOpen() {
+    setAnchorRect(btnRef.current?.getBoundingClientRect() ?? null);
+    setScopeOpen((v) => !v);
+  }
+
+  // Close popover on outside click. Both nodes have to be tested now that the
+  // popover no longer lives inside the wrapper: the wrapper so a click on the
+  // trigger isn't treated as "outside" (which would close on mousedown and let
+  // the click reopen), and the portalled popover so clicking inside it survives.
   useEffect(() => {
-    if (!scopeOpen) return;
+    if (!scopeOpen) return undefined;
     function onMouseDown(e) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
-        setScopeOpen(false);
-      }
+      // Only the instance that actually rendered the popover gets to judge what
+      // is outside it. On mobile SearchBar renders FindReplace twice — the two
+      // fields in one row, the Replace button in another — and both share
+      // `scopeOpen`. The fields-only instance holds neither node, so if it
+      // answered here every click would read as outside and the popover would
+      // close before the button underneath it could act.
+      if (!popoverRef.current) return;
+      const inWrap = wrapRef.current?.contains(e.target);
+      const inPopover = popoverRef.current.contains(e.target);
+      if (!inWrap && !inPopover) setScopeOpen(false);
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
@@ -62,17 +99,18 @@ export function FindReplace({
   );
 
   const actions = (
-    <div className="replace-btn-wrap" ref={popoverRef}>
+    <div className="replace-btn-wrap" ref={wrapRef}>
       <button
+        ref={btnRef}
         className="replace-all-btn"
-        onClick={() => setScopeOpen((v) => !v)}
+        onClick={toggleScopeOpen}
         disabled={!findText}
       >
         Replace ({matchCount})… ▾
       </button>
 
-      {scopeOpen && (
-        <div className="replace-scope-popover">
+      {scopeOpen && popoverStyle && createPortal(
+        <div className="replace-scope-popover" ref={popoverRef} style={popoverStyle}>
           {anyEntries && (
             <div className="replace-scope-matches">
               {matchesByLorebook.map((m) => (
@@ -147,7 +185,8 @@ export function FindReplace({
               Proceed
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

@@ -62,11 +62,15 @@ function SourceStage({ flow, fileInputRef }) {
               <span className="import-flow-formats">TXT · DOCX · ODT · JSON</span>
             </div>
           </DropZone>
-          {/* Pasting is the niche path, so it sits behind a link rather than
-              taking half the surface with a segmented control. */}
+          {/* Pasting is the niche path, so it stays secondary rather than
+              taking half the surface with a segmented control — but it is a
+              real button with a real gap, not a link tucked against the drop
+              zone. As a link it shared an edge with the largest click target on
+              the surface, and a near-miss opened the OS file picker: a modal
+              the user did not ask for, with no clue why paste never appeared. */}
           <button
             type="button"
-            className="import-flow-swap"
+            className="import-flow-swap import-flow-swap--paste"
             onClick={() => flow.chooseSource(IMPORT_SOURCE.paste)}
           >
             or paste entries instead

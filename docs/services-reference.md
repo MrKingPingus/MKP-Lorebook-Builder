@@ -4,7 +4,7 @@ Plain JS modules in `src/services/` — no React imports.
 
 | File | Responsibility |
 |------|---------------|
-| `storage-service.js` | **Only** file that reads/writes `localStorage` |
+| `storage-service.js` | **Only** file that reads/writes `localStorage`. Lorebooks go through `saveLorebook` / `saveLorebookIndex` rather than raw `writeJson` — those enforce that an **ephemeral** book (the feature tour's samples) never reaches storage, a rule that has to hold across eight write sites |
 | `autosave.js` | Debounced subscriber that persists active lorebook |
 | `entry-factory.js` | Creates new entry objects with default shape; exports the shared `uid()` |
 | `folder-tree.js` | Folder creation, entry assignment (with the `entries[]` splice that keeps a folder's members contiguous), removal, the render walk the entry list consumes, and the folder-filter predicate (`filterEntriesByFolders` / `pruneFolderFilter` — pruning is what makes a deleted folder or a crosstalk role swap degrade to "no filter" instead of an empty list) |

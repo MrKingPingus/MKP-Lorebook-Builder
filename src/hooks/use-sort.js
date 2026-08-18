@@ -6,14 +6,12 @@
 // sorting the active or the reference side.
 import { useUiStore }       from '../state/ui-store.js';
 import { useLorebookStore } from '../state/lorebook-store.js';
-import { useSettingsStore } from '../state/settings-store.js';
 
 export function useSort(entries) {
   const sortMode            = useUiStore((s) => s.sortMode);
   const activeLorebookId    = useLorebookStore((s) => s.activeLorebookId);
   const referenceLorebookId = useLorebookStore((s) => s.referenceLorebookId);
   const lorebooks           = useLorebookStore((s) => s.lorebooks);
-  const crosstalkEnabled    = useSettingsStore((s) => s.crosstalkEnabled);
 
   if (sortMode === 'default') return entries;
 
@@ -26,7 +24,7 @@ export function useSort(entries) {
     sorted.sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0));
   } else if (sortMode === 'cross-match-first' || sortMode === 'cross-match-last') {
     // Without a paired reference book the partition is empty — leave order alone.
-    if (!crosstalkEnabled || !activeLorebookId || !referenceLorebookId) return entries;
+    if (!activeLorebookId || !referenceLorebookId) return entries;
     const activeBook = lorebooks[activeLorebookId];
     const refBook    = lorebooks[referenceLorebookId];
     if (!activeBook || !refBook) return entries;

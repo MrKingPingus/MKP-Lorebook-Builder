@@ -2,6 +2,64 @@
 
 ---
 
+## 0.10.0 — 2026-08-14
+
+### New
+
+- **On a phone, your lorebook's name now sits in the title bar** — the same place it lives on a desktop, and the same button. It used to have a row of its own below the search and filter controls, which meant meeting the filters before the book they filter. The **LOREBOOK BUILDER** wordmark steps aside to make room; the logo stays.
+- **Selecting entries shows them condensed** — just the name and a checkbox, with the entry type still shown as the colour down the left edge. About four times as many fit on screen. Settings → Editing & Entries → **Show full entry cards while selecting** brings the full cards back.
+- **Tap your lorebook's name on a phone to open the lorebook menu** — it now wears the same outlined style the title has on a desktop, so it reads as something you press rather than a caption. Two tabs — every book you've saved, and import/export — the same two destinations the title menu has always offered on a desktop. Switch books, start a new one, rename or delete any of them, download a copy or grab a template. On a phone none of that was reachable before: the header gear goes straight to Settings, and every other route into those screens was desktop-only.
+- **A reference lorebook chooser, in one place, reached from anywhere.** It shows what's paired now, what you can pair instead, and — because this is the moment you're likely asking — a line explaining what a reference lorebook actually does. Open it from the lorebook menu, a book's **⋯** menu, the hotbar's **Reference** button, the Lorebooks panel, or Settings.
+- **Settings has a way back to the landing page**, at the bottom. On a phone this was previously unreachable without reloading, which meant no route to **New lorebook**, your recent books, **What's new** or **Learn** once you were in the builder.
+
+### Improved
+
+- **The tour walks you through the app itself now, instead of showing you pictures of it.** It highlights one control at a time and explains it where it actually sits — and you can **tap the highlighted thing**, which really does what it normally does, with the tour following you into it. On a phone the old screenshots were the problem: a picture of a desktop window inside a phone-width panel came out at roughly a fifth of life size, *Click to enlarge* gained almost nothing, and turning your text size up pushed **Next** off the bottom of a panel that couldn't scroll. The tour runs on a small sample lorebook of its own, so nothing of yours is touched, and puts you back in your own book when you're done. Because this release only changed the phone layout, the tour is only offered on a phone — a desktop gets one again the first time there's something desktop-shaped to show.
+- **Pairing a reference lorebook is the whole feature now — there's no separate switch to find first.** A book is paired or it isn't. Previously you turned on "Show reference panel" in Settings and then had to find a picker in a different panel; on a phone that panel couldn't be opened at all, so turning the setting on did nothing visible and nothing said why. ([#123](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/123))
+- **The hotbar's Reference button opens the chooser** instead of flipping a mode and leaving you to find the picker. It lights up when a book is genuinely paired, not merely when a mode is on. **Alt+R** does the same.
+- **Pairing is spelled out in words** — **Pair as reference** in each book's **⋯** menu — rather than a **⇄** symbol next to it. The symbol was tested on someone who knew the feature existed and still didn't read it as "choose a reference book".
+- **"or paste entries instead" is a proper button with a gap below the drop zone**, not a link tucked against its edge. A near-miss used to open the file browser, which is a confusing thing to have happen when you were trying to paste.
+- **A phone gives you far more of your entries and far less toolbar.** The filter controls now share a row instead of stacking three deep, and the chrome above your first entry is down from 236px to 170px on a small phone — from 46% of the screen to 35%.
+- **Select mode's toolbar is a single Actions menu** rather than eight buttons wrapping across three lines. Change type, set public/private, hide from export, move to folder, select all and deselect all are all in it, with the number selected shown beside it. **× Exit** is gone: switching the mode dropdown back to Search was already the way out. Select mode went from showing two entries at a time to eight. On a desktop the toolbar is unchanged.
+- **Delete and other irreversible buttons no longer look like the ＋ New button.** They were the same red in every theme — and in a custom theme, *literally* the same colour, so a red accent gave you an identical Delete. Destructive buttons are now outlined rather than filled, in their own hotter red, and only fill in when you hover them.
+- **Resizing the window across the phone/desktop boundary now closes any open panel.** The Settings panel is a narrow column on a desktop and a full-screen overlay on a phone, so dragging a window narrow used to leave you with a takeover you never asked for.
+- **Everything you tap on a phone is now big enough to tap.** Buttons, dropdowns, checkboxes, trigger chips, suggestion chips, the home screen's recent-books list and the update notice's own buttons all carry a full-sized touch target — the standard 44px — where most of them were built at mouse sizes and carried across unchanged. Some grew; many already had the room around them and simply claim it now, so the screen is only slightly busier than before. The trigger word suggestions are the most visible change: those chips were 21px tall and are the thing you tap most while writing an entry.
+- **Escape closes whatever you opened last, in a narrow window.** The entry editor, Settings, the quick menu, the reference sheets and the filter popover ignored it before, so it either did nothing or closed something underneath. Phones have no Escape key — this is for a desktop window dragged narrow, or a tablet with a keyboard.
+- **Renaming your lorebook on a phone moved into the lorebook menu**, alongside rename for every other book. The pencil beside the title is gone in both layouts — the name itself is the button now, and it takes the whole space it sits in.
+
+### Fixed
+
+- **The Find/Replace scope popover no longer opens off the side of the screen on a phone**, where it couldn't be scrolled to or tapped. ([#124](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/124))
+- **Replace now applies on a phone.** Once the popover above was reachable, **Proceed** still did nothing.
+- **The bottom of the app no longer hides under Safari's address bar on iPhone and iPad**, which is exactly where the hotbar and the **+** button live.
+
+### Under the hood
+
+- **The tour's sample books are never saved to your browser.** They behave like real lorebooks while the tour runs — they show in your book list, they can be paired as a reference — but nothing about them is written down, so closing the tab part-way through leaves your library exactly as it was. They also don't count against the ten-lorebook limit.
+- **Creating two lorebooks in the same instant could lose the first one.** The index was read from a stale copy, so the second create wrote back a list that had never contained the first book — it stayed on disk but vanished from your library. Nothing in the app did this before the tour, which loads two sample books back to back.
+- **The screenshot generator is gone**, along with `TOUR_RELEASE`, the capture-scale constant and the badge-placement scorer — about 400 lines. The tour points at live selectors instead, so a step whose target no longer matches is skipped with a console warning in development rather than silently showing the wrong picture. 0.9.0's six captures moved to `announcements/images/0.9.0/` so that release post keeps working; they no longer ship in the bundle, which takes 1.5MB off the deployed site.
+- **The landing page had never been layout-checked.** The mobile suite was built against the builder and its panels, so the app's first screen went through the entire overhaul ungraded. It now gets a sweep pose of its own, which immediately found five controls under the touch floor.
+- **`--destructive` is no longer tied to `--accent`.** It has its own value per theme, and in the custom theme it is deliberately fixed rather than derived from the user's accent — destructive is the one role that must not follow a preference. The high-contrast theme keeps them equal on purpose, where contrast matters more than hue and the outline-versus-fill treatment does the separating.
+- **The `crosstalkEnabled` setting is gone.** It's derived from whether a reference book is paired. A stored value from an older version is ignored, and nobody could have had a pairing saved with the setting off — turning it off always cleared the pairing.
+- **A 44px touch-target floor is defined as a shared token**, expressed as hit area rather than visual size, so a small control can carry a full-size tap region without growing the row it sits in.
+- **The layout-check suite grades occlusion structurally.** A control covered by an open dialog is now recognised as covered *by a layer* rather than reported as a fault, without the check having to know that layer's markup.
+- **It also measures tap targets by the area that actually responds to a tap**, probing the page rather than reading each control's box. Measuring boxes would have failed controls that carry a correct target through padding, and passed ones merely made bigger to look right.
+- **The tap-target check now fails the build rather than noting it.** It spent the overhaul as a note because the app started with 227 controls under the floor and a permanently red check gates nothing. It gates now because the count reached zero. Controls that are deliberately smaller are declared in one list with a written reason, and each keeps a floor of its own, so one shrinking further still fails.
+- **The touch-target utilities only apply below the phone breakpoint.** An invisible tap region is not inert — it takes clicks in the space around a control — which is behaviour nobody asked for on a desktop, where the layout checks don't run.
+- **Six phone-only layers register with the Escape stack**, including the entry editor at a new priority below every popover and sheet. The filter popover's private key listener is gone; it was the one layer behaving correctly, by bypassing the mechanism built for it.
+
+---
+
+## 0.9.1 — 2026-08-11
+
+### Under the hood
+
+- **The mobile UI now has a test suite.** It drives the app on phone-sized screens the way the existing suite drives it on desktop, with real touch taps and long-presses, and adds a set of layout checks — nothing off-screen, nothing untappable, nothing covered — that run against every panel, popover and sheet.
+- **Test books can now be generated at the app's limits** (25 triggers, a full-length description, 500 entries) rather than only the hand-written fixtures, so the layouts get checked under pressure instead of on tidy data.
+- **Fixed a blind spot in the existing suite:** the reference/crosstalk scenarios were leaving the Settings panel open for the rest of each run, because they closed it with a key press that doesn't close it. Harmless on desktop, where the panel sits beside the builder — but it meant those scenarios were never testing the layout they claimed to.
+
+---
+
 ## 0.9.0 — 2026-07-31
 
 The interface overhaul. The window header has been emptied down to essentials,

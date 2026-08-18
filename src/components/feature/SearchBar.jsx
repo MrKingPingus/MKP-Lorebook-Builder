@@ -28,7 +28,10 @@ const LOCATION_LABELS = { name: 'title', trigger: 'trigger', description: 'desc'
 // visibleIds: ordered list of entry ids currently visible after search + type filter + sort/group
 // referenceVisibleIds: same, for the reference book in crosstalk; empty otherwise
 // matches: [{role, matchCount, entryMatchCount}] — one entry in normal mode, active + reference in crosstalk
-export function SearchBar({ entries, matches = [], matchDetails, referenceMatchDetails = [], visibleIds = [], referenceVisibleIds = [] }) {
+// filterControl: the type-filter control, handed in by GlobalFilterBar on
+//   mobile so it can share the mode row instead of taking a band of its own.
+//   Null on desktop, where the filter bar renders it below in the usual place.
+export function SearchBar({ entries, matches = [], matchDetails, referenceMatchDetails = [], visibleIds = [], referenceVisibleIds = [], filterControl = null }) {
   const { searchQuery, setSearchQuery, searchMode, setSearchMode } = useSearch(entries);
   const {
     findText, setFindText,
@@ -199,7 +202,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
   const sortBtn = (
     <div className="sort-btn-wrap" ref={sortWrapRef} onPointerDown={(e) => e.stopPropagation()}>
       <button
-        className={`sort-btn${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
+        className={`sort-btn touch-floor${sortMode !== 'default' ? ' sort-btn--active' : ''}`}
         onClick={() => setSortOpen((v) => !v)}
         onWheel={onSortWheel}
         title="Sort entries (Shift+scroll to cycle)"
@@ -336,16 +339,13 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
         {sortBtn}
       </div>
 
-      {/* Mobile search/select: second row with mode select. In select mode
-          the selected-count stays inline since there's no dropdown to host
-          it; in search mode the count moves into the dropdown header. */}
+      {/* Mobile second row: the mode select, whatever that mode needs, and the
+          type filter on the end. Before 14C the filter had a 39px band to
+          itself for one 69px control, and this row held only the select. */}
       {mobileSearch && (
         <div className="search-bar-row2">
-          {searchMode === 'select' && (
-            <span className="match-counter match-counter--select">{selectedCount} selected</span>
-          )}
           <CyclingSelect
-            className="search-mode-select"
+            className={`search-mode-select${searchMode === 'select' ? ' search-mode-select--slim' : ''}`}
             value={searchMode}
             onChange={onModeChange}
           >
@@ -353,11 +353,16 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             <option value="find-replace">Find/Replace</option>
             <option value="select">Select</option>
           </CyclingSelect>
+          {searchMode === 'select' && (
+            <BulkActionBar visibleIds={visibleIds} referenceVisibleIds={referenceVisibleIds} />
+          )}
+          {filterControl}
         </div>
       )}
 
-      {/* Select mode: bulk action row */}
-      {searchMode === 'select' && (
+      {/* Select mode on desktop: the bulk bar keeps its own full-width row,
+          where there is room for every action laid out flat. */}
+      {searchMode === 'select' && !isMobile && (
         <BulkActionBar visibleIds={visibleIds} referenceVisibleIds={referenceVisibleIds} />
       )}
 
@@ -384,7 +389,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             row="actions"
           />
           <CyclingSelect
-            className="search-mode-select"
+            className="search-mode-select search-mode-select--fr"
             value={searchMode}
             onChange={onModeChange}
           >
@@ -392,6 +397,7 @@ export function SearchBar({ entries, matches = [], matchDetails, referenceMatchD
             <option value="find-replace">Find/Replace</option>
             <option value="select">Select</option>
           </CyclingSelect>
+          {filterControl}
         </div>
       )}
     </div>

@@ -10,6 +10,8 @@ import { useSettings }       from '../../hooks/use-settings.js';
 import { useRollbackConfig } from '../../hooks/use-rollback.js';
 import { useMobile }         from '../../hooks/use-mobile.js';
 import { useUi }             from '../../hooks/use-ui.js';
+import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { useReferenceChooser }  from '../../hooks/use-reference-chooser.js';
 import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { KeybindingSettings }    from './KeybindingSettings.jsx';
@@ -100,12 +102,12 @@ export function SettingsPanel() {
     setRollbackDefaultEnabled,
     keepMenuOpenAfterImport,
     setKeepMenuOpenAfterImport,
-    crosstalkEnabled,
-    setCrosstalkEnabled,
     folderCollapseStages,
     setFolderCollapseStages,
     condensedShowStats,
     setCondensedShowStats,
+    fullCardsInSelectMode,
+    setFullCardsInSelectMode,
     crosstalkSwapMode,
     setCrosstalkSwapMode,
     thesaurusEnabled,
@@ -126,6 +128,10 @@ export function SettingsPanel() {
   } = useRollbackConfig();
 
   const isMobile = useMobile();
+  const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();
+  const { openChooser: openReferenceChooser }   = useReferenceChooser();
+  const setShowLander      = useUi((s) => s.setShowLander);
+  const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
 
   // Everything starts collapsed, so opening Settings shows the four section
   // titles and nothing else — the panel reads as a menu you choose from rather
@@ -315,6 +321,27 @@ export function SettingsPanel() {
             Turn this on to keep them, rendered smaller to fit the row.
           </div>
         </SettingsGroup>
+
+        {/* Mobile-only, so it renders only there — a desktop user toggling this
+            would see nothing happen. */}
+        {isMobile && (
+          <SettingsGroup id="fullCardsSelect" query={query}>
+            <label className="settings-label">
+              <span>Show full entry cards while selecting</span>
+              <input
+                type="checkbox"
+                checked={fullCardsInSelectMode}
+                onChange={(e) => setFullCardsInSelectMode(e.target.checked)}
+              />
+            </label>
+            <div className="settings-hint">
+              Select mode normally shrinks entries to just their name and a checkbox, which
+              roughly quadruples how many fit on screen — the entry type still shows as the
+              colour down the left edge. Turn this on to keep the full cards, with their
+              trigger and character counts, while you select.
+            </div>
+          </SettingsGroup>
+        )}
 
         {/* Private-entry marker */}
         <SettingsGroup id="privateMarker" query={query}>
@@ -571,18 +598,23 @@ export function SettingsPanel() {
         <SettingsDivider label="Reference panel" query={query} />
 
         <SettingsGroup id="referencePanel" query={query}>
-          <label className="settings-label">
-            <span>{isMobile ? 'Pair with reference lorebook' : 'Show reference panel'}</span>
-            <input
-              type="checkbox"
-              checked={crosstalkEnabled}
-              onChange={(e) => setCrosstalkEnabled(e.target.checked)}
-            />
-          </label>
+          {/* No toggle here any more. Crosstalk is on exactly when a book is
+              paired — a switch whose effect stayed invisible until you also
+              found a picker in another panel is precisely what #123 was. This
+              is a route to the chooser and a statement of current state. */}
+          <button
+            type="button"
+            className="settings-action-btn"
+            onClick={openReferenceChooser}
+          >
+            {crosstalkEnabled
+              ? `Reference: ${referenceLorebook?.name || '(unnamed)'}`
+              : 'Pair a reference lorebook…'}
+          </button>
           <div className="settings-hint">
             {isMobile
-              ? 'Pairs a second lorebook as a reference. Shared triggers, same-named entries, and search hits in the paired book surface as inline annotations and overlays on the active book. Pick which book to pair from the Lorebooks tab.'
-              : 'Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Turning this off clears the current reference selection.'}
+              ? 'Pairs a second lorebook as a reference. Shared triggers, same-named entries, and search hits in the paired book surface as inline annotations and overlays on the active book. Unpair it from the same chooser.'
+              : 'Adds a read-only panel beside the active lorebook so you can browse a second book and run cross-book find/replace. Click the reference side to swap which book is active. Unpairing closes the panel.'}
           </div>
         </SettingsGroup>
 
@@ -649,6 +681,29 @@ export function SettingsPanel() {
         </SettingsGroup>
 
       </SettingsSection>
+
+      {/* The way back to the lander, and on mobile the only one: `setShowLander`
+          had exactly one call site before this — the window header ×, which is
+          desktop-only — so New Lorebook, the recent-books list, What's New and
+          Learn were all unreachable in-session on a phone. Reloading was the
+          only route.
+
+          Not "Home", which on a page already showing the entry list reads as
+          "go to the main screen" — where the user already is. And at the foot
+          of Settings rather than beside ＋ New, because leaving the builder is
+          heavy and rare and should take a deliberate detour to reach.
+
+          It closes the panel on the way out so returning to the builder doesn't
+          land the user back in Settings. */}
+      {!filtering && (
+        <button
+          type="button"
+          className="settings-lander-btn"
+          onClick={() => { setActiveMenuPanel(null); setShowLander(true); }}
+        >
+          Return to Landing Page?
+        </button>
+      )}
 
     </div>
   );

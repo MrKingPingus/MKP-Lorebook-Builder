@@ -12,7 +12,7 @@ import { useImport }            from '../../hooks/use-import.js';
 import { useReleaseNotes }      from '../../hooks/use-release-notes.js';
 import { MarkdownView }         from '../ui/MarkdownView.jsx';
 import { UpdateNotice }         from './UpdateNotice.jsx';
-import { FeatureTour }          from './FeatureTour.jsx';
+import { useTourLauncher }      from '../../hooks/use-tour.js';
 import { DUPE_FLASH_MS }        from '../../constants/limits.js';
 import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
 import changelogRaw             from '../../../CHANGELOG.md?raw';
@@ -33,7 +33,7 @@ export function Lander() {
   const { parseFile }                           = useImport();
   const [copiedFlash, setCopiedFlash] = useState(false);
   const { open: noticeOpen, release, dismiss: dismissNotice } = useReleaseNotes();
-  const [tourOpen, setTourOpen] = useState(false);
+  const { hasTour, startTour } = useTourLauncher();
   const [importError, setImportError] = useState('');
   const fileInputRef = useRef(null);
   const flashTimer = useRef(null);
@@ -104,16 +104,15 @@ export function Lander() {
 
   return (
     <div className="lander">
-      {noticeOpen && release && !tourOpen && (
+      {noticeOpen && release && (
         <UpdateNotice
           release={release}
           onClose={dismissNotice}
           // Taking the tour counts as having seen the release, so the notice
           // does not reappear behind it or on the next visit.
-          onShowTour={() => { dismissNotice(); setTourOpen(true); }}
+          onShowTour={hasTour ? () => { dismissNotice(); startTour(); } : null}
         />
       )}
-      {tourOpen && <FeatureTour onClose={() => setTourOpen(false)} />}
 
       <div className="lander-hero">
         <div className="lander-logo">📖</div>
@@ -172,13 +171,18 @@ export function Lander() {
       <div className="lander-section">
         <h2 className="lander-section-title">
           What&apos;s new
-          <button
-            type="button"
-            className="lander-tour-btn"
-            onClick={() => setTourOpen(true)}
-          >
-            Take the tour
-          </button>
+          {/* Only offered when this release has something to say about the
+              screen you are on. 0.10.0 changed nothing on a desktop, so a
+              desktop visitor gets no button rather than a tour that says so. */}
+          {hasTour && (
+            <button
+              type="button"
+              className="lander-tour-btn"
+              onClick={startTour}
+            >
+              Take the tour
+            </button>
+          )}
         </h2>
         <div className="lander-changelog">
           <MarkdownView source={changelogRaw} />

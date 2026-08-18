@@ -54,7 +54,7 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
   return (
     <button
-      className={`footer-btn${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
+      className={`footer-btn touch-floor${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
       onClick={handleClick}
       disabled={disabled}
       title={chord ? `${descriptor.title} (${chord})` : descriptor.title}
@@ -70,6 +70,8 @@ export function Hotbar() {
   const { displayChord }                = useKeybindings();
   const isMobile                        = useMobile();
   const activeMenuPanel                 = useUi((s) => s.activeMenuPanel);
+  const referenceChooserOpen            = useUi((s) => s.referenceChooserOpen);
+  const mobileTitleMenuOpen             = useUi((s) => s.mobileTitleMenuOpen);
 
   // Live chord hint for the two hotbar actions that have a keyboard binding.
   const slotChord = (id) => (id === 'undo' || id === 'redo') ? displayChord(id) : null;
@@ -104,7 +106,11 @@ export function Hotbar() {
 
   const fabPx       = fabSize === 'custom' ? fabCustomSize : (FAB_SIZES[fabSize] ?? 64);
   const fabFontSize = `${Math.round(fabPx * 0.45)}px`;
-  const fabHidden   = isMobile && activeMenuPanel;
+  // The FAB floats above the hotbar, so anything anchored to the hotbar
+  // collides with it — the reference chooser opened from a hotbar slot landed
+  // underneath it. Same rule the menu panel already had, extended to every
+  // layer a hotbar button can raise rather than given a second mechanism.
+  const fabHidden   = isMobile && (activeMenuPanel || referenceChooserOpen || mobileTitleMenuOpen);
 
   const fabStyle = {
     width:    fabPx,

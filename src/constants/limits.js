@@ -44,3 +44,11 @@ export const STORAGE_DANGER_THRESHOLD     = 0.85;
 // Anchored-popover geometry (see hooks/use-anchored-position.js)
 export const POPOVER_ANCHOR_GAP_PX = 6;  // breathing room between anchor and popover
 export const POPOVER_EDGE_PAD_PX   = 8;  // keep the popover clear of the viewport edges
+
+// Guided tour timings (see hooks/use-tour.js). The tour drives the real app, so
+// each arrival step has to let React commit and any transition finish before the
+// next one measures anything.
+export const TOUR_STEP_SETTLE_MS    = 140;  // after each api action, before the next
+export const TOUR_TARGET_TIMEOUT_MS = 2500; // give up waiting for a step's target
+export const TOUR_SPOTLIGHT_PAD_PX  = 6;    // how far the spotlight ring sits outside its target
+export const TOUR_BUBBLE_GAP_PX     = 14;   // clear air between the spotlight and the caption

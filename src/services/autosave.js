@@ -1,8 +1,7 @@
 // Debounced autosave orchestrator — subscribes to lorebook store and calls storage-service on change
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { useUiStore } from '../state/ui-store.js';
-import { writeJson } from './storage-service.js';
-import { LOREBOOK_KEY_PREFIX, LOREBOOK_INDEX_KEY } from '../constants/storage-keys.js';
+import { saveLorebook, saveLorebookIndex } from './storage-service.js';
 
 const DEBOUNCE_MS = 800;
 
@@ -20,9 +19,12 @@ export function mountAutosave() {
     const lorebook = lorebooks[activeLorebookId];
     if (!lorebook) return;
 
-    writeJson(LOREBOOK_KEY_PREFIX + activeLorebookId, lorebook);
-    writeJson(LOREBOOK_INDEX_KEY, lorebookIndex);
-    useUiStore.getState().setSavedAt(Date.now());
+    // Both of these no-op for the tour's ephemeral samples, which is the point:
+    // autosave is the one write site a caller cannot opt out of, since it fires
+    // on every store change rather than at a call site anyone chose.
+    saveLorebook(lorebook);
+    saveLorebookIndex(lorebookIndex);
+    if (!lorebook.ephemeral) useUiStore.getState().setSavedAt(Date.now());
   };
 
   const unsubscribe = useLorebookStore.subscribe((state) => {
