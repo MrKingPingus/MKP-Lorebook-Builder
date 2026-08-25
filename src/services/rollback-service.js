@@ -1,19 +1,16 @@
-// Pure rollback helpers: snapshot creation, capped insertion, and session-touch tracking.
+// Pure entry-checkpoint helpers: checkpoint creation, capped insertion, and session-touch tracking.
 // No React imports — safe to call from hooks or other services.
 import { ROLLBACK_MAX_CUSTOM } from '../constants/limits.js';
 
-// Entries touched (first edit) in this page session — used by auto-snapshot logic.
+// Entries touched (first edit) in this page session — used by auto-checkpoint logic.
 // Module-level so it survives re-renders without a ref or store.
 const sessionTouchedIds = new Set();
 
-// Tracks whether "Don't ask again this session" was chosen for the navigate-away prompt.
-let suppressPromptThisSession = false;
-
 // ---------------------------------------------------------------------------
-// Snapshot shape
+// Checkpoint shape
 // ---------------------------------------------------------------------------
 
-/** Build a snapshot object from an entry's current content fields. */
+/** Build a checkpoint object from an entry's current content fields. */
 export function buildSnapshot(entry) {
   return {
     name:        entry.name,
@@ -27,13 +24,13 @@ export function buildSnapshot(entry) {
 }
 
 // ---------------------------------------------------------------------------
-// Snapshot array management
+// Checkpoint array management
 // ---------------------------------------------------------------------------
 
 /**
- * Return a new snapshots array with `snapshot` prepended and trimmed to `maxCount`.
- * Newest snapshot is always at index 0.
- * Pinned snapshots are never evicted — the array may exceed maxCount if all
+ * Return a new checkpoints array with `snapshot` prepended and trimmed to `maxCount`.
+ * Newest checkpoint is always at index 0.
+ * Pinned checkpoints are never evicted — the array may exceed maxCount if all
  * remaining entries are pinned.
  */
 export function addSnapshot(snapshots, snapshot, maxCount) {
@@ -64,7 +61,7 @@ export function addSnapshot(snapshots, snapshot, maxCount) {
 
 /**
  * Returns true if the entry's content fields exactly match the most recent
- * snapshot. Used to avoid saving duplicate snapshots.
+ * checkpoint. Used to avoid saving duplicate checkpoints.
  */
 export function contentMatchesLatestSnapshot(entry, snapshots) {
   if (!snapshots || snapshots.length === 0) return false;
@@ -94,18 +91,3 @@ export function clearSessionTouch(entryId) {
   sessionTouchedIds.delete(entryId);
 }
 
-// ---------------------------------------------------------------------------
-// Navigate-away prompt suppression
-// ---------------------------------------------------------------------------
-
-export function isPromptSuppressed() {
-  return suppressPromptThisSession;
-}
-
-export function suppressPrompt() {
-  suppressPromptThisSession = true;
-}
-
-export function unsuppressPrompt() {
-  suppressPromptThisSession = false;
-}

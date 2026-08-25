@@ -7028,69 +7028,19 @@ kbd {
   color: var(--muted);
 }
 
-/* Navigate-away prompt */
-.rollback-prompt {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-left: 3px solid var(--yellow);
-  border-radius: var(--radius);
-  padding: 10px 12px;
+/* Unsaved-changes dot on the entry's Checkpoints button — ambient signal that
+   the entry has been edited past its newest checkpoint. Replaces the old
+   navigate-away prompt: same information, no interruption. */
+.rollback-unsaved-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--yellow);
+  vertical-align: middle;
 }
 
-.rollback-prompt-message {
-  font-size: 0.75rem;
-  color: var(--text);
-  font-weight: 600;
-}
-
-.rollback-prompt-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.rollback-prompt-btn {
-  padding: 3px 10px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.6875rem;
-  color: var(--text);
-  transition: background var(--transition), border-color var(--transition);
-}
-.rollback-prompt-btn:hover { background: var(--border); border-color: var(--border2); }
-.rollback-prompt-btn--skip { color: var(--muted); }
-
-.rollback-prompt-suppress {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.6875rem;
-  color: var(--muted);
-  cursor: pointer;
-  user-select: none;
-}
-
-.rollback-suppress-notice {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  padding-top: 6px;
-  border-top: 1px solid var(--border);
-}
-
-.rollback-reenable-btn {
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 0.6875rem;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0;
-}
-.rollback-reenable-btn:hover { color: var(--accent, #60a5fa); }
 .hotbar-slot-select:focus { outline: none; border-color: var(--border2); }
 
 /* ============================================================

@@ -24,6 +24,7 @@ All planned phases through **Phase 10** have shipped (see **Completed** below). 
 - **Mobile crosstalk redesign** (parked from Phase 9) — see Future Features. **Confirmed parked 2026-08-12** (Phase 14 locked decision 6): #123 showed the current overlay/annotation model works once it is reachable, so this is a want rather than a blocker.
 - **No test covers the Find/Replace apply path on desktop** (found 2026-08-12 while fixing #124) — an action that rewrites text across a whole book had no coverage at all on either viewport. Mobile is covered now; desktop is not. Small, and the mobile scenario is the template.
 - **Duplicate a lorebook** (raised and deliberately skipped in 14B, 2026-08-14) — the approved mockup's per-book ⋯ menu showed Pair / Rename / Duplicate / Delete, but duplication is a new capability rather than a route to an existing one, and 14B's brief is navigation. The store has no duplicate action either. Small, and the ⋯ menu is now the obvious home for it — but it needs its own yes.
+- **Entry Checkpoints identifier rename** (deferred 2026-08-25, deliberately) — the UI now says *checkpoint* everywhere; the code still says `rollback` / `snapshot` (`rollback-service.js`, `use-rollback.js`, `RollbackPanel.jsx`, ~59 CSS classes). Renaming files, hooks, components and classes is mechanical and safe. **The stored schema is not**: `DEFAULT_LOREBOOK.rollback` and the per-entry `snapshots` array are `localStorage` keys, and `settings-store` has `rollbackDefaultEnabled`. Renaming those without a migration silently drops every checkpoint and per-book setting already saved in a user's browser, with no error to explain it. Any rename pass must stop at the storage boundary and leave a comment saying why.
 - **Desktop stress pass** (deferred from 14A) — there is currently no stress or limits testing on desktop at all. 14A built both halves of what one needs: `verify/layout-invariants.mjs` is viewport-agnostic and reusable as-is, and `fixtures/build-stress-book.mjs` generates books at the caps in `constants/limits.js`. What it still needs is desktop poses and a decision on which limits matter there — the crosstalk two-pane layout under 500 entries a side, and the folder tree at `MAX_FOLDER_DEPTH` with wide sibling sets, are the obvious candidates. Folders, `MAX_LOREBOOKS` and `MAX_HISTORY` all need seeded state rather than an imported book, since none of them are part of the CharSnap format.
 
 ---
@@ -120,7 +121,7 @@ Still open: there is no "after this folder" band, so ordering is expressed purel
 
 **Open from 11A:**
 - ~~**Drag has no folder semantics yet.**~~ **Closed in 11E** — a drop position now decides the folder, and the whole gesture is one undo.
-- **Entry-card footer is at four controls** (Entry History · Move to folder · Public/Private · Hide from Export). Fits one line at the desktop default; wraps in a narrow crosstalk pane. The footer-crowding revisit below is now live, not theoretical.
+- **Entry-card footer is at four controls** (Checkpoints · Move to folder · Public/Private · Hide from Export). Fits one line at the desktop default; wraps in a narrow crosstalk pane. The footer-crowding revisit below is now live, not theoretical.
 
 ### Phase 13 — UI/UX Overhaul (status footer · settings reorg · title menu)
 
@@ -227,7 +228,7 @@ Final grouping (six sections → four), by *what you are changing*:
 
 | Section | Contents |
 |---|---|
-| **Editing & Entries** | writing aids · counters · entry badges · entry history |
+| **Editing & Entries** | writing aids · counters · entry badges · entry checkpoints |
 | **Appearance & Accessibility** | theme + custom colors · accessibility · funny fish |
 | **Layout & Controls** | keyboard shortcuts · hotbar · FAB menu · folders · reference panel · menus |
 | **System** | browser storage limit |
@@ -259,7 +260,7 @@ Worth doing as a deliberate pass rather than incrementally: decide the grouping 
 
 **Target shape (2026-07-28): six sections down to four**, grouped by what you're changing rather than by which feature introduced it.
 
-1. **Editing & Entries** — suggestions default, thesaurus, tiered counters + thresholds, stats badges, private markers, entry history. History moves to the *bottom* of the section: it's the tallest block in Settings and a per-book opt-in a user sets once, so leading with it is the clearest inversion of the ordering principle.
+1. **Editing & Entries** — suggestions default, thesaurus, tiered counters + thresholds, stats badges, private markers, entry checkpoints. Checkpoints move to the *bottom* of the section: it's the tallest block in Settings and a per-book opt-in a user sets once, so leading with it is the clearest inversion of the ordering principle.
 2. **Appearance & Accessibility** — theme + custom colors, text size, reduce motion, high contrast, funny fish. The word "Accessibility" stays in the title deliberately; folding it silently under "Appearance" would be a real discoverability regression for the people who search for that word.
 3. **Layout & Controls** — window defaults, hotbar slots, FAB quick menu, folder collapse stages, condensed-row stats, keep-menu-open-after-import, reference panel + swap mode, legacy-menus toggle.
 4. **Advanced** — keyboard shortcuts, browser storage limit.
@@ -497,6 +498,82 @@ Also worth knowing before 14C designs a bottom bar: there is no `viewport-fit=co
 
 ---
 
+### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
+
+Reported as "the tag suggestion window sometimes won't go away", unreproducible by
+the reporter. The cause is not a dismissal failure — it is an *opening* the user
+never asked for. `addSuggestion` removes the accepted word from the list, the
+remaining chips reflow, and a different chip lands under a cursor that never moved.
+The browser fires `mouseenter` for it, `SuggestionsTray`'s 140ms hover timer runs,
+and the popover opens for a word the user never pointed at. Whether it happened
+depended on which chip landed under the pointer — hence "unreliable to reproduce".
+
+**Two false starts worth recording.** A boolean "wait for a real move" flag cleared
+on `mousemove` does not work: the browser fires `mouseenter` *before* `mousemove`
+for the same movement, so the gate is still closed when the enter it should permit
+arrives, and hover stays dead until the next chip. Cancelling the pending open timer
+in the click handler is correct but insufficient on its own — it stops the *clicked*
+chip's timer, while the bug is a *different* chip's legitimate enter afterwards.
+
+**What works** is comparing pointer coordinates: a reflow-induced `mouseenter`
+arrives at the same `clientX/clientY` as the click that caused it, a real movement
+does not. `clickPointRef` stores the click position and `onChipMouseEnter` ignores
+enters within 2px of it, clearing the reference on the first genuine move. The timer
+cancel and an unmount cleanup for all three timers were kept — both are real leaks,
+just not this one.
+
+**General lesson:** hover intent must be derived from pointer *movement*, not from
+enter events alone. Any list that removes items under the cursor can manufacture
+enters the user did not perform.
+
+### Entry Checkpoints refinement (2026-08-25, GitHub #132 / #133)
+
+The collapse-time save prompt was removed outright rather than fixed. Two reports
+landed the same day — one that dismissing it didn't stick (#133), one that it was
+simply distressing (#132) — and they were the same defect seen from two angles.
+
+**Why removal rather than repair.** The prompt asked whether to save an entry that
+autosave had already persisted, so the danger it implied did not exist. It fired on
+collapse because collapse was a convenient hook, not because it is a decision point
+— the same inversion decision 8 above already rules out for undo history ("collapse
+toggles don't" snapshot). Repairing the suppression logic would have made a
+well-implemented interruption out of a badly-conceived one.
+
+**What #133 actually was**, for the record: `suppressPromptThisSession` lived at
+module scope but `useRollback` mirrored it into React state at mount and tested the
+*mirror*, so every already-mounted card kept prompting. The reporter's "it stopped
+after toggling history off and on, and stayed stopped in a new tab" was a second
+mechanism — the prompt only fires for entries in `sessionTouchedIds`, which is empty
+on every page load. "Session" meant *this page load*, which is neither what the
+phrase suggests nor what anyone assumed.
+
+**Replacement.** An unsaved-changes dot on the entry's Checkpoints button, derived
+from touched-this-session ∧ ¬`contentMatchesLatestSnapshot`. Ambient, costs nothing
+to ignore, and it is the one fact the prompt was there to convey. "Replace Latest"
+became a per-checkpoint overwrite in the panel: the same capability, chosen against
+a checkpoint you can see, rather than a storage question sprung on you mid-collapse.
+Overwrite and delete both push undo steps now — deleting a checkpoint was silently
+unrecoverable.
+
+**Enabling.** The disabled-state button routed to `setActiveMenuPanel('settings')`
+— a button labelled *Enable* that navigated instead of enabling, and landed you in
+the panel rather than at the switch. It now calls `setRollbackEnabled(true)` and
+opens the checkpoints panel, so the state change is visible and the empty-state copy
+explains what was just turned on. The per-book knobs (count, auto-on-first-edit) stay
+in Settings; the entry-level button is deliberately the one-press path, not a
+miniature settings surface.
+
+**Naming.** *Entry History* → *Entry Checkpoints*, *snapshot* → *checkpoint*, chosen
+over keeping "Entry History" and over reverting to "Rollback". "Rollback" was
+tempting — the code already says it, so it would have cost nothing and made internal
+and external names agree — but it names the *action*, not the object, so it cannot
+label the things in the list ("keep 3 rollbacks" is wrong). "Checkpoint" is native to
+the adjacent tooling, names an object, and does both jobs with one word. The cost is
+that code identifiers now disagree with the UI; see the deferred rename above, and
+note the storage-key trap it carries.
+
+---
+
 ## Future Features
 
 Not assigned to a phase. Documented to preserve intent and surface dependencies so implementation decisions can be made when the time is right.
@@ -550,8 +627,8 @@ Intra-book entry-vs-entry consistency analysis — an adaptation of crosstalk ag
 **All-Conflicts Panel**
 Aggregate view of every trigger overlap across the active lorebook in one place (current crosstalk surfaces conflicts per-entry). Lists each conflicting trigger with the entries that share it, plus batch Allow/Revoke at the lorebook level. Phase 9 crosstalk may subsume parts of this.
 
-**Entry History — inline quick actions + Settings management**
-Apply the Phase 12 Templates management pattern to the Entry History (rollback/snapshot) system: quick per-snapshot actions inline where history is used, plus a fuller management surface in Settings — the same "quick actions where you are + full management in Settings" split. Noted 2026-07-24 while planning Entry Templates; the pattern fits history cleanly. Scope to define when picked up.
+**Entry Checkpoints — inline quick actions + Settings management**
+Apply the Phase 12 Templates management pattern to the Entry Checkpoints system: quick per-checkpoint actions inline where checkpoints are used, plus a fuller management surface in Settings — the same "quick actions where you are + full management in Settings" split. Noted 2026-07-24 while planning Entry Templates; the pattern fits cleanly. The 2026-08-25 refinement below took the first bite (per-checkpoint overwrite landed inline); the Settings half is untouched. Scope to define when picked up.
 
 **Entry Splitting**
 Optional system for breaking a long entry into two when it exceeds a length threshold: split detection + suggested split points; a split action (the second entry inherits triggers + a name suffix); a linear/non-linear prompt (linear splits inject a bridging prefix); a split-pair badge; and a temporary `CHAR_LIMIT` override until the split is confirmed. Deferred — per-entry limit overrides are sufficient for now.

@@ -1,4 +1,4 @@
-// Rollback panel: snapshot list and snapshot preview (stacked current/snapshot display)
+// Entry Checkpoints panel: checkpoint list and checkpoint preview (stacked current/checkpoint display)
 import { useState }     from 'react';
 import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { ENTRY_TYPES }  from '../../constants/entry-types.js';
@@ -8,7 +8,7 @@ function formatTimestamp(ts) {
   return new Date(ts).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual, promptSuppressed, onReEnablePrompt }) {
+export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabel, onTogglePin, onDeleteSnapshot, onSaveManual, onOverwrite }) {
   const [view, setView]                       = useState('list'); // 'list' | 'preview'
   const [previewIndex, setPreviewIndex]       = useState(null);
   const [editingLabelIdx, setEditingLabelIdx] = useState(null);
@@ -32,20 +32,20 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
     setEditingLabelIdx(null);
   }
 
-  // ── Snapshot list ─────────────────────────────────────────────────────────
+  // ── Checkpoint list ───────────────────────────────────────────────────────
   if (view === 'list') {
     return (
       <div className="rollback-panel">
         <div className="rollback-panel-header">
-          <span className="rollback-panel-title">Snapshots</span>
-          <button className="rollback-save-btn" onClick={onSaveManual} title="Save a snapshot of the current state">
-            + Save now
+          <span className="rollback-panel-title">Checkpoints</span>
+          <button className="rollback-save-btn" onClick={onSaveManual} title="Save a checkpoint of the entry's current content">
+            + Save checkpoint
           </button>
         </div>
 
         {snapshots.length === 0 ? (
           <div className="rollback-empty">
-            No snapshots yet. One is saved automatically before your first edit.
+            No checkpoints yet. One is saved automatically before your first edit of the session.
           </div>
         ) : (
           <div className="rollback-list">
@@ -54,7 +54,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
                 {/* Pin button — left of label */}
                 <button
                   className={`rollback-action-btn rollback-pin-btn${snap.pinned ? ' rollback-pin-btn--active' : ''}`}
-                  title={snap.pinned ? 'Unpin (snapshot may be overwritten when count is full)' : 'Pin (protect from being overwritten)'}
+                  title={snap.pinned ? 'Unpin (checkpoint may be evicted when the list is full)' : 'Pin (protect from being evicted)'}
                   onClick={() => onTogglePin(i)}
                 >
                   📌
@@ -85,6 +85,13 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
                 <div className="rollback-item-actions">
                   <button
                     className="rollback-action-btn"
+                    title="Overwrite this checkpoint with the entry's current content"
+                    onClick={() => onOverwrite(i)}
+                  >
+                    ⟳
+                  </button>
+                  <button
+                    className="rollback-action-btn"
                     title="Edit label"
                     onClick={() => {
                       setLabelDraft(snap.label || '');
@@ -95,7 +102,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
                   </button>
                   <button
                     className="rollback-action-btn rollback-action-btn--delete"
-                    title="Delete snapshot"
+                    title="Delete checkpoint"
                     onClick={() => {
                       if (previewIndex === i) backToList();
                       onDeleteSnapshot(i);
@@ -108,30 +115,21 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
             ))}
           </div>
         )}
-
-        {promptSuppressed && (
-          <div className="rollback-suppress-notice">
-            Save prompt is silenced this session.{' '}
-            <button className="rollback-reenable-btn" onClick={onReEnablePrompt}>
-              Re-enable
-            </button>
-          </div>
-        )}
       </div>
     );
   }
 
-  // ── Snapshot preview ──────────────────────────────────────────────────────
+  // ── Checkpoint preview ────────────────────────────────────────────────────
   const snap    = snapshots[previewIndex];
   const typeDef = snap ? ENTRY_TYPES.find((t) => t.id === snap.type) : null;
 
   if (!snap) { backToList(); return null; }
 
-  // Diff is computed snapshot → current ("what changed since the snapshot").
-  // The preview shows the snapshot (the older state), so:
-  //   - 'del' segments = text that was removed since the snapshot (i.e. only
-  //     in the snapshot)
-  //   - 'add' segments = text that was added since the snapshot (i.e. only
+  // Diff is computed checkpoint → current ("what changed since the checkpoint").
+  // The preview shows the checkpoint (the older state), so:
+  //   - 'del' segments = text that was removed since the checkpoint (i.e. only
+  //     in the checkpoint)
+  //   - 'add' segments = text that was added since the checkpoint (i.e. only
   //     in the current entry)
   //   - 'same' = present in both
   // Triggers row uses delta.triggers which already labels by direction.
@@ -143,7 +141,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
     <div className="rollback-panel rollback-panel--preview">
       <div className="rollback-panel-header">
         <button className="rollback-back-btn" onClick={backToList}>
-          ← Snapshots
+          ← Checkpoints
         </button>
         <span className="rollback-panel-title">
           {snap.pinned && <span className="rollback-pin-indicator" title="Pinned">📌 </span>}
@@ -157,7 +155,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
             className={`rollback-diff-toggle${diffOn ? ' rollback-diff-toggle--on' : ''}`}
             onClick={() => setDiffOn((v) => !v)}
             type="button"
-            title="Compare snapshot to current entry"
+            title="Compare checkpoint to current entry"
           >
             {diffOn ? '✓ ' : ''}Highlight Differences
           </button>
@@ -174,7 +172,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
       <div className="rollback-preview-body">
         <div className="rollback-preview-row">
           <span className="rollback-preview-label">
-            {diffOn && isFieldChanged('name') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            {diffOn && isFieldChanged('name') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}
             Name
           </span>
           <span className="rollback-preview-value">
@@ -186,7 +184,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
         </div>
         <div className="rollback-preview-row">
           <span className="rollback-preview-label">
-            {diffOn && isFieldChanged('type') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            {diffOn && isFieldChanged('type') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}
             Type
           </span>
           <span className="rollback-preview-value" style={{ color: typeDef?.color ?? 'inherit' }}>
@@ -200,7 +198,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
         </div>
         <div className="rollback-preview-row">
           <span className="rollback-preview-label">
-            {diffOn && isFieldChanged('triggers') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            {diffOn && isFieldChanged('triggers') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}
             Triggers
           </span>
           <span className="rollback-preview-value">
@@ -212,10 +210,10 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
                   <span key={`c-${t}`} className="diff-trigger diff-trigger--same">{t}</span>
                 ))}
                 {delta?.triggers.removed.map((t) => (
-                  <span key={`r-${t}`} className="diff-trigger diff-trigger--removed" title="Removed since snapshot">{t}</span>
+                  <span key={`r-${t}`} className="diff-trigger diff-trigger--removed" title="Removed since checkpoint">{t}</span>
                 ))}
                 {delta?.triggers.added.map((t) => (
-                  <span key={`a-${t}`} className="diff-trigger diff-trigger--added" title="Added since snapshot">{t}</span>
+                  <span key={`a-${t}`} className="diff-trigger diff-trigger--added" title="Added since checkpoint">{t}</span>
                 ))}
                 {delta && delta.triggers.common.length + delta.triggers.added.length + delta.triggers.removed.length === 0 && (
                   <span className="diff-trigger diff-trigger--empty">(none on either side)</span>
@@ -226,7 +224,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
         </div>
         <div className="rollback-preview-row rollback-preview-row--desc">
           <span className="rollback-preview-label">
-            {diffOn && isFieldChanged('description') && <span className="diff-modified-dot" title="Field changed since snapshot">●</span>}
+            {diffOn && isFieldChanged('description') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}
             Description
           </span>
           <div className="rollback-preview-description">
@@ -246,7 +244,7 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
           className="rollback-restore-btn"
           onClick={() => { onRestore(snap); backToList(); }}
         >
-          Restore this snapshot
+          Restore this checkpoint
         </button>
         <span className="rollback-restore-hint">This action can be undone via {displayChord('undo')}.</span>
       </div>

@@ -358,13 +358,13 @@ export function SettingsPanel() {
           </div>
         </SettingsGroup>
 
-        <SettingsDivider label="Entry history" query={query} />
+        <SettingsDivider label="Entry checkpoints" query={query} />
 
-        {/* Rollback (this lorebook) — last in its section deliberately: the
+        {/* Checkpoints (this lorebook) — last in its section deliberately: the
             tallest block in Settings, and a per-book opt-in you set once. */}
         <SettingsGroup id="entryHistory" query={query}>
           <label className="settings-label">
-            <span>Entry history (this lorebook)</span>
+            <span>Entry checkpoints (this lorebook)</span>
             <input
               type="checkbox"
               checked={rollbackEnabled}
@@ -372,12 +372,12 @@ export function SettingsPanel() {
             />
           </label>
           <div className="settings-hint">
-            When on, a snapshot of each entry is saved before its first edit each session. Snapshots can be restored from the entry card.
+            When on, a checkpoint of each entry is saved before its first edit each session. Checkpoints can be reviewed and restored from the entry card.
           </div>
 
           {rollbackEnabled && (
             <>
-              <div className="settings-label" style={{ marginTop: 4 }}>Snapshots to keep per entry</div>
+              <div className="settings-label" style={{ marginTop: 4 }}>Checkpoints to keep per entry</div>
               <div className="settings-row">
                 <select
                   className="hotbar-slot-select"
@@ -408,11 +408,11 @@ export function SettingsPanel() {
               </div>
               {snapshotCount > ROLLBACK_SNAPSHOT_WARN && (
                 <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
-                  Storing more than {ROLLBACK_SNAPSHOT_WARN} snapshots per entry may noticeably increase localStorage usage on large lorebooks.
+                  Storing more than {ROLLBACK_SNAPSHOT_WARN} checkpoints per entry may noticeably increase localStorage usage on large lorebooks.
                 </div>
               )}
               <label className="settings-label" style={{ marginTop: 4 }}>
-                <span>Auto-snapshot on first edit</span>
+                <span>Auto-checkpoint on first edit</span>
                 <input
                   type="checkbox"
                   checked={autoSnapshot}
@@ -420,7 +420,7 @@ export function SettingsPanel() {
                 />
               </label>
               <div className="settings-hint">
-                When off, snapshots are only created manually via the entry's history panel. The save prompt on close still appears.
+                When off, checkpoints are only created manually from the entry's Checkpoints panel. The entry's Checkpoints button shows a dot while its content is newer than the latest checkpoint.
               </div>
             </>
           )}
@@ -428,7 +428,7 @@ export function SettingsPanel() {
 
         <SettingsGroup id="historyDefault" query={query}>
           <label className="settings-label">
-            <span>Enable entry history for new lorebooks by default</span>
+            <span>Enable entry checkpoints for new lorebooks by default</span>
             <input
               type="checkbox"
               checked={rollbackDefaultEnabled}
@@ -436,7 +436,7 @@ export function SettingsPanel() {
             />
           </label>
           <div className="settings-hint">
-            New lorebooks will start with entry history turned on automatically.
+            New lorebooks will start with entry checkpoints turned on automatically.
           </div>
         </SettingsGroup>
 

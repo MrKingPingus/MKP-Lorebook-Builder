@@ -2112,15 +2112,15 @@ const SCENARIOS = [
     const editing = await openSettingsSection(page, 'Editing & Entries');
     const editingDividers = await editing.locator('.settings-divider-label').allInnerTexts();
     check('Editing & Entries is divided into four runs',
-      editingDividers.join(',').toLowerCase(), 'writing aids,counters,entry badges,entry history');
+      editingDividers.join(',').toLowerCase(), 'writing aids,counters,entry badges,entry checkpoints');
 
-    // Entry history is the tallest block and a set-once, per-book opt-in, so it
-    // deliberately trails its section rather than leading it.
+    // Entry checkpoints is the tallest block and a set-once, per-book opt-in, so
+    // it deliberately trails its section rather than leading it.
     const groupOrder = await editing.evaluate((sec) =>
       [...sec.querySelectorAll('.settings-divider-label, .settings-label')]
         .map((el) => el.textContent.trim()));
     check('suggestions lead the section',
-      groupOrder.indexOf('Suggestions collapsed by default') < groupOrder.indexOf('Entry history (this lorebook)'), true);
+      groupOrder.indexOf('Suggestions collapsed by default') < groupOrder.indexOf('Entry checkpoints (this lorebook)'), true);
 
     // The storage limit is alone in System for now, by design.
     const system = await openSettingsSection(page, 'System');
@@ -2165,6 +2165,134 @@ const SCENARIOS = [
       await page.locator('.settings-section-title').count(), 4);
     check('and returns them to collapsed',
       await page.locator('.settings-section-body').count(), 0);
+  }),
+
+  // Collapsing an entry is a view toggle and nothing else. It used to intercept
+  // the collapse with a save prompt (#132), which asked about an entry autosave
+  // had already persisted; the dot replaces it with the same information and no
+  // interruption. This is the first behavioural coverage the system has had.
+  scenario('Checkpoints: collapsing never prompts, and the dot tracks unsaved content', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    const card = page.locator('.entry-card').first();
+    if (await card.locator('.entry-card-body').count() === 0) {
+      await card.locator('.entry-card-header').dblclick();
+      await settle(page, 300);
+    }
+
+    // The button enables checkpoints itself rather than sending you to Settings,
+    // and opens the panel so the state change is visible.
+    const enable = card.locator('.rollback-toggle-btn');
+    check('the disabled state offers to enable, not to navigate',
+      (await enable.innerText()).trim(), 'Enable checkpoints');
+    await enable.click();
+    await settle(page, 300);
+    check('pressing it turns checkpoints on for the book',
+      (await card.locator('.rollback-toggle-btn').innerText()).includes('Checkpoints'), true);
+    check('and opens the panel as confirmation',
+      await card.locator('.rollback-panel').count(), 1);
+
+    // Same per-book setting, reached the long way — it must agree.
+    await openSettings(page);
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const row = editing.locator('.settings-label', { hasText: 'Entry checkpoints (this lorebook)' });
+    check('Settings names the feature Entry checkpoints', await row.count(), 1);
+    check('and Settings agrees it is now on',
+      await row.locator('input[type=checkbox]').isChecked(), true);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    // First edit of the session auto-saves a checkpoint of the pre-edit state.
+    const desc = card.locator('textarea').first();
+    await desc.click();
+    await desc.type(' EDITED');
+    await settle(page, 400);
+
+    const btn = card.locator('.rollback-toggle-btn');
+    check('the footer button reads Checkpoints',
+      (await btn.innerText()).includes('Checkpoints'), true);
+    check('content newer than the latest checkpoint raises the dot',
+      await card.locator('.rollback-unsaved-dot').count(), 1);
+
+    // The point of #132: collapsing is not a decision point.
+    await card.locator('.entry-card-header').dblclick();
+    await settle(page, 500);
+    check('collapsing raises no prompt', await page.locator('.rollback-prompt').count(), 0);
+    check('and the card simply collapses', await card.locator('.entry-card-body').count(), 0);
+
+    await card.locator('.entry-card-header').dblclick();
+    await settle(page, 300);
+    await card.locator('.rollback-toggle-btn').click();
+    await settle(page, 300);
+
+    const panel = card.locator('.rollback-panel');
+    check('the panel is titled Checkpoints',
+      (await panel.locator('.rollback-panel-title').innerText()).toLowerCase(), 'checkpoints');
+    check('the auto-checkpoint is listed', await panel.locator('.rollback-item').count(), 1);
+
+    // Replace Latest used to be a prompt button; it is now a choice about one
+    // named checkpoint, taken deliberately from the panel.
+    const overwrite = panel.locator('.rollback-item').first()
+      .locator('.rollback-item-actions .rollback-action-btn').first();
+    check('overwrite is offered per checkpoint',
+      await overwrite.getAttribute('title'),
+      "Overwrite this checkpoint with the entry's current content");
+    await overwrite.click();
+    await settle(page, 400);
+    check('overwriting replaces rather than appends',
+      await panel.locator('.rollback-item').count(), 1);
+    check('and the dot clears once the content is captured',
+      await card.locator('.rollback-unsaved-dot').count(), 0);
+  }),
+
+  // #130: accepting a suggestion removes its chip and the list reflows, sliding a
+  // different chip under a cursor that never moved. That fires a mouseenter the
+  // user did not perform, and the synonyms popover opens by itself. The popover
+  // mounts on an anchor rect rather than on fetched data, so these presence
+  // checks do not depend on Datamuse being reachable.
+  scenario('Suggestions: accepting a chip does not summon a popover under a still cursor', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    const card = page.locator('.entry-card').first();
+    if (await card.locator('.entry-card-body').count() === 0) {
+      await card.locator('.entry-card-header').dblclick();
+      await settle(page, 300);
+    }
+    if (await card.locator('.suggestions-chips').count() === 0) {
+      await card.locator('.suggestions-toggle').click();
+      await settle(page, 400);
+    }
+    const chips = card.locator('.suggestion-chip');
+    check('the fixture offers suggestions to work with',
+      (await chips.count()) > 3, true);
+
+    // Deliberate hover — the feature itself must still work.
+    await chips.nth(1).hover();
+    await settle(page, 500);
+    check('hovering a chip opens synonyms',
+      await page.locator('.thesaurus-popover').count(), 1);
+
+    await card.locator('textarea').first().hover();
+    await settle(page, 500);
+    check('moving off the chip closes it',
+      await page.locator('.thesaurus-popover').count(), 0);
+
+    // Playwright's click leaves the pointer on the chip, which is exactly the
+    // reported condition: the cursor stays put while the list reflows beneath it.
+    await chips.first().click();
+    await settle(page, 500);
+    check('accepting a chip summons no popover',
+      await page.locator('.thesaurus-popover').count(), 0);
+    await card.locator('textarea').first().click();
+    await settle(page, 300);
+    check('and none appears once focus moves to the description',
+      await page.locator('.thesaurus-popover').count(), 0);
+
+    // Suppression is scoped to the stationary pointer, not sticky.
+    await chips.nth(2).hover();
+    await settle(page, 500);
+    check('a genuine hover afterwards still opens synonyms',
+      await page.locator('.thesaurus-popover').count(), 1);
   }),
 
   scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {

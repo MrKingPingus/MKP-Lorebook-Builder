@@ -209,7 +209,7 @@ export function Lander() {
           <li>Paste a comma-separated list into the trigger field to add multiple triggers at once.</li>
           <li>Drag the <strong>⠿</strong> handle on any entry to reorder it in the list.</li>
           <li>Shift+scroll on the type selector inside an expanded entry to cycle through entry types.</li>
-          <li>Turn on Entry History in Settings to enable per-entry snapshots and rollback.</li>
+          <li>Turn on Entry Checkpoints in Settings to save and restore per-entry checkpoints.</li>
         </ul>
 
         <h3 className="lander-subsection-title">Import templates</h3>

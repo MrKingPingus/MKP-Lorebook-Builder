@@ -2,6 +2,31 @@
 
 ---
 
+## 0.11.0 — Unreleased
+
+### New
+
+- **An entry tells you when its content is newer than its latest checkpoint** — a small yellow dot on the entry's **Checkpoints** button. It appears once you've edited the entry past the last checkpoint saved for it, and clears the moment you save or overwrite one. This is the job the save prompt used to do by interrupting you: the same information, sitting where you'd look for it, asking nothing.
+
+### Improved
+
+- **Collapsing an entry no longer asks you anything.** It used to stop and ask whether to save a snapshot first, with **Save New**, **Replace Latest** and **Skip** to choose between. Collapsing is a view control — your writing is saved continuously whether an entry is open or shut, and nothing was ever at risk — so the question was raising an alarm about a danger that didn't exist, at a moment you'd chosen for an unrelated reason. Entries now simply collapse. In the default mode a checkpoint is still saved automatically before your first edit of each session, exactly as before. ([#132](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/132), [#133](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/133))
+- **The Enable checkpoints button on an entry now enables them.** It used to throw you into Settings — and not even to the right setting, just to the panel, to find the switch yourself. Pressing it turns checkpoints on for the lorebook and opens the entry's Checkpoints panel so you can see what you got. How many to keep, and whether the first edit of a session saves one automatically, are still in Settings → Editing & Entries for when you want them.
+- **Entry History is now Entry Checkpoints, and a snapshot is a checkpoint.** One word throughout — the button on the entry, the panel it opens, and the Settings block — where the feature previously answered to "Entry History" in some places and "Snapshots" in others. "Checkpoint" is the word this kind of save-point already goes by in the tools this builder sits alongside, and unlike "history" it names a thing you can point at, count, and restore.
+- **Replace Latest moved into the Checkpoints panel, as an overwrite on each checkpoint.** Every checkpoint in the list now carries a **⟳** that replaces its contents with the entry as it stands, keeping its label, its pin and its place in the list. As a prompt button it was a storage question sprung on you at collapse time; as a row action it's a deliberate choice about a checkpoint you can see.
+
+### Fixed
+
+- **The synonyms popover no longer appears on its own after you accept a suggested trigger.** Clicking a suggestion removes its chip, and the remaining chips slide over to close the gap — sliding a different one under a cursor that hadn't moved. The app read that as you hovering it and opened the synonyms popover for a word you never pointed at, a moment after you'd clicked. Which chip landed under your cursor decided whether it happened at all, which is why it seemed random. Hovering a chip on purpose works exactly as before. ([#130](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/130))
+- **Deleting a checkpoint can be undone.** It wrote straight through with no undo step, so a misclicked **×** destroyed a saved checkpoint permanently. Both deleting and overwriting a checkpoint now record an undo step and come back with **Ctrl+Z**.
+
+### Under the hood
+
+- **The checkpoints system has behavioural test coverage for the first time**, in `verify/checks.mjs` — it had none at all before, despite owning saved user content. The scenario drives the real app through enabling checkpoints, editing, collapsing, and overwriting.
+- **Code identifiers still say `rollback` and `snapshots`.** The user-facing rename stopped at the UI deliberately: the per-book config key and the per-entry array are persisted in `localStorage` under those names, so renaming them in place would orphan every checkpoint already saved in a browser. A later identifier rename should cover files, hooks and CSS classes and stop short of the stored schema.
+
+---
+
 ## 0.10.0 — 2026-08-14
 
 ### New
