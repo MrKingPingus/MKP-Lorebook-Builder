@@ -24,7 +24,7 @@ function ProfileSelect() {
 }
 
 const CATEGORY_LABELS = {
-  snapshots:    'Snapshots',
+  snapshots:    'Checkpoints',
   entryContent: 'Entry content',
   index:        'Lorebook index',
   settings:     'Settings',

@@ -67,7 +67,6 @@ function ExportOffIcon() {
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, onSelectionClick, density = 'full' }) {
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
-  const [suppressChecked, setSuppressChecked] = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
   const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats, fullCardsInSelectMode } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
@@ -283,7 +282,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     if (isSearchFocused) setSearchFocusedId(null);
     setLocalCollapsed(true);
     setRollbackOpen(false);
-    setSuppressChecked(false);
   }
 
   function toggleCollapse() {
@@ -291,7 +289,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
       if (isSearchFocused) setSearchFocusedId(null);
       setLocalCollapsed(false);
     } else {
-      rollback.handleCollapseIntent(doCollapse);
+      doCollapse();
     }
   }
 
@@ -538,35 +536,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
           className="entry-card-body"
           onDoubleClick={(e) => {
             if (e.target.closest('button, input, textarea, select, .rollback-panel')) return;
-            rollback.handleCollapseIntent(doCollapse);
+            doCollapse();
           }}
         >
-          {/* Navigate-away prompt — rendered first so it's visible at the top */}
-          {rollback.promptVisible && (
-            <div className="rollback-prompt">
-              <div className="rollback-prompt-message">Save a snapshot before closing?</div>
-              <div className="rollback-prompt-actions">
-                <button className="rollback-prompt-btn" onClick={() => { rollback.promptSaveNew(suppressChecked); setSuppressChecked(false); }}>
-                  Save New
-                </button>
-                <button className="rollback-prompt-btn" onClick={() => { rollback.promptReplace(suppressChecked); setSuppressChecked(false); }}>
-                  Replace Latest
-                </button>
-                <button className="rollback-prompt-btn rollback-prompt-btn--skip" onClick={rollback.promptSkip}>
-                  Skip
-                </button>
-              </div>
-              <label className="rollback-prompt-suppress">
-                <input
-                  type="checkbox"
-                  checked={suppressChecked}
-                  onChange={(e) => setSuppressChecked(e.target.checked)}
-                />
-                Don't ask again this session
-              </label>
-            </div>
-          )}
-
           {/* Row 1: Entry Name + Entry Type */}
           <div className="entry-fields-row">
             <div className={`entry-field entry-field--name${isComparing && compareDelta?.name ? ' entry-field--differs' : ''}`}>
@@ -735,8 +707,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             ) : null}
           />
 
-          {/* Row 5: Rollback — hidden in compare mode so both sides share
-              the same minimal layout. Exit compare mode to access rollback. */}
+          {/* Row 5: Checkpoints — hidden in compare mode so both sides share
+              the same minimal layout. Exit compare mode to access them. */}
           {!isComparing && (<>
           <div className="rollback-footer">
             <button
@@ -748,11 +720,20 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                   setActiveMenuPanel('settings');
                 }
               }}
-              title={rollback.enabled ? 'View and restore entry history' : 'Open Settings to enable entry history for this lorebook'}
+              title={rollback.enabled
+                ? (rollback.hasUnsavedChanges
+                    ? 'Edited since your newest checkpoint — open to save one'
+                    : 'View and restore entry checkpoints')
+                : 'Open Settings to enable checkpoints for this lorebook'}
             >
-              {rollback.enabled
-                ? `↺ Entry History${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`
-                : 'Enable entry history?'}
+              {rollback.enabled ? (
+                <>
+                  {rollback.hasUnsavedChanges && (
+                    <span className="rollback-unsaved-dot" aria-hidden="true" />
+                  )}
+                  {`↺ Checkpoints${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`}
+                </>
+              ) : 'Enable checkpoints?'}
             </button>
             <MoveToFolderButton entry={entry} />
             <button
@@ -780,8 +761,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               onTogglePin={rollback.toggleSnapshotPin}
               onDeleteSnapshot={rollback.deleteSnapshot}
               onSaveManual={rollback.saveSnapshot}
-              promptSuppressed={rollback.promptSuppressed}
-              onReEnablePrompt={rollback.reEnablePrompt}
+              onOverwrite={rollback.overwriteSnapshot}
             />
           )}
           </>)}

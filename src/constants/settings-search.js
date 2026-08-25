@@ -22,8 +22,8 @@ export const SETTINGS_GROUP_KEYWORDS = {
   condensedStats:   'condensed rows stats badges folders compact',
   fullCardsSelect:  'full entry cards select mode selecting condensed compact mobile rows density',
   privateMarker:    'private entries mark marker eye charsnap public visibility',
-  entryHistory:     'entry history rollback snapshots undo restore versions backup',
-  historyDefault:   'entry history default new lorebooks rollback',
+  entryHistory:     'entry checkpoints history rollback snapshots undo restore versions backup',
+  historyDefault:   'entry checkpoints history default new lorebooks rollback',
 
   // ── Appearance & Accessibility ─────────────────────────────────────
   theme:            'theme colors colours dark light high contrast custom palette appearance',

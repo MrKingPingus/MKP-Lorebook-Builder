@@ -1,6 +1,5 @@
-// Hook for the entry rollback system — auto-snapshot, navigate-away prompt, manual save, restore.
+// Hook for the Entry Checkpoints system — auto-checkpoint, manual save, overwrite, restore.
 // Also exports useRollbackConfig() for the settings panel (no entry context required).
-import { useState, useRef }  from 'react';
 import { useLorebookStore }  from '../state/lorebook-store.js';
 import { DEFAULT_LOREBOOK }  from '../constants/defaults.js';
 import {
@@ -10,13 +9,10 @@ import {
   hasBeenTouchedThisSession,
   markTouchedThisSession,
   clearSessionTouch,
-  isPromptSuppressed,
-  suppressPrompt,
-  unsuppressPrompt,
 } from '../services/rollback-service.js';
 
 /**
- * Reads and writes the active lorebook's rollback config (enabled, snapshotCount, autoSnapshot).
+ * Reads and writes the active lorebook's checkpoint config (enabled, snapshotCount, autoSnapshot).
  * For use in SettingsPanel — no entry context required.
  * The global rollbackDefaultEnabled setting is handled separately via useSettings().
  */
@@ -51,12 +47,15 @@ export function useRollback({ entry, onUpdate }) {
   const { enabled, snapshotCount, autoSnapshot = true } = rollbackConfig;
   const snapshots = entry.snapshots ?? [];
 
-  const [promptVisible, setPromptVisible]       = useState(false);
-  // Mirror the module-level suppress flag in React state so the UI re-renders when it changes
-  const [promptSuppressed, setPromptSuppressed] = useState(() => isPromptSuppressed());
-  const pendingCollapseRef = useRef(null);
+  // True once the entry has been edited this session and its current content is
+  // not captured by the newest checkpoint. Drives the unsaved-changes dot on the
+  // card's Checkpoints button — ambient, never blocking.
+  const hasUnsavedChanges =
+    enabled &&
+    hasBeenTouchedThisSession(entry.id) &&
+    !contentMatchesLatestSnapshot(entry, snapshots);
 
-  // ── Snapshot helpers ──────────────────────────────────────────────────────
+  // ── Checkpoint helpers ────────────────────────────────────────────────────
 
   function saveSnapshot() {
     if (contentMatchesLatestSnapshot(entry, snapshots)) return;
@@ -65,16 +64,20 @@ export function useRollback({ entry, onUpdate }) {
     clearSessionTouch(entry.id);
   }
 
-  function replaceLatestSnapshot() {
-    if (snapshots.length === 0) { saveSnapshot(); return; }
-    if (contentMatchesLatestSnapshot(entry, snapshots)) {
-      clearSessionTouch(entry.id);
-      return;
-    }
-    const firstUnpinnedIdx = snapshots.findIndex((s) => !s.pinned);
-    if (firstUnpinnedIdx === -1) { saveSnapshot(); return; }
-    const next = snapshots.map((s, i) => (i === firstUnpinnedIdx ? buildSnapshot(entry) : s));
-    onUpdate(entry.id, { snapshots: next });
+  /**
+   * Overwrite one existing checkpoint with the entry's current content, keeping
+   * its position in the list. Used by the panel's per-checkpoint overwrite
+   * action, which is the deliberate replacement for the old prompt's
+   * "Replace Latest" — a choice about a named checkpoint rather than a storage
+   * question asked at collapse time.
+   */
+  function overwriteSnapshot(index) {
+    const target = snapshots[index];
+    if (!target) return;
+    const next = snapshots.map((s, i) => (
+      i === index ? { ...buildSnapshot(entry), label: s.label, pinned: s.pinned } : s
+    ));
+    onUpdate(entry.id, { snapshots: next }, true);
     clearSessionTouch(entry.id);
   }
 
@@ -82,9 +85,9 @@ export function useRollback({ entry, onUpdate }) {
 
   /**
    * Call this before applying any edit update.
-   * In auto mode: silently snapshots the pre-edit state on the first edit.
-   * In manual mode: only marks the entry as touched so the navigate-away
-   * prompt still fires on close (no snapshot is saved automatically).
+   * In auto mode: silently checkpoints the pre-edit state on the first edit.
+   * In manual mode: only marks the entry as touched, which surfaces the
+   * unsaved-changes dot (no checkpoint is saved automatically).
    */
   function onBeforeEdit() {
     if (!enabled) return;
@@ -94,56 +97,6 @@ export function useRollback({ entry, onUpdate }) {
     if (contentMatchesLatestSnapshot(entry, snapshots)) return;
     const next = addSnapshot(snapshots, buildSnapshot(entry), snapshotCount);
     onUpdate(entry.id, { snapshots: next });
-  }
-
-  // ── Navigate-away prompt ──────────────────────────────────────────────────
-
-  function handleCollapseIntent(collapseCallback) {
-    if (!enabled || !hasBeenTouchedThisSession(entry.id)) {
-      collapseCallback();
-      return;
-    }
-    if (promptSuppressed) {
-      saveSnapshot();
-      collapseCallback();
-      return;
-    }
-    pendingCollapseRef.current = collapseCallback;
-    setPromptVisible(true);
-  }
-
-  function _finishCollapse() {
-    const cb = pendingCollapseRef.current;
-    pendingCollapseRef.current = null;
-    setPromptVisible(false);
-    cb?.();
-  }
-
-  function promptSaveNew(suppressThisSession = false) {
-    if (suppressThisSession) {
-      suppressPrompt();
-      setPromptSuppressed(true);
-    }
-    saveSnapshot();
-    _finishCollapse();
-  }
-
-  function promptReplace(suppressThisSession = false) {
-    if (suppressThisSession) {
-      suppressPrompt();
-      setPromptSuppressed(true);
-    }
-    replaceLatestSnapshot();
-    _finishCollapse();
-  }
-
-  function promptSkip() {
-    _finishCollapse();
-  }
-
-  function reEnablePrompt() {
-    unsuppressPrompt();
-    setPromptSuppressed(false);
   }
 
   // ── Restore ───────────────────────────────────────────────────────────────
@@ -176,7 +129,7 @@ export function useRollback({ entry, onUpdate }) {
 
   function deleteSnapshot(index) {
     const next = snapshots.filter((_, i) => i !== index);
-    onUpdate(entry.id, { snapshots: next });
+    onUpdate(entry.id, { snapshots: next }, true);
   }
 
   // ── Per-lorebook config setters ───────────────────────────────────────────
@@ -193,15 +146,10 @@ export function useRollback({ entry, onUpdate }) {
     enabled,
     snapshotCount,
     snapshots,
-    promptVisible,
-    promptSuppressed,
+    hasUnsavedChanges,
     onBeforeEdit,
     saveSnapshot,
-    handleCollapseIntent,
-    promptSaveNew,
-    promptReplace,
-    promptSkip,
-    reEnablePrompt,
+    overwriteSnapshot,
     restoreSnapshot,
     updateSnapshotLabel,
     toggleSnapshotPin,
