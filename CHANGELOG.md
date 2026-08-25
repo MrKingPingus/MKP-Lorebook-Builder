@@ -17,6 +17,7 @@
 
 ### Fixed
 
+- **The synonyms popover no longer appears on its own after you accept a suggested trigger.** Clicking a suggestion removes its chip, and the remaining chips slide over to close the gap — sliding a different one under a cursor that hadn't moved. The app read that as you hovering it and opened the synonyms popover for a word you never pointed at, a moment after you'd clicked. Which chip landed under your cursor decided whether it happened at all, which is why it seemed random. Hovering a chip on purpose works exactly as before. ([#130](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/130))
 - **Deleting a checkpoint can be undone.** It wrote straight through with no undo step, so a misclicked **×** destroyed a saved checkpoint permanently. Both deleting and overwriting a checkpoint now record an undo step and come back with **Ctrl+Z**.
 
 ### Under the hood

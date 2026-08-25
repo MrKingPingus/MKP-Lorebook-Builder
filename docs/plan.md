@@ -498,6 +498,34 @@ Also worth knowing before 14C designs a bottom bar: there is no `viewport-fit=co
 
 ---
 
+### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
+
+Reported as "the tag suggestion window sometimes won't go away", unreproducible by
+the reporter. The cause is not a dismissal failure — it is an *opening* the user
+never asked for. `addSuggestion` removes the accepted word from the list, the
+remaining chips reflow, and a different chip lands under a cursor that never moved.
+The browser fires `mouseenter` for it, `SuggestionsTray`'s 140ms hover timer runs,
+and the popover opens for a word the user never pointed at. Whether it happened
+depended on which chip landed under the pointer — hence "unreliable to reproduce".
+
+**Two false starts worth recording.** A boolean "wait for a real move" flag cleared
+on `mousemove` does not work: the browser fires `mouseenter` *before* `mousemove`
+for the same movement, so the gate is still closed when the enter it should permit
+arrives, and hover stays dead until the next chip. Cancelling the pending open timer
+in the click handler is correct but insufficient on its own — it stops the *clicked*
+chip's timer, while the bug is a *different* chip's legitimate enter afterwards.
+
+**What works** is comparing pointer coordinates: a reflow-induced `mouseenter`
+arrives at the same `clientX/clientY` as the click that caused it, a real movement
+does not. `clickPointRef` stores the click position and `onChipMouseEnter` ignores
+enters within 2px of it, clearing the reference on the first genuine move. The timer
+cancel and an unmount cleanup for all three timers were kept — both are real leaks,
+just not this one.
+
+**General lesson:** hover intent must be derived from pointer *movement*, not from
+enter events alone. Any list that removes items under the cursor can manufacture
+enters the user did not perform.
+
 ### Entry Checkpoints refinement (2026-08-25, GitHub #132 / #133)
 
 The collapse-time save prompt was removed outright rather than fixed. Two reports

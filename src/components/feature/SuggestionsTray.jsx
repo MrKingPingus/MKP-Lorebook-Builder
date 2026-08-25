@@ -1,5 +1,5 @@
 // Collapsible tray: ▶/▼ TRIGGER WORD SUGGESTIONS | ↺ reroll | + Phrase — all on one header row
-import { useState, useRef }          from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSuggestions }            from '../../hooks/use-suggestions.js';
 import { usePhraseBuilder }          from '../../hooks/use-phrase-builder.js';
 import { useSettings }               from '../../hooks/use-settings.js';
@@ -22,6 +22,11 @@ export function SuggestionsTray({ entry, onAddTrigger, onAddTriggers }) {
   const closeTimerRef        = useRef(null);
   const longPressTimerRef    = useRef(null);
   const suppressNextClickRef = useRef(false);
+  // Where the pointer was when a chip was last accepted. Removing that chip
+  // reflows the list, sliding a different chip under a cursor that never moved
+  // and firing a mouseenter the user did not perform. A reflow-induced enter
+  // arrives at these same coordinates; a real move does not. (#130)
+  const clickPointRef        = useRef(null);
 
   // Thesaurus is suppressed inside the phrase builder — chips there feed the
   // phrase queue rather than the trigger list, so a synonym popover would be
@@ -30,9 +35,33 @@ export function SuggestionsTray({ entry, onAddTrigger, onAddTriggers }) {
 
   function closePopover() { setActivePopover(null); }
 
+  function clearHoverTimers() {
+    clearTimeout(openTimerRef.current);
+    clearTimeout(closeTimerRef.current);
+  }
+
+  // A chip that leaves the list takes its popover with it. Accepting a
+  // suggestion removes the word (use-suggestions.addSuggestion), which unmounts
+  // the chip — and an unmounted chip can never fire mouseleave, so the hover
+  // close path is gone and the popover would hang anchored to a detached node.
+  useEffect(() => {
+    if (activePopover && !suggestions.includes(activePopover.word)) closePopover();
+  }, [suggestions, activePopover]);
+
+  // Timers must not outlive the tray: collapsing the card while one is pending
+  // would otherwise open a popover on a component that no longer exists.
+  useEffect(() => () => {
+    clearTimeout(openTimerRef.current);
+    clearTimeout(closeTimerRef.current);
+    clearTimeout(longPressTimerRef.current);
+  }, []);
+
   // Desktop hover
-  function onChipMouseEnter(word, el) {
+  function onChipMouseEnter(word, el, e) {
     if (isMobile || !thesaurusOn) return;
+    const from = clickPointRef.current;
+    if (from && Math.abs(e.clientX - from.x) <= 2 && Math.abs(e.clientY - from.y) <= 2) return;
+    clickPointRef.current = null;
     clearTimeout(closeTimerRef.current);
     clearTimeout(openTimerRef.current);
     openTimerRef.current = setTimeout(() => setActivePopover({ word, el }), HOVER_OPEN_MS);
@@ -68,11 +97,17 @@ export function SuggestionsTray({ entry, onAddTrigger, onAddTriggers }) {
     clearTimeout(longPressTimerRef.current);
   }
 
-  function onChipClick(word) {
+  function onChipClick(word, e) {
     if (suppressNextClickRef.current) {
       suppressNextClickRef.current = false;
       return;
     }
+    // Clicking is decisive: cancel the pending hover-open so the popover cannot
+    // appear on its own a moment later, and drop any popover already showing —
+    // synonyms for a word you just accepted are noise.
+    clearHoverTimers();
+    closePopover();
+    clickPointRef.current = { x: e.clientX, y: e.clientY };
     if (phrase.phraseMode) phrase.addWord(word);
     else                   addSuggestion(word);
   }
@@ -122,8 +157,8 @@ export function SuggestionsTray({ entry, onAddTrigger, onAddTriggers }) {
                 key={s}
                 className="suggestion-chip"
                 disabled={phrase.phraseMode && phrase.phraseQueue.includes(s)}
-                onClick={() => onChipClick(s)}
-                onMouseEnter={(e) => onChipMouseEnter(s, e.currentTarget)}
+                onClick={(e) => onChipClick(s, e)}
+                onMouseEnter={(e) => onChipMouseEnter(s, e.currentTarget, e)}
                 onMouseLeave={onChipMouseLeave}
                 onPointerDown={(e) => onChipPointerDown(s, e.currentTarget)}
                 onPointerUp={onChipPointerUp}

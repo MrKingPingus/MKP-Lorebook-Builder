@@ -2245,6 +2245,56 @@ const SCENARIOS = [
       await card.locator('.rollback-unsaved-dot').count(), 0);
   }),
 
+  // #130: accepting a suggestion removes its chip and the list reflows, sliding a
+  // different chip under a cursor that never moved. That fires a mouseenter the
+  // user did not perform, and the synonyms popover opens by itself. The popover
+  // mounts on an anchor rect rather than on fetched data, so these presence
+  // checks do not depend on Datamuse being reachable.
+  scenario('Suggestions: accepting a chip does not summon a popover under a still cursor', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    const card = page.locator('.entry-card').first();
+    if (await card.locator('.entry-card-body').count() === 0) {
+      await card.locator('.entry-card-header').dblclick();
+      await settle(page, 300);
+    }
+    if (await card.locator('.suggestions-chips').count() === 0) {
+      await card.locator('.suggestions-toggle').click();
+      await settle(page, 400);
+    }
+    const chips = card.locator('.suggestion-chip');
+    check('the fixture offers suggestions to work with',
+      (await chips.count()) > 3, true);
+
+    // Deliberate hover — the feature itself must still work.
+    await chips.nth(1).hover();
+    await settle(page, 500);
+    check('hovering a chip opens synonyms',
+      await page.locator('.thesaurus-popover').count(), 1);
+
+    await card.locator('textarea').first().hover();
+    await settle(page, 500);
+    check('moving off the chip closes it',
+      await page.locator('.thesaurus-popover').count(), 0);
+
+    // Playwright's click leaves the pointer on the chip, which is exactly the
+    // reported condition: the cursor stays put while the list reflows beneath it.
+    await chips.first().click();
+    await settle(page, 500);
+    check('accepting a chip summons no popover',
+      await page.locator('.thesaurus-popover').count(), 0);
+    await card.locator('textarea').first().click();
+    await settle(page, 300);
+    check('and none appears once focus moves to the description',
+      await page.locator('.thesaurus-popover').count(), 0);
+
+    // Suppression is scoped to the stationary pointer, not sticky.
+    await chips.nth(2).hover();
+    await settle(page, 500);
+    check('a genuine hover afterwards still opens synonyms',
+      await page.locator('.thesaurus-popover').count(), 1);
+  }),
+
   scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {
     await openBuilderWithFixture(page);
     await page.keyboard.press('?');
