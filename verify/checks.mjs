@@ -2174,19 +2174,33 @@ const SCENARIOS = [
   scenario('Checkpoints: collapsing never prompts, and the dot tracks unsaved content', async (page, check) => {
     await openBuilderWithFixture(page);
 
-    await openSettings(page);
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    const row = editing.locator('.settings-label', { hasText: 'Entry checkpoints (this lorebook)' });
-    check('Settings names the feature Entry checkpoints', await row.count(), 1);
-    await row.locator('input[type=checkbox]').check();
-    await page.keyboard.press('Escape');
-    await settle(page, 300);
-
     const card = page.locator('.entry-card').first();
     if (await card.locator('.entry-card-body').count() === 0) {
       await card.locator('.entry-card-header').dblclick();
       await settle(page, 300);
     }
+
+    // The button enables checkpoints itself rather than sending you to Settings,
+    // and opens the panel so the state change is visible.
+    const enable = card.locator('.rollback-toggle-btn');
+    check('the disabled state offers to enable, not to navigate',
+      (await enable.innerText()).trim(), 'Enable checkpoints');
+    await enable.click();
+    await settle(page, 300);
+    check('pressing it turns checkpoints on for the book',
+      (await card.locator('.rollback-toggle-btn').innerText()).includes('Checkpoints'), true);
+    check('and opens the panel as confirmation',
+      await card.locator('.rollback-panel').count(), 1);
+
+    // Same per-book setting, reached the long way — it must agree.
+    await openSettings(page);
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const row = editing.locator('.settings-label', { hasText: 'Entry checkpoints (this lorebook)' });
+    check('Settings names the feature Entry checkpoints', await row.count(), 1);
+    check('and Settings agrees it is now on',
+      await row.locator('input[type=checkbox]').isChecked(), true);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
 
     // First edit of the session auto-saves a checkpoint of the pre-edit state.
     const desc = card.locator('textarea').first();

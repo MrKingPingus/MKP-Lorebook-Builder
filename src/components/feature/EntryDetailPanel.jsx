@@ -25,7 +25,6 @@ export function EntryDetailPanel() {
   const searchQuery            = useUi((s) => s.searchQuery);
   const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
-  const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { triggerDelimiter, setTriggerDelimiter } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap } = useNameMatch();
@@ -217,14 +216,16 @@ export function EntryDetailPanel() {
                   if (rollback.enabled) {
                     setRollbackOpen((o) => !o);
                   } else {
-                    setActiveMenuPanel('settings');
+                    // See EntryCard: the button enables rather than navigating.
+                    rollback.setRollbackEnabled(true);
+                    setRollbackOpen(true);
                   }
                 }}
                 title={rollback.enabled
                   ? (rollback.hasUnsavedChanges
                       ? 'Edited since your newest checkpoint — open to save one'
                       : 'View and restore entry checkpoints')
-                  : 'Open Settings to enable checkpoints for this lorebook'}
+                  : 'Turn on checkpoints for this lorebook'}
               >
                 {rollback.enabled ? (
                   <>
@@ -233,7 +234,7 @@ export function EntryDetailPanel() {
                     )}
                     {`↺ Checkpoints${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`}
                   </>
-                ) : 'Enable checkpoints?'}
+                ) : 'Enable checkpoints'}
               </button>
               <button
                 className={`entry-public-btn touch-floor${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}

@@ -86,7 +86,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
   const setSearchFocusedId     = useUi((s) => s.setSearchFocusedId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
-  const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { openEntry }     = useEntryDetail();
   const rollback        = useRollback({ entry, onUpdate });
   const nameInputRef    = useRef(null);
@@ -717,14 +716,18 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 if (rollback.enabled) {
                   setRollbackOpen((o) => !o);
                 } else {
-                  setActiveMenuPanel('settings');
+                  // The button says Enable, so it enables — no trip to Settings.
+                  // Opening the panel straight after is the confirmation that
+                  // something happened, and it explains what you just turned on.
+                  rollback.setRollbackEnabled(true);
+                  setRollbackOpen(true);
                 }
               }}
               title={rollback.enabled
                 ? (rollback.hasUnsavedChanges
                     ? 'Edited since your newest checkpoint — open to save one'
                     : 'View and restore entry checkpoints')
-                : 'Open Settings to enable checkpoints for this lorebook'}
+                : 'Turn on checkpoints for this lorebook'}
             >
               {rollback.enabled ? (
                 <>
@@ -733,7 +736,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                   )}
                   {`↺ Checkpoints${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`}
                 </>
-              ) : 'Enable checkpoints?'}
+              ) : 'Enable checkpoints'}
             </button>
             <MoveToFolderButton entry={entry} />
             <button

@@ -527,6 +527,14 @@ a checkpoint you can see, rather than a storage question sprung on you mid-colla
 Overwrite and delete both push undo steps now — deleting a checkpoint was silently
 unrecoverable.
 
+**Enabling.** The disabled-state button routed to `setActiveMenuPanel('settings')`
+— a button labelled *Enable* that navigated instead of enabling, and landed you in
+the panel rather than at the switch. It now calls `setRollbackEnabled(true)` and
+opens the checkpoints panel, so the state change is visible and the empty-state copy
+explains what was just turned on. The per-book knobs (count, auto-on-first-edit) stay
+in Settings; the entry-level button is deliberately the one-press path, not a
+miniature settings surface.
+
 **Naming.** *Entry History* → *Entry Checkpoints*, *snapshot* → *checkpoint*, chosen
 over keeping "Entry History" and over reverting to "Rollback". "Rollback" was
 tempting — the code already says it, so it would have cost nothing and made internal
