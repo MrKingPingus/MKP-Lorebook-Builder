@@ -21,6 +21,9 @@ export const THESAURUS_RELATED_MIN_FREQ = 0.5; // drop related words below this 
 export const THESAURUS_RELATED_PER_POS  = 12;  // cap on related words shown per part-of-speech group
 export const DUPE_FLASH_MS            = 1500;
 export const MENU_PANEL_WIDTH         = 320;
+// Per-entry ⋯ overflow menu. Portalled and anchored, so this is the width the
+// positioner clamps against the viewport rather than a CSS guess.
+export const ENTRY_MENU_WIDTH_PX      = 224;
 // The lorebook pull tab hangs off the OUTSIDE of the window's right edge, so
 // the window can never occupy the last strip of the viewport — the tab needs
 // that margin to live in. Same total footprint as reserving a gutter inside the

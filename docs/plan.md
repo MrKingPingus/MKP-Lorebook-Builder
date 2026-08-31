@@ -506,6 +506,8 @@ the `⋯` menu exists before anything else wants to live in it:
 1. **Warning colour scales** (below) — independent of the rest, so it goes first.
 2. **Entry `⋯` overflow menu** — resolves the Phase 12 "entry-card footer crowding" revisit.
 3. **Copy / move an entry to another lorebook** (GitHub #127), into that menu.
+   Plus `BulkActionBar` copy/move (locked decision 10), which is cheap once the
+   transfer service exists — the service is the work, not the bar.
 4. **Entry Templates** (Phase 12, GitHub #114), into that menu.
 
 **Locked decisions (2026-08-31):**
@@ -576,10 +578,76 @@ green hand-off (locked decision 4), and `.settings-row` learning to wrap — it
 was a fixed non-wrapping flex, so the third character threshold was simply cut
 off at the 320px panel edge on the four-colour and gradient scales.
 
+**Settings reorganisation (2026-08-31).** Editing & Entries had grown to eleven
+groups against Appearance & Accessibility's three. The cut is "does it change
+what happens, or only what I see?": the `Counters` and `Entry badges` runs moved
+to Appearance as **Warnings & counters** and **Entry display**, leaving Editing
+with writing aids and checkpoints — what helps you write, and what protects what
+you wrote. Character thresholds travelled with the scale they drive despite being
+numbers rather than colours, because splitting a control from the thing it
+controls is worse than the category stretch. The moved groups kept every keyword
+someone would have typed hunting them in the old place (`entries`, `editing`,
+`writing`) so the settings filter makes the move invisible to anyone who searches
+rather than browses.
+
+That move surfaced a latent accessibility bug rather than causing one:
+`.hotbar-slot-select` had no touch floor, and the mobile sweep had never caught it
+because it only measures what is *rendered* — the crosstalk select is gated behind
+a paired reference book and the hotbar slots behind an expander, so no visible
+Settings `<select>` existed on the swept poses until the warning scale arrived.
+The fix is a real `min-height`, not a `.touch-floor` class: §TOUCH-GROWN already
+documents that replaced elements generate no pseudo-element, so the class is inert
+on a `<select>`.
+
 The storage ring stopped being coloured by `tier-*` CSS classes and now takes a
 `--tier-color` custom property computed by `use-storage-usage`, so one value
 drives ring, bar and text and the gradient can reach it. Its resting colour is
 `--muted2`, not green: it is a gauge, not a health readout.
+
+**Sub-phase 2 — the entry `⋯` overflow menu — shipped 2026-08-31.**
+
+`components/feature/EntryActionsMenu.jsx`. Resolves the "entry-card footer
+crowding" revisit attached to Phase 12's locked decision 9, and supersedes that
+decision: the template buttons go in this menu, not the footer.
+
+**It replaced Remove in the card HEADER, not the footer**, and that turned a
+tidying job into a capability. Remove was the only per-entry action up there;
+Move to folder, Public/Private and Hide from Export all lived in the footer,
+which renders only on an *expanded* card. Gathering them into a header menu makes
+all four reachable on a **collapsed** card for the first time — and the actions
+you most want while skimming a long book are exactly the ones that used to cost
+an expand. The footer keeps Checkpoints alone, which is right: it is the only
+control there that opens a panel rather than performing an action.
+
+`MoveToFolderButton.jsx` and its ~70 lines of CSS were deleted rather than left
+orphaned — the drill-in view replaces it, and `EntryDetailPanel` never used it
+(mobile folders are still deferred). Mobile keeps its flat footer buttons per
+locked decision 6; the menu is desktop-only until the mobile parity session.
+
+Submenus **drill in** rather than fanning out sideways — a nested popover inside
+a scrolling list has to solve flipping twice, and drill-in is the shape Phase
+12's template folders need anyway (locked decision 7). Escape unwinds one level
+at a time before closing.
+
+**The one real lesson: an anchored popover over a scrolling list must follow its
+anchor, not close on scroll.** Closing is what every other anchored layer here
+does, and it is fine for all of them because they hang off chrome that does not
+scroll. This one hangs off a row in a list, and closing broke it twice:
+
+- The capture-phase scroll listener — mandatory, since `scroll` does not bubble
+  and the entry list is what scrolls — also sees scrolls *inside the menu*, whose
+  own list scrolls once a book has more folders than fit. Scrolling the menu
+  closed the menu.
+- Expanding a card smooth-scrolls it into view, and a smooth scroll keeps
+  emitting events for several hundred milliseconds. Opening the menu any time in
+  that window had it flash open and shut. This is the one that cost real
+  debugging time: it looked like a flaky test, and reproduced as "the first click
+  after expanding anything does nothing, the second works".
+
+Both become non-events once the menu re-measures its anchor on scroll (rAF-
+throttled, with an identity check so an unmoved anchor does not re-render).
+Closing is kept for the one case where it is honest — the anchor scrolling out of
+the viewport, where the menu would otherwise hang off nothing.
 
 ### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
 
@@ -712,6 +780,43 @@ Aggregate view of every trigger overlap across the active lorebook in one place 
 
 **Entry Checkpoints — inline quick actions + Settings management**
 Apply the Phase 12 Templates management pattern to the Entry Checkpoints system: quick per-checkpoint actions inline where checkpoints are used, plus a fuller management surface in Settings — the same "quick actions where you are + full management in Settings" split. Noted 2026-07-24 while planning Entry Templates; the pattern fits cleanly. The 2026-08-25 refinement below took the first bite (per-checkpoint overwrite landed inline); the Settings half is untouched. Scope to define when picked up.
+
+**Contextual settings on right-click / press-and-hold**
+
+Reach a feature's own settings from the feature itself — right-click a control on
+desktop, press-and-hold it on mobile — instead of walking to Settings and finding
+the group. Raised by the user 2026-08-31 as an under-explored direction for the
+builder rather than a specific feature request, so the scope is deliberately open.
+
+Worth noting what already exists to build on, because it is more than it looks.
+The app has a **dismiss-priority stack** (`services/dismiss-stack.js`) and an
+**anchored-popover positioner** (`hooks/use-anchored-position.js`), so a context
+layer would not be inventing either. It also already has a **long-press gesture**
+with a tuned threshold — `THESAURUS_LONG_PRESS_MS`, 450ms — and `verify/driver.mjs`
+has a `longPress` helper, so the mobile half has a precedent to match rather than
+a mechanism to design.
+
+Three things to think through before it becomes work:
+
+- **What a right-click means when it already means something.** The description
+  and title fields are real text inputs whose native context menu carries
+  cut/copy/paste and, notably, the browser's own spellcheck suggestions — which
+  this app deliberately turned on (Polish Pass 5). Hijacking `contextmenu` there
+  would take away a feature. The likely answer is that chrome and controls are
+  fair game and text fields are not, but it needs stating rather than assuming.
+- **Discoverability.** A hidden gesture that nobody finds is a setting that does
+  not exist. Whatever ships probably needs a visible tell, and the guided tour is
+  the natural place to teach it.
+- **Which settings are even worth surfacing.** The ones that pay off are those
+  you want to change *while looking at their effect* — the warning-colour scale
+  from a counter, collapse stages from a folder header, checkpoint count from the
+  Checkpoints panel. A blanket "every control opens its settings group" would be
+  a lot of surface for little gain.
+
+Related in spirit to the per-entry `⋯` menu (2026-08-31), which is the same idea
+arrived at from the other end: bringing actions to the object rather than the
+object to a panel. The `⋯` menu should probably ship first and be the thing a
+right-click on an entry card opens, rather than a second parallel menu.
 
 **Entry Splitting**
 Optional system for breaking a long entry into two when it exceeds a length threshold: split detection + suggested split points; a split action (the second entry inherits triggers + a name suffix); a linear/non-linear prompt (linear splits inject a bridging prefix); a split-pair badge; and a temporary `CHAR_LIMIT` override until the split is confirmed. Deferred — per-entry limit overrides are sufficient for now.

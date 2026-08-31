@@ -126,8 +126,8 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     check('private badges default off', await page.locator('.entry-private-icon').count(), 0);
     await openSettings(page);
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    const cb = editing.locator('label:has-text("Mark private entries") input[type="checkbox"]');
+    const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
+    const cb = appearance.locator('label:has-text("Mark private entries") input[type="checkbox"]');
     await cb.waitFor({ timeout: 4000 });
     await cb.check();
     await settle(page, 150);
@@ -135,6 +135,135 @@ const SCENARIOS = [
     await settle(page, 300);
     check('private badges after enabling', await page.locator('.entry-private-icon').count(), 5);
     check('public badges unchanged', await page.locator('.entry-public-icon').count(), 29);
+  }),
+
+  // The per-entry ⋯ menu. The point of the scenario is not that each action
+  // works — most of them worked before — but that they are all reachable on a
+  // COLLAPSED card, which none of them were: Remove was the only per-entry
+  // action in the header, and the rest lived in a footer that only an expanded
+  // card renders.
+  scenario('Entry ⋯ menu: every per-entry action, without expanding the card', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    const card = page.locator('.entry-card').first();
+
+    check('cards start collapsed', await page.locator('.entry-card-body').count(), 0);
+    check('the ⋯ button replaced Remove',
+      await page.locator('.card-action-btn--remove').count(), 0);
+    check('and every card carries one', await page.locator('.entry-actions-btn').count(), count);
+
+    const menu = page.locator('.entry-actions-menu');
+    const openMenu = async () => {
+      await card.locator('.entry-actions-btn').click();
+      await menu.waitFor({ timeout: 4000 });
+      await settle(page, 150);
+    };
+
+    // ── visibility, from a collapsed card ───────────────────────────────────
+    await openMenu();
+    check('the menu is portalled out of the clipping list',
+      await menu.evaluate((el) => el.parentElement === document.body), true);
+    const publicItem = menu.locator('[role=menuitemcheckbox]', { hasText: 'Public on CharSnap' });
+    check('the first fixture entry reads as public',
+      await publicItem.getAttribute('aria-checked'), 'true');
+    await publicItem.click();
+    await settle(page, 250);
+    check('the menu closes after acting', await menu.count(), 0);
+    check('and the card lost its public badge',
+      await card.locator('.entry-public-icon').count(), 0);
+    check('the book is one entry less public',
+      await page.locator('.entry-public-icon').count(), 28);
+    check('all without ever expanding a card',
+      await page.locator('.entry-card-body').count(), 0);
+
+    // ── hide from export ────────────────────────────────────────────────────
+    await openMenu();
+    await menu.locator('[role=menuitemcheckbox]', { hasText: 'Hide from Export' }).click();
+    await settle(page, 250);
+    check('the card shows the hidden-from-export badge',
+      await card.locator('.entry-hidden-icon').count(), 1);
+    await openMenu();
+    check('and the menu now reports it as ticked',
+      await menu.locator('[role=menuitemcheckbox]', { hasText: 'Hide from Export' })
+        .getAttribute('aria-checked'), 'true');
+
+    // ── Escape unwinds the drill-in one level at a time ─────────────────────
+    await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).click();
+    await settle(page, 200);
+    check('the folder view drilled in', await page.locator('.entry-actions-back').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('Escape backs out of the submenu first', await page.locator('.entry-actions-back').count(), 0);
+    check('and leaves the menu itself open', await menu.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('a second Escape closes the menu', await menu.count(), 0);
+
+    // ── filing into a folder, still without expanding ───────────────────────
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).click();
+    await settle(page, 250);
+    await openMenu();
+    await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).click();
+    await settle(page, 200);
+    await menu.locator('.entry-actions-item', { hasText: 'New Folder' }).first().click();
+    await settle(page, 300);
+    check('the entry is filed', await page.locator('.folder-entries .entry-card').count(), 1);
+    check('no entry was lost filing it', await page.locator('.entry-card').count(), count);
+    // Reopening from inside the folder names the folder it is in, so the menu
+    // reports state rather than only offering an action.
+    await page.locator('.folder-entries .entry-card').first().locator('.entry-actions-btn').click();
+    await menu.waitFor({ timeout: 4000 });
+    check('the menu names the folder it is in',
+      (await menu.locator('.entry-actions-item').first().innerText()).includes('New Folder'), true);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    // ── the menu follows its button through a scroll ────────────────────────
+    // It is position: fixed over a list that scrolls, so this is the behaviour
+    // holding it onto the card. Closing instead looks equivalent until you open
+    // the menu right after expanding a card: that smooth-scrolls, and a smooth
+    // scroll keeps emitting events long enough to shut a menu opened after it.
+    await openMenu();
+    const before = await menu.boundingBox();
+    await page.locator('.entry-list').evaluate((el) => { el.scrollTop += 120; });
+    await settle(page, 300);
+    check('a scroll does not close the menu', await menu.count(), 1);
+    const after = await menu.boundingBox();
+    check('the menu tracked the card down the list',
+      Math.abs((before.y - after.y) - 120) < 4, true);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    await page.locator('.entry-list').evaluate((el) => { el.scrollTop = 0; });
+    await settle(page, 250);
+
+    // Expanding smooth-scrolls; the menu must still open during the tail of it.
+    await page.locator('.entry-card').nth(1).locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await openMenu();
+    check('the menu opens during a smooth scroll', await menu.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    await page.locator('.entry-card').nth(1).locator('.card-action-btn', { hasText: 'Collapse' }).click();
+    await settle(page, 250);
+
+    // ── the footer kept checkpoints and nothing else ────────────────────────
+    await page.locator('.entry-card').last().locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await settle(page, 250);
+    const footer = page.locator('.rollback-footer');
+    check('the footer still exists', await footer.count(), 1);
+    check('and holds only the checkpoints button',
+      await footer.locator('button').count(), 1);
+    check('the moved controls left the footer',
+      await footer.locator('.entry-public-btn, .hide-from-export-btn, .move-to-folder').count(), 0);
+
+    // ── delete ──────────────────────────────────────────────────────────────
+    await page.locator('.entry-card').first().locator('.entry-actions-btn').click();
+    await menu.waitFor({ timeout: 4000 });
+    await settle(page, 200);
+    await menu.locator('.entry-actions-item', { hasText: 'Delete entry' }).click();
+    await settle(page, 300);
+    check('delete removed one entry', await page.locator('.entry-card').count(), count - 1);
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('and it comes back with undo', await page.locator('.entry-card').count(), count);
   }),
 
   scenario('Warning scale: three / four / gradient reach the real counters', async (page, check) => {
@@ -183,13 +312,13 @@ const SCENARIOS = [
 
     // ── switch to four ──────────────────────────────────────────────────────
     await openSettings(page);
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    const scale = editing.locator('.settings-group', { hasText: 'Warning color scale' }).locator('select');
+    const appear = await openSettingsSection(page, 'Appearance & Accessibility');
+    const scale = appear.locator('.settings-group', { hasText: 'Warning color scale' }).locator('select');
     await scale.waitFor({ timeout: 4000 });
     await scale.selectOption('four');
     await settle(page, 200);
     // The third threshold input only exists on a three-stop scale.
-    const thresholds = editing.locator('.settings-group', { hasText: 'Character count thresholds' });
+    const thresholds = appear.locator('.settings-group', { hasText: 'Character count thresholds' });
     check('four-colour exposes a third threshold input',
       await thresholds.locator('input[type="number"]').count(), 3);
     await page.keyboard.press('Escape');
@@ -203,8 +332,8 @@ const SCENARIOS = [
 
     // ── switch to gradient ──────────────────────────────────────────────────
     await openSettings(page);
-    const editing2 = await openSettingsSection(page, 'Editing & Entries');
-    await editing2.locator('.settings-group', { hasText: 'Warning color scale' })
+    const appear2 = await openSettingsSection(page, 'Appearance & Accessibility');
+    await appear2.locator('.settings-group', { hasText: 'Warning color scale' })
       .locator('select').selectOption('gradient');
     await settle(page, 200);
     await page.keyboard.press('Escape');
@@ -237,9 +366,9 @@ const SCENARIOS = [
     await page.locator('.lander-recent-item, .lander-start-tile').first().click();
     await settle(page, 600);
     await openSettings(page);
-    const editing3 = await openSettingsSection(page, 'Editing & Entries');
+    const appear3 = await openSettingsSection(page, 'Appearance & Accessibility');
     check('the chosen scale persists across a reload',
-      await editing3.locator('.settings-group', { hasText: 'Warning color scale' })
+      await appear3.locator('.settings-group', { hasText: 'Warning color scale' })
         .locator('select').inputValue(),
       'gradient');
   }),
@@ -842,8 +971,8 @@ const SCENARIOS = [
       await page.locator('.entry-card--condensed .stats-badge').count(), 0);
 
     await openSettings(page);
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    await editing.locator('label:has-text("Show entry stats on condensed rows") input').check();
+    const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
+    await appearance.locator('label:has-text("Show entry stats on condensed rows") input').check();
     await settle(page, 200);
     await page.keyboard.press('Escape');
     await settle(page, 350);
@@ -2218,8 +2347,22 @@ const SCENARIOS = [
     // Sub-dividers give each section a visible internal order.
     const editing = await openSettingsSection(page, 'Editing & Entries');
     const editingDividers = await editing.locator('.settings-divider-label').allInnerTexts();
-    check('Editing & Entries is divided into four runs',
-      editingDividers.join(',').toLowerCase(), 'writing aids,counters,entry badges,entry checkpoints');
+    // Two runs since the 2026-08-31 move: what helps you write, and what
+    // protects what you wrote. The display-only groups went to Appearance.
+    check('Editing & Entries is divided into two runs',
+      editingDividers.join(',').toLowerCase(), 'writing aids,entry checkpoints');
+
+    const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
+    const appearanceDividers = await appearance.locator('.settings-divider-label').allInnerTexts();
+    check('Appearance & Accessibility took the display groups',
+      appearanceDividers.join(',').toLowerCase(),
+      'theme,warnings & counters,entry display,accessibility,fun');
+    // The counter colours and the thresholds that drive them must not be split
+    // across sections — the whole point of moving them was to keep them together.
+    check('the warning scale and its thresholds sit together',
+      await appearance.locator('.settings-group', { hasText: 'Warning color scale' }).count()
+      + await appearance.locator('.settings-group', { hasText: 'Character count thresholds' }).count(),
+      2);
 
     // Entry checkpoints is the tallest block and a set-once, per-book opt-in, so
     // it deliberately trails its section rather than leading it.

@@ -214,6 +214,10 @@ export function SettingsPanel() {
 
       {/* ════════════════════════════════════════════════════════════
           1 — Editing & Entries: what happens as you write
+          Held to that literally as of 2026-08-31: the counter-colour and
+          entry-badge groups moved to Appearance, because neither changes what
+          happens — only what you see. What is left is the aids that help you
+          write and the checkpoints that protect what you wrote.
           ════════════════════════════════════════════════════════════ */}
       <SettingsSection id="editing" title="Editing & Entries" openSet={openSet} toggleSection={toggleSection} query={query}>
 
@@ -248,162 +252,6 @@ export function SettingsPanel() {
             {isMobile
               ? 'Long-press a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, tap synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'
               : 'Hover a suggestion chip to open a synonym popover; cycle through definitions with ◀ ▶, click synonyms to select, then Add. Fetches from api.dictionaryapi.dev on first hover per word; results are cached for the session.'}
-          </div>
-        </SettingsGroup>
-
-        <SettingsDivider label="Counters" query={query} />
-
-        {/* Tiered counter colours */}
-        <SettingsGroup id="tieredCounters" query={query}>
-          <label className="settings-label">
-            <span>Tiered counter colors (description &amp; triggers)</span>
-            <input
-              type="checkbox"
-              checked={tieredCounterEnabled}
-              onChange={(e) => setTieredCounterEnabled(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
-          </div>
-        </SettingsGroup>
-
-        <SettingsGroup id="warningScale" query={query}>
-          <div className="settings-label">Warning color scale</div>
-          <select
-            className="hotbar-slot-select"
-            value={warningScale}
-            onChange={(e) => setWarningScale(e.target.value)}
-          >
-            {WARNING_SCALES.map((sc) => (
-              <option key={sc.id} value={sc.id}>{sc.label}</option>
-            ))}
-          </select>
-          <div className="settings-hint">
-            {WARNING_SCALES.find((sc) => sc.id === warningScale)?.hint}
-          </div>
-          {warningScale === WARNING_SCALE_GRADIENT && (
-            <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
-              A gradient reads as a smooth ramp rather than a set of steps, so the
-              exact shade between thresholds is approximate — and its mid-fade
-              colors are not contrast-checked the way the fixed ones are.
-            </div>
-          )}
-        </SettingsGroup>
-
-        <SettingsGroup id="counterThresholds" query={query}>
-          <div className="settings-label">Character count thresholds</div>
-          <div className="settings-row">
-            <label>
-              Yellow at
-              <input
-                type="number"
-                min={0}
-                value={counterTiers.yellow}
-                onChange={(e) =>
-                  setCounterTiers({ ...counterTiers, yellow: Number(e.target.value) })
-                }
-              />
-            </label>
-            <label>
-              {thirdStop ? 'Orange at' : 'Red at'}
-              <input
-                type="number"
-                min={0}
-                value={counterTiers.orange ?? counterTiers.red}
-                onChange={(e) =>
-                  setCounterTiers({ ...counterTiers, orange: Number(e.target.value) })
-                }
-              />
-            </label>
-            {thirdStop && (
-              <label>
-                Red at
-                <input
-                  type="number"
-                  min={0}
-                  value={counterTiers.red}
-                  onChange={(e) =>
-                    setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
-                  }
-                />
-              </label>
-            )}
-          </div>
-          <div className="settings-hint">
-            {thirdStop
-              ? 'Three stops, so red is free to mean “at the limit”. Trigger and title counts follow the same scale on their own fixed thresholds.'
-              : 'Two stops. Switching to a four-color or gradient scale adds a third above these and leaves both of these where they are.'}
-          </div>
-        </SettingsGroup>
-
-        <SettingsDivider label="Entry badges" query={query} />
-
-        {/* Stats badges */}
-        <SettingsGroup id="statsBadges" query={query}>
-          <label className="settings-label">
-            <span>Hide entry stats badges</span>
-            <input
-              type="checkbox"
-              checked={hideEntryStats}
-              onChange={(e) => setHideEntryStats(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Hides the trigger count and character count badges in entry headers.
-          </div>
-        </SettingsGroup>
-
-        {/* Condensed-row stats — an entry-badge setting that happens to apply
-            inside folders, so it is filed by what it changes. */}
-        <SettingsGroup id="condensedStats" query={query}>
-          <label className="settings-label">
-            <span>Show entry stats on condensed rows</span>
-            <input
-              type="checkbox"
-              checked={condensedShowStats}
-              onChange={(e) => setCondensedShowStats(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Condensed rows normally shed the trigger and character counts to stay compact.
-            Turn this on to keep them, rendered smaller to fit the row.
-          </div>
-        </SettingsGroup>
-
-        {/* Mobile-only, so it renders only there — a desktop user toggling this
-            would see nothing happen. */}
-        {isMobile && (
-          <SettingsGroup id="fullCardsSelect" query={query}>
-            <label className="settings-label">
-              <span>Show full entry cards while selecting</span>
-              <input
-                type="checkbox"
-                checked={fullCardsInSelectMode}
-                onChange={(e) => setFullCardsInSelectMode(e.target.checked)}
-              />
-            </label>
-            <div className="settings-hint">
-              Select mode normally shrinks entries to just their name and a checkbox, which
-              roughly quadruples how many fit on screen — the entry type still shows as the
-              colour down the left edge. Turn this on to keep the full cards, with their
-              trigger and character counts, while you select.
-            </div>
-          </SettingsGroup>
-        )}
-
-        {/* Private-entry marker */}
-        <SettingsGroup id="privateMarker" query={query}>
-          <label className="settings-label">
-            <span>Mark private entries</span>
-            <input
-              type="checkbox"
-              checked={markPrivateEntries}
-              onChange={(e) => setMarkPrivateEntries(e.target.checked)}
-            />
-          </label>
-          <div className="settings-hint">
-            Shows a crossed-out eye on entries that are Private on CharSnap. Public entries always show an eye; since entries default to Private, this off-by-default marker is for when you want private entries flagged too.
           </div>
         </SettingsGroup>
 
@@ -495,11 +343,174 @@ export function SettingsPanel() {
           2 — Appearance & Accessibility: how it looks
           "Accessibility" stays in the title on purpose — people who need
           those settings search for that word.
+          Absorbed the counter-colour and entry-badge groups on 2026-08-31,
+          when Editing & Entries held eleven groups to this section's three.
+          Character thresholds come along with the scale they drive: they are
+          numbers rather than colours, and sit here only because splitting a
+          control from the thing it controls would be worse than the stretch.
           ════════════════════════════════════════════════════════════ */}
       <SettingsSection id="appearance" title="Appearance & Accessibility" openSet={openSet} toggleSection={toggleSection} query={query}>
 
+        <SettingsDivider label="Theme" query={query} />
+
         <SettingsGroup id="theme" query={query}>
           <ThemeSettings />
+        </SettingsGroup>
+
+        <SettingsDivider label="Warnings & counters" query={query} />
+
+        {/* Tiered counter colours */}
+        <SettingsGroup id="tieredCounters" query={query}>
+          <label className="settings-label">
+            <span>Tiered counter colors (description &amp; triggers)</span>
+            <input
+              type="checkbox"
+              checked={tieredCounterEnabled}
+              onChange={(e) => setTieredCounterEnabled(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Color-code the description and trigger counters green / yellow / red by threshold. When disabled, counters show green.
+          </div>
+        </SettingsGroup>
+
+        <SettingsGroup id="warningScale" query={query}>
+          <div className="settings-label">Warning color scale</div>
+          <select
+            className="hotbar-slot-select"
+            value={warningScale}
+            onChange={(e) => setWarningScale(e.target.value)}
+          >
+            {WARNING_SCALES.map((sc) => (
+              <option key={sc.id} value={sc.id}>{sc.label}</option>
+            ))}
+          </select>
+          <div className="settings-hint">
+            {WARNING_SCALES.find((sc) => sc.id === warningScale)?.hint}
+          </div>
+          {warningScale === WARNING_SCALE_GRADIENT && (
+            <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
+              A gradient reads as a smooth ramp rather than a set of steps, so the
+              exact shade between thresholds is approximate — and its mid-fade
+              colors are not contrast-checked the way the fixed ones are.
+            </div>
+          )}
+        </SettingsGroup>
+
+        <SettingsGroup id="counterThresholds" query={query}>
+          <div className="settings-label">Character count thresholds</div>
+          <div className="settings-row">
+            <label>
+              Yellow at
+              <input
+                type="number"
+                min={0}
+                value={counterTiers.yellow}
+                onChange={(e) =>
+                  setCounterTiers({ ...counterTiers, yellow: Number(e.target.value) })
+                }
+              />
+            </label>
+            <label>
+              {thirdStop ? 'Orange at' : 'Red at'}
+              <input
+                type="number"
+                min={0}
+                value={counterTiers.orange ?? counterTiers.red}
+                onChange={(e) =>
+                  setCounterTiers({ ...counterTiers, orange: Number(e.target.value) })
+                }
+              />
+            </label>
+            {thirdStop && (
+              <label>
+                Red at
+                <input
+                  type="number"
+                  min={0}
+                  value={counterTiers.red}
+                  onChange={(e) =>
+                    setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
+                  }
+                />
+              </label>
+            )}
+          </div>
+          <div className="settings-hint">
+            {thirdStop
+              ? 'Three stops, so red is free to mean “at the limit”. Trigger and title counts follow the same scale on their own fixed thresholds.'
+              : 'Two stops. Switching to a four-color or gradient scale adds a third above these and leaves both of these where they are.'}
+          </div>
+        </SettingsGroup>
+
+        <SettingsDivider label="Entry display" query={query} />
+
+        {/* Stats badges */}
+        <SettingsGroup id="statsBadges" query={query}>
+          <label className="settings-label">
+            <span>Hide entry stats badges</span>
+            <input
+              type="checkbox"
+              checked={hideEntryStats}
+              onChange={(e) => setHideEntryStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Hides the trigger count and character count badges in entry headers.
+          </div>
+        </SettingsGroup>
+
+        {/* Condensed-row stats — an entry-badge setting that happens to apply
+            inside folders, so it is filed by what it changes. */}
+        <SettingsGroup id="condensedStats" query={query}>
+          <label className="settings-label">
+            <span>Show entry stats on condensed rows</span>
+            <input
+              type="checkbox"
+              checked={condensedShowStats}
+              onChange={(e) => setCondensedShowStats(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Condensed rows normally shed the trigger and character counts to stay compact.
+            Turn this on to keep them, rendered smaller to fit the row.
+          </div>
+        </SettingsGroup>
+
+        {/* Mobile-only, so it renders only there — a desktop user toggling this
+            would see nothing happen. */}
+        {isMobile && (
+          <SettingsGroup id="fullCardsSelect" query={query}>
+            <label className="settings-label">
+              <span>Show full entry cards while selecting</span>
+              <input
+                type="checkbox"
+                checked={fullCardsInSelectMode}
+                onChange={(e) => setFullCardsInSelectMode(e.target.checked)}
+              />
+            </label>
+            <div className="settings-hint">
+              Select mode normally shrinks entries to just their name and a checkbox, which
+              roughly quadruples how many fit on screen — the entry type still shows as the
+              colour down the left edge. Turn this on to keep the full cards, with their
+              trigger and character counts, while you select.
+            </div>
+          </SettingsGroup>
+        )}
+
+        {/* Private-entry marker */}
+        <SettingsGroup id="privateMarker" query={query}>
+          <label className="settings-label">
+            <span>Mark private entries</span>
+            <input
+              type="checkbox"
+              checked={markPrivateEntries}
+              onChange={(e) => setMarkPrivateEntries(e.target.checked)}
+            />
+          </label>
+          <div className="settings-hint">
+            Shows a crossed-out eye on entries that are Private on CharSnap. Public entries always show an eye; since entries default to Private, this off-by-default marker is for when you want private entries flagged too.
+          </div>
         </SettingsGroup>
 
         <SettingsDivider label="Accessibility" query={query} />

@@ -10,7 +10,7 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
-import { MoveToFolderButton } from './MoveToFolderButton.jsx';
+import { EntryActionsMenu }   from './EntryActionsMenu.jsx';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useMobile }      from '../../hooks/use-mobile.js';
 import { useUi }          from '../../hooks/use-ui.js';
@@ -521,12 +521,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             </button>
           )}
           {!isSelectMode && (
-            <button
-              className="card-action-btn card-action-btn--remove"
-              onClick={() => onRemove(entry.id)}
-            >
-              Remove
-            </button>
+            <EntryActionsMenu entry={entry} onUpdate={update} onRemove={onRemove} />
           )}
         </div>
       </div>
@@ -739,21 +734,6 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                   {`↺ Checkpoints${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`}
                 </>
               ) : 'Enable checkpoints'}
-            </button>
-            <MoveToFolderButton entry={entry} />
-            <button
-              className={`entry-public-btn touch-floor${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}
-              onClick={() => update({ isPublic: entry.isPublic !== true }, true)}
-              title={entry.isPublic === true ? 'Public on CharSnap — click to make private' : 'Private on CharSnap — click to make public'}
-            >
-              {entry.isPublic === true ? 'Public' : 'Private'}
-            </button>
-            <button
-              className={`hide-from-export-btn touch-floor${entry.hiddenFromExport ? ' hide-from-export-btn--active' : ''}`}
-              onClick={() => update({ hiddenFromExport: !entry.hiddenFromExport }, true)}
-              title="Exclude entry from JSON export"
-            >
-              {entry.hiddenFromExport ? 'Hidden from Export' : 'Hide from Export'}
             </button>
           </div>
 
