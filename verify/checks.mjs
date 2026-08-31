@@ -220,7 +220,14 @@ const SCENARIOS = [
     check('gradient: and it resolves to a real colour, not a blank',
       /^(rgb|oklab|color)\(/.test(mid) && /\d/.test(mid), true);
     await typeChars(400);
-    check('gradient: below the first threshold is still flat green', await counterColor(), gRgb);
+    check('gradient: well below the first threshold is flat green', await counterColor(), gRgb);
+    // The run-up: green holds to two thirds of the threshold, then eases in.
+    await typeChars(500);
+    check('gradient: green still holds at the hand-off point', await counterColor(), gRgb);
+    await typeChars(625);
+    const easing = await counterColor();
+    check('gradient: mid-run-up is neither green nor yellow',
+      easing !== gRgb && easing !== yRgb, true);
 
     // ── the setting survives a reload ───────────────────────────────────────
     // A reload lands on the lander, so the builder has to be re-entered before

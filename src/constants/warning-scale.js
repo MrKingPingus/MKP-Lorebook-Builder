@@ -13,6 +13,22 @@ export const WARNING_SCALE_GRADIENT = 'gradient';
 
 export const DEFAULT_WARNING_SCALE = WARNING_SCALE_THREE;
 
+/**
+ * Gradient mode only: the fraction of the way to the first threshold at which
+ * green starts giving way to yellow. Below it the colour is flat green.
+ *
+ * Proportional rather than a fixed character count so it tracks whatever
+ * thresholds the user sets — someone warning at 400 characters should not get
+ * the same 250-character run-up as someone warning at 1500. At the default
+ * 750-character threshold this puts the hand-off at 500, i.e. the last 250
+ * characters fade.
+ *
+ * Without it a gradient snaps from flat green straight to full yellow at the
+ * threshold, which is a step — the one thing the gradient scale exists to
+ * avoid — and it makes the threshold the only edge on an otherwise smooth ramp.
+ */
+export const GRADIENT_GREEN_HOLD = 2 / 3;
+
 export const WARNING_SCALES = [
   {
     id:    WARNING_SCALE_THREE,
@@ -27,7 +43,7 @@ export const WARNING_SCALES = [
   {
     id:    WARNING_SCALE_GRADIENT,
     label: 'Gradient',
-    hint:  'Green until the first threshold, then a continuous fade through orange to red.',
+    hint:  'A continuous fade: green, easing into yellow as it nears your first threshold, then on through orange to red.',
   },
 ];
 

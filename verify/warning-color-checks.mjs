@@ -13,6 +13,7 @@ import {
 } from '../src/services/warning-color.js';
 import {
   WARNING_SCALE_THREE, WARNING_SCALE_FOUR, WARNING_SCALE_GRADIENT,
+  GRADIENT_GREEN_HOLD,
 } from '../src/constants/warning-scale.js';
 import {
   CHAR_LIMIT, MAX_TRIGGERS, TRIGGER_WARN_YELLOW, TITLE_CHAR_LIMIT,
@@ -64,9 +65,40 @@ export function runWarningColorChecks() {
   check('four-colour on a legacy blob still reds at the cap', fl(CHAR_LIMIT), WARN_RED);
 
   // ── gradient ──────────────────────────────────────────────────────────────
+  // Green holds flat, then eases into yellow over the run-up to the first
+  // threshold. The hold point is proportional (GRADIENT_GREEN_HOLD of the
+  // threshold), so it tracks whatever numbers the user sets rather than a fixed
+  // character count: at the default 750 it holds to 500 and fades over the last
+  // 250. Without the ease the ramp had exactly one hard edge on it, at the very
+  // threshold the gradient scale exists to soften.
   const g = (v) => charColor(v, MIGRATED, WARNING_SCALE_GRADIENT);
-  check('gradient is flat green below the first threshold', g(749), WARN_GREEN);
-  check('gradient starts exactly on yellow',                g(750), WARN_YELLOW);
+  const hold = 750 * GRADIENT_GREEN_HOLD;
+  check('gradient is flat green well below the threshold',  g(100), WARN_GREEN);
+  check('gradient is still flat green at the hold point',   g(hold), WARN_GREEN);
+  check('gradient has left green a third of the way up',
+    g(hold + (750 - hold) / 3), 'color-mix(in oklab, var(--green) 67%, var(--yellow) 33%)');
+  check('gradient is half green half yellow mid-run-up',
+    g((hold + 750) / 2), 'color-mix(in oklab, var(--green) 50%, var(--yellow) 50%)');
+  check('gradient arrives exactly on yellow at the threshold', g(750), WARN_YELLOW);
+  // The run-up scales with the threshold rather than being a fixed run of
+  // characters — someone warning at 300 should not get the same 250-char fade.
+  const tight = { yellow: 300, orange: 600, red: 900 };
+  check('a lower threshold shortens the run-up proportionally',
+    charColor(200, tight, WARNING_SCALE_GRADIENT), WARN_GREEN);
+  check('and reaches yellow on time at that threshold',
+    charColor(300, tight, WARNING_SCALE_GRADIENT), WARN_YELLOW);
+  check('and is mid-fade halfway through its own run-up',
+    charColor((300 * GRADIENT_GREEN_HOLD + 300) / 2, tight, WARNING_SCALE_GRADIENT),
+    'color-mix(in oklab, var(--green) 50%, var(--yellow) 50%)');
+  // The ease is gradient-only — the stepped scales must stay hard-edged.
+  check('the four-colour scale is untouched by the ease',
+    charColor(700, MIGRATED, WARNING_SCALE_FOUR), WARN_GREEN);
+  check('the three-colour scale is untouched by the ease',
+    charColor(700, MIGRATED, WARNING_SCALE_THREE), WARN_GREEN);
+  // Storage rests on muted, so its ease has to fade FROM muted, not from green.
+  check('storage gradient eases from muted, not from green',
+    warningColor(0.5, storageStops(WARNING_SCALE_GRADIENT), { gradient: true, base: 'var(--muted2)' }),
+    'color-mix(in oklab, var(--muted2) 50%, var(--yellow) 50%)');
   check('gradient lands exactly on orange at the mid stop', g(1000), WARN_ORANGE);
   check('gradient ends exactly on red at the cap',          g(1500), WARN_RED);
   check('gradient stays red beyond the cap',                g(4000), WARN_RED);

@@ -5157,9 +5157,17 @@ img.logo-icon {
 }
 .settings-lander-btn:hover { color: var(--text); border-color: var(--text); }
 
-.settings-row { display: flex; gap: 12px; }
-.settings-row label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted2); }
-.settings-row input[type="number"] { width: 72px; padding: 3px 6px; font-size: 0.75rem; }
+/* Wraps because the row is not always two controls wide — the four-colour and
+   gradient warning scales show a third character threshold, and three
+   label+input pairs do not fit across a 320px panel. Without the wrap the
+   third one is simply cut off at the panel edge. */
+.settings-row { display: flex; flex-wrap: wrap; gap: 12px; row-gap: 8px; }
+.settings-row label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75rem; color: var(--muted2);
+  white-space: nowrap; /* "Yellow at" is a label, not a paragraph */
+}
+.settings-row input[type="number"] { width: 72px; flex-shrink: 0; padding: 3px 6px; font-size: 0.75rem; }
 kbd {
   display: inline-block; padding: 1px 5px;
   background: var(--surface3); border: 1px solid var(--border);

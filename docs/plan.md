@@ -516,6 +516,11 @@ the `⋯` menu exists before anything else wants to live in it:
    becomes `orange` and the new `red` takes the character cap.
 4. Gradient is **green until the first threshold**, then a continuous
    yellow → orange → red fade. Thresholds keep their meaning as the fade's anchors.
+   *Amended 2026-08-31 after review:* green does not hold all the way to the
+   threshold and then snap — it holds to `GRADIENT_GREEN_HOLD` (2/3) of it and
+   eases in over the remainder, so the ramp has no hard edge anywhere. The hold
+   point is a fraction rather than a character count so it tracks whatever
+   thresholds the user sets.
 5. Gradient is **allowed under high contrast**, with the caveat stated in the
    settings hint rather than the option being withheld.
 6. **Desktop only** for the `⋯` menu; `EntryDetailPanel` keeps its flat buttons.
@@ -565,6 +570,11 @@ high-contrast blocks; custom inherits `:root`. Under high contrast the
 yellow→orange step is the weakest link — high-contrast yellow is already a brown
 — which is a known and accepted limit of that palette rather than a bug (locked
 decision 5).
+
+Two things came out of user review and are folded in above: the gradient's
+green hand-off (locked decision 4), and `.settings-row` learning to wrap — it
+was a fixed non-wrapping flex, so the third character threshold was simply cut
+off at the 320px panel edge on the four-colour and gradient scales.
 
 The storage ring stopped being coloured by `tier-*` CSS classes and now takes a
 `--tier-color` custom property computed by `use-storage-usage`, so one value

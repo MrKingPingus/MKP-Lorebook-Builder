@@ -27,6 +27,7 @@ import {
 import {
   WARNING_SCALE_GRADIENT,
   DEFAULT_WARNING_SCALE,
+  GRADIENT_GREEN_HOLD,
   scaleUsesThirdStop,
 } from '../constants/warning-scale.js';
 
@@ -67,13 +68,20 @@ function progress(value, from, to) {
  */
 export function warningColor(value, stops, { gradient = false, base = WARN_GREEN } = {}) {
   const [warn, danger, critical] = stops;
-  if (!(value >= warn)) return base;
 
   if (gradient && critical != null) {
-    if (value >= critical) return WARN_RED;
-    if (value >= danger)   return mix(WARN_ORANGE, WARN_RED, progress(value, danger, critical));
+    // Green holds flat, then eases into yellow over the run-up to the first
+    // threshold, so the threshold is a colour the ramp passes through rather
+    // than an edge it jumps at. Everything above it fades on as before.
+    const holdUntil = warn * GRADIENT_GREEN_HOLD;
+    if (value < holdUntil)  return base;
+    if (value < warn)       return mix(base, WARN_YELLOW, progress(value, holdUntil, warn));
+    if (value >= critical)  return WARN_RED;
+    if (value >= danger)    return mix(WARN_ORANGE, WARN_RED, progress(value, danger, critical));
     return mix(WARN_YELLOW, WARN_ORANGE, progress(value, warn, danger));
   }
+
+  if (!(value >= warn)) return base;
 
   if (critical != null) {
     if (value >= critical) return WARN_RED;
