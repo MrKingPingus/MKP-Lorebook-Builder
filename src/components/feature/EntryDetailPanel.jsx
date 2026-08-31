@@ -25,7 +25,7 @@ export function EntryDetailPanel() {
   const searchQuery            = useUi((s) => s.searchQuery);
   const pendingFocusEntryId    = useUi((s) => s.pendingFocusEntryId);
   const setPendingFocusEntryId = useUi((s) => s.setPendingFocusEntryId);
-  const { triggerDelimiter, setTriggerDelimiter } = useSettings();
+  const { triggerDelimiter, setTriggerDelimiter, warningScale } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -133,7 +133,7 @@ export function EntryDetailPanel() {
           <div className="entry-detail-section">
             <div className="field-label">
               ENTRY NAME
-              <TitleCharCounter length={entry.name.length} />
+              <TitleCharCounter length={entry.name.length} warningScale={warningScale} />
             </div>
             <input
               ref={nameInputRef}

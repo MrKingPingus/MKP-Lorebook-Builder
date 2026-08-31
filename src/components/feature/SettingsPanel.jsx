@@ -16,6 +16,7 @@ import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { KeybindingSettings }    from './KeybindingSettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
+import { WARNING_SCALES, WARNING_SCALE_GRADIENT, scaleUsesThirdStop } from '../../constants/warning-scale.js';
 import {
   COLLAPSE_STAGE_ORDER,
   COLLAPSE_STAGE_LABELS,
@@ -84,6 +85,8 @@ export function SettingsPanel() {
   const {
     counterTiers,
     tieredCounterEnabled,
+    warningScale,
+    setWarningScale,
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
@@ -117,6 +120,11 @@ export function SettingsPanel() {
     storageQuotaProfile,
     setStorageQuotaProfile,
   } = useSettings();
+
+  // Whether the active scale reads a third character threshold. Drives both the
+  // extra input and the second label, which is 'Red at' on a two-stop scale and
+  // 'Orange at' on a three-stop one — same stored number, different top colour.
+  const thirdStop = scaleUsesThirdStop(warningScale);
 
   const {
     rollbackEnabled,
@@ -260,6 +268,29 @@ export function SettingsPanel() {
           </div>
         </SettingsGroup>
 
+        <SettingsGroup id="warningScale" query={query}>
+          <div className="settings-label">Warning color scale</div>
+          <select
+            className="hotbar-slot-select"
+            value={warningScale}
+            onChange={(e) => setWarningScale(e.target.value)}
+          >
+            {WARNING_SCALES.map((sc) => (
+              <option key={sc.id} value={sc.id}>{sc.label}</option>
+            ))}
+          </select>
+          <div className="settings-hint">
+            {WARNING_SCALES.find((sc) => sc.id === warningScale)?.hint}
+          </div>
+          {warningScale === WARNING_SCALE_GRADIENT && (
+            <div className="settings-hint" style={{ color: 'var(--yellow)' }}>
+              A gradient reads as a smooth ramp rather than a set of steps, so the
+              exact shade between thresholds is approximate — and its mid-fade
+              colors are not contrast-checked the way the fixed ones are.
+            </div>
+          )}
+        </SettingsGroup>
+
         <SettingsGroup id="counterThresholds" query={query}>
           <div className="settings-label">Character count thresholds</div>
           <div className="settings-row">
@@ -275,16 +306,34 @@ export function SettingsPanel() {
               />
             </label>
             <label>
-              Red at
+              {thirdStop ? 'Orange at' : 'Red at'}
               <input
                 type="number"
                 min={0}
-                value={counterTiers.red}
+                value={counterTiers.orange ?? counterTiers.red}
                 onChange={(e) =>
-                  setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
+                  setCounterTiers({ ...counterTiers, orange: Number(e.target.value) })
                 }
               />
             </label>
+            {thirdStop && (
+              <label>
+                Red at
+                <input
+                  type="number"
+                  min={0}
+                  value={counterTiers.red}
+                  onChange={(e) =>
+                    setCounterTiers({ ...counterTiers, red: Number(e.target.value) })
+                  }
+                />
+              </label>
+            )}
+          </div>
+          <div className="settings-hint">
+            {thirdStop
+              ? 'Three stops, so red is free to mean “at the limit”. Trigger and title counts follow the same scale on their own fixed thresholds.'
+              : 'Two stops. Switching to a four-color or gradient scale adds a third above these and leaves both of these where they are.'}
           </div>
         </SettingsGroup>
 

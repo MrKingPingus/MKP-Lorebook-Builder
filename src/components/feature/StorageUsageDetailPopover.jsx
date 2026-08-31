@@ -39,6 +39,7 @@ export function StorageUsageDetailPopover({
   quotaBytes,
   percent,
   tier,
+  tierColor,
   breakdown,
   onRefresh,
   onClose,
@@ -65,7 +66,7 @@ export function StorageUsageDetailPopover({
     <div
       ref={popoverRef}
       className={`storage-usage-detail-popover tier-${tier}`}
-      style={style}
+      style={{ ...style, '--tier-color': tierColor }}
       onPointerDown={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}

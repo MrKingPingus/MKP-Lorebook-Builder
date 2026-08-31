@@ -137,6 +137,106 @@ const SCENARIOS = [
     check('public badges unchanged', await page.locator('.entry-public-icon').count(), 29);
   }),
 
+  scenario('Warning scale: three / four / gradient reach the real counters', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    // Drive one entry's description to a known length and read the colour the
+    // app actually paints. Reading computed style is the point of doing this in
+    // a browser at all — the pure checks already prove the maths.
+    const card = page.locator('.entry-card').first();
+    await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await settle(page, 200);
+    const textarea = card.locator('textarea').first();
+    const counter  = card.locator('.char-counter').first();
+
+    async function typeChars(n) {
+      await textarea.evaluate((el, len) => {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+        setter.call(el, 'x'.repeat(len));
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, n);
+      await settle(page, 200);
+    }
+    const counterColor = () => counter.evaluate((el) => getComputedStyle(el).color);
+    // The token values for this theme, resolved once so the assertions compare
+    // against the palette rather than against hexes duplicated from style.css.
+    const token = (name) => page.evaluate(
+      (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
+    const [GREEN, YELLOW, ORANGE, RED] = await Promise.all(
+      ['--green', '--yellow', '--orange', '--red'].map(token));
+    const asRgb = (hex) => page.evaluate((h) => {
+      const d = document.createElement('div');
+      d.style.color = h; document.body.appendChild(d);
+      const c = getComputedStyle(d).color; d.remove(); return c;
+    }, hex);
+    const [gRgb, yRgb, oRgb, rRgb] = await Promise.all([GREEN, YELLOW, ORANGE, RED].map(asRgb));
+
+    check('an orange token exists in the default theme', ORANGE.length > 0, true);
+
+    // ── three colours (the default) ─────────────────────────────────────────
+    await typeChars(500);
+    check('three-colour: 500 chars is green', await counterColor(), gRgb);
+    await typeChars(800);
+    check('three-colour: 800 chars is yellow', await counterColor(), yRgb);
+    await typeChars(1200);
+    check('three-colour: 1200 chars is red', await counterColor(), rRgb);
+
+    // ── switch to four ──────────────────────────────────────────────────────
+    await openSettings(page);
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    const scale = editing.locator('.settings-group', { hasText: 'Warning color scale' }).locator('select');
+    await scale.waitFor({ timeout: 4000 });
+    await scale.selectOption('four');
+    await settle(page, 200);
+    // The third threshold input only exists on a three-stop scale.
+    const thresholds = editing.locator('.settings-group', { hasText: 'Character count thresholds' });
+    check('four-colour exposes a third threshold input',
+      await thresholds.locator('input[type="number"]').count(), 3);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    check('four-colour: 1200 chars is now orange, not red', await counterColor(), oRgb);
+    await typeChars(1600);
+    check('four-colour: past the cap is red', await counterColor(), rRgb);
+    await typeChars(800);
+    check('four-colour: the yellow band is unmoved', await counterColor(), yRgb);
+
+    // ── switch to gradient ──────────────────────────────────────────────────
+    await openSettings(page);
+    const editing2 = await openSettingsSection(page, 'Editing & Entries');
+    await editing2.locator('.settings-group', { hasText: 'Warning color scale' })
+      .locator('select').selectOption('gradient');
+    await settle(page, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    await typeChars(875);
+    const mid = await counterColor();
+    check('gradient: a mid-band value is neither pure yellow nor pure orange',
+      mid !== yRgb && mid !== oRgb, true);
+    // A color-mix() resolves to oklab()/color() in computed style rather than
+    // rgb(), depending on the engine — assert it is a real colour function
+    // carrying numbers, not the empty string a bad token reference gives.
+    check('gradient: and it resolves to a real colour, not a blank',
+      /^(rgb|oklab|color)\(/.test(mid) && /\d/.test(mid), true);
+    await typeChars(400);
+    check('gradient: below the first threshold is still flat green', await counterColor(), gRgb);
+
+    // ── the setting survives a reload ───────────────────────────────────────
+    // A reload lands on the lander, so the builder has to be re-entered before
+    // Settings is reachable at all.
+    await page.reload();
+    await settle(page, 600);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 600);
+    await openSettings(page);
+    const editing3 = await openSettingsSection(page, 'Editing & Entries');
+    check('the chosen scale persists across a reload',
+      await editing3.locator('.settings-group', { hasText: 'Warning color scale' })
+        .locator('select').inputValue(),
+      'gradient');
+  }),
+
   scenario('Default hotkeys + help overlay + Escape dismiss', async (page, check) => {
     await openBuilderWithFixture(page);
     const cards = page.locator('.entry-card');

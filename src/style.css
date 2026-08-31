@@ -30,6 +30,7 @@
   --coral:    #f87171;
   --green:    #34d399;
   --yellow:   #f59e0b;
+  --orange:   #f97316;
   --red:      #ef4444;
   --blue:     #60a5fa;
   --gold:     #eab308;
@@ -121,6 +122,7 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --coral:    #e11d48;
   --green:    #059669;
   --yellow:   #d97706;
+  --orange:   #ea580c;
   --red:      #dc2626;
   --blue:     #2563eb;
   --gold:     #ca8a04;
@@ -147,6 +149,7 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --coral:    #b3001b;
   --green:    #006400;
   --yellow:   #8a5a00;
+  --orange:   #9c3300;
   --red:      #b3001b;
   --blue:     #0033cc;
   --gold:     #7a5c00;
@@ -7872,9 +7875,7 @@ kbd {
 }
 .storage-usage-ring:hover { background: var(--surface3); }
 .storage-usage-ring-track { stroke: var(--border2); }
-.storage-usage-ring-fill  { stroke: var(--muted2); transition: stroke 200ms, stroke-dashoffset 300ms ease-out; }
-.storage-usage-ring.tier-warn   .storage-usage-ring-fill { stroke: var(--yellow); }
-.storage-usage-ring.tier-danger .storage-usage-ring-fill { stroke: var(--red); }
+.storage-usage-ring-fill  { stroke: var(--tier-color, var(--muted2)); transition: stroke 200ms, stroke-dashoffset 300ms ease-out; }
 
 .storage-usage-hover-popover {
   background: var(--surface2);
@@ -7888,8 +7889,8 @@ kbd {
   white-space: nowrap;
   pointer-events: none;
 }
-.storage-usage-hover-popover.tier-warn   { color: var(--yellow); }
-.storage-usage-hover-popover.tier-danger { color: var(--red); }
+.storage-usage-hover-popover.tier-warn,
+.storage-usage-hover-popover.tier-danger { color: var(--tier-color, var(--text)); }
 
 .storage-usage-detail-popover {
   min-width: 280px;
@@ -7917,9 +7918,7 @@ kbd {
   color: var(--text);
   font-weight: 600;
 }
-.storage-usage-detail-percent { color: var(--muted2); }
-.storage-usage-detail-popover.tier-warn   .storage-usage-detail-percent { color: var(--yellow); }
-.storage-usage-detail-popover.tier-danger .storage-usage-detail-percent { color: var(--red); }
+.storage-usage-detail-percent { color: var(--tier-color, var(--muted2)); }
 .storage-usage-bar {
   height: 6px;
   background: var(--surface3);
@@ -7928,11 +7927,10 @@ kbd {
 }
 .storage-usage-bar-fill {
   height: 100%;
-  background: var(--muted2);
+  background: var(--tier-color, var(--muted2));
   transition: width 300ms ease-out, background 200ms;
 }
-.storage-usage-bar-fill.tier-warn   { background: var(--yellow); }
-.storage-usage-bar-fill.tier-danger { background: var(--red); }
+
 .storage-usage-detail-list {
   list-style: none;
   margin: 0;

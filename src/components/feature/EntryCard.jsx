@@ -22,6 +22,7 @@ import { diffEntries, entriesShallowEqual } from '../../services/diff-service.js
 import { useIsSelectMode, useIsSelected, useToggleSelected,
          useStagedType, useSetStagedType }              from '../../hooks/use-selection.js';
 import { ENTRY_TYPES }                              from '../../constants/entry-types.js';
+import { warningColor, charStops, triggerStops, isGradient, WARN_GREEN } from '../../services/warning-color.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
 import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
@@ -68,7 +69,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const [localCollapsed, setLocalCollapsed]   = useState(true);
   const [rollbackOpen, setRollbackOpen]       = useState(false);
   const [copyMenuOpen, setCopyMenuOpen]       = useState(false);
-  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats, fullCardsInSelectMode } = useSettings();
+  const { hideEntryStats, markPrivateEntries, counterTiers, tieredCounterEnabled, warningScale, triggerDelimiter, setTriggerDelimiter, entryHeaderSize, condensedShowStats, fullCardsInSelectMode } = useSettings();
   const { conflictMap, allowedOverlaps, allowOverlap, allowOverlaps, revokeOverlap } = useCrosstalk();
   const { activeToRef: nameMatchMap, matchedRefByActive } = useNameMatch();
   const setPeekReferenceEntryId = useUi((s) => s.setPeekReferenceEntryId);
@@ -390,10 +391,10 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             {entry.hiddenFromExport && <ExportOffIcon />}
             {!hideEntryStats && (
               <div className="entry-card-mobile-stats">
-                <span style={{ color: entry.triggers.length >= MAX_TRIGGERS ? 'var(--red)' : entry.triggers.length >= TRIGGER_WARN_YELLOW ? 'var(--yellow)' : 'var(--green)' }}>
+                <span style={{ color: warningColor(entry.triggers.length, triggerStops(warningScale), { gradient: isGradient(warningScale) }) }}>
                   {entry.triggers.length}/{MAX_TRIGGERS} trg
                 </span>
-                <span style={{ color: tieredCounterEnabled ? (entry.description.length >= counterTiers?.red ? 'var(--red)' : entry.description.length >= counterTiers?.yellow ? 'var(--yellow)' : 'var(--green)') : 'var(--green)' }}>
+                <span style={{ color: tieredCounterEnabled ? warningColor(entry.description.length, charStops(counterTiers, warningScale), { gradient: isGradient(warningScale) }) : WARN_GREEN }}>
                   {entry.description.length}/{CHAR_LIMIT} chr
                 </span>
               </div>
@@ -507,6 +508,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
               charCount={entry.description.length}
               counterTiers={counterTiers}
               tieredEnabled={tieredCounterEnabled}
+              warningScale={warningScale}
             />
           )}
           {!isSelectMode && (
@@ -546,7 +548,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 {isComparing && compareDelta?.name && (
                   <span className="diff-modified-dot" title="Differs from reference">●</span>
                 )}
-                <TitleCharCounter length={entry.name.length} />
+                <TitleCharCounter length={entry.name.length} warningScale={warningScale} />
               </div>
               <input
                 ref={nameInputRef}

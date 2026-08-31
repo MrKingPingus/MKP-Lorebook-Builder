@@ -9,6 +9,7 @@ export function useSettings() {
   const defaultWindowWidth       = useSettingsStore((s) => s.defaultWindowWidth);
   const defaultWindowHeight      = useSettingsStore((s) => s.defaultWindowHeight);
   const tieredCounterEnabled     = useSettingsStore((s) => s.tieredCounterEnabled);
+  const warningScale             = useSettingsStore((s) => s.warningScale);
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
   const markPrivateEntries       = useSettingsStore((s) => s.markPrivateEntries);
@@ -44,6 +45,7 @@ export function useSettings() {
       defaultWindowWidth,
       defaultWindowHeight,
       tieredCounterEnabled,
+      warningScale,
       hideSuggestionsByDefault,
       hideEntryStats,
       markPrivateEntries,
@@ -88,6 +90,7 @@ export function useSettings() {
     defaultWindowWidth,
     defaultWindowHeight,
     tieredCounterEnabled,
+    warningScale,
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
@@ -118,6 +121,7 @@ export function useSettings() {
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
     setDefaultWindowHeight:      (v) => updateSetting('defaultWindowHeight', v),
     setTieredCounterEnabled:     (v) => updateSetting('tieredCounterEnabled', v),
+    setWarningScale:             (v) => updateSetting('warningScale', v),
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
     setMarkPrivateEntries:       (v) => updateSetting('markPrivateEntries', v),

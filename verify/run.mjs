@@ -10,6 +10,7 @@ import { runFolderTreeChecks } from './folder-tree-checks.mjs';
 import { runSelectionRangeChecks } from './selection-range-checks.mjs';
 import { runDragDropChecks } from './drag-drop-checks.mjs';
 import { runReleaseNotesChecks } from './release-notes-checks.mjs';
+import { runWarningColorChecks } from './warning-color-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -34,6 +35,7 @@ const pureOk = [
   runSelectionRangeChecks(),
   runDragDropChecks(),
   runReleaseNotesChecks(),
+  runWarningColorChecks(),
 ].every(Boolean);
 
 let child = null;

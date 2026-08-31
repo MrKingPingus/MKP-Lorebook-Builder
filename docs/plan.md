@@ -498,6 +498,79 @@ Also worth knowing before 14C designs a bottom bar: there is no `viewport-fit=co
 
 ---
 
+### Entry features & warning scales (2026-08-31)
+
+A four-part pass agreed with the user on 2026-08-31, sequenced deliberately so
+the `⋯` menu exists before anything else wants to live in it:
+
+1. **Warning colour scales** (below) — independent of the rest, so it goes first.
+2. **Entry `⋯` overflow menu** — resolves the Phase 12 "entry-card footer crowding" revisit.
+3. **Copy / move an entry to another lorebook** (GitHub #127), into that menu.
+4. **Entry Templates** (Phase 12, GitHub #114), into that menu.
+
+**Locked decisions (2026-08-31):**
+1. Sequence as above — colours, menu, copy/move, templates.
+2. Scale applies to **every** green/yellow/red warning: description chars, trigger
+   count, entry title, and the storage-usage ring.
+3. Four-colour uses **three user-set character thresholds**; the stored `red`
+   becomes `orange` and the new `red` takes the character cap.
+4. Gradient is **green until the first threshold**, then a continuous
+   yellow → orange → red fade. Thresholds keep their meaning as the fade's anchors.
+5. Gradient is **allowed under high contrast**, with the caveat stated in the
+   settings hint rather than the option being withheld.
+6. **Desktop only** for the `⋯` menu; `EntryDetailPanel` keeps its flat buttons.
+   Mobile parity is its own session.
+7. A **move is undoable on the source side only** — the confirmation says so.
+8. Copy/move carries name, type, description, triggers, `isPublic`,
+   `hiddenFromExport` **and checkpoints**; `folderId` is dropped (folders are per-book).
+9. The target picker offers **＋ New lorebook…** alongside existing books.
+10. **Bulk copy/move joins `BulkActionBar`**; the "bounce me to Select mode" prompt
+    inside the per-entry menu is skipped.
+11. Templates ships **12A and 12B together**.
+
+**Sub-phase 1 — warning colour scales — shipped 2026-08-31.** GitHub #131.
+
+`services/warning-color.js` is the single evaluator; `constants/warning-scale.js`
+names the three modes. Before this the green/yellow/red conditional was
+hand-copied into seven call sites across six components, which is exactly how
+`DescriptionArea`'s border came to read the *constants* while its own counter
+read the user's settings — a latent bug the extraction surfaced and fixed.
+
+Two things are worth remembering from this one.
+
+**The fourth colour is not inserted in the same place for every metric**, and a
+single shared rule would have silently moved someone's red. Description
+characters had red sitting at the user's danger threshold, well below the 1500
+cap, so four-colour *appends* a stop at the cap — which is precisely what #131
+asked for ("it means I don't have to set the red threshold to 1500"). Triggers
+and entry titles already had red *on* their hard cap, so four-colour *inserts* a
+stop below it and leaves red alone. Storage appends, like characters. Each
+metric therefore builds its own stops rather than sharing one rule, and the
+`verify/warning-color-checks.mjs` suite exists mostly to hold that line: most of
+its 47 assertions do nothing but prove three-colour output is unchanged.
+
+**The stored `counterTiers` grew a third number, which is a persisted-schema
+change and needed a migration.** `{ yellow, red }` becomes
+`{ yellow, orange, red }` where the old `red` moves to `orange` and the new `red`
+takes the cap. Written the other way round — reading the stored `red` as the new
+top stop — every existing user's red would have jumped from 1000 to 1500 with no
+warning. The migration is in `App.jsx`'s fix-up patch; `charStops()` also handles
+a legacy blob defensively, in case it is read before the migration runs.
+
+Gradient blends via `color-mix(in oklab, …)` on the theme tokens rather than
+hardcoded hex, so custom and high-contrast palettes fade through their own
+colours. oklab rather than sRGB because an sRGB yellow→red path dips through a
+muddy brown at the midpoint. `--orange` was added to the dark, light and
+high-contrast blocks; custom inherits `:root`. Under high contrast the
+yellow→orange step is the weakest link — high-contrast yellow is already a brown
+— which is a known and accepted limit of that palette rather than a bug (locked
+decision 5).
+
+The storage ring stopped being coloured by `tier-*` CSS classes and now takes a
+`--tier-color` custom property computed by `use-storage-usage`, so one value
+drives ring, bar and text and the gradient can reach it. Its resting colour is
+`--muted2`, not green: it is a gauge, not a health readout.
+
 ### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
 
 Reported as "the tag suggestion window sometimes won't go away", unreproducible by

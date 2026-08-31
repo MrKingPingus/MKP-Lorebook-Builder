@@ -5,8 +5,10 @@ export const CHAR_LIMIT               = 1500;
 export const CHAR_WARN_YELLOW         = 750;
 export const CHAR_WARN_RED            = 1000;
 export const TRIGGER_WARN_YELLOW      = 20;
+export const TRIGGER_WARN_ORANGE      = 23;  // four-colour scale only; sits between the yellow warning and MAX_TRIGGERS
 export const TITLE_CHAR_LIMIT         = 50;  // advisory entry-title length cap (mirrors CharSnap; not enforced)
 export const TITLE_WARN_YELLOW        = 40;  // title-length warning surfaces at this count
+export const TITLE_WARN_ORANGE        = 45;  // four-colour scale only; sits between the warning and the cap
 export const MIN_WINDOW_WIDTH         = 480;
 export const MIN_WINDOW_HEIGHT        = 300;
 export const MAX_HISTORY              = 50;
@@ -40,6 +42,7 @@ export const STORAGE_QUOTA_BYTES_BY_PROFILE = {
 };
 export const STORAGE_WARN_THRESHOLD       = 0.60;
 export const STORAGE_DANGER_THRESHOLD     = 0.85;
+export const STORAGE_CRITICAL_THRESHOLD   = 0.95; // four-colour scale only; "about to fail a write" rather than "getting full"
 
 // Anchored-popover geometry (see hooks/use-anchored-position.js)
 export const POPOVER_ANCHOR_GAP_PX = 6;  // breathing room between anchor and popover

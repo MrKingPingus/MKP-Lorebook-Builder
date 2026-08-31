@@ -6,6 +6,8 @@
 
 ### New
 
+- **Warning colours come in three scales now** — Settings → Editing & Entries → **Warning color scale**. **Three colors** is the green / yellow / red you already have, and stays the default. **Four colors** adds orange between them, which frees red to mean *at the limit* rather than *getting long* — so you can keep a warning at 1000 characters and still be told when you cross 1500, instead of choosing between them. **Gradient** drops the steps entirely: green until your first threshold, then a continuous fade through orange to red. Whichever you pick applies everywhere at once — description and trigger counters, the entry title counter, the coloured field borders, and the storage ring. ([#131](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/131))
+- **A third character threshold**, on the four-colour and gradient scales. Your existing two numbers keep the meanings they had — the second one just paints orange instead of red — and the new third one sits above them at the character limit. Switching scales never moves a threshold you set.
 - **An entry tells you when its content is newer than its latest checkpoint** — a small yellow dot on the entry's **Checkpoints** button. It appears once you've edited the entry past the last checkpoint saved for it, and clears the moment you save or overwrite one. This is the job the save prompt used to do by interrupting you: the same information, sitting where you'd look for it, asking nothing.
 
 ### Improved
@@ -17,11 +19,13 @@
 
 ### Fixed
 
+- **The description box's coloured border now follows your own thresholds.** It was reading the built-in 750 / 1000 defaults no matter what you'd set, so anyone who moved their thresholds had a counter and a border disagreeing about when an entry was getting long.
 - **The synonyms popover no longer appears on its own after you accept a suggested trigger.** Clicking a suggestion removes its chip, and the remaining chips slide over to close the gap — sliding a different one under a cursor that hadn't moved. The app read that as you hovering it and opened the synonyms popover for a word you never pointed at, a moment after you'd clicked. Which chip landed under your cursor decided whether it happened at all, which is why it seemed random. Hovering a chip on purpose works exactly as before. ([#130](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/130))
 - **Deleting a checkpoint can be undone.** It wrote straight through with no undo step, so a misclicked **×** destroyed a saved checkpoint permanently. Both deleting and overwriting a checkpoint now record an undo step and come back with **Ctrl+Z**.
 
 ### Under the hood
 
+- **Warning colours are computed in one place** (`services/warning-color.js`) instead of a green/yellow/red conditional hand-copied into seven call sites across six components — which is how the description border came to disagree with its own counter. Adds an `--orange` token to the dark, light and high-contrast palettes; a custom theme inherits it. Gradient blends go through `color-mix(in oklab, …)` on the theme's own tokens, so every palette fades through its own colours. Covered by 47 pure-logic checks in `verify/warning-color-checks.mjs` and a browser scenario, most of them guarding one promise: switching scales must never move a threshold a user already set.
 - **The checkpoints system has behavioural test coverage for the first time**, in `verify/checks.mjs` — it had none at all before, despite owning saved user content. The scenario drives the real app through enabling checkpoints, editing, collapsing, and overwriting.
 - **Code identifiers still say `rollback` and `snapshots`.** The user-facing rename stopped at the UI deliberately: the per-book config key and the per-entry array are persisted in `localStorage` under those names, so renaming them in place would orphan every checkpoint already saved in a browser. A later identifier rename should cover files, hooks and CSS classes and stop short of the stored schema.
 
