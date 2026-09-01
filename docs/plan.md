@@ -624,10 +624,29 @@ orphaned — the drill-in view replaces it, and `EntryDetailPanel` never used it
 (mobile folders are still deferred). Mobile keeps its flat footer buttons per
 locked decision 6; the menu is desktop-only until the mobile parity session.
 
-Submenus **drill in** rather than fanning out sideways — a nested popover inside
-a scrolling list has to solve flipping twice, and drill-in is the shape Phase
-12's template folders need anyway (locked decision 7). Escape unwinds one level
-at a time before closing.
+Submenus started as **drill-ins** — the panel was reused for the submenu, with a
+‹ Back row leading out — on the reasoning that a nested popover inside a
+scrolling list has to solve flipping twice over. **Revised 2026-09-01 on user
+feedback: they are hover flyouts.** The drill-in was cheap to build and wrong to
+use — every submenu cost a click in and a click out, and while you were inside
+one the menu stopped showing you what else it could do. A flyout keeps the root
+menu on screen and makes browsing between the three submenus free.
+
+The flipping worry turned out to be already solved: the footer's sizing menu had
+been doing exactly this since 13A. Its `Flyout` moved to
+`components/ui/Flyout.jsx` so there is one implementation rather than two — it
+measures itself, opens right, and flips left only when the viewport genuinely
+has no room. The only thing it needed was an `align` prop, because the sizing
+menu hangs off a bar at the base of the window and grows upward while a menu row
+grows downward. Escape still unwinds one layer at a time: name field, flyout,
+menu.
+
+Two details the flyout needs that the drill-in did not. The panel is portalled
+to the body, so it is outside the menu's ref while being inside the menu as far
+as the user is concerned — the outside-click handler matches it by class instead.
+And a panel holding something the user would lose (a half-typed lorebook name, a
+receipt) **pins**, ignoring the hover-close timer; without that, moving the mouse
+away mid-type discards the name.
 
 **The one real lesson: an anchored popover over a scrolling list must follow its
 anchor, not close on scroll.** Closing is what every other anchored layer here
@@ -698,8 +717,9 @@ reason worth not re-discovering.** A transfer is the only action in that menu
 whose effect is entirely off-screen, so closing silently would leave "it worked"
 and "it did nothing" identical; the receipt names the destination and offers to go
 there, which is the next thing you want when you have just corrected a
-misfiled entry. A **move** cannot have one there: the row leaves the list, so the
-card unmounts and takes its portalled menu with it. The move already named its
+misfiled entry. It renders inside the flyout that produced it, so the menu behind
+stays as context. A **move** cannot have one there: the row leaves the list, so
+the card unmounts and takes its portalled menu with it. The move already named its
 destination in the confirmation the user just answered, and the row visibly
 leaving is its own acknowledgement. The bulk bar shows a receipt for both, because
 it outlives the rows it acts on.

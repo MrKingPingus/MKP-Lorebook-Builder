@@ -3009,7 +3009,8 @@ img.logo-icon {
 /* Portalled out of the entry list, which clips on overflow-y — so this is
    position: fixed, placed by use-anchored-position, and z-indexed with the
    other anchored popovers. */
-.entry-actions-menu {
+.entry-actions-menu,
+.entry-actions-flyout {
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: var(--radius-lg);
@@ -3022,6 +3023,24 @@ img.logo-icon {
   max-height: 60vh;
   overflow-y: auto;
 }
+/* Submenus fly out beside the row rather than replacing the panel, so the root
+   menu stays on screen and browsing between them costs no clicks. Positioned by
+   components/ui/Flyout.jsx — opens right, flips left only when it must. */
+.entry-actions-flyout {
+  min-width: 168px;
+  max-width: 280px;
+  z-index: 9001;             /* above the menu it belongs to, never behind it */
+  animation: entry-flyout-in 0.12s ease-out;
+}
+@keyframes entry-flyout-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+/* The row and its flyout are one hover region, so the wrapper is what the
+   pointer enters and leaves — not the button, which the panel sits beside.
+   A real box rather than `display: contents`, because a box that generates no
+   layout is a shaky thing to hang pointer tracking on. */
+.entry-actions-rowwrap { display: block; }
 
 .entry-actions-item {
   display: flex;
@@ -3045,11 +3064,15 @@ img.logo-icon {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* Reserved whether or not it is ticked, so labels line up down the menu and a
-   tick appearing does not shift the row it is on. */
+/* Trailing, in the same column the submenu chevrons occupy, so every label in
+   the menu starts flush at the left edge — a leading tick column indented the
+   two checkbox rows away from their neighbours for a mark that is absent most
+   of the time. Still reserved whether or not it is ticked, so a tick appearing
+   does not shift the row it is on. */
 .entry-actions-tick {
   width: 12px;
   flex-shrink: 0;
+  text-align: right;
   color: var(--green);
   font-size: 0.75rem;
 }
@@ -3060,6 +3083,10 @@ img.logo-icon {
   flex-shrink: 0;
 }
 .entry-actions-item--active { color: var(--blue); }
+/* The row whose flyout is showing stays lit, so the panel beside it is visibly
+   attached to something rather than floating on its own. */
+.entry-actions-item--open { background: var(--surface3); }
+.entry-actions-item--open .entry-actions-chevron { color: var(--text); }
 
 .entry-actions-item--destructive:hover:not(:disabled) {
   background: rgba(245, 101, 101, 0.15);

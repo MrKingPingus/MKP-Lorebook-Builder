@@ -186,13 +186,33 @@ const SCENARIOS = [
       await menu.locator('[role=menuitemcheckbox]', { hasText: 'Hide from Export' })
         .getAttribute('aria-checked'), 'true');
 
-    // ── Escape unwinds the drill-in one level at a time ─────────────────────
-    await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).click();
-    await settle(page, 200);
-    check('the folder view drilled in', await page.locator('.entry-actions-back').count(), 1);
+    // ── submenus fly out on hover, and Escape unwinds one level at a time ───
+    // They were drill-ins first, replacing the panel with a ‹ Back row out of
+    // it. A flyout keeps the root menu on screen, so moving between the three
+    // submenus costs no clicks — which is what the rest of this block asserts.
+    const flyout = page.locator('.entry-actions-flyout');
+    await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).hover();
+    await settle(page, 400);
+    check('hovering a submenu row opens its flyout, no click needed', await flyout.count(), 1);
+    check('and the root menu is still showing behind it', await menu.count(), 1);
+
+    const menuBox = await menu.boundingBox();
+    const flyBox  = await flyout.boundingBox();
+    check('which the flyout sits beside rather than on top of',
+      Math.round(flyBox.x) >= Math.round(menuBox.x + menuBox.width), true);
+
+    // Sliding to another submenu row swaps the panel without a click, and
+    // reaching across the gap into the panel must not drop it.
+    await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).hover();
+    await settle(page, 250);
+    check('sliding to the next submenu row swaps the panel', await flyout.count(), 1);
+    await flyout.locator('.entry-actions-item').first().hover();
+    await settle(page, 500);
+    check('and the gap between row and panel is crossable', await flyout.count(), 1);
+
     await page.keyboard.press('Escape');
     await settle(page, 200);
-    check('Escape backs out of the submenu first', await page.locator('.entry-actions-back').count(), 0);
+    check('Escape closes the flyout first', await flyout.count(), 0);
     check('and leaves the menu itself open', await menu.count(), 1);
     await page.keyboard.press('Escape');
     await settle(page, 200);
@@ -204,7 +224,7 @@ const SCENARIOS = [
     await openMenu();
     await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).click();
     await settle(page, 200);
-    await menu.locator('.entry-actions-item', { hasText: 'New Folder' }).first().click();
+    await page.locator('.entry-actions-flyout .entry-actions-item', { hasText: 'New Folder' }).first().click();
     await settle(page, 300);
     check('the entry is filed', await page.locator('.folder-entries .entry-card').count(), 1);
     check('no entry was lost filing it', await page.locator('.entry-card').count(), count);
@@ -215,6 +235,12 @@ const SCENARIOS = [
     check('the menu names the folder it is in',
       // nth(2): Copy/Move to lorebook lead the root menu, folder is third.
       (await menu.locator('.entry-actions-item').nth(2).innerText()).includes('New Folder'), true);
+    // A tick shows state on the two checkbox rows, and it is the LAST thing in
+    // its row — a leading tick column indented those two away from every other
+    // label for a mark that is absent most of the time.
+    check('the state ticks sit in the trailing column, so labels start flush',
+      await menu.locator('[role=menuitemcheckbox]').first()
+        .evaluate((el) => el.lastElementChild.classList.contains('entry-actions-tick')), true);
     await page.keyboard.press('Escape');
     await settle(page, 200);
 
@@ -2864,20 +2890,21 @@ const SCENARIOS = [
     await openMenu();
     await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).click();
     await settle(page, 200);
+    const flyout = page.locator('.entry-actions-flyout');
     check('the target list offers the other book, and only it',
-      await menu.locator('.entry-actions-item').count(), 2); // target + ＋ New lorebook…
+      await flyout.locator('.entry-actions-item').count(), 2); // target + ＋ New lorebook…
     check('and says how many entries are already in it',
-      await menu.locator('.entry-actions-count').first().innerText(), '34');
+      await flyout.locator('.entry-actions-count').first().innerText(), '34');
 
-    await menu.locator('.entry-actions-item').first().click();
+    await flyout.locator('.entry-actions-item').first().click();
     await settle(page, 300);
-    check('the menu reports where it went rather than just closing',
-      (await menu.locator('.entry-actions-result').innerText()).includes('Copied to'), true);
+    check('the flyout reports where it went rather than just closing',
+      (await flyout.locator('.entry-actions-result').innerText()).includes('Copied to'), true);
     check('a copy leaves the source book alone',
       await page.locator('.entry-card').count(), VARIANT_COUNTS.total);
 
     // ── the copy is really there, and really persisted ──────────────────────
-    await menu.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
+    await flyout.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
     await settle(page, 500);
     check('the destination gained exactly one entry',
       await page.locator('.entry-card').count(), 35);
@@ -2896,7 +2923,7 @@ const SCENARIOS = [
     await openMenu();
     await menu.locator('.entry-actions-item', { hasText: 'Move to lorebook' }).click();
     await settle(page, 200);
-    await menu.locator('.entry-actions-item').first().click();
+    await page.locator('.entry-actions-flyout .entry-actions-item').first().click();
     await settle(page, 400);
     check('a move takes the entry out of the source book',
       await page.locator('.entry-card').count(), 34);
@@ -2905,6 +2932,7 @@ const SCENARIOS = [
     // what named the destination. See `finish()` in EntryActionsMenu.jsx.
     check('and the menu goes with the card it was attached to',
       await menu.count(), 0);
+    check('flyout and all', await page.locator('.entry-actions-flyout').count(), 0);
 
     // Locked decision 7: undoable on the source side only. The entry comes
     // back here; the destination keeps its copy, which is the whole reason the
@@ -2928,26 +2956,33 @@ const SCENARIOS = [
     await menu.waitFor({ timeout: 4000 });
     await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).click();
     await settle(page, 200);
+    const flyout = page.locator('.entry-actions-flyout');
     check('with one book there is nothing to copy to yet',
-      (await menu.locator('.entry-actions-note').innerText()).includes('only lorebook'), true);
+      (await flyout.locator('.entry-actions-note').innerText()).includes('only lorebook'), true);
 
-    await menu.locator('.entry-actions-item', { hasText: 'New lorebook' }).click();
+    await flyout.locator('.entry-actions-item', { hasText: 'New lorebook' }).click();
     await settle(page, 200);
-    check('the item becomes a name field', await menu.locator('.entry-actions-input').count(), 1);
+    check('the item becomes a name field', await flyout.locator('.entry-actions-input').count(), 1);
     check('and takes the caret, so you can just type',
-      await menu.locator('.entry-actions-input').evaluate((el) => el === document.activeElement), true);
+      await flyout.locator('.entry-actions-input').evaluate((el) => el === document.activeElement), true);
 
-    await menu.locator('.entry-actions-input').fill('Offcuts');
+    // Nothing to hover here, so the panel would time out and close on its own
+    // if a half-typed name did not pin it open.
+    await page.mouse.move(10, 10);
+    await settle(page, 700);
+    check('a half-typed name pins the panel open', await flyout.locator('.entry-actions-input').count(), 1);
+
+    await flyout.locator('.entry-actions-input').fill('Offcuts');
     await page.keyboard.press('Enter');
     await settle(page, 400);
     check('the receipt names the book it just made',
-      (await menu.locator('.entry-actions-result').innerText()).includes('Offcuts'), true);
+      (await flyout.locator('.entry-actions-result').innerText()).includes('Offcuts'), true);
     check('the source book is untouched — this was a copy',
       await page.locator('.entry-card').count(), 34);
     check('and we are still standing in it, not in the new book',
       await page.locator('.title-field-name').first().innerText(), titleBefore);
 
-    await menu.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
+    await flyout.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
     await settle(page, 600);
     check('going there finds the one entry we sent',
       await page.locator('.entry-card').count(), 1);
