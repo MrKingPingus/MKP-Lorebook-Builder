@@ -649,6 +649,74 @@ throttled, with an identity check so an unmoved anchor does not re-render).
 Closing is kept for the one case where it is honest — the anchor scrolling out of
 the viewport, where the menu would otherwise hang off nothing.
 
+**Sub-phase 3 — copy / move an entry to another lorebook — shipped 2026-09-01.**
+GitHub #127.
+
+`services/entry-transfer.js` (pure) + `hooks/use-entry-transfer.js` (persistence,
+history, target list), reached from two places: `Copy to lorebook ▸` / `Move to
+lorebook ▸` at the top of the `⋯` menu, and a `To Lorebook…` row on
+`BulkActionBar` (locked decision 10). The service is the feature; the two entry
+points are just how you get at it.
+
+**The bug this shipped a fix for is not the feature.** Autosave persists the
+*active* lorebook and nothing else, which is fine as long as nothing writes
+anywhere else — and three things already did. `copyToOtherPanel` and
+`copyEntryToReference` both wrote to the reference book through the store alone,
+so a cross-panel copy lived in memory until the user happened to switch to that
+book, and was gone if they closed the tab first. Writing a book you cannot see is
+exactly what a transfer does, so this had to be settled before #127 could work at
+all; both existing paths now write through as well. **Any new write to a
+non-active book must call `saveLorebook` itself.**
+
+**Three transfer rules, each of which is invisible until it is wrong.** They are
+what `verify/entry-transfer-checks.mjs` exists to hold.
+
+- **`folderId` is dropped, always** (locked decision 8). It names a folder in the
+  *source* book. Carried across it would either dangle or — worse — file the
+  entry into whatever folder happens to share that id in the destination.
+- **Checkpoints travel, and the id never does.** A fresh id on every clone means
+  a copy can never collide with its original, including a copy back into the book
+  it came from. Checkpoints are the thing you would most regret losing on a move,
+  so unlike the cross-*panel* copy (a reference gesture) a transfer keeps them —
+  `cloneEntry` grew `keepSnapshots` rather than changing under the old callers.
+- **`lastModified` is preserved on a move and refreshed on a copy.** A move did
+  not change the entry, it relocated it, and "recently modified" is a sort option
+  — refreshing it would float every moved entry to the top of its new book for no
+  reason. A copy is genuinely a new object.
+
+**A move confirms; a copy does not** (locked decision 7). Undo is per-book and the
+history store only ever holds the active lorebook, so Ctrl+Z after a move puts the
+entry back *here* without removing it from the destination — you end up with one
+in each book. That is surprising enough to say out loud at the point of decision,
+and it is the only reason a move asks. It is also why **bulk transfer is
+active-side only**, like `moveSelectedToFolder`: a move out of the *reference*
+book would be silently unundoable, which is the one thing the confirmation
+promises it is not.
+
+**Both entry points end in a receipt, and the `⋯` menu's is copy-only — for a
+reason worth not re-discovering.** A transfer is the only action in that menu
+whose effect is entirely off-screen, so closing silently would leave "it worked"
+and "it did nothing" identical; the receipt names the destination and offers to go
+there, which is the next thing you want when you have just corrected a
+misfiled entry. A **move** cannot have one there: the row leaves the list, so the
+card unmounts and takes its portalled menu with it. The move already named its
+destination in the confirmation the user just answered, and the row visibly
+leaving is its own acknowledgement. The bulk bar shows a receipt for both, because
+it outlives the rows it acts on.
+
+`＋ New lorebook…` (locked decision 9) is named **at the moment of creation**, via
+an inline field in the menu — not created blank and renamed after. `createLorebook`
+grew `activate: false` and `name` for this: the new book is deliberately *not*
+switched to, since a transfer is a thing you do to somewhere else, and the name
+therefore has to be set up front because there is no name field on screen
+afterwards to notice. It could not be a follow-up `renameLorebookById` either —
+that reads the index from its hook closure, which is one tick stale in the middle
+of a create.
+
+Left undone on purpose: **there is still no app-level toast**, so both receipts are
+local to the surface that triggered them. If a third caller ever needs one, that is
+the point to build the real thing rather than a third bespoke panel.
+
 ### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
 
 Reported as "the tag suggestion window sometimes won't go away", unreproducible by

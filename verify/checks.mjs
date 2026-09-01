@@ -213,7 +213,8 @@ const SCENARIOS = [
     await page.locator('.folder-entries .entry-card').first().locator('.entry-actions-btn').click();
     await menu.waitFor({ timeout: 4000 });
     check('the menu names the folder it is in',
-      (await menu.locator('.entry-actions-item').first().innerText()).includes('New Folder'), true);
+      // nth(2): Copy/Move to lorebook lead the root menu, folder is third.
+      (await menu.locator('.entry-actions-item').nth(2).innerText()).includes('New Folder'), true);
     await page.keyboard.press('Escape');
     await settle(page, 200);
 
@@ -2835,6 +2836,165 @@ const SCENARIOS = [
     check('and the dropdown offers all three panels again',
       (await page.locator('.menu-dropdown-item').allInnerTexts()).join(' | '),
       'Lorebooks | Import / Export | Settings');
+  }),
+
+  // Copy / move an entry to another lorebook (GitHub #127). The thing worth
+  // testing hardest is not the copy — it is that the DESTINATION survives,
+  // because the destination is a book that is not on screen and that autosave
+  // does not cover. A transfer that only reached the store would pass every
+  // check here except the reload.
+  scenario('Copy and move one entry to another lorebook (#127)', async (page, check) => {
+    page.on('dialog', (d) => d.accept()); // the move confirmation
+
+    await openBuilderWithFixture(page);              // "Reika Hirahara V2", 34
+    await importBookAsNew(page, VARIANT_FIXTURE);    // "… — Variant", 29, now active
+    await settle(page, 300);
+    check('the variant book is the one we are standing in',
+      await page.locator('.entry-card').count(), VARIANT_COUNTS.total);
+
+    const menu = page.locator('.entry-actions-menu');
+    const openMenu = async (i = 0) => {
+      await page.locator('.entry-actions-btn').nth(i).click();
+      await menu.waitFor({ timeout: 4000 });
+      await settle(page, 150);
+    };
+    const firstName = (await rowNames(page))[0];
+
+    // ── copy ────────────────────────────────────────────────────────────────
+    await openMenu();
+    await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).click();
+    await settle(page, 200);
+    check('the target list offers the other book, and only it',
+      await menu.locator('.entry-actions-item').count(), 2); // target + ＋ New lorebook…
+    check('and says how many entries are already in it',
+      await menu.locator('.entry-actions-count').first().innerText(), '34');
+
+    await menu.locator('.entry-actions-item').first().click();
+    await settle(page, 300);
+    check('the menu reports where it went rather than just closing',
+      (await menu.locator('.entry-actions-result').innerText()).includes('Copied to'), true);
+    check('a copy leaves the source book alone',
+      await page.locator('.entry-card').count(), VARIANT_COUNTS.total);
+
+    // ── the copy is really there, and really persisted ──────────────────────
+    await menu.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
+    await settle(page, 500);
+    check('the destination gained exactly one entry',
+      await page.locator('.entry-card').count(), 35);
+    check('and it is the entry we sent, appended at the end',
+      (await rowNames(page)).at(-1), firstName);
+
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 700);
+    check('the copy survived a reload — it was written, not just stored in memory',
+      await page.locator('.entry-card').count(), 35);
+
+    // ── move, back the other way ────────────────────────────────────────────
+    const movedName = (await rowNames(page))[0];
+    await openMenu();
+    await menu.locator('.entry-actions-item', { hasText: 'Move to lorebook' }).click();
+    await settle(page, 200);
+    await menu.locator('.entry-actions-item').first().click();
+    await settle(page, 400);
+    check('a move takes the entry out of the source book',
+      await page.locator('.entry-card').count(), 34);
+    // No receipt here, unlike a copy: the row left the list, so the menu
+    // hanging off it went with it. The confirmation the user just answered is
+    // what named the destination. See `finish()` in EntryActionsMenu.jsx.
+    check('and the menu goes with the card it was attached to',
+      await menu.count(), 0);
+
+    // Locked decision 7: undoable on the source side only. The entry comes
+    // back here; the destination keeps its copy, which is the whole reason the
+    // confirmation spells it out.
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('undo restores it on the side it left',
+      await page.locator('.entry-card').count(), 35);
+    check('and it is the one that left, by name',
+      (await rowNames(page)).includes(movedName), true);
+  }),
+
+  // "＋ New lorebook…" as a transfer target (locked decision 9). Its one
+  // non-obvious promise is that it does NOT switch you to the book it makes.
+  scenario('Transfer target: a brand-new lorebook, without leaving this one', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const titleBefore = await page.locator('.title-field-name').first().innerText();
+
+    const menu = page.locator('.entry-actions-menu');
+    await page.locator('.entry-actions-btn').first().click();
+    await menu.waitFor({ timeout: 4000 });
+    await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).click();
+    await settle(page, 200);
+    check('with one book there is nothing to copy to yet',
+      (await menu.locator('.entry-actions-note').innerText()).includes('only lorebook'), true);
+
+    await menu.locator('.entry-actions-item', { hasText: 'New lorebook' }).click();
+    await settle(page, 200);
+    check('the item becomes a name field', await menu.locator('.entry-actions-input').count(), 1);
+    check('and takes the caret, so you can just type',
+      await menu.locator('.entry-actions-input').evaluate((el) => el === document.activeElement), true);
+
+    await menu.locator('.entry-actions-input').fill('Offcuts');
+    await page.keyboard.press('Enter');
+    await settle(page, 400);
+    check('the receipt names the book it just made',
+      (await menu.locator('.entry-actions-result').innerText()).includes('Offcuts'), true);
+    check('the source book is untouched — this was a copy',
+      await page.locator('.entry-card').count(), 34);
+    check('and we are still standing in it, not in the new book',
+      await page.locator('.title-field-name').first().innerText(), titleBefore);
+
+    await menu.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
+    await settle(page, 600);
+    check('going there finds the one entry we sent',
+      await page.locator('.entry-card').count(), 1);
+  }),
+
+  // Bulk copy/move (locked decision 10). Same service, reached from the
+  // selection bar instead of one card's menu.
+  scenario('Bulk copy and move the selection to another lorebook', async (page, check) => {
+    page.on('dialog', (d) => d.accept());
+
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1, 2]);
+    await settle(page, 150);
+
+    const toBook = page.locator('.bulk-action-apply', { hasText: 'To Lorebook' });
+    await toBook.click();
+    await settle(page, 200);
+    check('the row opens on Copy, the reversible verb',
+      await page.locator('.bulk-transfer-mode-btn--on').innerText(), 'Copy');
+    check('with no other book yet, only the create chip is offered',
+      await page.locator('.bulk-action-chips .bulk-type-chip').count(), 1);
+
+    await page.locator('.bulk-transfer-mode-btn', { hasText: 'Move' }).click();
+    await page.locator('.bulk-type-chip', { hasText: 'New lorebook' }).click();
+    await settle(page, 200);
+    await page.locator('.bulk-transfer-input').fill('Archive');
+    await page.locator('.bulk-type-chip', { hasText: 'Create & move' }).click();
+    await settle(page, 500);
+
+    check('three entries left this book',
+      await page.locator('.entry-card').count(), 31);
+    check('and the row says where they went',
+      (await page.locator('.bulk-transfer-result').innerText()).includes('Moved 3 entries to'), true);
+    check('the selection is spent, so the next batch starts clean',
+      await page.locator('.bulk-action-count').innerText(), '0 selected');
+
+    await page.locator('.bulk-type-chip', { hasText: 'Open it' }).click();
+    await settle(page, 600);
+    check('all three arrived', await page.locator('.entry-card').count(), 3);
+
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 700);
+    check('and they were written, not just held in memory',
+      await page.locator('.entry-card').count(), 3);
   }),
 ];
 

@@ -2278,6 +2278,58 @@ img.logo-icon {
   border-color: var(--type-color, var(--border2));
   color: #fff;
 }
+.bulk-type-chip:disabled { opacity: 0.4; }
+.bulk-type-chip:disabled:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--muted2);
+}
+
+/* Copy/move to another lorebook (#127). The copy|move switch that leads the
+   row — a segmented pair rather than two more buttons on the bar, so the verb
+   is chosen and visible in the same place the destination is picked. */
+.bulk-transfer-mode {
+  display: inline-flex;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.bulk-transfer-mode-btn {
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 0;
+  background: var(--surface3);
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.bulk-transfer-mode-btn:hover { color: var(--text); }
+.bulk-transfer-mode-btn--on {
+  background: var(--blue);
+  color: #fff;
+}
+
+.bulk-transfer-input {
+  padding: 3px 8px;
+  min-width: 160px;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+.bulk-transfer-input:focus { outline: none; border-color: var(--blue); }
+
+.bulk-transfer-note,
+.bulk-transfer-result {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+.bulk-transfer-result strong { color: var(--text); font-weight: 600; }
+.bulk-transfer-tick { color: var(--green); margin-right: 4px; }
 
 /* ============================================================
    Type Filter Bar
@@ -3038,6 +3090,73 @@ img.logo-icon {
   letter-spacing: 0.05em;
 }
 .entry-actions-back:hover { color: var(--text); }
+
+/* Copy/move-to-lorebook (#127). The target rows carry an entry count so a book
+   can be told apart from an identically-named one, and so "the empty one" is
+   pickable without opening it. */
+.entry-actions-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Explanatory text, not a control — the single-lorebook case, where the list
+   above it is empty and the only thing to do is make a second book. */
+.entry-actions-note {
+  padding: 6px 9px 8px;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.entry-actions-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+}
+.entry-actions-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.entry-actions-input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+.entry-actions-go {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--text);
+}
+.entry-actions-go:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* The receipt shown after a transfer — see the note at the top of
+   EntryActionsMenu.jsx for why one is needed at all. */
+.entry-actions-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 9px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+.entry-actions-result strong { font-weight: 600; }
+.entry-actions-result-tick { color: var(--green); flex-shrink: 0; }
 
 /* Card body — shown when expanded */
 .entry-card-body {

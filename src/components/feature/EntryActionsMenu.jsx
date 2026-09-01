@@ -21,25 +21,44 @@
 // scrolling list has to solve flipping twice over; a drill-in re-uses the panel
 // that is already placed, and it is the shape Phase 12's template folders were
 // always going to need (locked decision 7).
+//
+// **Copy/move to another lorebook (#127) ends in a result panel rather than
+// just closing.** Every other action here changes something the user can see —
+// the card re-renders, a badge appears, the row leaves the list. A transfer is
+// the one that acts on a book which is not on screen, so a menu that simply
+// shut would leave "it worked" and "it did nothing" looking identical. The
+// panel names the destination and offers to go there, which is the next thing
+// you want after realising an entry was in the wrong book.
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal }        from 'react-dom';
 import { useAnchoredPosition } from '../../hooks/use-anchored-position.js';
 import { useDismissLayer }     from '../../hooks/use-dismiss-layer.js';
 import { useFolders }          from '../../hooks/use-folders.js';
+import { useEntryTransfer, TRANSFER_COPY, TRANSFER_MOVE } from '../../hooks/use-entry-transfer.js';
 import { DISMISS_PRIORITY }    from '../../services/dismiss-stack.js';
 import { NO_FOLDER_LABEL, NEW_FOLDER_NAME } from '../../constants/folders.js';
-import { ENTRY_MENU_WIDTH_PX }  from '../../constants/limits.js';
+import { ENTRY_MENU_WIDTH_PX, MAX_LOREBOOKS } from '../../constants/limits.js';
 
-const VIEW_ROOT   = 'root';
-const VIEW_FOLDER = 'folder';
+const VIEW_ROOT     = 'root';
+const VIEW_FOLDER   = 'folder';
+const VIEW_TRANSFER = 'transfer';
+const VIEW_RESULT   = 'result';
 
 export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const { folders, moveEntryToFolder, createFolderWithEntries, foldersSuppressed } = useFolders();
+  const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook } = useEntryTransfer();
   const [open, setOpen]   = useState(false);
   const [view, setView]   = useState(VIEW_ROOT);
   const [anchor, setAnchor] = useState(null);
+  // Which of the two transfer verbs the target list is standing in for, and the
+  // "✓ Copied to X" panel that replaces the list once one lands.
+  const [transferMode, setTransferMode] = useState(TRANSFER_COPY);
+  const [result, setResult]             = useState(null);
+  const [namingNew, setNamingNew]       = useState(false);
+  const [newName, setNewName]           = useState('');
   const btnRef  = useRef(null);
   const menuRef = useRef(null);
+  const newNameRef = useRef(null);
 
   const style = useAnchoredPosition(anchor, ENTRY_MENU_WIDTH_PX);
   const currentFolder = folders.find((f) => f.id === entry.folderId) ?? null;
@@ -47,12 +66,47 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const close = useCallback(() => {
     setOpen(false);
     setView(VIEW_ROOT); // never reopen mid-drill-in
+    setResult(null);
+    setNamingNew(false);
+    setNewName('');
   }, []);
+
+  function openTransfer(mode) {
+    setTransferMode(mode);
+    setNamingNew(false);
+    setNewName('');
+    setView(VIEW_TRANSFER);
+  }
+
+  /** Where a transfer ends up, and it is deliberately not the same for the two
+   *  verbs — because their visible consequences are not the same either.
+   *
+   *  A COPY changes nothing you can see: the card stays exactly as it was and
+   *  the destination is another book entirely, so closing the menu would leave
+   *  "it worked" and "it did nothing" looking identical. That is what the
+   *  receipt is for, and it carries the "open that lorebook" step you usually
+   *  want next.
+   *
+   *  A MOVE cannot have one here, and would not need it. The entry leaves the
+   *  list, so this menu unmounts with the card it hangs off — there is nothing
+   *  left to render a receipt into. What replaces it is that the move already
+   *  named its destination in the confirmation the user just answered, and the
+   *  row visibly leaving the list is its own acknowledgement. (The bulk bar
+   *  does show a move receipt: it outlives the rows it acts on.)
+   */
+  function finish(res) {
+    if (!res || res.mode === TRANSFER_MOVE) { close(); return; }
+    setResult(res);
+    setNamingNew(false);
+    setNewName('');
+    setView(VIEW_RESULT);
+  }
 
   useDismissLayer(`entry-actions-${entry.id}`, open, DISMISS_PRIORITY.popover, () => {
     // Escape backs out of a submenu before it closes the menu, so a mistaken
     // drill-in costs one key rather than the whole journey.
-    if (view !== VIEW_ROOT) setView(VIEW_ROOT);
+    if (namingNew) setNamingNew(false);
+    else if (view !== VIEW_ROOT) { setView(VIEW_ROOT); setResult(null); }
     else close();
   });
 
@@ -116,6 +170,12 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
     };
   }, [open, close]);
 
+  // The name row replaces the item that was just clicked, so the caret has to
+  // move there or the user is typing into nothing.
+  useEffect(() => {
+    if (namingNew) newNameRef.current?.focus();
+  }, [namingNew]);
+
   function act(fn) {
     return (e) => {
       e.stopPropagation();
@@ -126,6 +186,11 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
 
   const isPublic = entry.isPublic === true;
   const isHidden = !!entry.hiddenFromExport;
+  const moving   = transferMode === TRANSFER_MOVE;
+
+  function commitNewLorebook() {
+    finish(transferToNewLorebook([entry.id], newName, transferMode));
+  }
 
   return (
     <>
@@ -153,6 +218,32 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
         >
           {view === VIEW_ROOT && (
             <>
+              {/* The three "where does this entry live" actions lead, because
+                  that is what a menu on a card in a list is most often opened
+                  for. Copy sits above Move so the reversible one is the one
+                  reached by a slip of the hand. */}
+              <button
+                className="entry-actions-item"
+                onClick={(e) => { e.stopPropagation(); openTransfer(TRANSFER_COPY); }}
+                title="Put a copy of this entry in another lorebook, keeping this one"
+                role="menuitem"
+                type="button"
+              >
+                <span className="entry-actions-item-label">Copy to lorebook</span>
+                <span className="entry-actions-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <button
+                className="entry-actions-item"
+                onClick={(e) => { e.stopPropagation(); openTransfer(TRANSFER_MOVE); }}
+                title="Send this entry to another lorebook and remove it from this one"
+                role="menuitem"
+                type="button"
+              >
+                <span className="entry-actions-item-label">Move to lorebook</span>
+                <span className="entry-actions-chevron" aria-hidden="true">›</span>
+              </button>
+
               <button
                 className="entry-actions-item"
                 onClick={(e) => { e.stopPropagation(); setView(VIEW_FOLDER); }}
@@ -168,6 +259,8 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
                 </span>
                 <span className="entry-actions-chevron" aria-hidden="true">›</span>
               </button>
+
+              <div className="entry-actions-divider" role="separator" />
 
               {/* Both of these are states as much as actions, so each carries a
                   tick showing where it stands — the header badges say the same
@@ -251,6 +344,116 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
                 type="button"
               >
                 <span className="entry-actions-item-label">＋ New folder</span>
+              </button>
+            </>
+          )}
+
+          {view === VIEW_TRANSFER && (
+            <>
+              <button
+                className="entry-actions-back"
+                onClick={(e) => { e.stopPropagation(); setView(VIEW_ROOT); }}
+                type="button"
+              >
+                ‹ {moving ? 'Move to lorebook' : 'Copy to lorebook'}
+              </button>
+
+              {transferTargets.length === 0 && (
+                <div className="entry-actions-note">
+                  This is your only lorebook. Make one below and the entry
+                  {moving ? ' moves' : ' is copied'} straight into it.
+                </div>
+              )}
+
+              {transferTargets.map((t) => (
+                <button
+                  key={t.id}
+                  className="entry-actions-item"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    finish(transferTo([entry.id], t.id, transferMode));
+                  }}
+                  role="menuitem"
+                  type="button"
+                >
+                  <span className="entry-actions-item-label">{t.name || 'Untitled lorebook'}</span>
+                  <span className="entry-actions-count">{t.entryCount}</span>
+                </button>
+              ))}
+
+              <div className="entry-actions-divider" role="separator" />
+
+              {/* Named at the moment of creation rather than created blank and
+                  renamed later: the new book is NOT switched to, so there is no
+                  name field on screen afterwards to notice and fill in. */}
+              {namingNew ? (
+                <div className="entry-actions-input-row">
+                  <input
+                    ref={newNameRef}
+                    className="entry-actions-input"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter')  { e.preventDefault(); commitNewLorebook(); }
+                      if (e.key === 'Escape') { e.preventDefault(); setNamingNew(false); }
+                    }}
+                    placeholder="New lorebook name…"
+                    spellCheck={false}
+                    aria-label="Name for the new lorebook"
+                  />
+                  <button
+                    className="entry-actions-go"
+                    onClick={(e) => { e.stopPropagation(); commitNewLorebook(); }}
+                    title={`Create this lorebook and ${moving ? 'move' : 'copy'} the entry into it`}
+                    aria-label="Create and transfer"
+                    type="button"
+                  >
+                    →
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="entry-actions-item"
+                  onClick={(e) => { e.stopPropagation(); setNamingNew(true); }}
+                  disabled={!canCreateTarget}
+                  title={canCreateTarget
+                    ? undefined
+                    : `You already have the maximum of ${MAX_LOREBOOKS} lorebooks`}
+                  role="menuitem"
+                  type="button"
+                >
+                  <span className="entry-actions-item-label">＋ New lorebook…</span>
+                </button>
+              )}
+            </>
+          )}
+
+          {view === VIEW_RESULT && result && (
+            <>
+              <div className="entry-actions-result">
+                <span className="entry-actions-result-tick" aria-hidden="true">✓</span>
+                <span>
+                  Copied to <strong>{result.destName || 'Untitled lorebook'}</strong>
+                </span>
+              </div>
+
+              <button
+                className="entry-actions-item"
+                onClick={act(() => goToLorebook(result.destId))}
+                role="menuitem"
+                type="button"
+              >
+                <span className="entry-actions-item-label">Open that lorebook</span>
+              </button>
+
+              <button
+                className="entry-actions-item"
+                onClick={(e) => { e.stopPropagation(); close(); }}
+                role="menuitem"
+                type="button"
+              >
+                <span className="entry-actions-item-label">Done</span>
               </button>
             </>
           )}
