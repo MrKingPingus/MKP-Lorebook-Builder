@@ -5,7 +5,7 @@
 //
 // No React, no stores — everything here takes arrays in and returns new
 // arrays out.
-import { uid } from './entry-factory.js';
+import * as tree from './category-tree.js';
 import {
   DEFAULT_FOLDER,
   DEFAULT_LOREBOOK,
@@ -22,24 +22,19 @@ import {
 } from '../constants/folders.js';
 import { DEFAULT_FOLDER_ORDER } from '../constants/sort-modes.js';
 
-// Colour for the next folder: walk the swatch list in order so a user making
-// several folders in a row gets visually distinct ones without picking.
-function nextColor(folders) {
-  const swatch = FOLDER_COLORS[folders.length % FOLDER_COLORS.length];
-  return swatch.color;
-}
-
+// The tree itself — parentage, depth, subtrees, legal moves — lives in
+// `category-tree.js`, which template categories share (Phase 12, locked
+// decision 7). What stays here is everything that touches `entries[]`: the
+// assignment splice, the render walk, the filters. The wrappers below bind
+// this tree's own vocabulary and its MAX_FOLDER_DEPTH ceiling, so every call
+// site and the folder-tree check suite see exactly the API they always did.
 export function createFolder(folders = [], overrides = {}) {
-  const maxOrder = folders.reduce((m, f) => Math.max(m, f.order ?? 0), -1);
-  return {
-    ...DEFAULT_FOLDER,
-    id:            uid(),
-    name:          NEW_FOLDER_NAME,
-    color:         nextColor(folders),
-    collapseState: DEFAULT_COLLAPSE_STATE,
-    order:         maxOrder + 1,
-    ...overrides,
-  };
+  return tree.createNode(folders, {
+    name:     NEW_FOLDER_NAME,
+    colors:   FOLDER_COLORS,
+    defaults: { ...DEFAULT_FOLDER, collapseState: DEFAULT_COLLAPSE_STATE },
+    overrides,
+  });
 }
 
 // Next state in the collapse cycle. The cycle is a setting (two-stage drops
@@ -68,8 +63,7 @@ export function clampCollapseState(state, cycle = COLLAPSE_CYCLE) {
 }
 
 export function getFolder(folders, folderId) {
-  if (!folderId) return null;
-  return (folders ?? []).find((f) => f.id === folderId) ?? null;
+  return tree.getNode(folders, folderId);
 }
 
 // An entry counts as filed only when its folderId matches a folder that still
@@ -84,69 +78,44 @@ export function countEntriesInFolder(entries, folderId) {
 }
 
 // ── Tree shape ──────────────────────────────────────────────────────────────
-// A folder's parentId is only meaningful when it points at a folder that still
-// exists; anything else (null, or an id left dangling by an undo) reads as top
-// level, mirroring how a dangling entry.folderId reads as unfiled.
+// Thin bindings over category-tree.js. A folder's parentId is only meaningful
+// when it points at a folder that still exists; anything else (null, or an id
+// left dangling by an undo) reads as top level, mirroring how a dangling
+// entry.folderId reads as unfiled — see that file for why.
 export function parentIdOf(folders, folder) {
-  const parentId = folder?.parentId ?? null;
-  return getFolder(folders, parentId) ? parentId : null;
+  return tree.parentIdOf(folders, folder);
 }
 
 export function childFoldersOf(folders, parentId) {
-  return (folders ?? []).filter((f) => parentIdOf(folders, f) === (parentId ?? null));
+  return tree.childrenOf(folders, parentId);
 }
 
-// 1 for a top-level folder. Walks up the parent chain, guarding against a cycle
-// in corrupt data rather than hanging.
+/** 1 for a top-level folder. */
 export function depthOf(folders, folderId) {
-  let depth = 0;
-  let current = getFolder(folders, folderId);
-  const seen = new Set();
-  while (current && !seen.has(current.id)) {
-    seen.add(current.id);
-    depth += 1;
-    current = getFolder(folders, parentIdOf(folders, current));
-  }
-  return depth;
+  return tree.depthOf(folders, folderId);
 }
 
-// Every folder at or below `folderId`, the root included.
+/** Every folder at or below `folderId`, the root included. */
 export function subtreeFolderIds(folders, folderId) {
-  const out = [];
-  const walk = (id) => {
-    if (out.includes(id)) return;
-    out.push(id);
-    for (const child of childFoldersOf(folders, id)) walk(child.id);
-  };
-  if (getFolder(folders, folderId)) walk(folderId);
-  return out;
+  return tree.subtreeIds(folders, folderId);
 }
 
-// How many levels the subtree rooted at `folderId` occupies (1 = no children).
+/** How many levels the subtree rooted at `folderId` occupies (1 = no children). */
 export function subtreeHeight(folders, folderId) {
-  const children = childFoldersOf(folders, folderId);
-  if (children.length === 0) return 1;
-  return 1 + Math.max(...children.map((c) => subtreeHeight(folders, c.id)));
+  return tree.subtreeHeight(folders, folderId);
 }
 
-// Can `folderId` become a child of `parentId` (null = top level)?
-// Rejects three things: dropping a folder into itself or its own descendant
-// (which would orphan the subtree into a cycle), and any move that would push
-// the deepest leaf past MAX_FOLDER_DEPTH.
+/** Can `folderId` become a child of `parentId` (null = top level)? Folders cap
+ *  at MAX_FOLDER_DEPTH because each level costs 21px of indent in a pane that
+ *  can be 360px wide — a ceiling a drill-in dropdown does not share, which is
+ *  why the shared helper takes it as an argument. */
 export function canNest(folders, folderId, parentId) {
-  const folder = getFolder(folders, folderId);
-  if (!folder) return false;
-  if (!parentId) return true;
-  if (parentId === folderId) return false;
-  const parent = getFolder(folders, parentId);
-  if (!parent) return false;
-  if (subtreeFolderIds(folders, folderId).includes(parentId)) return false;
-  return depthOf(folders, parentId) + subtreeHeight(folders, folderId) <= MAX_FOLDER_DEPTH;
+  return tree.canNest(folders, folderId, parentId, MAX_FOLDER_DEPTH);
 }
 
-// Folders a given folder could legally be moved under, for a picker.
+/** Folders a given folder could legally be moved under, for a picker. */
 export function eligibleParents(folders, folderId) {
-  return (folders ?? []).filter((f) => f.id !== folderId && canNest(folders, folderId, f.id));
+  return tree.eligibleParents(folders, folderId, MAX_FOLDER_DEPTH);
 }
 
 // Every entry belonging to the subtree rooted at `folderId`.
@@ -342,7 +311,7 @@ export function removeFolder(entries, folders, folderId) {
 }
 
 export function updateFolder(folders, folderId, patch) {
-  return (folders ?? []).map((f) => (f.id === folderId ? { ...f, ...patch } : f));
+  return tree.updateNode(folders, folderId, patch);
 }
 
 // Turn a display-ordered entry list into the render TREE.

@@ -22,6 +22,8 @@ import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
+import { useTemplatesStore }     from './state/templates-store.js';
+import { loadStoredTemplates }   from './hooks/use-templates.js';
 import { useViewportResize }     from './hooks/use-viewport-resize.js';
 import { useCloseLayersOnBreakpoint } from './hooks/use-close-layers-on-breakpoint.js';
 import { usePickFromReference }  from './hooks/use-pick-from-reference.js';
@@ -114,6 +116,11 @@ function useBootstrap() {
       setWindowSize({ width: w, height: window.innerHeight });
       setWindowPos({ x: Math.floor((window.innerWidth - w) / 2), y: 0 });
     }
+
+    // Templates are global and tiny, so they load in one read alongside the
+    // index rather than lazily — every surface that offers them (the entry ⋯
+    // menu, Settings) wants the whole list the moment it opens.
+    useTemplatesStore.getState().setAll(loadStoredTemplates());
 
     // Load lorebook index
     const index = readJson(LOREBOOK_INDEX_KEY, []);
