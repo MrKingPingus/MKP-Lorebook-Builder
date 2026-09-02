@@ -2374,10 +2374,11 @@ const SCENARIOS = [
     // Sub-dividers give each section a visible internal order.
     const editing = await openSettingsSection(page, 'Editing & Entries');
     const editingDividers = await editing.locator('.settings-divider-label').allInnerTexts();
-    // Two runs since the 2026-08-31 move: what helps you write, and what
-    // protects what you wrote. The display-only groups went to Appearance.
-    check('Editing & Entries is divided into two runs',
-      editingDividers.join(',').toLowerCase(), 'writing aids,entry checkpoints');
+    // Three runs: reusable scaffolds, what helps you write, and what protects
+    // what you wrote. The display-only groups went to Appearance on 2026-08-31;
+    // Templates arrived on 2026-09-02.
+    check('Editing & Entries is divided into three runs',
+      editingDividers.join(',').toLowerCase(), 'templates,writing aids,entry checkpoints');
 
     const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
     const appearanceDividers = await appearance.locator('.settings-divider-label').allInnerTexts();
@@ -3030,6 +3031,195 @@ const SCENARIOS = [
     await settle(page, 700);
     check('and they were written, not just held in memory',
       await page.locator('.entry-card').count(), 3);
+  }),
+
+  // Entry Templates (Phase 12, GitHub #114). The load path is where the design
+  // lives: the checklist is content-driven, so what it asks depends entirely on
+  // what the template holds, and the two load actions sit on it rather than
+  // being separate menu items.
+  scenario('Entry templates: save one, fill an entry, start a new one', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    const menu   = page.locator('.entry-actions-menu');
+    const flyout = page.locator('.entry-actions-flyout');
+
+    const openTemplates = async (i) => {
+      await page.locator('.entry-actions-btn').nth(i).click();
+      await menu.waitFor({ timeout: 4000 });
+      await menu.locator('.entry-actions-item', { hasText: 'Templates' }).click();
+      await flyout.waitFor({ timeout: 4000 });
+      await settle(page, 200);
+    };
+
+    // ── saving ──────────────────────────────────────────────────────────────
+    await openTemplates(0);
+    check('an empty library says so rather than showing nothing',
+      (await flyout.locator('.entry-actions-note').innerText()).includes('No templates yet'), true);
+
+    await flyout.locator('.entry-actions-item', { hasText: 'Save this entry' }).click();
+    await settle(page, 200);
+    check('the name field is prefilled from the entry, and focused',
+      await flyout.locator('.entry-actions-input').evaluate((el) => el === document.activeElement), true);
+    await flyout.locator('.entry-actions-input').fill('Scaffold');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+    check('the saved template is listed',
+      await flyout.locator('.entry-actions-item', { hasText: 'Scaffold' }).count(), 1);
+    check('saving a template does not touch the book',
+      await page.locator('.entry-card').count(), count);
+
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await settle(page, 250);
+
+    // ── filling a different entry, which already has a description ──────────
+    const before = await rowNames(page);
+    await openTemplates(2);
+    await flyout.locator('.entry-actions-item', { hasText: 'Scaffold' }).click();
+    await settle(page, 300);
+
+    // Content-driven: the fixture entry has all four, so all four are offered.
+    // Joined: this file's `check` is strict equality, and two arrays never are.
+    check('the checklist lists what the template actually holds',
+      (await flyout.locator('.tpl-check').allInnerTexts()).join('|'),
+      'Title|Type|Triggers|Description');
+    check('everything is ticked to start with',
+      await flyout.locator('.tpl-check input:checked').count(), 4);
+    // Locked decision 4 — the prompt appears only because there is text to lose.
+    check('and the description conflict is raised, because this entry has one',
+      await flyout.locator('.tpl-conflict').count(), 1);
+    check('with the non-destructive option leading',
+      await flyout.locator('.tpl-conflict-btn--on').innerText(), 'Append');
+
+    await flyout.locator('.entry-actions-item', { hasText: 'Fill this entry' }).click();
+    await settle(page, 400);
+    check('the entry took the template\'s title', (await rowNames(page))[2], before[0]);
+    check('and no entry was added or lost', await page.locator('.entry-card').count(), count);
+    // The whole fill is one discrete update, so it costs exactly one undo.
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('one undo puts the entry back', (await rowNames(page))[2], before[2]);
+
+    // ── the other load action ───────────────────────────────────────────────
+    await openTemplates(2);
+    await flyout.locator('.entry-actions-item', { hasText: 'Scaffold' }).click();
+    await settle(page, 250);
+    // Unticking a field must actually keep it out of the patch.
+    await flyout.locator('.tpl-check', { hasText: 'Description' }).locator('input').uncheck();
+    await settle(page, 150);
+    check('unticking description retires the conflict question with it',
+      await flyout.locator('.tpl-conflict').count(), 0);
+    await flyout.locator('.entry-actions-item', { hasText: 'New entry from this' }).click();
+    await settle(page, 500);
+    check('a new entry was added', await page.locator('.entry-card').count(), count + 1);
+    check('carrying the template name', (await rowNames(page)).at(-1), before[0]);
+  }),
+
+  // The empty-state route (locked decision 2's placement). A book with no
+  // entries has no ⋯ menu, so without this there is no way to reach a template
+  // from a fresh lorebook — which is exactly where you would want one.
+  scenario('Entry templates: reachable from an empty lorebook', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const menu   = page.locator('.entry-actions-menu');
+    const flyout = page.locator('.entry-actions-flyout');
+
+    await page.locator('.entry-actions-btn').first().click();
+    await menu.waitFor({ timeout: 4000 });
+    await menu.locator('.entry-actions-item', { hasText: 'Templates' }).click();
+    await flyout.waitFor({ timeout: 4000 });
+    await flyout.locator('.entry-actions-item', { hasText: 'Save this entry' }).click();
+    await settle(page, 200);
+    await flyout.locator('.entry-actions-input').fill('Starter');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await settle(page, 250);
+
+    // A fresh book — no entries, and therefore no ⋯ menu anywhere.
+    await page.locator('.title-field').first().click();
+    await settle(page, 300);
+    await page.locator('.tm-new').click();
+    await settle(page, 600);
+    await page.locator('.lb-name-modal-close').click();
+    await settle(page, 400);
+    check('the new book is empty', await page.locator('.entry-card').count(), 0);
+    check('so there is no ⋯ menu to reach templates through',
+      await page.locator('.entry-actions-btn').count(), 0);
+    check('but the empty state offers them', await page.locator('.templates-link').count(), 1);
+
+    await page.locator('.templates-link').click();
+    await settle(page, 300);
+    check('and it opens the same picker',
+      await flyout.locator('.entry-actions-item', { hasText: 'Starter' }).count(), 1);
+
+    await flyout.locator('.entry-actions-item', { hasText: 'Starter' }).click();
+    await settle(page, 300);
+    // There is no entry behind this panel, so filling one is not on offer.
+    check('"Fill this entry" is absent with no entry to fill',
+      await flyout.locator('.entry-actions-item', { hasText: 'Fill this entry' }).count(), 0);
+    await flyout.locator('.entry-actions-item', { hasText: 'New entry from this' }).click();
+    await settle(page, 600);
+    check('and the new book gets its first entry from the template',
+      await page.locator('.entry-card').count(), 1);
+  }),
+
+  // Templates are global and outlive the session, so the storage half needs its
+  // own coverage — they are not in a lorebook, so autosave never touches them.
+  scenario('Entry templates: categories, management, and surviving a reload', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const menu   = page.locator('.entry-actions-menu');
+    const flyout = page.locator('.entry-actions-flyout');
+
+    await page.locator('.entry-actions-btn').first().click();
+    await menu.waitFor({ timeout: 4000 });
+    await menu.locator('.entry-actions-item', { hasText: 'Templates' }).click();
+    await flyout.waitFor({ timeout: 4000 });
+    await flyout.locator('.entry-actions-item', { hasText: 'Save this entry' }).click();
+    await settle(page, 200);
+    await flyout.locator('.entry-actions-input').fill('Scaffold');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+
+    // Manage mode is the quick half of locked decision 8 — the things you
+    // notice while using a template, without leaving the menu.
+    await flyout.locator('.entry-actions-item', { hasText: 'Manage' }).click();
+    await settle(page, 200);
+    check('manage mode reveals the row actions',
+      await flyout.locator('.tpl-mini').count() >= 2, true);
+    await flyout.locator('.entry-actions-item', { hasText: 'New category' }).click();
+    await settle(page, 300);
+    await flyout.locator('.entry-actions-input').fill('Characters');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+    check('the category is listed and can be drilled into',
+      await flyout.locator('.entry-actions-item', { hasText: 'Characters' }).count(), 1);
+
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await settle(page, 250);
+
+    // Settings is the full half — where a template moves between categories.
+    await openSettings(page);
+    const editing = await openSettingsSection(page, 'Editing & Entries');
+    await settle(page, 300);
+    check('every template is listed flat, for auditing',
+      await editing.locator('.tpl-settings-row').count(), 2); // 1 template + 1 category
+    await editing.locator('.tpl-settings-cat').first().selectOption({ index: 1 });
+    await settle(page, 300);
+
+    // Autosave only ever writes the active lorebook, and templates are not in
+    // one — so this is the check that they were written at all.
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 700);
+    await openSettings(page);
+    const again = await openSettingsSection(page, 'Editing & Entries');
+    await settle(page, 300);
+    check('templates and categories survive a reload',
+      await again.locator('.tpl-settings-row').count(), 2);
+    check('and so does the filing',
+      await again.locator('.tpl-settings-cat').first().inputValue() !== '', true);
   }),
 ];
 

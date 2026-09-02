@@ -286,6 +286,8 @@ Save an entry's content as a reusable, **globally-stored** template and load it 
 
 **Sub-phases:** 12A core (save whole entry, both load actions, content-driven checklist + description-conflict prompt, flat list) · 12B organization (drill-in folders, colors, hover preview, management). Complexity: 12A Medium · 12B Medium.
 
+**Shipped 2026-09-02**, 12A and 12B together — see "Sub-phase 4 — Entry Templates" below for what the build actually settled, including where locked decision 9's supersession left a hole and how the payload question inside locked decision 1 was resolved.
+
 > **Revisit — entry-card footer crowding.** Phase 11 adds "Move to folder" and Phase 12 adds "Save as Template" + "Load Template" on top of the existing entry-history / visibility / public controls. Before it overflows, rethink the footer — an overflow `⋯` menu, relocating the less-common actions, or regrouping per-entry actions. _(what would FabFilter do?)_ Noted 2026-07-24.
 
 ### Phase 14 — Mobile Overhaul
@@ -736,6 +738,66 @@ of a create.
 Left undone on purpose: **there is still no app-level toast**, so both receipts are
 local to the surface that triggered them. If a third caller ever needs one, that is
 the point to build the real thing rather than a third bespoke panel.
+
+**Sub-phase 4 — Entry Templates — shipped 2026-09-02.** GitHub #114. 12A and 12B
+together, per locked decision 11.
+
+`services/template-service.js` (pure) + `state/templates-store.js` +
+`hooks/use-templates.js`, surfaced through `TemplatesPanel.jsx` — which has two
+homes, and that is the part worth remembering.
+
+**Locked decision 9 put the template buttons in the entry footer; the `⋯` menu
+superseded it, and that created a hole nobody had noticed.** The menu hangs off a
+specific entry, so a lorebook with **no entries has no `⋯` menu** — and a fresh
+book is exactly where a scaffold earns its keep. The picker is therefore its own
+component with a nullable `entry`, opened from the menu's `Templates ▸` flyout and
+from a link in the entry list's empty state. With no entry behind it, "Fill this
+entry" is simply not offered. **Any future per-entry action worth reaching from an
+empty book has the same problem and the same fix.**
+
+**Both load actions live on the checklist, not in the menu** (locked decision 2).
+You pick a template, see what it holds, and only then say whether it lands in the
+entry you have open or in a new one — a decision worth making with the contents in
+front of you rather than before seeing them.
+
+**The checklist is content-driven, and that is what keeps saving to one press**
+(locked decision 3). There is deliberately no field menu at save time; the payload
+is the whole entry, and a user who does not want a title leaves it off the source.
+The load then works out for itself which fields carry anything, so a
+description-only scaffold has nothing to tick and goes straight in — unless it
+would land on existing text, which is the one question worth asking (locked
+decision 4, defaulting to Append, the non-destructive half).
+
+**One judgment call inside locked decision 1, recorded because it is not obvious
+from the decision's wording.** "The whole entry" is the four *content* fields —
+title, type, triggers, description. `isPublic` and `hiddenFromExport` are
+excluded: the decision's own rationale is about content you could choose not to
+write, and there is no "leave it off" position for a publishing flag. A template
+that silently marked an entry hidden-from-export would be discovered at export
+time, which is the worst moment to discover it.
+
+**Triggers union rather than replace.** A `name / alias / nickname` scaffold is
+meant to extend what is there; replacing would make the feature actively hostile
+to the case it was designed for.
+
+**Locked decision 7's extraction happened.** `services/category-tree.js` is the
+pure tree over `{id, parentId}` nodes that folders and template categories share;
+`folder-tree.js` binds it and keeps a byte-identical public API, so its 154 checks
+held the refactor without a single edit. The one thing the split had to
+parameterise is the depth cap — folders stop at 3 because each level costs 21px of
+indent in a pane that can be 360px wide, a constraint a drill-in dropdown does not
+share.
+
+**Management is split by job, not by capability** (locked decision 8). The picker's
+manage mode covers what you notice while *using* a template — rename, re-capture,
+delete, make a category. Settings → Templates covers the bookkeeping — moving
+templates between categories, re-parenting categories — which needs the whole set
+visible at once and cannot be done well one drill-in level at a time.
+
+**Templates have no autosave, because autosave persists the active lorebook and
+templates are not in one.** Every mutation in `use-templates.js` writes through
+immediately. This is the third time that rule has bitten in this pass; it is now
+written at the top of both hooks that break it.
 
 ### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
 

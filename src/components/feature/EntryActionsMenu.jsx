@@ -37,6 +37,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal }        from 'react-dom';
 import { Flyout }              from '../ui/Flyout.jsx';
+import { TemplatesPanel }      from './TemplatesPanel.jsx';
 import { useAnchoredPosition } from '../../hooks/use-anchored-position.js';
 import { useDismissLayer }     from '../../hooks/use-dismiss-layer.js';
 import { useFolders }          from '../../hooks/use-folders.js';
@@ -46,9 +47,10 @@ import { NO_FOLDER_LABEL, NEW_FOLDER_NAME } from '../../constants/folders.js';
 import { ENTRY_MENU_WIDTH_PX, MAX_LOREBOOKS } from '../../constants/limits.js';
 import { FLYOUT_OPEN_MS, FLYOUT_CLOSE_MS }    from '../../constants/scaling.js';
 
-const SUB_COPY   = 'copy';
-const SUB_MOVE   = 'move';
-const SUB_FOLDER = 'folder';
+const SUB_COPY      = 'copy';
+const SUB_MOVE      = 'move';
+const SUB_FOLDER    = 'folder';
+const SUB_TEMPLATES = 'templates';
 
 /** A root row that owns a flyout. Hover opens it, click toggles it, and the
  *  pointer may cross the gap to the panel without losing it — see the grace
@@ -104,6 +106,11 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const [result, setResult]       = useState(null);
   const [namingNew, setNamingNew] = useState(false);
   const [newName, setNewName]     = useState('');
+  // The templates panel holds its own half-typed state (a template name, a
+  // rename, a checklist mid-tick). It says so through onPin rather than this
+  // menu trying to guess, because only the panel knows when it has something
+  // to lose.
+  const [panelPinned, setPanelPinned] = useState(false);
   const btnRef     = useRef(null);
   const menuRef    = useRef(null);
   const newNameRef = useRef(null);
@@ -115,13 +122,14 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
 
   // A flyout showing a name field or a receipt is holding something the user
   // would lose — so it stops tracking the pointer and waits to be dismissed.
-  const pinned = namingNew || !!result;
+  const pinned = namingNew || !!result || panelPinned;
 
   const closeSub = useCallback(() => {
     setOpenSub(null);
     setResult(null);
     setNamingNew(false);
     setNewName('');
+    setPanelPinned(false);
   }, []);
 
   const close = useCallback(() => {
@@ -452,6 +460,15 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
             >
               <span className="entry-actions-item-label">＋ New folder</span>
             </button>
+          </SubmenuRow>
+
+          <SubmenuRow
+            id={SUB_TEMPLATES}
+            label="Templates"
+            title="Save this entry as a reusable template, or fill it from one"
+            openSub={openSub} onHover={hoverSub} onLeave={leaveSub} onToggle={toggleSub}
+          >
+            <TemplatesPanel entry={entry} onDone={close} onPin={setPanelPinned} />
           </SubmenuRow>
 
           <div className="entry-actions-divider" role="separator" />

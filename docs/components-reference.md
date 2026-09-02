@@ -63,6 +63,10 @@ Use this to identify which file to look at based on what's visible on screen.
 | Find & replace bar | `src/components/feature/FindReplace.jsx` |
 | Phrase builder mode (pill row with drag reorder) | `src/components/feature/PhraseBuilder.jsx` |
 | A portalled submenu panel that hangs off a menu row — opens right, flips left only when the viewport cannot fit it, measures itself so its size can depend on its contents. Used by the entry `⋯` menu and the footer's sizing menu | `src/components/ui/Flyout.jsx` |
+| The Entry Templates picker — browse, save, load, manage. Rendered in the `⋯` menu's flyout AND from the entry list's empty state, with a nullable `entry`: an empty lorebook has no `⋯` menu, and that is exactly where a template is wanted | `src/components/feature/TemplatesPanel.jsx` |
+| That panel's standalone popover, for surfaces with no entry to hang a menu off | `src/components/feature/TemplatesButton.jsx` |
+| Settings → Editing & Entries → Templates — the full management surface (move between categories, re-parent categories) | `src/components/feature/TemplatesSettings.jsx` |
+| Templates state, persistence, and the two load actions | `src/hooks/use-templates.js` |
 | Copy/move to another lorebook, shared by the `⋯` menu and the bulk bar — target list, persistence, history, and the move confirmation | `src/hooks/use-entry-transfer.js` |
 | The bulk action bar. Desktop lays every action out flat; mobile is `display: contents` and renders a count readout plus one `Actions ▾` menu as members of the filter row, because the flat bar is 891px of content in a 336px row (14C) | `src/components/feature/BulkActionBar.jsx` |
 | The lorebook tab switcher at the top | `src/components/feature/LorebookSwitcher.jsx` |

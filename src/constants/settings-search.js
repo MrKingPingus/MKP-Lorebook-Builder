@@ -16,6 +16,7 @@ export const SETTINGS_GROUP_KEYWORDS = {
   // ── Editing & Entries ──────────────────────────────────────────────
   suggestions:      'suggestions tray collapsed default hide triggers ideas',
   thesaurus:        'thesaurus synonyms dictionary api words related lookup',
+  templates:        'templates template scaffold preset reuse save load boilerplate starter categories entry',
   entryHistory:     'entry checkpoints history rollback snapshots undo restore versions backup',
   historyDefault:   'entry checkpoints history default new lorebooks rollback',
 

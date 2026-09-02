@@ -3185,6 +3185,142 @@ img.logo-icon {
 .entry-actions-result strong { font-weight: 600; }
 .entry-actions-result-tick { color: var(--green); flex-shrink: 0; }
 
+/* §TEMPLATES
+   Entry Templates (Phase 12). The picker renders inside the ⋯ menu's flyout and
+   inside its own popover from the empty-entry-list state, so it borrows the
+   `entry-actions-*` chrome wholesale and adds only what is genuinely new: the
+   content checklist, the description-conflict choice, and the manage-mode row
+   actions. */
+.tpl-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px 6px;
+}
+.tpl-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 7px;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.tpl-check:hover { background: var(--surface3); }
+.tpl-check input { flex-shrink: 0; accent-color: var(--blue); }
+
+.tpl-conflict {
+  padding: 6px 7px 8px;
+  border-top: 1px solid var(--border);
+}
+.tpl-conflict-note {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+  line-height: 1.35;
+}
+.tpl-conflict-choice {
+  display: inline-flex;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.tpl-conflict-btn {
+  padding: 3px 10px;
+  font-size: 0.6875rem;
+  border: none;
+  border-radius: 0;
+  background: var(--surface3);
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.tpl-conflict-btn:hover { color: var(--text); }
+.tpl-conflict-btn--on { background: var(--blue); color: #fff; }
+
+/* A row plus its manage-mode actions. The actions only exist while managing, so
+   the row is a flex line rather than the bare button every other menu row is. */
+.tpl-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.tpl-row .entry-actions-item { flex: 1; min-width: 0; }
+.tpl-mini {
+  flex-shrink: 0;
+  padding: 5px 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--muted2);
+}
+.tpl-mini:hover { background: var(--surface3); color: var(--text); }
+.tpl-mini--danger:hover { background: rgba(245, 101, 101, 0.15); color: var(--red); }
+
+/* The empty-state route in. A link rather than a button because it sits inside
+   a sentence — the surrounding copy is what explains it. */
+.templates-link {
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.templates-link:hover { color: var(--text); }
+
+/* Settings → Templates. Rows are a grid rather than flex so the name, category
+   and colour columns line up down the list — an audit surface where the columns
+   wander is not an audit surface. */
+.tpl-settings { display: flex; flex-direction: column; gap: 4px; }
+.tpl-settings-heading {
+  margin: 8px 0 2px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tpl-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+.tpl-settings-name {
+  flex: 1 1 90px;
+  min-width: 0;
+  padding: 4px 7px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.tpl-settings-name:focus { outline: none; border-color: var(--blue); }
+.tpl-settings-cat   { flex: 1 1 90px; min-width: 0; }
+.tpl-settings-color { flex: 1 1 80px; min-width: 0; }
+
+/* A category carries two selects on top of a name and a delete, which is one
+   control more than the Settings column's ~276px can hold in a line. It wraps
+   deliberately: name and delete on the first, parent and colour on the second.
+   Templates stay on one line — they only have the two. */
+.tpl-settings-row--category { flex-wrap: wrap; }
+.tpl-settings-row--category .tpl-settings-name { flex: 1 1 90px; }
+.tpl-settings-row--category .tpl-settings-cat,
+.tpl-settings-row--category .tpl-settings-color { flex: 1 1 40%; }
+
+/* Below the breakpoint even two controls plus a name is a squeeze, so the name
+   takes its own line. §TOUCH-GROWN's floor applies to each select either way. */
+@media (max-width: 768px) {
+  .tpl-settings-row { flex-wrap: wrap; }
+  .tpl-settings-row .tpl-settings-name { flex-basis: 100%; }
+}
+
 /* Card body — shown when expanded */
 .entry-card-body {
   padding: 10px 12px 12px;

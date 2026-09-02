@@ -15,6 +15,7 @@ import { useReferenceChooser }  from '../../hooks/use-reference-chooser.js';
 import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { KeybindingSettings }    from './KeybindingSettings.jsx';
+import { TemplatesSettings }     from './TemplatesSettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import { WARNING_SCALES, WARNING_SCALE_GRADIENT, scaleUsesThirdStop } from '../../constants/warning-scale.js';
 import {
@@ -220,6 +221,12 @@ export function SettingsPanel() {
           write and the checkpoints that protect what you wrote.
           ════════════════════════════════════════════════════════════ */}
       <SettingsSection id="editing" title="Editing & Entries" openSet={openSet} toggleSection={toggleSection} query={query}>
+
+        <SettingsDivider label="Templates" query={query} />
+
+        <SettingsGroup id="templates" query={query}>
+          <TemplatesSettings />
+        </SettingsGroup>
 
         <SettingsDivider label="Writing aids" query={query} />
 

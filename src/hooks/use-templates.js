@@ -143,6 +143,7 @@ export function useTemplates() {
     atCapacity,
     // reads
     childCategories: (parentId) => tree.childrenOf(categories, parentId),
+    canNestCategory: (id, parentId) => tree.canNest(categories, id, parentId, MAX_TEMPLATE_CATEGORY_DEPTH),
     categoryPath:    (id) => tree.pathTo(categories, id),
     inCategory:      (id) => templatesInCategory(templates, id),
     contentFields,
