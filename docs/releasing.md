@@ -11,6 +11,20 @@ code, and what decides whether returning users see the update notice.
 The status bar and the update notice both read that, so they cannot disagree
 about which build is running. **Never hardcode a version anywhere else.**
 
+## Which number to use (decided 2026-09-03)
+
+**0.x until CharSnap launches. Whatever version Jason ships as the live
+extension becomes 1.0, and everything after it is 1.x.**
+
+So the number is not ours to choose at 1.0 — it is set by an event outside this
+repo, and MrKingPingus will say when it has happened. Until then keep counting
+0.11 → 0.12 → …, and do **not** pre-empt it by cutting a 1.0 because a release
+feels big enough. A 1.0 that shipped before the launch it is supposed to mark
+would leave the launch build with nothing to call itself.
+
+Tagging follows the same rule: tag each 0.x on `main` as below, and hold `v1.0.0`
+until the word comes.
+
 ## The feature tour
 
 There is nothing to generate. Since 0.10.0 the tour drives the real app rather
