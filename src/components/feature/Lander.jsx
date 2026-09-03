@@ -131,7 +131,7 @@ export function Lander() {
         <button className="lander-tile" onClick={onImportFile}>
           <div className="lander-tile-icon">📁</div>
           <div className="lander-tile-title">Import File</div>
-          <div className="lander-tile-sub">JSON, TXT, DOCX, ODT</div>
+          <div className="lander-tile-sub">JSON, TXT, DOCX</div>
         </button>
         <button className="lander-tile" onClick={onImportPaste}>
           <div className="lander-tile-icon">⎘</div>
@@ -143,7 +143,7 @@ export function Lander() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".txt,.docx,.odt,.json"
+        accept=".txt,.docx,.json"
         style={{ display: 'none' }}
         onChange={onImportFileChosen}
       />
@@ -198,7 +198,7 @@ export function Lander() {
           <li>Create entries with names, types, triggers, and descriptions.</li>
           <li>Your lorebook is saved automatically — just leave the tab open.</li>
           <li>When you're done, export as <strong>JSON</strong> (for AI tools), <strong>TXT</strong>, or <strong>DOCX</strong> from the <em>Import / Export</em> tab.</li>
-          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, <code>.docx</code>, or <code>.odt</code> file.</li>
+          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, or <code>.docx</code> file.</li>
           <li>Use <kbd>{displayChord('new_entry')}</kbd> to add a new entry, <kbd>{displayChord('undo')}</kbd> to undo, <kbd>{displayChord('redo')}</kbd> to redo, and <kbd>Esc</kbd> to exit bulk-select mode. Press <kbd>?</kbd> anytime for the full shortcut list.</li>
         </ol>
 

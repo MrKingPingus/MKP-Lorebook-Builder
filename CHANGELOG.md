@@ -6,6 +6,7 @@
 
 ### New
 
+- **The builder can be embedded in CharSnap.** Opened inside a frame with `?host=charsnap`, it fills the frame, takes CharSnap's theme, and saves with one **Save to CharSnap** button (or **Ctrl+S** / **⌘S**) instead of downloading a file — CharSnap does the storing, the builder keeps your draft, undo history and checkpoints in your browser as it always has. A dot on the button and a line in the footer say when there is something unsaved; if the copy on CharSnap moved on while you were editing, you are asked which one to keep rather than having either overwritten. Entries hidden from export are saved as *disabled* — still in the book, never fired in chat. Opening the same URL on its own does nothing special: the standalone app is untouched. The full protocol is in `HOST-MODE.md`.
 - **An entry tells you when its content is newer than its latest checkpoint** — a small yellow dot on the entry's **Checkpoints** button. It appears once you've edited the entry past the last checkpoint saved for it, and clears the moment you save or overwrite one. This is the job the save prompt used to do by interrupting you: the same information, sitting where you'd look for it, asking nothing.
 
 ### Improved
@@ -19,9 +20,15 @@
 
 - **The synonyms popover no longer appears on its own after you accept a suggested trigger.** Clicking a suggestion removes its chip, and the remaining chips slide over to close the gap — sliding a different one under a cursor that hadn't moved. The app read that as you hovering it and opened the synonyms popover for a word you never pointed at, a moment after you'd clicked. Which chip landed under your cursor decided whether it happened at all, which is why it seemed random. Hovering a chip on purpose works exactly as before. ([#130](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/130))
 - **Deleting a checkpoint can be undone.** It wrote straight through with no undo step, so a misclicked **×** destroyed a saved checkpoint permanently. Both deleting and overwriting a checkpoint now record an undo step and come back with **Ctrl+Z**.
+- **`.odt` is no longer offered as an import format.** It was accepted by the file picker and then handed to the Word (`.docx`) reader, which cannot open an OpenDocument file, so every attempt failed with an unhelpful error. The picker now lists TXT, DOCX and JSON, and an `.odt` dropped in anyway gets a message that says to save it as `.docx` or `.txt` first.
+- **Downloads no longer race their own cleanup.** The export helper revoked the blob URL in the same tick as the click that started the download; browsers that resolve the URL a moment later could end up with an empty file. The revoke is now deferred past the click.
+- **TXT and DOCX imports cap triggers at 25** like the JSON importer already did, so an over-long trigger line in a text file no longer produces an entry the builder itself flags as over the limit.
+- **Comments and the README said the library holds 10 lorebooks**; the cap has been 50 since it was raised. The text now matches the constant.
 
 ### Under the hood
 
+- **Host mode is a fourth verify layer.** `verify/host-checks.mjs` drives the embedded builder from a static host page (`verify/host-harness/index.html`) served through Playwright's request interception, so the postMessage handshake, the origin checks on both sides, the save round trip, conflict handling and draft resume are all exercised against the real app with no second server. `verify/host-serialize-checks.mjs` covers the wire mapping, content hash and validator in-process. `npm run verify -- host` runs the suite alone; a filter that matches nothing in one suite no longer fails the run, only one that matches nothing anywhere.
+- **`public/_headers`** sets `Content-Security-Policy: frame-ancestors` for the CharSnap origins, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Cache-Control: no-cache` on the HTML shell. Script and connect directives are a later step.
 - **The checkpoints system has behavioural test coverage for the first time**, in `verify/checks.mjs` — it had none at all before, despite owning saved user content. The scenario drives the real app through enabling checkpoints, editing, collapsing, and overwriting.
 - **Code identifiers still say `rollback` and `snapshots`.** The user-facing rename stopped at the UI deliberately: the per-book config key and the per-entry array are persisted in `localStorage` under those names, so renaming them in place would orphan every checkpoint already saved in a browser. A later identifier rename should cover files, hooks and CSS classes and stop short of the stored schema.
 

@@ -26,7 +26,7 @@ export const IMPORT_DISPOSITION = {
   replace: 'replace',  // overwrite the current book's entries
 };
 
-export const IMPORT_ACCEPT = '.txt,.docx,.odt,.json';
+export const IMPORT_ACCEPT = '.txt,.docx,.json';
 
 /** Label used in place of a filename when the entries came from the textarea. */
 export const PASTED_SOURCE_LABEL = 'Pasted text';

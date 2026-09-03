@@ -15,17 +15,21 @@ can gate CI or a pre-push hook.
 
 ## Layers
 
-Two, and they run in this order:
+Four, and they run in this order:
 
 1. **Pure-logic checks** — in-process, no browser, no dev server, milliseconds.
    `keychord-checks.mjs` (the macOS Option-key paths the Linux-only browser
-   suite can't reach) and `folder-tree-checks.mjs` (the folder splice and render
+   suite can't reach), `folder-tree-checks.mjs` (the folder splice and render
    walk, which are far cheaper to exercise exhaustively here than through the
-   UI). Prefer this layer for anything pure — it's effectively free.
+   UI) and `host-serialize-checks.mjs` (host mode's wire mapping, content hash,
+   validator and origin gate). Prefer this layer for anything pure — it's
+   effectively free.
 2. **Browser scenarios** — `checks.mjs`, driving the real app headlessly. A
    fresh browser per scenario, so no state leaks between them.
 3. **Mobile scenarios** — `mobile-checks.mjs`, same idea below the 768px
    breakpoint, plus the layout sweeps described under **The mobile suite**.
+4. **Host-mode scenarios** — `host-checks.mjs`, the builder embedded in a
+   static host page. See **The host suite**.
 
 ## Fixtures
 
@@ -96,6 +100,20 @@ Two, and they run in this order:
   the position-decides-the-folder rule, multi-drag, folder moves, and the
   "nothing is ever lost" invariant on every path.
 - **`mobile-checks.mjs`** — the mobile scenarios and layout sweeps. See below.
+- **`host-checks.mjs`** — the host-mode scenarios: handshake and load, the
+  dirty flag and the Mod+S save round trip (hidden entry out as `disabled`),
+  local validation and host rejection highlighting, theme applied-not-persisted,
+  set-name and the hidden rename affordances, draft resume across a reload and
+  the newer-server-copy prompt, new books (`hostId: null`), the save-conflict
+  dialog with `force: true`, typing caps, the flag being inert at top level, and
+  the phone layout. Every name starts with `Host:`.
+- **`host-harness/index.html`** — the static host page those scenarios drive
+  (and a manual test bench; see `HOST-MODE.md` → *Running the harness*).
+- **`host-serialize-checks.mjs`** — pure-logic checks for
+  `services/host-serialize.js` (round trip, `hiddenFromExport` ⇄ `disabled`,
+  byte-faithful text, `builderMeta` tolerances, malformed payloads), the content
+  hash (stability, what it ignores, order sensitivity), `validateForHost`, the
+  origin/source/envelope gate in `host-bridge.js`, and the eviction pick.
 - **`layout-invariants.mjs`** — the sweep battery: structure-agnostic layout
   rules, usable at any viewport. Its `tap-target` rule measures **effective hit
   area, not the visual box** — when a control fails on its bounding rect the
@@ -227,6 +245,27 @@ node fixtures/build-stress-book.mjs --entries 500 --out /tmp/big.json
 
 Everything is seeded, so the same arguments always give the same book.
 
+## The host suite
+
+Host mode is the builder inside an iframe on a page that owns the lorebook
+(HOST-MODE.md is the contract). Two things about the suite are worth knowing:
+
+- **No second server.** The scenarios need a top frame at an allowlisted origin
+  (`http://localhost:3000`) and a builder iframe from the dev server. Rather
+  than starting something on 3000, `openHarness` intercepts
+  `http://localhost:3000/**` with `page.route` and fulfils it with
+  `host-harness/index.html`. The iframe is real, the messages are real, and the
+  origin checks on both sides are exercised for real.
+- **The harness is the oracle.** It records every message in
+  `window.__messages` (and origin-rejected ones in `window.__rejected`);
+  scenarios wait on those with `waitForMessage(page, type, minCount)` rather
+  than on timers. The builder's DOM is reached through
+  `page.frameLocator('#builder')`.
+
+The **Mod+S** scenario detects the platform inside the browser and presses
+`Meta+S` on macOS, `Control+S` elsewhere — the app's `Mod` resolves the same
+way, so the test follows the app rather than assuming Linux.
+
 ## Running a subset
 
 A full run launches a fresh browser per scenario and takes several minutes.
@@ -238,11 +277,13 @@ npm run verify -- "Drag:"        # only the drag scenarios
 npm run verify -- drag,selection # comma-separated terms, any match
 npm run verify -- mobile         # the whole mobile suite
 npm run verify -- "mobile sweep" # the layout sweeps only
+npm run verify -- host           # the host-mode suite
 VERIFY_ONLY=crosstalk npm run verify
 ```
 
-The filter applies to the desktop and mobile suites alike, so a term that
-matches nothing on one side simply runs nothing there.
+The filter applies to the desktop, mobile and host suites alike, so a term that
+matches nothing on one side simply runs nothing there. A term that matches
+nothing anywhere fails the run — a typo should not pass silently.
 
 Matching is case-insensitive substring. The pure-logic checks take milliseconds
 so they always run regardless of the filter. Run the whole suite before pushing.

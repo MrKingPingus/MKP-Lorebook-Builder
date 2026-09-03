@@ -44,8 +44,11 @@ function resolveChromium() {
   return undefined; // let Playwright use its managed browser
 }
 
-export async function launch({ width = 1280, height = 900, mobile = false, deviceScaleFactor } = {}) {
-  const browser = await chromium.launch({ headless: true, executablePath: resolveChromium() });
+// `args` are extra Chromium switches. The host suite needs one: a page served
+// through Playwright's request interception has no address space, so Chrome's
+// Local Network Access checks refuse to let it embed the dev server.
+export async function launch({ width = 1280, height = 900, mobile = false, deviceScaleFactor, args = [] } = {}) {
+  const browser = await chromium.launch({ headless: true, executablePath: resolveChromium(), args });
   const context = await browser.newContext({
     viewport: { width, height },
     isMobile: mobile, hasTouch: mobile,

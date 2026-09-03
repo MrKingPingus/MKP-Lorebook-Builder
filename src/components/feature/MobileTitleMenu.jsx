@@ -29,6 +29,7 @@ import { useSortedLorebooks }    from '../../hooks/use-sorted-lorebooks.js';
 import { useReferenceLorebook }  from '../../hooks/use-reference-lorebook.js';
 import { useReferenceChooser }   from '../../hooks/use-reference-chooser.js';
 import { useDismissLayer }       from '../../hooks/use-dismiss-layer.js';
+import { useHostMode }           from '../../hooks/use-host.js';
 import { ImportFlow }            from './ImportFlow.jsx';
 import { DISMISS_PRIORITY }      from '../../services/dismiss-stack.js';
 import { DUPE_FLASH_MS }         from '../../constants/limits.js';
@@ -41,9 +42,14 @@ const TABS = [
 
 export function MobileTitleMenu() {
   const open      = useUi((s) => s.mobileTitleMenuOpen);
-  const tab       = useUi((s) => s.mobileTitleMenuTab);
+  const storedTab = useUi((s) => s.mobileTitleMenuTab);
   const setTab    = useUi((s) => s.setMobileTitleMenuTab);
   const close     = useUi((s) => s.closeMobileTitleMenu);
+  // Host mode: CharSnap owns which book is open (and its name), so the
+  // Lorebooks tab — switch, rename, delete, new — does not exist here.
+  const hostMode  = useHostMode();
+  const tabs      = hostMode ? TABS.filter((t) => t.id !== 'lorebooks') : TABS;
+  const tab       = hostMode ? 'import-export' : storedTab;
 
   const { lorebookSort, setLorebookSort } = useSettings();
   const { sorted, items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } =
@@ -153,7 +159,7 @@ export function MobileTitleMenu() {
     <div className="mtm" role="dialog" aria-label="Lorebooks and import / export">
       <div className="mtm-head">
         <div className="mtm-tabs" role="tablist">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"

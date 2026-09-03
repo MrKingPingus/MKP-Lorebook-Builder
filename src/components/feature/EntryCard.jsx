@@ -25,6 +25,8 @@ import { ENTRY_TYPES }                              from '../../constants/entry-
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
          CHAR_LIMIT }                               from '../../constants/limits.js';
 import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
+import { useHostMode }                              from '../../hooks/use-host.js';
+import { HOST_LIMITS }                              from '../../constants/host.js';
 
 // Header status badges. CharSnap entries default to private, so Public is the
 // exception worth flagging — an open eye = "made Public". Hidden-from-Export
@@ -79,6 +81,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setCompareEntryId       = useUi((s) => s.setCompareEntryId);
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
+  const hostMode     = useHostMode(); // hard-caps the name field at CharSnap's limit
   const expandAllNonce         = useUi((s) => s.expandAllNonce);
   const collapseAllNonce       = useUi((s) => s.collapseAllNonce);
   const searchQuery            = useUi((s) => s.searchQuery);
@@ -555,6 +558,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                 onChange={(e) => update({ name: e.target.value })}
                 placeholder="Entry name…"
                 spellCheck={false}
+                maxLength={hostMode ? HOST_LIMITS.name : undefined}
               />
             </div>
             <div className={`entry-field entry-field--type${isComparing && compareDelta?.type ? ' entry-field--differs' : ''}`}>

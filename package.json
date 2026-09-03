@@ -2,7 +2,7 @@
   "name": "mkp-lorebook-builder",
   "version": "0.10.0",
   "description": "Browser-only utility for creating and managing lorebooks for AI chatbots",
-  "license": "ISC",
+  "license": "MIT",
   "author": "",
   "type": "module",
   "scripts": {
@@ -12,8 +12,8 @@
     "verify": "node verify/run.mjs"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
     "lz-string": "^1.5.0",
+    "mammoth": "^1.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.4"

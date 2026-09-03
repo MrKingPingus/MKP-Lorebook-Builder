@@ -1,12 +1,14 @@
 // Handles FloatingWindow expansion/collapse and horizontal re-centering when the desktop menu panel opens or closes
 import { useEffect, useRef } from 'react';
 import { useUiStore }        from '../state/ui-store.js';
+import { useHostStore }      from '../state/host-store.js';
 import { useMobile }         from './use-mobile.js';
 import { MENU_PANEL_WIDTH, maxWindowWidth }  from '../constants/limits.js';
 import { MENU_PANEL_ANIM_MS }                 from '../constants/scaling.js';
 
 export function useMenuPanel() {
   const isMobile        = useMobile();
+  const hostMode        = useHostStore((s) => s.enabled);
   const activeMenuPanel = useUiStore((s) => s.activeMenuPanel);
   const savedWRef       = useRef(null); // build-only width saved before panel opened
   const animTimer       = useRef(null);
@@ -24,7 +26,9 @@ export function useMenuPanel() {
   useEffect(() => () => clearTimeout(animTimer.current), []);
 
   useEffect(() => {
-    if (isMobile) return;
+    // Host mode: the window fills the frame, so there is no width to grow into
+    // — the panel opens inside the frame like it does on mobile.
+    if (isMobile || hostMode) return;
 
     const { windowSize, windowPos, setWindowSize, setWindowPos } = useUiStore.getState();
 
@@ -55,5 +59,5 @@ export function useMenuPanel() {
     // Switching between open panels (null→id handled above, id→same-id is a toggle→null,
     // id→different-id: savedWRef is set so neither branch fires — no resize, and
     // therefore deliberately no animation flag either)
-  }, [activeMenuPanel, isMobile]);
+  }, [activeMenuPanel, isMobile, hostMode]);
 }

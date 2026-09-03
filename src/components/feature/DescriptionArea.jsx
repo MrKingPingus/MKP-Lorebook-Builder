@@ -4,7 +4,9 @@ import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
 import { useUi }        from '../../hooks/use-ui.js';
+import { useHostMode }  from '../../hooks/use-host.js';
 import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/limits.js';
+import { HOST_LIMITS } from '../../constants/host.js';
 
 export function DescriptionArea({
   value,
@@ -22,6 +24,8 @@ export function DescriptionArea({
   const textareaRef = useRef(null);
   const { counterTiers, tieredCounterEnabled } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
+  // Host mode hard-caps typing at CharSnap's limit; standalone only warns.
+  const hostMode    = useHostMode();
 
   const overYellow = value.length >= CHAR_WARN_YELLOW;
   const overRed    = value.length >= CHAR_WARN_RED;
@@ -109,6 +113,7 @@ export function DescriptionArea({
           readOnly={readOnly}
           placeholder="Entry description…"
           spellCheck={true}
+          maxLength={hostMode ? HOST_LIMITS.description : undefined}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           style={tieredBorderStyle}

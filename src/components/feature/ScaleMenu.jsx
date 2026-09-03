@@ -14,6 +14,7 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal }   from 'react-dom';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useWindowScale } from '../../hooks/use-window-scale.js';
+import { useHostMode }    from '../../hooks/use-host.js';
 import { UI_SCALE_STEPS, DEFAULT_UI_SCALE } from '../../constants/accessibility.js';
 import {
   FAB_SIZE_OPTIONS,
@@ -198,6 +199,8 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
     windowSize, activePresetId, applySize, applyPreset,
     resetWindow, saveCurrentAsDefault,
   } = useWindowScale();
+  // Host mode: the window is the iframe, so there is no size to pick.
+  const hostMode = useHostMode();
 
   useEffect(() => () => {
     clearTimeout(openTimer.current);
@@ -244,7 +247,7 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
   // user may depend on, and wiping it from a general "reset sizing" would be
   // hostile in a way the other three resets are not.
   function resetAllSizing() {
-    resetWindow();
+    if (!hostMode) resetWindow();
     setEntryHeaderSize('default');
     setFabSize('large');
     setOpenRow(null);
@@ -274,6 +277,7 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
     >
       <div className="scale-menu-head">Sizing &amp; scale</div>
 
+      {!hostMode && (
       <ScaleRow id="window" label="Window size" value={windowLabel} {...rowProps}>
         {WINDOW_SIZE_PRESETS.map((preset) => (
           <FlyoutItem
@@ -330,6 +334,7 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
           <span className="flyout-item-label">Reset to default</span>
         </button>
       </ScaleRow>
+      )}
 
       <ScaleRow id="text" label="Text size" value={scaleLabel} {...rowProps}>
         {UI_SCALE_STEPS.map((step) => (

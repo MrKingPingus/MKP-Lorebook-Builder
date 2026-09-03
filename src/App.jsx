@@ -1,11 +1,13 @@
 // Root component — composes <FloatingWindow>, mounts autosave effect and keyboard shortcuts
 import { useEffect, useMemo, useCallback } from 'react';
-import { Analytics } from '@vercel/analytics/react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
 import { ReferenceChooser }      from './components/feature/ReferenceChooser.jsx';
 import { FeatureTour }           from './components/feature/FeatureTour.jsx';
+import { HostConflictDialog }    from './components/feature/HostConflictDialog.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
+import { useHost, useHostMode }  from './hooks/use-host.js';
+import { useHostStore }          from './state/host-store.js';
 import { useTheme }              from './hooks/use-theme.js';
 import { useAccessibility }      from './hooks/use-accessibility.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
@@ -83,9 +85,15 @@ function useBootstrap() {
       writeJson(SETTINGS_KEY, { ...(settings ?? {}), ...patch });
     }
 
+    // Host mode: the frame fills the iframe, so no window geometry to restore,
+    // and no placeholder book — the host's mkp:load decides what is active.
+    const hostMode = useHostStore.getState().enabled;
+
     // Restore persisted window state, or fall back to default centre-two-thirds layout
-    const saved = readJson(WINDOW_STATE_KEY);
-    if (saved?.size && saved?.pos) {
+    const saved = hostMode ? null : readJson(WINDOW_STATE_KEY);
+    if (hostMode) {
+      // nothing — .floating-window--fill ignores windowPos/windowSize
+    } else if (saved?.size && saved?.pos) {
       // Clamp to current viewport in case screen size changed since last save
       const sw = Math.max(MIN_WINDOW_WIDTH,  Math.min(saved.size.width,  window.innerWidth));
       const sh = Math.max(MIN_WINDOW_HEIGHT, Math.min(saved.size.height, window.innerHeight));
@@ -111,7 +119,12 @@ function useBootstrap() {
         if (lb) lorebooks[lb.id] = lb;
       }
       setLorebooks(lorebooks);
-      setActiveLorebookId(index[0].id);
+      // In host mode the drafts are loaded but none is activated: use-host
+      // picks (or creates) the one matching the host's lorebook.
+      if (!hostMode) setActiveLorebookId(index[0].id);
+    } else if (hostMode) {
+      // First run inside CharSnap — an empty library, and nothing to create
+      // until the host says what to open.
     } else {
       // First run — create a default lorebook marked as a placeholder so an
       // immediate Import-as-New silently discards it instead of leaving a
@@ -132,6 +145,7 @@ function useBootstrap() {
 
 export default function App() {
   useBootstrap();
+  useHost();
   useAutosave();
   useTheme();
   useAccessibility();
@@ -143,6 +157,7 @@ export default function App() {
   const { bindings }   = useKeybindings();
   const { referenceLorebook, swapReference, crosstalkEnabled } = useReferenceLorebook();
   const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
+  const hostMode = useHostMode();
 
   // ui-store setters used by the wired hotkey handlers + the Escape stack.
   const searchMode        = useUiStore((s) => s.searchMode);
@@ -187,6 +202,8 @@ export default function App() {
     import_entries:      () => requestImportPick(),
     open_settings:       () => setActiveMenuPanel('settings'),
     keyboard_help:       () => toggleKeyboardHelp(),
+    // Host mode only (the binding is filtered out of the registry otherwise).
+    save_to_host:        () => useHostStore.getState().saveToHost?.(),
   }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, requestFindFocus, setReferenceChooserOpen, referenceLorebook, swapReference, openExportMenuCentered, requestImportPick, setActiveMenuPanel, toggleKeyboardHelp]);
 
   // Any hotkey (other than the help toggle itself) also dismisses the open
@@ -207,8 +224,12 @@ export default function App() {
 
   // Context gate for context-scoped bindings (e.g. crosstalk-only actions).
   const isEnabled = useCallback(
-    (ctx) => (ctx === 'crosstalk' ? crosstalkEnabled : true),
-    [crosstalkEnabled],
+    (ctx) => {
+      if (ctx === 'crosstalk') return crosstalkEnabled;
+      if (ctx === 'host')      return hostMode;
+      return true;
+    },
+    [crosstalkEnabled, hostMode],
   );
 
   useKeyboardShortcuts({ bindings, handlers: wrappedHandlers, isEnabled });
@@ -231,7 +252,9 @@ export default function App() {
           builder, so it has to outlive the view it was started from. */}
       <FeatureTour />
       <KeyboardHelpOverlay />
-      <Analytics />
+      {/* Host mode's "which copy?" prompts. At the root for the same reason as
+          the chooser: it must sit over the mobile detail panel too. */}
+      {hostMode && <HostConflictDialog />}
     </div>
   );
 }

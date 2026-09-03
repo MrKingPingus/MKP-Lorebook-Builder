@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { DropZone }     from '../ui/DropZone.jsx';
 import { ImportPreview } from './ImportPreview.jsx';
+import { useHostMode }   from '../../hooks/use-host.js';
 import {
   IMPORT_STAGE,
   IMPORT_SOURCE,
@@ -59,7 +60,7 @@ function SourceStage({ flow, fileInputRef }) {
           <DropZone onFile={flow.handleFile} accept={IMPORT_ACCEPT} inputRef={fileInputRef}>
             <div className="drop-zone-content">
               {flow.loading ? '⏳ Parsing…' : 'Drop a file or click to browse'}
-              <span className="import-flow-formats">TXT · DOCX · ODT · JSON</span>
+              <span className="import-flow-formats">TXT · DOCX · JSON</span>
             </div>
           </DropZone>
           {/* Pasting is the niche path, so it stays secondary rather than
@@ -84,6 +85,12 @@ function SourceStage({ flow, fileInputRef }) {
 
 /** Stage 2 — what should happen to the book that's already open. */
 function DispositionStage({ flow }) {
+  // Host mode: CharSnap decides which book is open, so "Import as new" — which
+  // would create and switch to a second local book — is not on offer.
+  const hostMode = useHostMode();
+  const options  = hostMode
+    ? IMPORT_DISPOSITION_OPTIONS.filter((opt) => opt.id !== IMPORT_DISPOSITION.asNew)
+    : IMPORT_DISPOSITION_OPTIONS;
   return (
     <>
       <div className="import-flow-head">
@@ -110,7 +117,7 @@ function DispositionStage({ flow }) {
       </div>
 
       <div className="import-flow-grid">
-        {IMPORT_DISPOSITION_OPTIONS.map((opt) => (
+        {options.map((opt) => (
           <button
             key={`${opt.id}-${opt.backupFirst}`}
             type="button"

@@ -40,7 +40,7 @@ function unique(arr) {
  * Normalize a type string to a valid entry type id.
  * Accepts lowercase-snake ("plot_event") and PascalCase ("PlotEvent").
  */
-function normalizeType(raw) {
+export function normalizeType(raw) {
   if (typeof raw !== 'string') return DEFAULT_TYPE;
   const snake = raw.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   return VALID_TYPES.has(snake) ? snake : DEFAULT_TYPE;

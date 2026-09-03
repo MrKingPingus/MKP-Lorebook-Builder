@@ -7,6 +7,7 @@
 import { createEmptyEntry } from './entry-factory.js';
 import { unescapeImportedEntry } from './unescape-import.js';
 import { ENTRY_TYPES, DEFAULT_TYPE } from '../constants/entry-types.js';
+import { MAX_TRIGGERS } from '../constants/limits.js';
 
 const VALID_TYPES = new Set(ENTRY_TYPES.map((t) => t.id));
 
@@ -290,7 +291,10 @@ export function parseTxtToEntries(text) {
   }
 
   // Post-process: strip spurious escape backslashes (`World\'s` → `World's`, etc.)
-  return entries.map(unescapeImportedEntry);
+  // and cap triggers at MAX_TRIGGERS, the same as the JSON importer does.
+  return entries
+    .map(unescapeImportedEntry)
+    .map((e) => ({ ...e, triggers: (e.triggers ?? []).slice(0, MAX_TRIGGERS) }));
 }
 
 export async function readTxtFile(file) {

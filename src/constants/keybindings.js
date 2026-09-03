@@ -15,6 +15,9 @@
 //   context       — optional gate id; the action only fires/enables in that context
 //   allowInInput  — when true the binding still fires while a text field is focused
 //   fixed         — true = not user-rebindable (shown in the overlay for reference only)
+//   hostOnly      — only exists while embedded in CharSnap (use-keybindings
+//                   drops it from every list otherwise, so standalone never
+//                   sees it in Settings, the overlay, or the dispatcher)
 
 export const KEYBINDING_CATEGORIES = [
   { id: 'editing',   label: 'Editing' },
@@ -54,6 +57,10 @@ export const KEYBINDINGS = [
   { id: 'open_settings',       label: 'Open settings',            category: 'app',       defaultChord: 'Mod+,', wired: true },
   { id: 'keyboard_help',       label: 'Keyboard shortcuts help',  category: 'app',       defaultChord: '?',     wired: true },
   { id: 'dismiss',             label: 'Dismiss / cancel',         category: 'app',       defaultChord: 'Escape', wired: true, fixed: true },
+  // Host mode only. `allowInInput` so Ctrl+S works mid-sentence, which is where
+  // the reflex fires; the chord carries a hard modifier so it can't collide
+  // with typing anyway.
+  { id: 'save_to_host',        label: 'Save to CharSnap',         category: 'app',       defaultChord: 'Mod+S', wired: true, hostOnly: true, context: 'host', allowInInput: true },
 ];
 
 export const KEYBINDING_MAP = Object.fromEntries(KEYBINDINGS.map((k) => [k.id, k]));

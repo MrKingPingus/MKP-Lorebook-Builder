@@ -4,7 +4,7 @@ import { ENTRY_TYPES } from '../constants/entry-types.js';
 
 // Internal type ids (e.g. 'plot_event') map to the CharSnap entry-type labels
 // (e.g. 'PlotEvent') that the platform reads back on import.
-const TYPE_LABEL = Object.fromEntries(ENTRY_TYPES.map((t) => [t.id, t.label]));
+export const TYPE_LABEL = Object.fromEntries(ENTRY_TYPES.map((t) => [t.id, t.label]));
 
 export function exportToJsonBlob(lorebook) {
   // hiddenFromExport entries are omitted entirely. The rest are renumbered
@@ -35,5 +35,7 @@ export function downloadBlob(blob, filename) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Revoke on the next tick, not synchronously: the click only *starts* the
+  // download, and some browsers resolve the blob URL after this frame.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

@@ -12,6 +12,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUi }       from '../../hooks/use-ui.js';
 import { useSettings } from '../../hooks/use-settings.js';
+import { useHostMode } from '../../hooks/use-host.js';
 
 const ITEMS = [
   { id: 'lorebooks',     label: 'Lorebooks' },
@@ -35,6 +36,9 @@ export function MenuButton() {
   const activeMenuPanel        = useUi((s) => s.activeMenuPanel);
   const setActiveMenuPanel     = useUi((s) => s.setActiveMenuPanel);
   const { legacyMenus }        = useSettings();
+  // Host mode: no Lorebooks panel — CharSnap decides which book is open.
+  const hostMode               = useHostMode();
+  const items                  = hostMode ? ITEMS.filter((i) => i.id !== 'lorebooks') : ITEMS;
 
   useEffect(() => {
     function onMouseDown(e) {
@@ -83,7 +87,7 @@ export function MenuButton() {
 
       {open && (
         <div className="menu-dropdown">
-          {ITEMS.map((item) => (
+          {items.map((item) => (
             <button
               key={item.id}
               className={`menu-dropdown-item${activeMenuPanel === item.id ? ' menu-dropdown-item--active' : ''}`}

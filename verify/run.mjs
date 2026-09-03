@@ -5,11 +5,13 @@ import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { runAllChecks } from './checks.mjs';
 import { runMobileChecks } from './mobile-checks.mjs';
+import { runHostChecks } from './host-checks.mjs';
 import { runKeychordChecks } from './keychord-checks.mjs';
 import { runFolderTreeChecks } from './folder-tree-checks.mjs';
 import { runSelectionRangeChecks } from './selection-range-checks.mjs';
 import { runDragDropChecks } from './drag-drop-checks.mjs';
 import { runReleaseNotesChecks } from './release-notes-checks.mjs';
+import { runHostSerializeChecks } from './host-serialize-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -34,6 +36,7 @@ const pureOk = [
   runSelectionRangeChecks(),
   runDragDropChecks(),
   runReleaseNotesChecks(),
+  runHostSerializeChecks(),
 ].every(Boolean);
 
 let child = null;
@@ -50,13 +53,20 @@ if (await serverUp()) {
   }
 }
 
-// Desktop first, then mobile. Both honour the same name filter, so
-// `npm run verify -- mobile` runs the mobile suite alone.
+// Desktop, then mobile, then host mode. All three honour the same name filter,
+// so `npm run verify -- mobile` or `-- host` runs one suite alone. A suite the
+// filter matches nothing in returns null ("ran nothing") rather than false; the
+// run fails only if a suite failed, or if the filter matched nothing anywhere.
 let ok = false;
 try {
-  const desktopOk = await runAllChecks(only);
-  const mobileOk  = await runMobileChecks(only);
-  ok = desktopOk && mobileOk;
+  const outcomes = [
+    await runAllChecks(only),
+    await runMobileChecks(only),
+    await runHostChecks(only),
+  ];
+  const ranAny = outcomes.some((o) => o !== null);
+  if (!ranAny) console.log(`\nNo scenario name matches ${JSON.stringify(only)} — nothing to run.`);
+  ok = ranAny && outcomes.every((o) => o !== false);
 } finally {
   if (child) child.kill('SIGTERM');
 }

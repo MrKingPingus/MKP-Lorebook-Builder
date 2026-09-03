@@ -17,7 +17,9 @@ import { DescriptionArea } from './DescriptionArea.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { useHostMode }     from '../../hooks/use-host.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
+import { HOST_LIMITS }      from '../../constants/host.js';
 
 export function EntryDetailPanel() {
   const { activeEntryId, closeEntry } = useEntryDetail();
@@ -33,6 +35,7 @@ export function EntryDetailPanel() {
   const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();
   const { copyEntryToReference }                = useCopyEntryToReference();
   const nameInputRef = useRef(null);
+  const hostMode     = useHostMode(); // hard-caps the name field at CharSnap's limit
   const [rollbackOpen, setRollbackOpen]         = useState(false);
   const [copiedFlash,  setCopiedFlash]          = useState(false);
 
@@ -142,6 +145,7 @@ export function EntryDetailPanel() {
               onChange={(e) => update({ name: e.target.value })}
               placeholder="Entry name…"
               spellCheck={false}
+              maxLength={hostMode ? HOST_LIMITS.name : undefined}
             />
           </div>
 

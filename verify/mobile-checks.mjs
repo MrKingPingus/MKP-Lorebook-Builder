@@ -921,7 +921,8 @@ export async function runMobileChecks(only = '') {
     ? SCENARIOS.filter((s) => filters.some((f) => s.name.toLowerCase().includes(f)))
     : SCENARIOS;
 
-  if (selected.length === 0) return true;
+  // null = the filter matched nothing here (see run.mjs); not a failure.
+  if (selected.length === 0) return null;
 
   const outcomes = [];
   const allNotes = [];

@@ -11,6 +11,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSaveStatus }   from '../../hooks/use-save-status.js';
 import { useLorebook }     from '../../hooks/use-lorebook.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { useHostMode, useHostState } from '../../hooks/use-host.js';
 import { ScaleMenu }            from '../feature/ScaleMenu.jsx';
 import { HiddenEntriesPopover } from '../feature/HiddenEntriesPopover.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
@@ -19,9 +20,54 @@ import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import { SCALE_MENU_OPEN_MS, SCALE_MENU_CLOSE_MS } from '../../constants/scaling.js';
 import { APP_VERSION } from '../../constants/version.js';
 
+function hostAge(ms) {
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  return `${Math.floor(mins / 60)}h ago`;
+}
+
+// Host-mode sync readout: where the draft stands relative to CharSnap. Sits
+// beside the local "Saved" label rather than replacing it — the two answer
+// different questions (is it in this browser / is it on the server).
+function HostSyncStatus() {
+  const dirty       = useHostState((s) => s.dirty);
+  const saving      = useHostState((s) => s.saving);
+  const lastSavedAt = useHostState((s) => s.lastSavedAt);
+  const notice      = useHostState((s) => s.notice);
+  const ephemeral   = useHostState((s) => s.ephemeral);
+
+  let state; let text; let title;
+  if (saving) {
+    state = 'saving'; text = 'Saving to CharSnap…'; title = 'Waiting for CharSnap to confirm the save';
+  } else if (dirty) {
+    state = 'dirty'; text = 'Unsaved changes'; title = 'This draft differs from the copy on CharSnap — Save to CharSnap to keep it';
+  } else if (lastSavedAt) {
+    state = 'synced'; text = `Saved to CharSnap ${hostAge(Date.now() - lastSavedAt)}`;
+    title = `Saved to CharSnap at ${new Date(lastSavedAt).toLocaleTimeString()}`;
+  } else {
+    state = 'synced'; text = 'In sync with CharSnap'; title = 'Nothing has changed since CharSnap sent this lorebook';
+  }
+
+  return (
+    <>
+      <span className={`status-host status-host--${state}`} title={title}>
+        <span className="status-host-dot" aria-hidden="true" />
+        {text}
+      </span>
+      {(notice || ephemeral) && (
+        <span className="status-host-notice" title={notice ?? ''}>
+          ⚠ {notice ?? 'Draft is not being saved locally'}
+        </span>
+      )}
+    </>
+  );
+}
+
 export function StatusFooter() {
   const { label, title, fresh } = useSaveStatus();
   const { activeLorebook }      = useLorebook();
+  const hostMode                = useHostMode();
 
   const hiddenBtnRef                    = useRef(null);
   const [hiddenOpen, setHiddenOpen]     = useState(false);
@@ -126,6 +172,8 @@ export function StatusFooter() {
           {label}
         </span>
 
+        {hostMode && <HostSyncStatus />}
+
         {activeLorebook && (
           <span className="status-count" title="Total entries in this lorebook">
             {activeLorebook.entries.length} {activeLorebook.entries.length === 1 ? 'entry' : 'entries'}
@@ -138,7 +186,9 @@ export function StatusFooter() {
             type="button"
             className="status-count status-count--btn"
             onClick={toggleHidden}
-            title="Entries excluded from JSON export — click to view and manage"
+            title={hostMode
+              ? 'Entries saved to CharSnap as disabled — they stay in the book but never fire in chat. Click to view and manage'
+              : 'Entries excluded from JSON export — click to view and manage'}
           >
             {hiddenEntries.length} hidden
           </button>

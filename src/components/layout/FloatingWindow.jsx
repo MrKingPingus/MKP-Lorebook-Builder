@@ -4,6 +4,7 @@ import { useMobile }            from '../../hooks/use-mobile.js';
 import { useMenuPanel }         from '../../hooks/use-menu-panel.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useSettings }          from '../../hooks/use-settings.js';
+import { useHostMode, useHostState } from '../../hooks/use-host.js';
 import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { StatusFooter }      from './StatusFooter.jsx';
@@ -19,9 +20,15 @@ import { EntryDetailPanel }       from '../feature/EntryDetailPanel.jsx';
 import { ReferenceEntryOverlay }  from '../feature/ReferenceEntryOverlay.jsx';
 import { ReferenceBrowseSheet }   from '../feature/ReferenceBrowseSheet.jsx';
 import { LorebookNameModal }   from '../feature/LorebookNameModal.jsx';
+import { HostConnecting }      from '../feature/HostConnecting.jsx';
+import { HostSaveErrors }      from '../feature/HostSaveErrors.jsx';
 
 export function FloatingWindow() {
   const isMobile         = useMobile();
+  // Host mode: the window fills the iframe — no drag, no resize, no pull tab —
+  // and shows a connecting screen until CharSnap has sent a lorebook.
+  const hostMode         = useHostMode();
+  const hostLoaded       = useHostState((s) => s.loaded);
   const windowPos        = useUi((s) => s.windowPos);
   const windowSize       = useUi((s) => s.windowSize);
   const showLander       = useUi((s) => s.showLander);
@@ -42,7 +49,7 @@ export function FloatingWindow() {
   useMenuPanel();
 
   // On mobile: no inline position/size — CSS fills the viewport via .floating-window--mobile
-  const style = isMobile ? {} : {
+  const style = (isMobile || hostMode) ? {} : {
     left:   windowPos.x,
     top:    windowPos.y,
     width:  windowSize.width,
@@ -52,6 +59,7 @@ export function FloatingWindow() {
   return (
     <div
       className={`floating-window${isMobile ? ' floating-window--mobile' : ''}`
+        + (hostMode ? ' floating-window--fill' : '')
         + (panelAnimating ? ' floating-window--animating' : '')}
       style={style}
     >
@@ -61,7 +69,9 @@ export function FloatingWindow() {
       <span className="corner corner--sw" />
       <span className="corner corner--se" />
 
-      {showLander ? (
+      {hostMode && !hostLoaded ? (
+        <HostConnecting />
+      ) : showLander ? (
         <div className="window-body window-body--lander">
           <Lander />
         </div>
@@ -77,6 +87,7 @@ export function FloatingWindow() {
           <WindowHeader />
 
           <div className="window-body">
+            {hostMode && <HostSaveErrors />}
             <GlobalFilterBar />
 
             <div className="pane-split">
@@ -110,8 +121,9 @@ export function FloatingWindow() {
           </div>
 
           {/* Pull tab for the Lorebooks side panel — desktop only, since the
-              panel is a full-screen overlay on mobile and reached from the menu. */}
-          {!isMobile && <LorebookTab />}
+              panel is a full-screen overlay on mobile and reached from the menu.
+              Not in host mode either: CharSnap owns which lorebook is open. */}
+          {!isMobile && !hostMode && <LorebookTab />}
           </div>
 
           {/* Mobile full-screen entry editor — overlays everything when an entry is tapped */}
@@ -134,8 +146,8 @@ export function FloatingWindow() {
         </>
       )}
 
-      {/* Resize handles only on desktop */}
-      {!isMobile && <ResizeHandles />}
+      {/* Resize handles only on desktop, and never when filling a host frame */}
+      {!isMobile && !hostMode && <ResizeHandles />}
     </div>
   );
 }

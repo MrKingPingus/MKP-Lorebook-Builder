@@ -53,6 +53,15 @@ export const HOTBAR_ACTIONS = [
     icon:    '⇆',
     title:   'Pair a reference lorebook',
   },
+  {
+    // Host mode only: the explicit write to CharSnap. `hostOnly` keeps it out
+    // of the standalone hotbar, Settings slot picker and quick menu.
+    id:       'save_to_host',
+    label:    'Save',
+    icon:     '☁',
+    title:    'Save to CharSnap',
+    hostOnly: true,
+  },
 ];
 
 // Keyed map for O(1) lookup in use-hotbar-actions.js

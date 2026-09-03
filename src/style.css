@@ -8403,3 +8403,252 @@ kbd {
   background: var(--green);
   border-color: var(--green);
 }
+
+/* ============================================================
+   Host mode — the builder embedded in a CharSnap iframe
+   ============================================================ */
+/* §HOST-MODE */
+
+/* The window IS the frame. Outside the 767px query on purpose: host mode
+   fills the iframe at every width, and the mobile block's rules for
+   .floating-window--mobile stack on top without conflict. */
+.floating-window--fill {
+  position: fixed;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  min-width: unset;
+  min-height: unset;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.floating-window--fill .corner { display: none; }
+.floating-window--fill .window-header { cursor: default; }
+
+/* Connecting screen — what the frame shows until the host's mkp:load. */
+.host-connecting {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted2);
+}
+.host-connecting-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  animation: host-spin 0.9s linear infinite;
+}
+@keyframes host-spin { to { transform: rotate(360deg); } }
+.host-connecting-label { font-size: 0.875rem; color: var(--text); }
+.host-connecting-hint  { font-size: 0.75rem; max-width: 380px; line-height: 1.5; }
+
+/* Save button in the header. The dot is the unsaved-changes signal. */
+.host-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.host-save-btn:hover:not(:disabled) { background: var(--surface3); border-color: var(--blue); }
+.host-save-btn:disabled { opacity: 0.55; cursor: default; }
+.host-save-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+.host-save-btn--dirty { border-color: var(--yellow); color: var(--text); }
+.host-save-btn--dirty .host-save-dot { background: var(--yellow); }
+.host-save-btn--saving .host-save-dot { background: var(--blue); }
+
+/* Footer sync readout, beside the local "Saved" label. */
+.status-host {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+  color: var(--muted2);
+}
+.status-host-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+.status-host--synced { color: var(--green); }
+.status-host--synced .status-host-dot { background: var(--green); }
+.status-host--dirty  { color: var(--yellow); }
+.status-host--dirty  .status-host-dot { background: var(--yellow); }
+.status-host--saving { color: var(--blue); }
+.status-host--saving .status-host-dot { background: var(--blue); }
+.status-host-notice {
+  color: var(--yellow);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+/* Save-error banner above the filter bar. */
+.host-save-errors {
+  flex-shrink: 0;
+  margin: 8px 10px 0;
+  padding: 8px 10px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+  max-height: 40%;
+  overflow: auto;
+}
+.host-save-errors-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.host-save-errors-title { font-weight: 600; }
+.host-save-errors-count {
+  margin-left: 8px;
+  font-weight: 400;
+  color: var(--muted2);
+}
+.host-save-errors-close {
+  color: var(--muted);
+  font-size: 1rem;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.host-save-errors-close:hover { color: var(--text); background: var(--surface3); }
+.host-save-errors-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.host-save-errors-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 6px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: inherit;
+  cursor: pointer;
+}
+.host-save-errors-item:hover:not(:disabled) { background: var(--surface3); }
+.host-save-errors-item:disabled { cursor: default; color: var(--muted2); }
+.host-save-errors-where { font-weight: 600; white-space: nowrap; }
+.host-save-errors-field {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+}
+.host-save-errors-msg  { color: var(--muted2); }
+.host-save-errors-more { padding: 4px 6px; color: var(--muted); }
+
+/* Conflict / resume prompts. Same overlay shape as the name modal, but at the
+   app root so it also covers the mobile detail panel. */
+.host-conflict-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9500;
+  padding: 16px;
+}
+.host-conflict {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.host-conflict-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.host-conflict-body {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted2);
+}
+.host-conflict-body strong { color: var(--text); }
+.host-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.host-conflict-btn {
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.host-conflict-btn:hover { border-color: var(--blue); }
+.host-conflict-btn--primary { border-color: var(--blue); }
+.host-conflict-btn--danger  { border-color: var(--red); color: var(--red); background: transparent; }
+.host-conflict-btn--danger:hover { background: rgba(239, 68, 68, 0.12); }
+.host-conflict-btn--quiet   { background: transparent; }
+
+/* Settings → Appearance note while CharSnap's palette is in force. */
+.host-theme-note {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--blue);
+  background: var(--surface3);
+  border-radius: var(--radius);
+}
+
+/* Title menu without the lorebooks column (host mode). */
+.title-menu--io-only .tm-col--io { width: 100%; }

@@ -12,6 +12,7 @@ import { useMobile }         from '../../hooks/use-mobile.js';
 import { useUi }             from '../../hooks/use-ui.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useReferenceChooser }  from '../../hooks/use-reference-chooser.js';
+import { useHostMode }          from '../../hooks/use-host.js';
 import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { KeybindingSettings }    from './KeybindingSettings.jsx';
@@ -128,6 +129,10 @@ export function SettingsPanel() {
   } = useRollbackConfig();
 
   const isMobile = useMobile();
+  // Host mode: no landing page to return to, and the Save-to-CharSnap hotbar
+  // action only exists there.
+  const hostMode = useHostMode();
+  const hotbarActionOptions = HOTBAR_ACTIONS.filter((a) => !a.hostOnly || hostMode);
   const { referenceLorebook, crosstalkEnabled } = useReferenceLorebook();
   const { openChooser: openReferenceChooser }   = useReferenceChooser();
   const setShowLander      = useUi((s) => s.setShowLander);
@@ -509,7 +514,7 @@ export function SettingsPanel() {
                   onChange={(e) => updateSlot(i, e.target.value)}
                 >
                   <option value="">(empty)</option>
-                  {HOTBAR_ACTIONS.map((action) => (
+                  {hotbarActionOptions.map((action) => (
                     <option key={action.id} value={action.id}>
                       {action.icon} {action.label}
                     </option>
@@ -695,7 +700,7 @@ export function SettingsPanel() {
 
           It closes the panel on the way out so returning to the builder doesn't
           land the user back in Settings. */}
-      {!filtering && (
+      {!filtering && !hostMode && (
         <button
           type="button"
           className="settings-lander-btn"

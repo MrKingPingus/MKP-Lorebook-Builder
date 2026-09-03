@@ -2,281 +2,175 @@
 
 A browser-based tool for building and managing lorebooks for AI chatbots. No install, no account — open it and start writing.
 
-**[Launch the app](https://mrkingpingus.github.io/MKP-Lorebook-Builder/)**
+**[Try the live version](https://mrkingpingus.github.io/MKP-Lorebook-Builder/)** — the app running on GitHub Pages, to look at before deploying anything.
 
 ![MKP Lorebook Builder](BuildPage.png)
 
 ---
 
+## Deployment Quickstart
+
+```bash
+npm install
+npm run build
+```
+
+That produces a `dist/` folder. **Copy it wherever it should live and serve it as static files. That's the whole deployment.**
+
+The build prints an informational note that some chunks are over 500 kB. That's expected — there are two, the app itself and the DOCX parser. The parser is split into its own file so it's only downloaded if someone actually imports a Word document; it never loads on a normal page view.
+
+Things worth knowing before you wire it up:
+
+- **It can live at any path.** Assets are referenced relatively, so `dist/` works at `/lorebook-builder/`, `/extensions/lorebook/`, or a domain root without rebuilding or reconfiguring anything.
+- **There is no server component.** No backend, no database, no API keys, no environment variables, no build-time configuration. Static file hosting is the only requirement.
+- **Lorebook content stays in the browser.** Every lorebook is stored in the visitor's own `localStorage`. No lorebook is ever transmitted anywhere, and there is no analytics or telemetry of any kind. Two optional features do make outbound requests — see [Network Activity](#network-activity) below.
+- **Requires Node 20.19+ or 22.12+** to build (a Vite 7 constraint). Nothing is needed on the server at runtime.
+- **Nothing to purge between builds.** Asset filenames are content-hashed, so a rebuild is a straight replacement.
+
+To sanity-check the built output before deploying it:
+
+```bash
+npm run preview     # serves dist/ on http://localhost:4173
+```
+
+---
+
+## What It Does
+
 <details>
 <summary><strong>What's a Lorebook?</strong></summary>
 
-<!-- paste explanation here -->
+A lorebook is a set of keyword-triggered context entries handed to a chatbot. When one of an entry's trigger words appears in conversation, that entry's text gets injected into the model's context — so the character "knows" about a place, item, person or event without it having to sit in the system prompt permanently.
 
 </details>
 
----
+Entries carry a name, a type, trigger keywords and a description. The app handles authoring, organising, searching and exporting them:
 
-## Getting Started
+- **Entry types** — Character, Item, Plot Event, Location, Other, colour-coded down the entry's left border
+- **Trigger management** — up to 25 per entry, added one at a time, pasted as a comma-separated list, or assembled from the description with the Phrase Builder
+- **Crosstalk detection** — flags when two entries share a trigger, with an "allow" option for deliberate overlaps
+- **Folders** — group entries, nest up to three levels, drag to reorder or refile
+- **Search and filter** — live filtering across names, triggers and descriptions, with find-and-replace across the whole book
+- **Suggestions** — auto-generated trigger keywords derived from an entry's name, type and description
+- **Up to 50 lorebooks** stored independently, each with its own name, entries and undo history
+- **Import / export** — JSON, TXT and DOCX in both directions, with blank templates for authoring outside the app
 
-Open the link above... That's it! There's nothing to install or sign in to, so you can just start getting to work by either starting a fresh book or importing an existing one. Your work saves automatically to your browser's local storage as you go, so closing the tab won't lose anything! (But clearing the cache on the host page WILL, so make sure your work is hard saved before doing such a thing or *you **will** cry*.
+The interface, as of 0.10.0:
 
-The entire interface lives inside a single floating window. You can drag it around by its header and resize it from any corner. If it gets out of hand, the **⤢ Size** button in the bottom-right corner has presets and a **Reset to default** option to snap it back. Whatever size you set it to will persist from session to session!
+- **The lorebook title is a menu** — saved books on one side, import and export on the other; switch, create, rename, delete or download without leaving the header
+- **A status bar along the bottom** carries the readouts: save state, entry count, storage use, feedback links and the running version
+- **A pull tab on the right edge** opens the lorebook list by *widening* the window, so nothing you were reading gets covered
+- **One `⤢ Size` menu** for window size, text size, entry height and **+** button size, each with a saveable default
+- **Settings is filterable** — four sections, with a search box that matches beyond the visible labels
+- **Reference lorebooks** — pair a second book to compare triggers against, chosen from one picker reachable from the title menu, a book's **⋯** menu, the hotbar, the Lorebooks panel or Settings
+- **Select mode** condenses entries to name-and-checkbox (about 4× as many on screen) and collects its bulk operations into a single **Actions** menu
+- **Usable on a phone** — the whole touch layout was reworked in 0.10.0: a 44px minimum tap target throughout, the title menu reachable from the phone header, filter controls on one row, and the hotbar clear of Safari's address bar on iOS
+- **A guided tour** highlights controls in the live app one at a time, running on its own sample books that are never written to storage
 
-### Getting around the window
-
-Four things frame the app, and it's worth knowing what each is for:
-
-- **The lorebook title, up top.** Click it to open a menu with all your saved lorebooks on the left and import / export on the right. Double-click it to rename the current book.
-- **The gear, top right.** Opens Settings directly.
-- **The status bar, along the bottom.** Everything that's simply *true* about your work rather than something you do to it: whether it's saved, how many entries you have, how much browser storage you're using, links to report a bug or request a feature, and the **⤢ Size** menu.
-- **The pull tab, on the right edge.** Click it to open your lorebook list as a side panel. The window widens to fit it, so the panel appears *beside* your entries rather than covering them.
-
-The hotbar — the row of buttons flanking the **+** — is the other half of that split: it's for things you *do* to your lorebook. You choose what goes in its six slots in Settings.
-
----
-
-## Building a Lorebook
-
-### Naming Your Lorebook
-
-Double-click the lorebook title at the top of the window and type. The name saves automatically. (A single click opens the lorebook menu instead — see below.)
-
-### Adding Entries
-
-Click the **+** button at the bottom of the window, or press **Alt+N** (configurable in Settings). New entries appear at the bottom of the list.
-
-### Entry Anatomy
-
-Each entry has four parts:
-
-- **Name** — a label for your own reference. Not used by the AI directly.
-- **Type** — one of five categories, color-coded on the entry's left border (Types are mostly just for personal organization. As of now, JSON files uploaded to CharSnap won't carry the Entry Type with them. Just something to be aware of!):
-  - Purple — Character
-  - Blue — Item
-  - Red — Plot Event
-  - Yellow — Location
-  - Teal — Other
-- **Triggers** — These are the keywords that the LLM is using to decide to pull from the Lorebook. These are not case sensitive, plural/singular sensitive, or possessive sensitive. You want these to be words that, when they appear in chat, they call upon this entry for context. The contents of user's last message and char's message before that are used for these triggers to determine char's next response. Try not to use the same keywords for more than a handful of entries. Each trigger is its own chip. You can add them one at a time, paste a comma-separated list to add several at once, or use the Phrase Builder to click words together from the entry's description. Up to 25 triggers per entry.
-- **Description** — This is the meat of the entry. Generally, you want to keep this concise. Character limit is 1500 for each entry, but it's recommended to keep it around 500, especially because so many entries can be pulled at one time. Some examples of entries can be: character sheets for NPCs, rules of the universe, setting, creatures/monsters, food/drink, etc. The character counter color will change as you approach the limit (thresholds are adjustable in Settings, though stock settings are recommended).
-
-### Trigger Crosstalk
-
-If two or more entries share the same trigger, the conflicting chips are flagged with a warning ring. Hovering the chip opens a popover listing which other entries share it. You can click **Allow** to mark the overlap as intentional — the ring turns blue to confirm it — or **Revoke** to restore the warning.
-
-### Reordering Entries
-
-Drag any entry card up or down to reorder.
-
-### Suggestions
-
-Each entry has a collapsible **Suggestions** tray. Open it to see up to 12 auto-generated trigger keyword suggestions based on the entry's name, type, and description. Click any suggestion to add it as a trigger, or hit the reroll button to generate a fresh batch.
-
-  - **Phrase Builder**
-
-Inside the Suggestions tray, the **Phrase Builder** lets you click words from the description to assemble a multi-word trigger phrase in order. Confirm to add it as a single trigger chip.
-
-### Undo / Redo
-
-Every change to your entries is tracked. Use **Ctrl+Z** to undo and **Ctrl+Y** to redo, up to 50 steps back. Both hotkeys are configurable in Settings. (Currently a tad overzealous)
+A full walkthrough of every feature is in the [user guide on the source repository](https://github.com/MrKingPingus/MKP-Lorebook-Builder#readme).
 
 ---
 
-## Managing Multiple Lorebooks
+## Embedding / host mode
 
-There are two ways to reach your lorebooks, and they suit different habits:
+The builder can also run inside an `<iframe>` on a site that owns the lorebook's
+storage — the way it is embedded on CharSnap. Open it with `?host=charsnap` in a
+frame and it fills the frame, skips the landing page, takes its theme from the
+host, and saves through the host over `postMessage` instead of downloading a
+file. The standalone app is unaffected: the flag does nothing at top level.
 
-- **Click the lorebook title** at the top of the window. A menu drops down with every saved book listed alphabetically on the left. Click one to switch to it, or **+ New lorebook** at the foot of the list to start a fresh one.
-- **Click the pull tab** on the window's right edge. Same list, but as a side panel that stays open while you work — the window widens to fit it, so nothing you were reading gets covered.
-
-You can save up to 10 lorebooks independently. Each has its own name, entries, and history. Switch between them at any time — your current lorebook autosaves before switching!
-
-The list is alphabetical and stays that way, so a book you use often is always in the same place.
-
-To delete a lorebook, hover its row in the title menu and click the **×** on the right. You'll be asked to confirm. **This cannot be undone**.
-
----
-
-## Search & Filter
-
-### Search
-
-The search bar filters the entry list in real time across entry names, triggers, and descriptions. Matches are highlighted in yellow inside description fields. The match counter shows how many total matches exist across how many entries. At the very end of tbhe search bar is a button for selecting *how* you'd like to sort your search. You have Default, A-Z, Z-A, and Last Modified. *(Last Modified is great for keeping track of non-linear workflows!)*
-
-Below the search bar, a **Find & Replace** row lets you do a bulk text replacement across every trigger and description field in the lorebook at once.
-
-### Filter by Type
-
-The type filter bar lets you narrow the entry list to one or more types. Click a type pill to toggle it. Active filters stack — you can show Characters and Locations at the same time, for example.
+The full protocol — message names, the entry wire shape, `builderMeta`, the
+dirty/conflict rules, limits, and how to run the harness — is in
+[HOST-MODE.md](HOST-MODE.md). `public/_headers` carries the matching
+`frame-ancestors` policy for Cloudflare Pages.
 
 ---
 
-## Import & Export
+## Network Activity
 
-### Import
+Full disclosure of everything the deployed app can request, so there are no surprises in a CSP or a privacy review.
 
-Click the lorebook title and drop a file onto the drop zone in the right-hand column, or click it to browse. The **Import** button in the hotbar does the same thing in its own window. Supported formats: **JSON**, **TXT**, **DOCX**, and **ODT**.
+**At page load: nothing.** No analytics, no telemetry, no beacons, no third-party scripts. The app boots entirely from its own bundle.
 
-Prefer to paste? Click **or paste entries instead** next to the drop zone and paste a block of TXT-formatted entries directly.
+**On demand**, two optional features call out:
 
-Once the file is read, you're asked what should happen to the lorebook you have open. All four choices are available wherever you started the import:
+| Feature | Host | Sends | If it fails |
+|---|---|---|---|
+| Synonym popover on a suggestion chip | `api.dictionaryapi.dev` | The single word being looked up | Popover reports the lookup failed; nothing else is affected |
+| Related-word suggestions | `api.datamuse.com` | The single word being looked up | Same — handled, non-fatal |
 
-| Choice | What happens |
+Both are free, keyless APIs, triggered only by direct user interaction, and send **one word at a time** — never entry text, descriptions or lorebook content. Results are cached for the session. Both are already disclosed to end users in the app's own Settings panel, and every request is wrapped in error handling that degrades to "unavailable" rather than breaking.
+
+If your platform's policy doesn't allow either host, the synonym and related-word features can be removed by deleting `src/services/thesaurus-service.js` and its two call sites — no other functionality depends on them. Say the word and I'll prepare that variant.
+
+**No runtime CDN dependencies.** Everything the app needs is in the bundle you build. The DOCX parser is bundled and code-split rather than fetched from a CDN, so Word import works offline and behind restrictive network policies, and your deployment never executes third-party JavaScript from a host outside your control.
+
+---
+
+## Compatibility
+
+| | |
 |---|---|
-| **Import as new** | The entries go into a brand-new lorebook. Your current one is untouched. |
-| **Append** | The entries are added to your current lorebook. |
-| **Replace** | Your current lorebook's entries are overwritten. |
-| **Back up first** | Downloads a JSON copy of your current lorebook, then replaces it. |
-
-Then you get a preview of every entry about to land, and a banner spelling out what confirming will do. **Back** returns you to the four choices without making you pick the file again.
-
-Autosave has already saved your work at this point — a backup is about keeping a copy *outside* the browser, which is a different thing.
-
-### Export
-
-Both live in the right-hand column of the lorebook title menu.
-
-- **⬇ JSON** — the full lorebook as a `.json` file
-- **⬇ TXT** — a plain-text block format
-- **⬇ DOCX** — a Word-compatible document
-- **⎘ Copy** — copies the full JSON directly to your clipboard
-
-The **File** box above the buttons sets the download filename.
-
-**Templates** — download a blank JSON, TXT, or DOCX file pre-formatted for import, useful if you want to write entries by hand outside the app.
+| **Runtime dependencies** | None — static files and a browser |
+| **Build dependencies** | Node 20.19+ / 22.12+, npm |
+| **Language** | JavaScript (React 18 + Vite 7) |
+| **Network calls at runtime** | None on load; two optional keyless lookups on user action ([details](#network-activity)) |
+| **Storage** | Browser `localStorage` only |
+| **Bundle size** | ~168 KB gzipped (JS) + ~22 KB gzipped (CSS) on load, plus a ~131 KB gzipped DOCX-parser chunk fetched only on Word import |
 
 ---
 
-## Settings
+## Local Development
 
-Click the **gear** in the top-right corner, or press **Ctrl+,**. Settings opens as four collapsed sections, so you pick where you're going rather than scrolling past everything:
-
-| Section | What's in it |
-|---|---|
-| **Editing & Entries** | Writing aids, character counters, entry badges, entry history |
-| **Appearance & Accessibility** | Themes and custom colors, text size, reduced motion, high contrast |
-| **Layout & Controls** | Keyboard shortcuts, hotbar slots, FAB menu, folders, reference panel, navigation |
-| **System** | Browser storage limit |
-
-There's a **filter box** at the top. Type what you're after — `fab`, `shortcut`, `dark mode`, `storage` — and the panel narrows to just those controls and opens whichever section holds them. It matches words that aren't in the visible label too, so "hotkey" finds **Keyboard shortcuts**.
-
-Some frequently-touched settings:
-
-| Setting | What it does |
-|---|---|
-| Suggestions collapsed by default | Starts every entry's suggestion tray closed |
-| Hide entry stats badges | Hides the trigger count and character count in entry headers |
-| Tiered counter colors | Color-codes character counters green → yellow → red by threshold |
-| Character count thresholds | Set where yellow and red kick in |
-| Hotbar slots | Assign actions to the 6 slots flanking the + button (3 per side) |
-| Keyboard shortcuts | Rebind any of the shortcuts listed below |
-| Legacy menus | Brings back the old **☰** header menu, with Lorebooks and Import / Export as side panels |
-
----
-
-## Sizing
-
-Window size, text size, entry height, and the **+** button's size all live in one place: the **⤢ Size** button in the bottom-right corner. Hover it to peek, click it to keep it open.
-
-| Control | What it does |
-|---|---|
-| Window size | Named presets, or **Custom…** to type exact dimensions. **Save as default** makes the current size the one **Reset to default** returns to. |
-| Text size | Scales all text. Also in Settings → Appearance & Accessibility, since it's an accessibility setting — change it in either place and the other follows. |
-| Entry height | How tall entry headers are drawn |
-| FAB size | Size of the **+** button |
-
-**Reset all sizing** puts the window, entry height, and FAB back to normal. It deliberately leaves your text size alone.
-
----
-
-## Keyboard Shortcuts
-
-Press **?** at any time for a cheat sheet inside the app. Every shortcut here is rebindable in Settings → Layout & Controls, and the cheat sheet has a link straight to the editor.
-
-| Shortcut | Action |
-|---|---|
-| Alt+N | New entry |
-| Ctrl+Z | Undo |
-| Ctrl+Y | Redo *(Ctrl+Shift+Z also works)* |
-| Alt+S | Toggle select mode |
-| Alt+A | Expand / collapse all |
-| Alt+V | Select all visible |
-| Alt+D | Deselect all |
-| / | Focus search |
-| Alt+H | Focus find & replace |
-| Alt+R | Toggle reference panel |
-| Alt+W | Swap reference ↔ active *(while paired)* |
-| Alt+E | Export |
-| Alt+I | Import entries |
-| Ctrl+, | Open settings |
-| ? | This cheat sheet |
-| Escape | Dismiss / cancel |
-
-On macOS, **Ctrl** shortcuts use **Cmd** instead.
-
----
-
-## Running It Yourself
-
-You don't need to do any of this to *use* the app — the link at the top is the whole product. This section is for anyone who wants to run it on their own machine or host their own copy.
-
-### What you need first
-
-- **[Node.js](https://nodejs.org/)** — version **20.19 or newer**, or **22.12 or newer**. Vite 7 won't run on anything older. Check what you have with `node --version`.
-- **npm** — comes bundled with Node, nothing extra to install.
-- **[Git](https://git-scm.com/)** — only needed for the clone step. You can also download the repo as a ZIP from GitHub and skip it.
-
-There is no database, no server, and no API key to set up. Nothing to configure before the first run.
-
-### Getting it running
+Only needed if you want to modify the app — deploying it doesn't require any of this.
 
 ```bash
-git clone https://github.com/MrKingPingus/MKP-Lorebook-Builder.git
-cd MKP-Lorebook-Builder
 npm install
 npm run dev
 ```
 
-`npm run dev` prints a local address — usually **http://localhost:5173** — open that in your browser and the app is live. Edits to files under `src/` reload in the browser instantly.
-
-Press **Ctrl+C** in the terminal to stop the server.
-
-### The other commands
+`npm run dev` prints a local address — usually **http://localhost:5173**. Edits to files under `src/` reload in the browser instantly. **Ctrl+C** stops the server.
 
 | Command | What it does |
 |---|---|
-| `npm install` | Downloads dependencies into `node_modules/`. Run once after cloning, and again whenever `package.json` changes. |
-| `npm run dev` | Starts the development server with hot reload on port 5173. This is the one you want day to day. |
-| `npm run build` | Compiles a production bundle into `dist/`. That folder is plain static files — it can be hosted anywhere. |
-| `npm run preview` | Serves the contents of `dist/` on port 4173 so you can check the real production build. Run `npm run build` first. |
-| `npm run verify` | Runs the automated browser checks. Optional — see below. |
+| `npm install` | Downloads dependencies. Run once after cloning, and again whenever `package.json` changes. |
+| `npm run dev` | Development server with hot reload, port 5173. |
+| `npm run build` | Production bundle into `dist/`. |
+| `npm run preview` | Serves `dist/` on port 4173. Run `npm run build` first. |
+| `npm run verify` | Automated browser checks — see below. |
 
-### Where your data lives
+### Automated checks
 
-Everything you create runs entirely in your browser and is stored in that browser's `localStorage`. Nothing is uploaded anywhere and no account exists. A local copy keeps its own separate storage from the hosted version, so lorebooks you made on the live site won't appear in your local one — move them across with Export and Import.
-
-### Running the automated checks (optional)
-
-`npm run verify` drives the real app in a headless browser to check features end to end. It needs a Chromium build that Playwright can find, which is a one-time extra install:
+`npm run verify` drives the real app in a headless browser to check features end to end. It needs a Chromium build Playwright can find, which is a one-time extra install:
 
 ```bash
 npx playwright install --with-deps chromium
 npm run verify
 ```
 
-A full run launches a fresh browser per scenario and takes several minutes. To run just a slice of it, pass a name substring:
+A full run launches a fresh browser per scenario and takes several minutes. To run a slice of it, pass a name substring:
 
 ```bash
 npm run verify -- folders
 ```
 
-See `verify/README.md` for what the suite covers.
+`verify/README.md` covers what the suite checks.
 
-### Hosting your own copy
+### Code layout
 
-Push to `main` and `.github/workflows/main.yml` builds the app and deploys it to GitHub Pages. Two things to know:
+```
+src/
+  components/   React components — rendering only
+  hooks/        component-facing logic
+  services/     plain JS, no React
+  state/        Zustand stores
+  constants/    shared values, no hardcoded literals in logic files
+```
 
-1. **Pages has to be turned on first.** In your repository, go to **Settings → Pages** and set the source to **GitHub Actions**. Until you do, the workflow runs, notices Pages is off, and exits cleanly without deploying — so a green check doesn't necessarily mean a live site.
-2. **The base path takes care of itself.** `vite.config.js` reads the repository name from the Actions environment, so the build works under `https://<user>.github.io/<repo-name>/` no matter what the repository is called. You don't need to edit anything after forking or renaming.
+Imports flow in one direction only: `constants → services → hooks → components`. Components reach state and services through hooks rather than importing them directly, and `storage-service.js` is the only file that touches `localStorage`.
 
-For any other host, run `npm run build` and upload the `dist/` folder. It's static — no Node runtime required on the server.
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).

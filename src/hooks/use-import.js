@@ -3,7 +3,9 @@ import { parseTxtToEntries, readTxtFile } from '../services/txt-import.js';
 import { importFromDocx }                 from '../services/docx-import.js';
 import { readJsonFile, importFromJson }   from '../services/json-import.js';
 
-const EXT_TO_FORMAT = { txt: 'txt', docx: 'docx', odt: 'docx', json: 'json' };
+// `.odt` is deliberately absent: it used to be routed to the DOCX path, but
+// mammoth reads Word documents only and threw an opaque error on an ODT.
+const EXT_TO_FORMAT = { txt: 'txt', docx: 'docx', json: 'json' };
 
 export function useImport() {
   function detectFormat(filename) {
@@ -13,7 +15,12 @@ export function useImport() {
 
   async function parseFile(file) {
     const fmt = detectFormat(file.name);
-    if (!fmt) throw new Error('Unsupported file type.');
+    if (!fmt) {
+      if (/\.odt$/i.test(file.name)) {
+        throw new Error('ODT files are not supported. Save the document as .docx or .txt and import that instead.');
+      }
+      throw new Error('Unsupported file type.');
+    }
 
     if (fmt === 'txt') {
       const text = await readTxtFile(file);

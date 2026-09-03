@@ -2600,13 +2600,14 @@ function selectScenarios(filter) {
   return SCENARIOS.filter((s) => terms.some((t) => s.name.toLowerCase().includes(t)));
 }
 
+// Returns true / false for a run, or null when the filter matched nothing here
+// — run.mjs fails the run only if the filter matched nothing in ANY suite, so
+// `npm run verify -- host` can run the host suite alone without this one
+// counting as a failure.
 export async function runAllChecks(filter = process.env.VERIFY_ONLY) {
-  console.log(`Fixture: ${FIXTURE}`);
   const chosen = selectScenarios(filter);
-  if (chosen.length === 0) {
-    console.log(`\nNo scenario name matches ${JSON.stringify(filter)} — nothing to run.`);
-    return false;
-  }
+  if (chosen.length === 0) return null;
+  console.log(`Fixture: ${FIXTURE}`);
   if (chosen.length !== SCENARIOS.length) {
     console.log(`Filter ${JSON.stringify(filter)} — running ${chosen.length}/${SCENARIOS.length} scenarios.`);
   }

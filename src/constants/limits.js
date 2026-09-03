@@ -1,4 +1,4 @@
-// Numeric caps: max trigger count (25), max lorebooks (10), char warning thresholds, char limit
+// Numeric caps: max trigger count (25), max lorebooks (50), char warning thresholds, char limit
 export const MAX_TRIGGERS             = 25;
 export const MAX_LOREBOOKS            = 50;
 export const CHAR_LIMIT               = 1500;
