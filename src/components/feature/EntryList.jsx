@@ -11,7 +11,9 @@
 import { useRef, useEffect } from 'react';
 import { EntryCard }     from './EntryCard.jsx';
 import { FolderHeader }  from './FolderHeader.jsx';
+import { TemplatesButton } from './TemplatesButton.jsx';
 import { useEntries }    from '../../hooks/use-entries.js';
+import { useTemplates } from '../../hooks/use-templates.js';
 import { useFolders }    from '../../hooks/use-folders.js';
 import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { useUi }         from '../../hooks/use-ui.js';
@@ -27,6 +29,8 @@ import { FOLDER_BEFORE_BAND } from '../../constants/drag.js';
 
 export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry } = useEntries();
+  const { templates } = useTemplates();
+  const hasTemplates = templates.length > 0;
   const { folders, renderedCollapseState } = useFolders();
   const { filterActive } = useFolderFilter();
   const { handleSelectionClick, selectFolderEntries } = useSelectionMacros();
@@ -80,7 +84,11 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   if (renderTree.length === 0) {
     return (
       <div className="entry-list-empty">
-        No entries yet. Press {displayChord('new_entry')} or click + to add one.
+        No entries yet. Press {displayChord('new_entry')} or click + to add one
+        {/* Only once there is something to offer. An empty book is exactly
+            where templates earn their keep, and it was the one place with no
+            route to them — every other way in hangs off an entry's ⋯ menu. */}
+        {hasTemplates && <>, or <TemplatesButton /></>}.
       </div>
     );
   }

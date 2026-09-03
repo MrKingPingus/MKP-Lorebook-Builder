@@ -5,6 +5,7 @@ import { useSettings } from '../../hooks/use-settings.js';
 import { useHostMode } from '../../hooks/use-host.js';
 import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW, DUPE_FLASH_MS } from '../../constants/limits.js';
 import { HOST_LIMITS } from '../../constants/host.js';
+import { warningColor, triggerStops, isGradient } from '../../services/warning-color.js';
 
 // Escape special regex characters in a delimiter string
 function escapeDelim(d) {
@@ -17,19 +18,20 @@ export function TriggerChips({ entryId = null, triggers, onUpdate, delimiter = '
   const [flashCap,  setFlashCap]  = useState(false);
   const dupeTimer = useRef(null);
   const capTimer  = useRef(null);
-  const { tieredCounterEnabled } = useSettings();
+  const { tieredCounterEnabled, warningScale } = useSettings();
   // Host mode refuses triggers past CharSnap's cap instead of only warning.
   const hostMode = useHostMode();
 
+  const stops      = triggerStops(warningScale);
+  const gradient   = isGradient(warningScale);
   const overYellow = triggers.length >= TRIGGER_WARN_YELLOW;
 
-  // Blue border when override active; otherwise tiered yellow/red
+  // Blue border when override active; otherwise the warning scale, with no
+  // border at all below the first threshold.
   const tieredBorderStyle = (() => {
     if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
-    if (!tieredCounterEnabled) return {};
-    if (triggers.length >= MAX_TRIGGERS)        return { borderColor: 'var(--red)' };
-    if (triggers.length >= TRIGGER_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
-    return {};
+    if (!tieredCounterEnabled || !overYellow) return {};
+    return { borderColor: warningColor(triggers.length, stops, { gradient }) };
   })();
 
   function flashDupeError() {
@@ -70,10 +72,7 @@ export function TriggerChips({ entryId = null, triggers, onUpdate, delimiter = '
     onUpdate(next);
   }
 
-  const triggerColor =
-    triggers.length >= MAX_TRIGGERS ? 'var(--red)'
-    : triggers.length >= TRIGGER_WARN_YELLOW ? 'var(--yellow)'
-    : 'var(--green)';
+  const triggerColor = warningColor(triggers.length, stops, { gradient });
 
   function onKeyDown(e) {
     if ((e.key === 'Enter' || e.key === delimiter) && e.currentTarget.value.trim()) {

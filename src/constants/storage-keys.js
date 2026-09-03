@@ -3,6 +3,9 @@ export const LOREBOOK_INDEX_KEY = 'mkp_lorebook_index';
 export const LOREBOOK_KEY_PREFIX = 'mkp_lorebook_';
 export const SETTINGS_KEY = 'mkp_settings';
 export const WINDOW_STATE_KEY = 'mkp_window_state';
+// Entry Templates (Phase 12). Global rather than per-lorebook — a scaffold you
+// can only use in the book you made it in is not a template.
+export const TEMPLATES_KEY = 'mkp_templates';
 // The id (dated heading) of the newest changelog release the user has been shown.
 // Absent means they have never seen an update notice — which is either a returning
 // user from before the feature existed, or a genuinely new user; see

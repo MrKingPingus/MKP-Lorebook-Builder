@@ -1,6 +1,7 @@
 // Default shapes for new entries, lorebook, settings, and window size/position
 import { DEFAULT_TYPE } from './entry-types.js';
-import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
+import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
+import { DEFAULT_WARNING_SCALE } from './warning-scale.js';
 import { DEFAULT_COLLAPSE_STAGES } from './folders.js';
 
 // 1200×900 is the "healthy" working size: wide enough for a comfortable entry
@@ -20,7 +21,15 @@ export const LEGACY_DEFAULT_WINDOW = { width: 760, height: 620 };
 export const DEFAULT_WINDOW_FRACTION = 2 / 3;
 
 export const DEFAULT_SETTINGS = {
-  counterTiers:             { yellow: CHAR_WARN_YELLOW, red: CHAR_WARN_RED },
+  // Description-counter thresholds, ascending. `orange` is the danger stop —
+  // the one the three-colour scale paints red — and `red` is the at-the-limit
+  // stop the four-colour and gradient scales add on top. A pre-existing
+  // `{ yellow, red }` is migrated into this shape on boot (see App.jsx), which
+  // is why `red` here is the cap and not CHAR_WARN_RED.
+  counterTiers:             { yellow: CHAR_WARN_YELLOW, orange: CHAR_WARN_RED, red: CHAR_LIMIT },
+  // How counters, field borders and the storage ring turn a number into a
+  // colour: 'three' | 'four' | 'gradient' (see constants/warning-scale.js).
+  warningScale:             DEFAULT_WARNING_SCALE,
   rollbackDefaultEnabled:   false, // when true, new lorebooks start with rollback On
   defaultWindowWidth:       DEFAULT_WINDOW.width,
   defaultWindowHeight:      DEFAULT_WINDOW.height,

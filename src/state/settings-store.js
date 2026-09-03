@@ -9,6 +9,7 @@ export const useSettingsStore = create((set) => ({
   setDefaultWindowWidth:       (defaultWindowWidth)       => set({ defaultWindowWidth }),
   setDefaultWindowHeight:      (defaultWindowHeight)      => set({ defaultWindowHeight }),
   setTieredCounterEnabled:     (tieredCounterEnabled)     => set({ tieredCounterEnabled }),
+  setWarningScale:             (warningScale)             => set({ warningScale }),
   setHideSuggestionsByDefault: (hideSuggestionsByDefault) => set({ hideSuggestionsByDefault }),
   setHideEntryStats:           (hideEntryStats)           => set({ hideEntryStats }),
   setMarkPrivateEntries:       (markPrivateEntries)       => set({ markPrivateEntries }),

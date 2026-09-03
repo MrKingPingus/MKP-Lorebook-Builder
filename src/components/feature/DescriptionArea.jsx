@@ -5,8 +5,9 @@ import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
 import { useUi }        from '../../hooks/use-ui.js';
 import { useHostMode }  from '../../hooks/use-host.js';
-import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/limits.js';
+import { CHAR_LIMIT } from '../../constants/limits.js';
 import { HOST_LIMITS } from '../../constants/host.js';
+import { warningColor, charStops, isGradient } from '../../services/warning-color.js';
 
 export function DescriptionArea({
   value,
@@ -22,22 +23,27 @@ export function DescriptionArea({
   hideFooter          = false,
 }) {
   const textareaRef = useRef(null);
-  const { counterTiers, tieredCounterEnabled } = useSettings();
+  const { counterTiers, tieredCounterEnabled, warningScale } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
   // Host mode hard-caps typing at CharSnap's limit; standalone only warns.
   const hostMode    = useHostMode();
 
-  const overYellow = value.length >= CHAR_WARN_YELLOW;
-  const overRed    = value.length >= CHAR_WARN_RED;
+  // The border reads the same stops as the counter below it. It used to read
+  // the CONSTANTS instead, so a user who moved their thresholds got a counter
+  // and a border disagreeing about when the text was too long.
+  const stops      = charStops(counterTiers, warningScale);
+  const overYellow = value.length >= stops[0];
+  const overRed    = value.length >= stops[1];
   const pillTier   = overRed ? 'red' : 'yellow';
 
-  // Blue border when override is active; otherwise tiered yellow/red
+  // Blue border when override is active; otherwise the warning scale, with no
+  // border at all below the first threshold.
   const tieredBorderStyle = (() => {
     if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
-    if (!tieredCounterEnabled) return {};
-    if (value.length >= CHAR_WARN_RED)    return { borderColor: 'var(--red)' };
-    if (value.length >= CHAR_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
-    return {};
+    if (!tieredCounterEnabled || !overYellow) return {};
+    return {
+      borderColor: warningColor(value.length, stops, { gradient: isGradient(warningScale) }),
+    };
   })();
 
   // Autogrow: resize the textarea to fit its content.
@@ -126,6 +132,7 @@ export function DescriptionArea({
             limit={CHAR_LIMIT}
             tiers={counterTiers}
             tieredEnabled={tieredCounterEnabled}
+            warningScale={warningScale}
           />
           {overYellow && onToggleLimitWarning && (
             <button

@@ -30,6 +30,7 @@
   --coral:    #f87171;
   --green:    #34d399;
   --yellow:   #f59e0b;
+  --orange:   #f97316;
   --red:      #ef4444;
   --blue:     #60a5fa;
   --gold:     #eab308;
@@ -121,6 +122,7 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --coral:    #e11d48;
   --green:    #059669;
   --yellow:   #d97706;
+  --orange:   #ea580c;
   --red:      #dc2626;
   --blue:     #2563eb;
   --gold:     #ca8a04;
@@ -147,6 +149,7 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --coral:    #b3001b;
   --green:    #006400;
   --yellow:   #8a5a00;
+  --orange:   #9c3300;
   --red:      #b3001b;
   --blue:     #0033cc;
   --gold:     #7a5c00;
@@ -2275,6 +2278,58 @@ img.logo-icon {
   border-color: var(--type-color, var(--border2));
   color: #fff;
 }
+.bulk-type-chip:disabled { opacity: 0.4; }
+.bulk-type-chip:disabled:hover {
+  background: var(--surface3);
+  border-color: var(--border2);
+  color: var(--muted2);
+}
+
+/* Copy/move to another lorebook (#127). The copy|move switch that leads the
+   row — a segmented pair rather than two more buttons on the bar, so the verb
+   is chosen and visible in the same place the destination is picked. */
+.bulk-transfer-mode {
+  display: inline-flex;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.bulk-transfer-mode-btn {
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 0;
+  background: var(--surface3);
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.bulk-transfer-mode-btn:hover { color: var(--text); }
+.bulk-transfer-mode-btn--on {
+  background: var(--blue);
+  color: #fff;
+}
+
+.bulk-transfer-input {
+  padding: 3px 8px;
+  min-width: 160px;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+.bulk-transfer-input:focus { outline: none; border-color: var(--blue); }
+
+.bulk-transfer-note,
+.bulk-transfer-result {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+.bulk-transfer-result strong { color: var(--text); font-weight: 600; }
+.bulk-transfer-tick { color: var(--green); margin-right: 4px; }
 
 /* ============================================================
    Type Filter Bar
@@ -2791,78 +2846,6 @@ img.logo-icon {
    extra margin of its own — the rail already carries the offset. */
 .folder-entries > .folder-block { margin-left: 0; }
 
-/* ---- Per-entry "Move to folder" control (entry card footer) ---- */
-.move-to-folder { position: relative; }
-
-.move-to-folder-btn {
-  max-width: 140px;
-  padding: 3px 8px;
-  background: var(--surface3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.6875rem;
-  color: var(--muted2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
-}
-.move-to-folder-btn:hover:not(:disabled) {
-  background: var(--border);
-  color: var(--text);
-  border-color: var(--border2);
-}
-.move-to-folder-btn:disabled { opacity: 0.4; cursor: default; }
-/* The folder colour rides on the border only — a pastel has nowhere near the
-   contrast to be label text, least of all on the light theme. */
-.move-to-folder-btn--filed {
-  border-color: var(--folder-color, var(--border2));
-  color: var(--text);
-}
-
-.move-to-folder-menu {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 0;
-  z-index: 20;
-  min-width: 150px;
-  max-height: 240px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 4px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-}
-.move-to-folder-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 0.75rem;
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.move-to-folder-item:hover { background: var(--surface3); }
-.move-to-folder-item--active { color: var(--blue); }
-.move-to-folder-dot {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
-}
-.move-to-folder-divider {
-  height: 1px;
-  margin: 4px 2px;
-  background: var(--border);
-}
 
 .bulk-type-chip--new-folder {
   border-left-color: var(--border2);
@@ -3004,6 +2987,338 @@ img.logo-icon {
   background: rgba(245, 101, 101, 0.15);
   border-color: var(--red);
   color: var(--red);
+}
+
+/* §ENTRY-ACTIONS
+   The per-entry ⋯ overflow menu. The trigger is a card-action-btn like its
+   Expand neighbour, narrowed to a glyph so the pair reads as one control group
+   rather than two competing labels. */
+.entry-actions-btn {
+  padding: 3px 8px;
+  line-height: 1;
+  font-size: 0.875rem;   /* the glyph is small at the 0.6875rem the labels use */
+  color: var(--muted2);
+}
+.entry-actions-btn:hover,
+.entry-actions-btn--open {
+  color: var(--text);
+  background: var(--border);
+  border-color: var(--border2);
+}
+
+/* Portalled out of the entry list, which clips on overflow-y — so this is
+   position: fixed, placed by use-anchored-position, and z-indexed with the
+   other anchored popovers. */
+.entry-actions-menu,
+.entry-actions-flyout {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 9000;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+/* Submenus fly out beside the row rather than replacing the panel, so the root
+   menu stays on screen and browsing between them costs no clicks. Positioned by
+   components/ui/Flyout.jsx — opens right, flips left only when it must. */
+.entry-actions-flyout {
+  min-width: 168px;
+  max-width: 280px;
+  z-index: 9001;             /* above the menu it belongs to, never behind it */
+  animation: entry-flyout-in 0.12s ease-out;
+}
+@keyframes entry-flyout-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+/* The row and its flyout are one hover region, so the wrapper is what the
+   pointer enters and leaves — not the button, which the panel sits beside.
+   A real box rather than `display: contents`, because a box that generates no
+   layout is a shaky thing to hang pointer tracking on. */
+.entry-actions-rowwrap { display: block; }
+
+.entry-actions-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+  text-align: left;
+  transition: background var(--transition), color var(--transition);
+}
+.entry-actions-item:hover:not(:disabled) { background: var(--surface3); }
+.entry-actions-item:disabled { opacity: 0.4; cursor: default; }
+.entry-actions-item-label {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Trailing, in the same column the submenu chevrons occupy, so every label in
+   the menu starts flush at the left edge — a leading tick column indented the
+   two checkbox rows away from their neighbours for a mark that is absent most
+   of the time. Still reserved whether or not it is ticked, so a tick appearing
+   does not shift the row it is on. */
+.entry-actions-tick {
+  width: 12px;
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--green);
+  font-size: 0.75rem;
+}
+.entry-actions-chevron { color: var(--muted); flex-shrink: 0; }
+.entry-actions-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.entry-actions-item--active { color: var(--blue); }
+/* The row whose flyout is showing stays lit, so the panel beside it is visibly
+   attached to something rather than floating on its own. */
+.entry-actions-item--open { background: var(--surface3); }
+.entry-actions-item--open .entry-actions-chevron { color: var(--text); }
+
+.entry-actions-item--destructive:hover:not(:disabled) {
+  background: rgba(245, 101, 101, 0.15);
+  color: var(--red);
+}
+
+.entry-actions-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 2px;
+}
+
+.entry-actions-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 9px;
+  margin-bottom: 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.entry-actions-back:hover { color: var(--text); }
+
+/* Copy/move-to-lorebook (#127). The target rows carry an entry count so a book
+   can be told apart from an identically-named one, and so "the empty one" is
+   pickable without opening it. */
+.entry-actions-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Explanatory text, not a control — the single-lorebook case, where the list
+   above it is empty and the only thing to do is make a second book. */
+.entry-actions-note {
+  padding: 6px 9px 8px;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.entry-actions-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+}
+.entry-actions-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.entry-actions-input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+.entry-actions-go {
+  flex-shrink: 0;
+  padding: 6px 9px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--text);
+}
+.entry-actions-go:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* The receipt shown after a transfer — see the note at the top of
+   EntryActionsMenu.jsx for why one is needed at all. */
+.entry-actions-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 9px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+.entry-actions-result strong { font-weight: 600; }
+.entry-actions-result-tick { color: var(--green); flex-shrink: 0; }
+
+/* §TEMPLATES
+   Entry Templates (Phase 12). The picker renders inside the ⋯ menu's flyout and
+   inside its own popover from the empty-entry-list state, so it borrows the
+   `entry-actions-*` chrome wholesale and adds only what is genuinely new: the
+   content checklist, the description-conflict choice, and the manage-mode row
+   actions. */
+.tpl-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px 6px;
+}
+.tpl-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 7px;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.tpl-check:hover { background: var(--surface3); }
+.tpl-check input { flex-shrink: 0; accent-color: var(--blue); }
+
+.tpl-conflict {
+  padding: 6px 7px 8px;
+  border-top: 1px solid var(--border);
+}
+.tpl-conflict-note {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+  line-height: 1.35;
+}
+.tpl-conflict-choice {
+  display: inline-flex;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.tpl-conflict-btn {
+  padding: 3px 10px;
+  font-size: 0.6875rem;
+  border: none;
+  border-radius: 0;
+  background: var(--surface3);
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.tpl-conflict-btn:hover { color: var(--text); }
+.tpl-conflict-btn--on { background: var(--blue); color: #fff; }
+
+/* A row plus its manage-mode actions. The actions only exist while managing, so
+   the row is a flex line rather than the bare button every other menu row is. */
+.tpl-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.tpl-row .entry-actions-item { flex: 1; min-width: 0; }
+.tpl-mini {
+  flex-shrink: 0;
+  padding: 5px 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--muted2);
+}
+.tpl-mini:hover { background: var(--surface3); color: var(--text); }
+.tpl-mini--danger:hover { background: rgba(245, 101, 101, 0.15); color: var(--red); }
+
+/* The empty-state route in. A link rather than a button because it sits inside
+   a sentence — the surrounding copy is what explains it. */
+.templates-link {
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.templates-link:hover { color: var(--text); }
+
+/* Settings → Templates. Rows are a grid rather than flex so the name, category
+   and colour columns line up down the list — an audit surface where the columns
+   wander is not an audit surface. */
+.tpl-settings { display: flex; flex-direction: column; gap: 4px; }
+.tpl-settings-heading {
+  margin: 8px 0 2px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tpl-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+}
+.tpl-settings-name {
+  flex: 1 1 90px;
+  min-width: 0;
+  padding: 4px 7px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.tpl-settings-name:focus { outline: none; border-color: var(--blue); }
+.tpl-settings-cat   { flex: 1 1 90px; min-width: 0; }
+.tpl-settings-color { flex: 1 1 80px; min-width: 0; }
+
+/* A category carries two selects on top of a name and a delete, which is one
+   control more than the Settings column's ~276px can hold in a line. It wraps
+   deliberately: name and delete on the first, parent and colour on the second.
+   Templates stay on one line — they only have the two. */
+.tpl-settings-row--category { flex-wrap: wrap; }
+.tpl-settings-row--category .tpl-settings-name { flex: 1 1 90px; }
+.tpl-settings-row--category .tpl-settings-cat,
+.tpl-settings-row--category .tpl-settings-color { flex: 1 1 40%; }
+
+/* Below the breakpoint even two controls plus a name is a squeeze, so the name
+   takes its own line. §TOUCH-GROWN's floor applies to each select either way. */
+@media (max-width: 768px) {
+  .tpl-settings-row { flex-wrap: wrap; }
+  .tpl-settings-row .tpl-settings-name { flex-basis: 100%; }
 }
 
 /* Card body — shown when expanded */
@@ -5154,9 +5469,17 @@ img.logo-icon {
 }
 .settings-lander-btn:hover { color: var(--text); border-color: var(--text); }
 
-.settings-row { display: flex; gap: 12px; }
-.settings-row label { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted2); }
-.settings-row input[type="number"] { width: 72px; padding: 3px 6px; font-size: 0.75rem; }
+/* Wraps because the row is not always two controls wide — the four-colour and
+   gradient warning scales show a third character threshold, and three
+   label+input pairs do not fit across a 320px panel. Without the wrap the
+   third one is simply cut off at the panel edge. */
+.settings-row { display: flex; flex-wrap: wrap; gap: 12px; row-gap: 8px; }
+.settings-row label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75rem; color: var(--muted2);
+  white-space: nowrap; /* "Yellow at" is a label, not a paragraph */
+}
+.settings-row input[type="number"] { width: 72px; flex-shrink: 0; padding: 3px 6px; font-size: 0.75rem; }
 kbd {
   display: inline-block; padding: 1px 5px;
   background: var(--surface3); border: 1px solid var(--border);
@@ -6315,6 +6638,12 @@ kbd {
   select.entry-card-mobile-type,
   .delimiter-select,
   .settings-search-input,
+  /* Every Settings <select> — the warning-colour scale, the crosstalk swap
+     mode, each hotbar slot. Missed until 2026-08-31 because the layout sweep
+     only measures what is rendered: the crosstalk select is gated behind a
+     paired reference book, and the hotbar slots behind an expander, so no
+     visible one existed on the poses until the warning scale arrived. */
+  .hotbar-slot-select,
   .export-menu-input { min-height: var(--touch-floor); }
 
   /* Rows in a list, for trap 3. A stacked row is closer to the row above it
@@ -7872,9 +8201,7 @@ kbd {
 }
 .storage-usage-ring:hover { background: var(--surface3); }
 .storage-usage-ring-track { stroke: var(--border2); }
-.storage-usage-ring-fill  { stroke: var(--muted2); transition: stroke 200ms, stroke-dashoffset 300ms ease-out; }
-.storage-usage-ring.tier-warn   .storage-usage-ring-fill { stroke: var(--yellow); }
-.storage-usage-ring.tier-danger .storage-usage-ring-fill { stroke: var(--red); }
+.storage-usage-ring-fill  { stroke: var(--tier-color, var(--muted2)); transition: stroke 200ms, stroke-dashoffset 300ms ease-out; }
 
 .storage-usage-hover-popover {
   background: var(--surface2);
@@ -7888,8 +8215,8 @@ kbd {
   white-space: nowrap;
   pointer-events: none;
 }
-.storage-usage-hover-popover.tier-warn   { color: var(--yellow); }
-.storage-usage-hover-popover.tier-danger { color: var(--red); }
+.storage-usage-hover-popover.tier-warn,
+.storage-usage-hover-popover.tier-danger { color: var(--tier-color, var(--text)); }
 
 .storage-usage-detail-popover {
   min-width: 280px;
@@ -7917,9 +8244,7 @@ kbd {
   color: var(--text);
   font-weight: 600;
 }
-.storage-usage-detail-percent { color: var(--muted2); }
-.storage-usage-detail-popover.tier-warn   .storage-usage-detail-percent { color: var(--yellow); }
-.storage-usage-detail-popover.tier-danger .storage-usage-detail-percent { color: var(--red); }
+.storage-usage-detail-percent { color: var(--tier-color, var(--muted2)); }
 .storage-usage-bar {
   height: 6px;
   background: var(--surface3);
@@ -7928,11 +8253,10 @@ kbd {
 }
 .storage-usage-bar-fill {
   height: 100%;
-  background: var(--muted2);
+  background: var(--tier-color, var(--muted2));
   transition: width 300ms ease-out, background 200ms;
 }
-.storage-usage-bar-fill.tier-warn   { background: var(--yellow); }
-.storage-usage-bar-fill.tier-danger { background: var(--red); }
+
 .storage-usage-detail-list {
   list-style: none;
   margin: 0;

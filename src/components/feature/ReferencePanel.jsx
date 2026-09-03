@@ -28,7 +28,7 @@ import { ENTRY_TYPES }          from '../../constants/entry-types.js';
 export function ReferencePanel() {
   const { referenceLorebook, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const { items }                                                   = useLorebookSwitcher();
-  const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
+  const { hideEntryStats, counterTiers, tieredCounterEnabled, warningScale } = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
   const { refToActive, activeToRef, matchedActiveByRef }            = useNameMatch();
@@ -207,6 +207,7 @@ export function ReferencePanel() {
                             charCount={entry.description.length}
                             counterTiers={counterTiers}
                             tieredEnabled={tieredCounterEnabled}
+                            warningScale={warningScale}
                           />
                         )}
                         {snapshotCount > 0 && (
@@ -330,6 +331,7 @@ export function ReferencePanel() {
                           charCount={entry.description.length}
                           counterTiers={counterTiers}
                           tieredEnabled={tieredCounterEnabled}
+                          warningScale={warningScale}
                         />
                       )}
                       {snapshotCount > 0 && (

@@ -6,8 +6,10 @@ import { useReferenceLorebook }    from '../../hooks/use-reference-lorebook.js';
 import { useMobile }               from '../../hooks/use-mobile.js';
 import { usePickFromReference }    from '../../hooks/use-pick-from-reference.js';
 import { useFolders }              from '../../hooks/use-folders.js';
+import { TRANSFER_COPY, TRANSFER_MOVE }    from '../../hooks/use-entry-transfer.js';
 import { ENTRY_TYPES }             from '../../constants/entry-types.js';
 import { NO_FOLDER_LABEL, NEW_FOLDER_NAME } from '../../constants/folders.js';
+import { MAX_LOREBOOKS }           from '../../constants/limits.js';
 
 export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   const {
@@ -24,16 +26,34 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     applyTypeChange, applyStagedTypes, copyToOtherPanel,
     setHiddenForSelected, setPublicForSelected,
     moveSelectedToFolder, moveSelectedToNewFolder,
+    transferTargets, canCreateTarget,
+    transferSelectedTo, transferSelectedToNewLorebook, goToLorebook,
   } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
   const { folders, foldersSuppressed } = useFolders();
   const isMobile = useMobile();
   const { pickFromReferenceMode, enterPickFromReference, exitPickFromReference } = usePickFromReference();
 
-  // Which picker row (if any) is expanded: 'type' | 'public' | 'hide'.
-  // Only one is ever open at a time — opening one closes the others.
+  // Which picker row (if any) is expanded: 'type' | 'public' | 'hide' |
+  // 'folder' | 'lorebook'. Only one is ever open at a time — opening one closes
+  // the others.
   const [openPicker, setOpenPicker] = useState(null);
-  const togglePicker = (name) => setOpenPicker((cur) => (cur === name ? null : name));
+  // The lorebook picker's own state. It is the one chip row that is not a flat
+  // list of choices: it carries a copy/move toggle, because two more buttons on
+  // a bar this crowded would cost more than a two-chip switch inside the row
+  // that already opened — and the mode is then visible at the moment the
+  // destination is clicked, which is when it matters.
+  const [transferMode, setTransferMode]     = useState(TRANSFER_COPY);
+  const [namingNew, setNamingNew]           = useState(false);
+  const [newName, setNewName]               = useState('');
+  const [transferResult, setTransferResult] = useState(null);
+  const newNameRef = useRef(null);
+
+  const togglePicker = (name) => setOpenPicker((cur) => {
+    const next = cur === name ? null : name;
+    if (next !== 'lorebook') { setNamingNew(false); setNewName(''); setTransferResult(null); }
+    return next;
+  });
   // Mobile only — the Actions menu that stands in for the flat bar's buttons.
   const [menuOpen, setMenuOpen] = useState(false);
   const barRef = useRef(null);
@@ -46,11 +66,17 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       if (barRef.current && !barRef.current.contains(e.target)) {
         setOpenPicker(null);
         setMenuOpen(false);
+        setNamingNew(false);
+        setTransferResult(null);
       }
     }
     document.addEventListener('mousedown', onMouseDown);
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [openPicker, menuOpen]);
+
+  useEffect(() => {
+    if (namingNew) newNameRef.current?.focus();
+  }, [namingNew]);
 
   function onExit() {
     setOpenPicker(null);
@@ -109,6 +135,21 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   function onApplyStaged() {
     applyStagedTypes();
     setOpenPicker(null);
+  }
+
+  function finishTransfer(result) {
+    if (!result) return;           // cancelled at the move confirm
+    setNamingNew(false);
+    setNewName('');
+    setTransferResult(result);     // the row stays open as the receipt
+  }
+
+  function onTransferTo(destId) {
+    finishTransfer(transferSelectedTo(destId, transferMode));
+  }
+
+  function onTransferToNew() {
+    finishTransfer(transferSelectedToNewLorebook(newName, transferMode));
   }
 
   function onCopyToOtherPanel() {
@@ -204,6 +245,123 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
         </>
       );
     }
+    if (picker === 'lorebook') {
+      // Post-transfer receipt. Same reasoning as the ⋯ menu's: the destination
+      // book is not on screen, so a row that just closed would make "copied 12
+      // entries" and "did nothing" look identical.
+      if (transferResult) {
+        return (
+          <>
+            <span className="bulk-transfer-result">
+              <span className="bulk-transfer-tick" aria-hidden="true">✓</span>
+              {transferResult.mode === TRANSFER_MOVE ? 'Moved ' : 'Copied '}
+              {transferResult.count} entr{transferResult.count === 1 ? 'y' : 'ies'} to{' '}
+              <strong>{transferResult.destName || 'Untitled lorebook'}</strong>
+            </span>
+            <button
+              className="bulk-type-chip"
+              style={{ '--type-color': 'var(--blue)' }}
+              onClick={() => { setTransferResult(null); setOpenPicker(null); goToLorebook(transferResult.destId); }}
+            >
+              Open it
+            </button>
+            <button
+              className="bulk-type-chip"
+              style={{ '--type-color': 'var(--muted2)' }}
+              onClick={() => { setTransferResult(null); setOpenPicker(null); }}
+            >
+              Done
+            </button>
+          </>
+        );
+      }
+
+      if (namingNew) {
+        return (
+          <>
+            <input
+              ref={newNameRef}
+              className="bulk-transfer-input"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter')  { e.preventDefault(); onTransferToNew(); }
+                if (e.key === 'Escape') { e.preventDefault(); setNamingNew(false); }
+              }}
+              placeholder="New lorebook name…"
+              spellCheck={false}
+              aria-label="Name for the new lorebook"
+            />
+            <button
+              className="bulk-type-chip"
+              style={{ '--type-color': 'var(--blue)' }}
+              onClick={onTransferToNew}
+            >
+              {transferMode === TRANSFER_MOVE ? 'Create & move' : 'Create & copy'}
+            </button>
+            <button
+              className="bulk-type-chip"
+              style={{ '--type-color': 'var(--muted2)' }}
+              onClick={() => setNamingNew(false)}
+            >
+              Cancel
+            </button>
+          </>
+        );
+      }
+
+      return (
+        <>
+          <span className="bulk-transfer-mode" role="radiogroup" aria-label="Copy or move">
+            {[
+              [TRANSFER_COPY, 'Copy', 'Leave the originals where they are'],
+              [TRANSFER_MOVE, 'Move', 'Take the originals out of this lorebook'],
+            ].map(([mode, label, hint]) => (
+              <button
+                key={mode}
+                className={`bulk-transfer-mode-btn${transferMode === mode ? ' bulk-transfer-mode-btn--on' : ''}`}
+                onClick={() => setTransferMode(mode)}
+                role="radio"
+                aria-checked={transferMode === mode}
+                title={hint}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+
+          {transferTargets.length === 0 && (
+            <span className="bulk-transfer-note">
+              No other lorebook yet — make one:
+            </span>
+          )}
+
+          {transferTargets.map((t) => (
+            <button
+              key={t.id}
+              className="bulk-type-chip"
+              style={{ '--type-color': 'var(--blue)' }}
+              onClick={() => onTransferTo(t.id)}
+              title={`${transferMode === TRANSFER_MOVE ? 'Move' : 'Copy'} the selected entries to "${t.name || 'Untitled lorebook'}" (${t.entryCount} there now)`}
+            >
+              {t.name || 'Untitled lorebook'}
+            </button>
+          ))}
+
+          <button
+            className="bulk-type-chip bulk-type-chip--new-folder"
+            onClick={() => setNamingNew(true)}
+            disabled={!canCreateTarget}
+            title={canCreateTarget
+              ? 'Create a lorebook and send the selected entries to it'
+              : `You already have the maximum of ${MAX_LOREBOOKS} lorebooks`}
+          >
+            ＋ New lorebook…
+          </button>
+        </>
+      );
+    }
     if (picker === 'hide') {
       return (
         <>
@@ -256,6 +414,8 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       { id: 'hide',    label: 'Hide from export…',   run: () => togglePicker('hide'),   disabled: !hasSelection },
       { id: 'folder',  label: 'Move to folder…',     run: () => togglePicker('folder'),
         disabled: !hasSelection || selectionSide === 'reference' || foldersSuppressed },
+      { id: 'lorebook', label: 'Copy/move to lorebook…', run: () => togglePicker('lorebook'),
+        disabled: !hasSelection || selectionSide === 'reference' },
       ...(hasStaged ? [{ id: 'staged', label: `Apply ${stagedCount} staged type change${stagedCount === 1 ? '' : 's'}`, run: onApplyStaged }] : []),
       ...(showPickEntry ? [{ id: 'pick', label: 'Copy from reference', run: onEnterPick }] : []),
       ...(showCommit ? [{ id: 'commit', label: `Copy ${selectedCount} & done`, run: onCommitPick, disabled: !hasSelection }] : []),
@@ -346,6 +506,17 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
             : 'Move the selected entries into a folder'}
       >
         Move to folder… {openPicker === 'folder' ? '▴' : '▾'}
+      </button>
+
+      <button
+        className="bulk-action-apply bulk-action-apply--secondary"
+        onClick={() => togglePicker('lorebook')}
+        disabled={!hasSelection || selectionSide === 'reference'}
+        title={selectionSide === 'reference'
+          ? 'A move has to be undoable where it left from, and undo only covers the active lorebook — swap this book into the active slot first'
+          : 'Copy or move the selected entries to another lorebook'}
+      >
+        To Lorebook… {openPicker === 'lorebook' ? '▴' : '▾'}
       </button>
 
       {hasStaged && (

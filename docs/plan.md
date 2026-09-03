@@ -286,6 +286,8 @@ Save an entry's content as a reusable, **globally-stored** template and load it 
 
 **Sub-phases:** 12A core (save whole entry, both load actions, content-driven checklist + description-conflict prompt, flat list) · 12B organization (drill-in folders, colors, hover preview, management). Complexity: 12A Medium · 12B Medium.
 
+**Shipped 2026-09-02**, 12A and 12B together — see "Sub-phase 4 — Entry Templates" below for what the build actually settled, including where locked decision 9's supersession left a hole and how the payload question inside locked decision 1 was resolved.
+
 > **Revisit — entry-card footer crowding.** Phase 11 adds "Move to folder" and Phase 12 adds "Save as Template" + "Load Template" on top of the existing entry-history / visibility / public controls. Before it overflows, rethink the footer — an overflow `⋯` menu, relocating the less-common actions, or regrouping per-entry actions. _(what would FabFilter do?)_ Noted 2026-07-24.
 
 ### Phase 14 — Mobile Overhaul
@@ -498,6 +500,305 @@ Also worth knowing before 14C designs a bottom bar: there is no `viewport-fit=co
 
 ---
 
+### Entry features & warning scales (2026-08-31)
+
+A four-part pass agreed with the user on 2026-08-31, sequenced deliberately so
+the `⋯` menu exists before anything else wants to live in it:
+
+1. **Warning colour scales** (below) — independent of the rest, so it goes first.
+2. **Entry `⋯` overflow menu** — resolves the Phase 12 "entry-card footer crowding" revisit.
+3. **Copy / move an entry to another lorebook** (GitHub #127), into that menu.
+   Plus `BulkActionBar` copy/move (locked decision 10), which is cheap once the
+   transfer service exists — the service is the work, not the bar.
+4. **Entry Templates** (Phase 12, GitHub #114), into that menu.
+
+**Locked decisions (2026-08-31):**
+1. Sequence as above — colours, menu, copy/move, templates.
+2. Scale applies to **every** green/yellow/red warning: description chars, trigger
+   count, entry title, and the storage-usage ring.
+3. Four-colour uses **three user-set character thresholds**; the stored `red`
+   becomes `orange` and the new `red` takes the character cap.
+4. Gradient is **green until the first threshold**, then a continuous
+   yellow → orange → red fade. Thresholds keep their meaning as the fade's anchors.
+   *Amended 2026-08-31 after review:* green does not hold all the way to the
+   threshold and then snap — it holds to `GRADIENT_GREEN_HOLD` (2/3) of it and
+   eases in over the remainder, so the ramp has no hard edge anywhere. The hold
+   point is a fraction rather than a character count so it tracks whatever
+   thresholds the user sets.
+5. Gradient is **allowed under high contrast**, with the caveat stated in the
+   settings hint rather than the option being withheld.
+6. **Desktop only** for the `⋯` menu; `EntryDetailPanel` keeps its flat buttons.
+   Mobile parity is its own session.
+7. A **move is undoable on the source side only** — the confirmation says so.
+8. Copy/move carries name, type, description, triggers, `isPublic`,
+   `hiddenFromExport` **and checkpoints**; `folderId` is dropped (folders are per-book).
+9. The target picker offers **＋ New lorebook…** alongside existing books.
+10. **Bulk copy/move joins `BulkActionBar`**; the "bounce me to Select mode" prompt
+    inside the per-entry menu is skipped.
+11. Templates ships **12A and 12B together**.
+
+**Sub-phase 1 — warning colour scales — shipped 2026-08-31.** GitHub #131.
+
+`services/warning-color.js` is the single evaluator; `constants/warning-scale.js`
+names the three modes. Before this the green/yellow/red conditional was
+hand-copied into seven call sites across six components, which is exactly how
+`DescriptionArea`'s border came to read the *constants* while its own counter
+read the user's settings — a latent bug the extraction surfaced and fixed.
+
+Two things are worth remembering from this one.
+
+**The fourth colour is not inserted in the same place for every metric**, and a
+single shared rule would have silently moved someone's red. Description
+characters had red sitting at the user's danger threshold, well below the 1500
+cap, so four-colour *appends* a stop at the cap — which is precisely what #131
+asked for ("it means I don't have to set the red threshold to 1500"). Triggers
+and entry titles already had red *on* their hard cap, so four-colour *inserts* a
+stop below it and leaves red alone. Storage appends, like characters. Each
+metric therefore builds its own stops rather than sharing one rule, and the
+`verify/warning-color-checks.mjs` suite exists mostly to hold that line: most of
+its 47 assertions do nothing but prove three-colour output is unchanged.
+
+**The stored `counterTiers` grew a third number, which is a persisted-schema
+change and needed a migration.** `{ yellow, red }` becomes
+`{ yellow, orange, red }` where the old `red` moves to `orange` and the new `red`
+takes the cap. Written the other way round — reading the stored `red` as the new
+top stop — every existing user's red would have jumped from 1000 to 1500 with no
+warning. The migration is in `App.jsx`'s fix-up patch; `charStops()` also handles
+a legacy blob defensively, in case it is read before the migration runs.
+
+Gradient blends via `color-mix(in oklab, …)` on the theme tokens rather than
+hardcoded hex, so custom and high-contrast palettes fade through their own
+colours. oklab rather than sRGB because an sRGB yellow→red path dips through a
+muddy brown at the midpoint. `--orange` was added to the dark, light and
+high-contrast blocks; custom inherits `:root`. Under high contrast the
+yellow→orange step is the weakest link — high-contrast yellow is already a brown
+— which is a known and accepted limit of that palette rather than a bug (locked
+decision 5).
+
+Two things came out of user review and are folded in above: the gradient's
+green hand-off (locked decision 4), and `.settings-row` learning to wrap — it
+was a fixed non-wrapping flex, so the third character threshold was simply cut
+off at the 320px panel edge on the four-colour and gradient scales.
+
+**Settings reorganisation (2026-08-31).** Editing & Entries had grown to eleven
+groups against Appearance & Accessibility's three. The cut is "does it change
+what happens, or only what I see?": the `Counters` and `Entry badges` runs moved
+to Appearance as **Warnings & counters** and **Entry display**, leaving Editing
+with writing aids and checkpoints — what helps you write, and what protects what
+you wrote. Character thresholds travelled with the scale they drive despite being
+numbers rather than colours, because splitting a control from the thing it
+controls is worse than the category stretch. The moved groups kept every keyword
+someone would have typed hunting them in the old place (`entries`, `editing`,
+`writing`) so the settings filter makes the move invisible to anyone who searches
+rather than browses.
+
+That move surfaced a latent accessibility bug rather than causing one:
+`.hotbar-slot-select` had no touch floor, and the mobile sweep had never caught it
+because it only measures what is *rendered* — the crosstalk select is gated behind
+a paired reference book and the hotbar slots behind an expander, so no visible
+Settings `<select>` existed on the swept poses until the warning scale arrived.
+The fix is a real `min-height`, not a `.touch-floor` class: §TOUCH-GROWN already
+documents that replaced elements generate no pseudo-element, so the class is inert
+on a `<select>`.
+
+The storage ring stopped being coloured by `tier-*` CSS classes and now takes a
+`--tier-color` custom property computed by `use-storage-usage`, so one value
+drives ring, bar and text and the gradient can reach it. Its resting colour is
+`--muted2`, not green: it is a gauge, not a health readout.
+
+**Sub-phase 2 — the entry `⋯` overflow menu — shipped 2026-08-31.**
+
+`components/feature/EntryActionsMenu.jsx`. Resolves the "entry-card footer
+crowding" revisit attached to Phase 12's locked decision 9, and supersedes that
+decision: the template buttons go in this menu, not the footer.
+
+**It replaced Remove in the card HEADER, not the footer**, and that turned a
+tidying job into a capability. Remove was the only per-entry action up there;
+Move to folder, Public/Private and Hide from Export all lived in the footer,
+which renders only on an *expanded* card. Gathering them into a header menu makes
+all four reachable on a **collapsed** card for the first time — and the actions
+you most want while skimming a long book are exactly the ones that used to cost
+an expand. The footer keeps Checkpoints alone, which is right: it is the only
+control there that opens a panel rather than performing an action.
+
+`MoveToFolderButton.jsx` and its ~70 lines of CSS were deleted rather than left
+orphaned — the drill-in view replaces it, and `EntryDetailPanel` never used it
+(mobile folders are still deferred). Mobile keeps its flat footer buttons per
+locked decision 6; the menu is desktop-only until the mobile parity session.
+
+Submenus started as **drill-ins** — the panel was reused for the submenu, with a
+‹ Back row leading out — on the reasoning that a nested popover inside a
+scrolling list has to solve flipping twice over. **Revised 2026-09-01 on user
+feedback: they are hover flyouts.** The drill-in was cheap to build and wrong to
+use — every submenu cost a click in and a click out, and while you were inside
+one the menu stopped showing you what else it could do. A flyout keeps the root
+menu on screen and makes browsing between the three submenus free.
+
+The flipping worry turned out to be already solved: the footer's sizing menu had
+been doing exactly this since 13A. Its `Flyout` moved to
+`components/ui/Flyout.jsx` so there is one implementation rather than two — it
+measures itself, opens right, and flips left only when the viewport genuinely
+has no room. The only thing it needed was an `align` prop, because the sizing
+menu hangs off a bar at the base of the window and grows upward while a menu row
+grows downward. Escape still unwinds one layer at a time: name field, flyout,
+menu.
+
+Two details the flyout needs that the drill-in did not. The panel is portalled
+to the body, so it is outside the menu's ref while being inside the menu as far
+as the user is concerned — the outside-click handler matches it by class instead.
+And a panel holding something the user would lose (a half-typed lorebook name, a
+receipt) **pins**, ignoring the hover-close timer; without that, moving the mouse
+away mid-type discards the name.
+
+**The one real lesson: an anchored popover over a scrolling list must follow its
+anchor, not close on scroll.** Closing is what every other anchored layer here
+does, and it is fine for all of them because they hang off chrome that does not
+scroll. This one hangs off a row in a list, and closing broke it twice:
+
+- The capture-phase scroll listener — mandatory, since `scroll` does not bubble
+  and the entry list is what scrolls — also sees scrolls *inside the menu*, whose
+  own list scrolls once a book has more folders than fit. Scrolling the menu
+  closed the menu.
+- Expanding a card smooth-scrolls it into view, and a smooth scroll keeps
+  emitting events for several hundred milliseconds. Opening the menu any time in
+  that window had it flash open and shut. This is the one that cost real
+  debugging time: it looked like a flaky test, and reproduced as "the first click
+  after expanding anything does nothing, the second works".
+
+Both become non-events once the menu re-measures its anchor on scroll (rAF-
+throttled, with an identity check so an unmoved anchor does not re-render).
+Closing is kept for the one case where it is honest — the anchor scrolling out of
+the viewport, where the menu would otherwise hang off nothing.
+
+**Sub-phase 3 — copy / move an entry to another lorebook — shipped 2026-09-01.**
+GitHub #127.
+
+`services/entry-transfer.js` (pure) + `hooks/use-entry-transfer.js` (persistence,
+history, target list), reached from two places: `Copy to lorebook ▸` / `Move to
+lorebook ▸` at the top of the `⋯` menu, and a `To Lorebook…` row on
+`BulkActionBar` (locked decision 10). The service is the feature; the two entry
+points are just how you get at it.
+
+**The bug this shipped a fix for is not the feature.** Autosave persists the
+*active* lorebook and nothing else, which is fine as long as nothing writes
+anywhere else — and three things already did. `copyToOtherPanel` and
+`copyEntryToReference` both wrote to the reference book through the store alone,
+so a cross-panel copy lived in memory until the user happened to switch to that
+book, and was gone if they closed the tab first. Writing a book you cannot see is
+exactly what a transfer does, so this had to be settled before #127 could work at
+all; both existing paths now write through as well. **Any new write to a
+non-active book must call `saveLorebook` itself.**
+
+**Three transfer rules, each of which is invisible until it is wrong.** They are
+what `verify/entry-transfer-checks.mjs` exists to hold.
+
+- **`folderId` is dropped, always** (locked decision 8). It names a folder in the
+  *source* book. Carried across it would either dangle or — worse — file the
+  entry into whatever folder happens to share that id in the destination.
+- **Checkpoints travel, and the id never does.** A fresh id on every clone means
+  a copy can never collide with its original, including a copy back into the book
+  it came from. Checkpoints are the thing you would most regret losing on a move,
+  so unlike the cross-*panel* copy (a reference gesture) a transfer keeps them —
+  `cloneEntry` grew `keepSnapshots` rather than changing under the old callers.
+- **`lastModified` is preserved on a move and refreshed on a copy.** A move did
+  not change the entry, it relocated it, and "recently modified" is a sort option
+  — refreshing it would float every moved entry to the top of its new book for no
+  reason. A copy is genuinely a new object.
+
+**A move confirms; a copy does not** (locked decision 7). Undo is per-book and the
+history store only ever holds the active lorebook, so Ctrl+Z after a move puts the
+entry back *here* without removing it from the destination — you end up with one
+in each book. That is surprising enough to say out loud at the point of decision,
+and it is the only reason a move asks. It is also why **bulk transfer is
+active-side only**, like `moveSelectedToFolder`: a move out of the *reference*
+book would be silently unundoable, which is the one thing the confirmation
+promises it is not.
+
+**Both entry points end in a receipt, and the `⋯` menu's is copy-only — for a
+reason worth not re-discovering.** A transfer is the only action in that menu
+whose effect is entirely off-screen, so closing silently would leave "it worked"
+and "it did nothing" identical; the receipt names the destination and offers to go
+there, which is the next thing you want when you have just corrected a
+misfiled entry. It renders inside the flyout that produced it, so the menu behind
+stays as context. A **move** cannot have one there: the row leaves the list, so
+the card unmounts and takes its portalled menu with it. The move already named its
+destination in the confirmation the user just answered, and the row visibly
+leaving is its own acknowledgement. The bulk bar shows a receipt for both, because
+it outlives the rows it acts on.
+
+`＋ New lorebook…` (locked decision 9) is named **at the moment of creation**, via
+an inline field in the menu — not created blank and renamed after. `createLorebook`
+grew `activate: false` and `name` for this: the new book is deliberately *not*
+switched to, since a transfer is a thing you do to somewhere else, and the name
+therefore has to be set up front because there is no name field on screen
+afterwards to notice. It could not be a follow-up `renameLorebookById` either —
+that reads the index from its hook closure, which is one tick stale in the middle
+of a create.
+
+Left undone on purpose: **there is still no app-level toast**, so both receipts are
+local to the surface that triggered them. If a third caller ever needs one, that is
+the point to build the real thing rather than a third bespoke panel.
+
+**Sub-phase 4 — Entry Templates — shipped 2026-09-02.** GitHub #114. 12A and 12B
+together, per locked decision 11.
+
+`services/template-service.js` (pure) + `state/templates-store.js` +
+`hooks/use-templates.js`, surfaced through `TemplatesPanel.jsx` — which has two
+homes, and that is the part worth remembering.
+
+**Locked decision 9 put the template buttons in the entry footer; the `⋯` menu
+superseded it, and that created a hole nobody had noticed.** The menu hangs off a
+specific entry, so a lorebook with **no entries has no `⋯` menu** — and a fresh
+book is exactly where a scaffold earns its keep. The picker is therefore its own
+component with a nullable `entry`, opened from the menu's `Templates ▸` flyout and
+from a link in the entry list's empty state. With no entry behind it, "Fill this
+entry" is simply not offered. **Any future per-entry action worth reaching from an
+empty book has the same problem and the same fix.**
+
+**Both load actions live on the checklist, not in the menu** (locked decision 2).
+You pick a template, see what it holds, and only then say whether it lands in the
+entry you have open or in a new one — a decision worth making with the contents in
+front of you rather than before seeing them.
+
+**The checklist is content-driven, and that is what keeps saving to one press**
+(locked decision 3). There is deliberately no field menu at save time; the payload
+is the whole entry, and a user who does not want a title leaves it off the source.
+The load then works out for itself which fields carry anything, so a
+description-only scaffold has nothing to tick and goes straight in — unless it
+would land on existing text, which is the one question worth asking (locked
+decision 4, defaulting to Append, the non-destructive half).
+
+**One judgment call inside locked decision 1, recorded because it is not obvious
+from the decision's wording.** "The whole entry" is the four *content* fields —
+title, type, triggers, description. `isPublic` and `hiddenFromExport` are
+excluded: the decision's own rationale is about content you could choose not to
+write, and there is no "leave it off" position for a publishing flag. A template
+that silently marked an entry hidden-from-export would be discovered at export
+time, which is the worst moment to discover it.
+
+**Triggers union rather than replace.** A `name / alias / nickname` scaffold is
+meant to extend what is there; replacing would make the feature actively hostile
+to the case it was designed for.
+
+**Locked decision 7's extraction happened.** `services/category-tree.js` is the
+pure tree over `{id, parentId}` nodes that folders and template categories share;
+`folder-tree.js` binds it and keeps a byte-identical public API, so its 154 checks
+held the refactor without a single edit. The one thing the split had to
+parameterise is the depth cap — folders stop at 3 because each level costs 21px of
+indent in a pane that can be 360px wide, a constraint a drill-in dropdown does not
+share.
+
+**Management is split by job, not by capability** (locked decision 8). The picker's
+manage mode covers what you notice while *using* a template — rename, re-capture,
+delete, make a category. Settings → Templates covers the bookkeeping — moving
+templates between categories, re-parenting categories — which needs the whole set
+visible at once and cannot be done well one drill-in level at a time.
+
+**Templates have no autosave, because autosave persists the active lorebook and
+templates are not in one.** Every mutation in `use-templates.js` writes through
+immediately. This is the third time that rule has bitten in this pass; it is now
+written at the top of both hooks that break it.
+
 ### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
 
 Reported as "the tag suggestion window sometimes won't go away", unreproducible by
@@ -629,6 +930,43 @@ Aggregate view of every trigger overlap across the active lorebook in one place 
 
 **Entry Checkpoints — inline quick actions + Settings management**
 Apply the Phase 12 Templates management pattern to the Entry Checkpoints system: quick per-checkpoint actions inline where checkpoints are used, plus a fuller management surface in Settings — the same "quick actions where you are + full management in Settings" split. Noted 2026-07-24 while planning Entry Templates; the pattern fits cleanly. The 2026-08-25 refinement below took the first bite (per-checkpoint overwrite landed inline); the Settings half is untouched. Scope to define when picked up.
+
+**Contextual settings on right-click / press-and-hold**
+
+Reach a feature's own settings from the feature itself — right-click a control on
+desktop, press-and-hold it on mobile — instead of walking to Settings and finding
+the group. Raised by the user 2026-08-31 as an under-explored direction for the
+builder rather than a specific feature request, so the scope is deliberately open.
+
+Worth noting what already exists to build on, because it is more than it looks.
+The app has a **dismiss-priority stack** (`services/dismiss-stack.js`) and an
+**anchored-popover positioner** (`hooks/use-anchored-position.js`), so a context
+layer would not be inventing either. It also already has a **long-press gesture**
+with a tuned threshold — `THESAURUS_LONG_PRESS_MS`, 450ms — and `verify/driver.mjs`
+has a `longPress` helper, so the mobile half has a precedent to match rather than
+a mechanism to design.
+
+Three things to think through before it becomes work:
+
+- **What a right-click means when it already means something.** The description
+  and title fields are real text inputs whose native context menu carries
+  cut/copy/paste and, notably, the browser's own spellcheck suggestions — which
+  this app deliberately turned on (Polish Pass 5). Hijacking `contextmenu` there
+  would take away a feature. The likely answer is that chrome and controls are
+  fair game and text fields are not, but it needs stating rather than assuming.
+- **Discoverability.** A hidden gesture that nobody finds is a setting that does
+  not exist. Whatever ships probably needs a visible tell, and the guided tour is
+  the natural place to teach it.
+- **Which settings are even worth surfacing.** The ones that pay off are those
+  you want to change *while looking at their effect* — the warning-colour scale
+  from a counter, collapse stages from a folder header, checkpoint count from the
+  Checkpoints panel. A blanket "every control opens its settings group" would be
+  a lot of surface for little gain.
+
+Related in spirit to the per-entry `⋯` menu (2026-08-31), which is the same idea
+arrived at from the other end: bringing actions to the object rather than the
+object to a panel. The `⋯` menu should probably ship first and be the thing a
+right-click on an entry card opens, rather than a second parallel menu.
 
 **Entry Splitting**
 Optional system for breaking a long entry into two when it exceeds a length threshold: split detection + suggested split points; a split action (the second entry inherits triggers + a name suffix); a linear/non-linear prompt (linear splits inject a bridging prefix); a split-pair badge; and a temporary `CHAR_LIMIT` override until the split is confirmed. Deferred — per-entry limit overrides are sufficient for now.

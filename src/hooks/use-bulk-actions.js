@@ -5,6 +5,8 @@ import { useUiStore }       from '../state/ui-store.js';
 import { changeTypeForIds } from '../services/find-replace.js';
 import { cloneEntry }       from '../services/entry-factory.js';
 import { createFolder, assignEntriesToFolder, foldersOf } from '../services/folder-tree.js';
+import { useEntryTransfer } from './use-entry-transfer.js';
+import { saveLorebook }     from '../services/storage-service.js';
 
 export function useBulkActions() {
   const lorebooks           = useLorebookStore((s) => s.lorebooks);
@@ -20,6 +22,7 @@ export function useBulkActions() {
   const clearStagedTypes    = useUiStore((s) => s.clearStagedTypes);
 
   const updateActiveEntriesAndFolders = useLorebookStore((s) => s.updateActiveEntriesAndFolders);
+  const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook } = useEntryTransfer();
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
   const entries = activeLorebook?.entries ?? [];
@@ -158,9 +161,43 @@ export function useBulkActions() {
       pushSnapshot({ entries: [...destEntries] });
     }
 
-    setLorebook({ ...destLorebook, entries: [...destEntries, ...clones] });
+    const nextDest = { ...destLorebook, entries: [...destEntries, ...clones] };
+    setLorebook(nextDest);
+    // Written through rather than left to autosave, which only ever persists the
+    // ACTIVE book. When the destination is the reference panel this was the
+    // difference between a copy that survived a tab close and one that did not:
+    // it stayed in memory until the user happened to switch to that book. Harmless
+    // when the destination IS the active book — autosave would have written the
+    // same thing 800ms later. No-ops for the tour's ephemeral samples, by design.
+    saveLorebook(nextDest);
 
     clearSelection();
+  }
+
+  // Bulk copy/move to another lorebook (GitHub #127, locked decision 10). The
+  // per-entry ⋯ menu and this share `use-entry-transfer.js` outright — the
+  // service is the feature, the two entry points are just how you reach it.
+  //
+  // **Active-side selections only**, exactly like `moveSelectedToFolder` and for
+  // a related reason. A move has to be undoable on the side it left, and the
+  // history store holds the active lorebook and nothing else — so a move out of
+  // the REFERENCE book would be silently unundoable, which is the one thing the
+  // confirmation promises it is not. Swapping a book into the active slot is one
+  // click, and this app already has that control.
+  function transferSelectedTo(destId, mode) {
+    if (selectedIds.size === 0 || selectionSide !== 'active') return null;
+    const result = transferTo([...selectedIds], destId, mode);
+    // Only on success: a cancelled confirm should leave the user where they
+    // were, still holding the selection they were about to act on.
+    if (result) clearSelection();
+    return result;
+  }
+
+  function transferSelectedToNewLorebook(name, mode) {
+    if (selectedIds.size === 0 || selectionSide !== 'active') return null;
+    const result = transferToNewLorebook([...selectedIds], name, mode);
+    if (result) clearSelection();
+    return result;
   }
 
   return {
@@ -171,5 +208,10 @@ export function useBulkActions() {
     setPublicForSelected,
     moveSelectedToFolder,
     moveSelectedToNewFolder,
+    transferTargets,
+    canCreateTarget,
+    transferSelectedTo,
+    transferSelectedToNewLorebook,
+    goToLorebook,
   };
 }

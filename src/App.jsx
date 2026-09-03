@@ -24,6 +24,8 @@ import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
+import { useTemplatesStore }     from './state/templates-store.js';
+import { loadStoredTemplates }   from './hooks/use-templates.js';
 import { useViewportResize }     from './hooks/use-viewport-resize.js';
 import { useCloseLayersOnBreakpoint } from './hooks/use-close-layers-on-breakpoint.js';
 import { usePickFromReference }  from './hooks/use-pick-from-reference.js';
@@ -34,7 +36,7 @@ import {
   WINDOW_STATE_KEY,
 } from './constants/storage-keys.js';
 import { DEFAULT_WINDOW_FRACTION, DEFAULT_WINDOW, LEGACY_DEFAULT_WINDOW } from './constants/defaults.js';
-import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from './constants/limits.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from './constants/limits.js';
 
 /** Bootstrap: load persisted state from localStorage into stores on first mount. */
 function useBootstrap() {
@@ -80,6 +82,22 @@ function useBootstrap() {
       patch.defaultWindowHeight = DEFAULT_WINDOW.height;
     }
 
+    // Grow counterTiers from the two-stop { yellow, red } shape to the
+    // three-stop { yellow, orange, red } the four-colour and gradient scales
+    // read. The stored `red` was the DANGER stop, so it becomes `orange` and
+    // the new `red` takes the character cap. Written this way round the
+    // three-colour scale keeps painting red at exactly the number the user
+    // chose — only the extra band above it is new. Reading it as the top stop
+    // instead would silently move their red up by 500 characters.
+    const tiers = stored.counterTiers;
+    if (tiers && tiers.orange == null) {
+      patch.counterTiers = {
+        yellow: tiers.yellow ?? CHAR_WARN_YELLOW,
+        orange: tiers.red    ?? CHAR_WARN_RED,
+        red:    CHAR_LIMIT,
+      };
+    }
+
     if (Object.keys(patch).length > 0) {
       applySettings(patch);
       writeJson(SETTINGS_KEY, { ...(settings ?? {}), ...patch });
@@ -106,6 +124,11 @@ function useBootstrap() {
       setWindowSize({ width: w, height: window.innerHeight });
       setWindowPos({ x: Math.floor((window.innerWidth - w) / 2), y: 0 });
     }
+
+    // Templates are global and tiny, so they load in one read alongside the
+    // index rather than lazily — every surface that offers them (the entry ⋯
+    // menu, Settings) wants the whole list the moment it opens.
+    useTemplatesStore.getState().setAll(loadStoredTemplates());
 
     // Load lorebook index
     const index = readJson(LOREBOOK_INDEX_KEY, []);
