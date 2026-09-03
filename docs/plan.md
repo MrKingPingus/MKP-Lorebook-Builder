@@ -799,6 +799,41 @@ templates are not in one.** Every mutation in `use-templates.js` writes through
 immediately. This is the third time that rule has bitten in this pass; it is now
 written at the top of both hooks that break it.
 
+### CharSnap host mode, and the one thing it cannot express (2026-09-03)
+
+Host mode arrived from `JasonYCao/charsnap-extensions@b35da60` and was merged
+upstream rather than kept downstream (see the merge commit). It is well built
+and `HOST-MODE.md` is the contract; nothing below second-guesses it.
+
+**Open, and Jason's call rather than ours: copy/move to another lorebook under
+host mode.** It reads as "the feature is blocked" from the outside. It is not
+blocked — it is *unrepresentable*, and the difference matters.
+
+The protocol is strictly single-book. `mkp:load` carries one lorebook; `mkp:save`
+posts one, and `saveToHost` gets it from `getActiveLorebook()`. There is no
+message that lists other books, and no way to save a book that is not the active
+one. So the four surfaces #127 added are not equally affected:
+
+| Surface | Under host mode |
+|---|---|
+| **Copy** into another local draft | Harmless. Writes only to `mkp_lorebook_*`. The copy simply can never reach CharSnap. |
+| **Move** out of the open book | Fine — an ordinary edit to the host's book, reaching CharSnap on the next Save. |
+| **＋ New lorebook…** as a target | Creates a draft with no `hostId`. Invisible to CharSnap; unsaveable while it is not active. |
+| **"Open that lorebook"** | **The sharp edge.** It switches the active book without telling the host. The host still believes its book is open, so a subsequent `mkp:set-name` retargets the wrong book, and Save posts a different book's `hostId` — or `null`, which the contract reads as "create a new one". |
+
+So a guard is not one decision but two: the three local-only surfaces are safe to
+leave live, and only the active-book switch genuinely crosses the wire. Which is
+also why leaving all four live is a coherent state to hand Jason for testing —
+three of them do exactly what they say, and the fourth is the question.
+
+Answering it properly needs something the protocol does not have: either a
+`mkp:lorebooks` listing so the builder knows what else exists, a way to post a
+save for a non-active book, or an agreement that host mode is one book and the
+switch is simply hidden. That is a protocol decision, so it is Jason's.
+
+**Left unguarded deliberately** pending that answer. Nothing in the merge assumes
+either outcome.
+
 ### Suggestion chips: reflow under a stationary pointer (2026-08-25, GitHub #130)
 
 Reported as "the tag suggestion window sometimes won't go away", unreproducible by
