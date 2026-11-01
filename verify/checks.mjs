@@ -516,7 +516,9 @@ const SCENARIOS = [
     const before = await cards.count();
     await openSettings(page);
     await openSettingsSection(page, 'Layout & Controls');
-    const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
+    // By label, exactly: "New entry from template" also contains "New entry".
+    const row = page.locator('.kbd-settings-row')
+      .filter({ has: page.locator('.kbd-settings-label', { hasText: /^New entry$/ }) });
     const captureBtn = row.locator('.kbd-capture-btn');
     await captureBtn.click();
     await settle(page, 120);

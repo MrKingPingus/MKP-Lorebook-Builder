@@ -136,6 +136,14 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
     setPendingMove(null);
   }, []);
 
+  // A pin can land after a close was already scheduled: the flyout changes
+  // size when a field appears in it, the pointer is no longer over it, and the
+  // browser reports a leave before the pin arrives. Cancel that close, or it
+  // fires a beat later and throws away the field the pin was protecting.
+  useEffect(() => {
+    if (pinned) clearTimeout(closeTimer.current);
+  }, [pinned]);
+
   const close = useCallback(() => {
     clearTimeout(openTimer.current);
     clearTimeout(closeTimer.current);
