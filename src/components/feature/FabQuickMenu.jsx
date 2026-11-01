@@ -8,6 +8,8 @@ import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 
 export function FabQuickMenu({
+  onNewFromTemplate,
+  newFromTemplateChord,
   actions,
   onAction,
   onClose,
@@ -80,13 +82,28 @@ export function FabQuickMenu({
 
       <div className="fab-quick-menu-footer">
         {!pinMode ? (
-          <button
-            className="fab-quick-menu-add"
-            onClick={onEnterPin}
-            title="Pin an action to a hotbar slot"
-          >
-            📌 Add to hotbar
-          </button>
+          <>
+            <button
+              className="fab-quick-menu-add"
+              onClick={onEnterPin}
+              title="Pin an action to a hotbar slot"
+            >
+              📌 Add to hotbar
+            </button>
+            {/* Beside "Add to hotbar", where the footer had spare room. It sits
+                in this menu because the menu hangs off the + button, and "new
+                entry, but from a template" is that button's own job one step
+                further — the same reasoning as its Shift+Alt+N shortcut. */}
+            {onNewFromTemplate && (
+              <button
+                className="fab-quick-menu-add"
+                onClick={onNewFromTemplate}
+                title={`Start a new entry from a saved template (${newFromTemplateChord})`}
+              >
+                📄 New entry from template
+              </button>
+            )}
+          </>
         ) : (
           <>
             <span className="fab-quick-menu-hint">

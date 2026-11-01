@@ -31,6 +31,9 @@ export const KEYBINDING_CATEGORIES = [
 export const KEYBINDINGS = [
   // Editing
   { id: 'new_entry',           label: 'New entry',                category: 'editing',   defaultChord: 'Alt+N', wired: true },
+  // New entry plus Shift: the same gesture, reached one step further. On a Mac
+  // this is ⇧⌥N.
+  { id: 'new_entry_from_template', label: 'New entry from template', category: 'editing', defaultChord: 'Alt+Shift+N', wired: true },
   { id: 'undo',                label: 'Undo',                     category: 'editing',   defaultChord: 'Mod+Z', wired: true },
   { id: 'redo',                label: 'Redo',                     category: 'editing',   defaultChord: 'Mod+Y', altChords: ['Mod+Shift+Z'], wired: true },
   // Entries & selection

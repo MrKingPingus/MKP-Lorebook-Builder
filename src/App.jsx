@@ -207,6 +207,7 @@ export default function App() {
   // reserved defaults (collision-checked) that stay unwired until their batch.
   const handlers = useMemo(() => ({
     new_entry:           () => addEntry(),
+    new_entry_from_template: () => useUiStore.getState().setNewFromTemplateOpen(true),
     undo:                () => undo(),
     redo:                () => redo(),
     toggle_select:       () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),

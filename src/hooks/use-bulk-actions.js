@@ -22,7 +22,7 @@ export function useBulkActions() {
   const clearStagedTypes    = useUiStore((s) => s.clearStagedTypes);
 
   const updateActiveEntriesAndFolders = useLorebookStore((s) => s.updateActiveEntriesAndFolders);
-  const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook } = useEntryTransfer();
+  const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook, moveWarning } = useEntryTransfer();
 
   const activeLorebook = activeLorebookId ? lorebooks[activeLorebookId] ?? null : null;
   const entries = activeLorebook?.entries ?? [];
@@ -184,18 +184,18 @@ export function useBulkActions() {
   // the REFERENCE book would be silently unundoable, which is the one thing the
   // confirmation promises it is not. Swapping a book into the active slot is one
   // click, and this app already has that control.
-  function transferSelectedTo(destId, mode) {
+  function transferSelectedTo(destId, mode, opts) {
     if (selectedIds.size === 0 || selectionSide !== 'active') return null;
-    const result = transferTo([...selectedIds], destId, mode);
+    const result = transferTo([...selectedIds], destId, mode, opts);
     // Only on success: a cancelled confirm should leave the user where they
     // were, still holding the selection they were about to act on.
     if (result) clearSelection();
     return result;
   }
 
-  function transferSelectedToNewLorebook(name, mode) {
+  function transferSelectedToNewLorebook(name, mode, opts) {
     if (selectedIds.size === 0 || selectionSide !== 'active') return null;
-    const result = transferToNewLorebook([...selectedIds], name, mode);
+    const result = transferToNewLorebook([...selectedIds], name, mode, opts);
     if (result) clearSelection();
     return result;
   }
@@ -213,5 +213,6 @@ export function useBulkActions() {
     transferSelectedTo,
     transferSelectedToNewLorebook,
     goToLorebook,
+    moveWarning,
   };
 }

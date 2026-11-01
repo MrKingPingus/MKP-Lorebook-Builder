@@ -97,7 +97,10 @@ function SubmenuRow({ id, label, title, disabled, openSub, onHover, onLeave, onT
 
 export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const { folders, moveEntryToFolder, createFolderWithEntries, foldersSuppressed } = useFolders();
-  const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook } = useEntryTransfer();
+  const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook, moveWarning } = useEntryTransfer();
+  // A move waiting on its inline confirmation: `{ destId, destName }` for an
+  // existing book, or `{ newName, destName }` for one that does not exist yet.
+  const [pendingMove, setPendingMove] = useState(null);
   const [open, setOpen]     = useState(false);
   const [anchor, setAnchor] = useState(null);
   const [openSub, setOpenSub] = useState(null);
@@ -122,7 +125,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
 
   // A flyout showing a name field or a receipt is holding something the user
   // would lose — so it stops tracking the pointer and waits to be dismissed.
-  const pinned = namingNew || !!result || panelPinned;
+  const pinned = namingNew || !!result || panelPinned || !!pendingMove;
 
   const closeSub = useCallback(() => {
     setOpenSub(null);
@@ -130,6 +133,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
     setNamingNew(false);
     setNewName('');
     setPanelPinned(false);
+    setPendingMove(null);
   }, []);
 
   const close = useCallback(() => {
@@ -174,7 +178,8 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
     // Escape unwinds one layer at a time, so a mistaken hover costs one key
     // rather than the whole journey: a name field first, then the flyout, then
     // the menu.
-    if (namingNew) { setNamingNew(false); setNewName(''); }
+    if (pendingMove) setPendingMove(null);
+    else if (namingNew) { setNamingNew(false); setNewName(''); }
     else if (openSub) closeSub();
     else close();
   });
@@ -273,8 +278,55 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const isHidden = !!entry.hiddenFromExport;
 
   /** The body of a Copy/Move flyout — a receipt, a name field, or the list. */
+  /** Copy goes straight through. Move stops to ask first — inline, not with a
+   *  browser dialog, which sandboxed frames silently refuse (see
+   *  use-entry-transfer.js). */
+  function pick(mode, dest) {
+    if (mode === TRANSFER_MOVE) { setPendingMove(dest); return; }
+    finish(dest.newName !== undefined
+      ? transferToNewLorebook([entry.id], dest.newName, mode)
+      : transferTo([entry.id], dest.destId, mode));
+  }
+
+  function confirmMove() {
+    const dest = pendingMove;
+    setPendingMove(null);
+    finish(dest.newName !== undefined
+      ? transferToNewLorebook([entry.id], dest.newName, TRANSFER_MOVE, { confirmed: true })
+      : transferTo([entry.id], dest.destId, TRANSFER_MOVE, { confirmed: true }));
+  }
+
   function transferPanel(mode) {
     const moving = mode === TRANSFER_MOVE;
+
+    if (moving && pendingMove) {
+      const { question, note } = moveWarning(1, pendingMove.destName);
+      return (
+        <>
+          <div className="entry-actions-confirm">
+            <div className="entry-actions-confirm-q">{question}</div>
+            <div className="entry-actions-confirm-note">{note}</div>
+          </div>
+          <button
+            className="entry-actions-item entry-actions-item--move"
+            onClick={(e) => { e.stopPropagation(); confirmMove(); }}
+            autoFocus
+            role="menuitem"
+            type="button"
+          >
+            <span className="entry-actions-item-label">Move</span>
+          </button>
+          <button
+            className="entry-actions-item"
+            onClick={(e) => { e.stopPropagation(); setPendingMove(null); }}
+            role="menuitem"
+            type="button"
+          >
+            <span className="entry-actions-item-label">Cancel</span>
+          </button>
+        </>
+      );
+    }
 
     if (result) {
       return (
@@ -316,7 +368,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
           <button
             key={t.id}
             className="entry-actions-item"
-            onClick={(e) => { e.stopPropagation(); finish(transferTo([entry.id], t.id, mode)); }}
+            onClick={(e) => { e.stopPropagation(); pick(mode, { destId: t.id, destName: t.name }); }}
             role="menuitem"
             type="button"
           >
@@ -339,7 +391,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => {
                 e.stopPropagation();
-                if (e.key === 'Enter')  { e.preventDefault(); finish(transferToNewLorebook([entry.id], newName, mode)); }
+                if (e.key === 'Enter')  { e.preventDefault(); pick(mode, { newName, destName: newName.trim() }); }
                 if (e.key === 'Escape') { e.preventDefault(); setNamingNew(false); setNewName(''); }
               }}
               placeholder="New lorebook name…"
@@ -348,7 +400,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
             />
             <button
               className="entry-actions-go"
-              onClick={(e) => { e.stopPropagation(); finish(transferToNewLorebook([entry.id], newName, mode)); }}
+              onClick={(e) => { e.stopPropagation(); pick(mode, { newName, destName: newName.trim() }); }}
               title={`Create this lorebook and ${moving ? 'move' : 'copy'} the entry into it`}
               aria-label="Create and transfer"
               type="button"

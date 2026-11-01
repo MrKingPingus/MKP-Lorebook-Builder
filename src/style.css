@@ -2308,8 +2308,21 @@ img.logo-icon {
 .bulk-transfer-mode-btn:hover { color: var(--text); }
 .bulk-transfer-mode-btn--on {
   background: var(--blue);
-  color: #fff;
+  color: var(--bg);
 }
+/* Move is green so the two verbs are told apart at a glance — and the same
+   green carries onto the destination chips, so the colour you click matches
+   the verb you chose. Text is --bg rather than white: white on the dark
+   theme's mint green (and its light blue) is under 3:1, --bg is over 7:1. */
+.bulk-transfer-mode-btn--move.bulk-transfer-mode-btn--on { background: var(--green); }
+
+/* The move confirmation, inline in the chip row in place of a browser dialog. */
+.bulk-transfer-confirm {
+  font-size: 0.75rem;
+  color: var(--muted2);
+  line-height: 1.4;
+}
+.bulk-transfer-confirm strong { color: var(--text); font-weight: 600; }
 
 .bulk-transfer-input {
   padding: 3px 8px;
@@ -3184,6 +3197,19 @@ img.logo-icon {
 }
 .entry-actions-result strong { font-weight: 600; }
 .entry-actions-result-tick { color: var(--green); flex-shrink: 0; }
+
+/* The move confirmation, shown in the Move flyout in place of a browser
+   dialog — sandboxed frames refuse those silently (use-entry-transfer.js). */
+.entry-actions-confirm {
+  padding: 8px 9px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.entry-actions-confirm-q { color: var(--text); font-weight: 600; margin-bottom: 3px; }
+.entry-actions-confirm-note { color: var(--muted); font-size: 0.6875rem; }
+.entry-actions-item--move { color: var(--green); font-weight: 600; }
 
 /* §TEMPLATES
    Entry Templates (Phase 12). The picker renders inside the ⋯ menu's flyout and

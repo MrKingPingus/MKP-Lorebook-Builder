@@ -27,7 +27,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     setHiddenForSelected, setPublicForSelected,
     moveSelectedToFolder, moveSelectedToNewFolder,
     transferTargets, canCreateTarget,
-    transferSelectedTo, transferSelectedToNewLorebook, goToLorebook,
+    transferSelectedTo, transferSelectedToNewLorebook, goToLorebook, moveWarning,
   } = useBulkActions();
   const { crosstalkEnabled, referenceLorebook } = useReferenceLorebook();
   const { folders, foldersSuppressed } = useFolders();
@@ -47,11 +47,13 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
   const [namingNew, setNamingNew]           = useState(false);
   const [newName, setNewName]               = useState('');
   const [transferResult, setTransferResult] = useState(null);
+  // A move waiting on its inline confirmation — see onTransferTo.
+  const [pendingMove, setPendingMove]       = useState(null);
   const newNameRef = useRef(null);
 
   const togglePicker = (name) => setOpenPicker((cur) => {
     const next = cur === name ? null : name;
-    if (next !== 'lorebook') { setNamingNew(false); setNewName(''); setTransferResult(null); }
+    if (next !== 'lorebook') { setNamingNew(false); setNewName(''); setTransferResult(null); setPendingMove(null); }
     return next;
   });
   // Mobile only — the Actions menu that stands in for the flat bar's buttons.
@@ -144,13 +146,30 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
     setTransferResult(result);     // the row stays open as the receipt
   }
 
-  function onTransferTo(destId) {
+  // Copy goes straight through; move stops to ask first. Inline, not with a
+  // browser dialog — a sandboxed frame silently answers "no" to confirm(),
+  // which is how move came to do nothing at all (see use-entry-transfer.js).
+  function onTransferTo(destId, destName) {
+    if (transferMode === TRANSFER_MOVE) { setPendingMove({ destId, destName }); return; }
     finishTransfer(transferSelectedTo(destId, transferMode));
   }
 
   function onTransferToNew() {
+    if (transferMode === TRANSFER_MOVE) { setPendingMove({ newName, destName: newName.trim() }); return; }
     finishTransfer(transferSelectedToNewLorebook(newName, transferMode));
   }
+
+  function onConfirmMove() {
+    const dest = pendingMove;
+    setPendingMove(null);
+    finishTransfer(dest.newName !== undefined
+      ? transferSelectedToNewLorebook(dest.newName, TRANSFER_MOVE, { confirmed: true })
+      : transferSelectedTo(dest.destId, TRANSFER_MOVE, { confirmed: true }));
+  }
+
+  // Move reads green and copy blue throughout the row, so the verb is legible
+  // at the moment you click a destination rather than only in the toggle.
+  const transferColor = transferMode === TRANSFER_MOVE ? 'var(--green)' : 'var(--blue)';
 
   function onCopyToOtherPanel() {
     copyToOtherPanel();
@@ -249,6 +268,32 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
       // Post-transfer receipt. Same reasoning as the ⋯ menu's: the destination
       // book is not on screen, so a row that just closed would make "copied 12
       // entries" and "did nothing" look identical.
+      if (pendingMove) {
+        const { question, note } = moveWarning(selectedCount, pendingMove.destName);
+        return (
+          <>
+            <span className="bulk-transfer-confirm">
+              <strong>{question}</strong> <span>{note}</span>
+            </span>
+            <button
+              className="bulk-type-chip bulk-type-chip--confirm-move"
+              style={{ '--type-color': 'var(--green)' }}
+              onClick={onConfirmMove}
+              autoFocus
+            >
+              Move
+            </button>
+            <button
+              className="bulk-type-chip"
+              style={{ '--type-color': 'var(--muted2)' }}
+              onClick={() => setPendingMove(null)}
+            >
+              Cancel
+            </button>
+          </>
+        );
+      }
+
       if (transferResult) {
         return (
           <>
@@ -294,7 +339,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
             />
             <button
               className="bulk-type-chip"
-              style={{ '--type-color': 'var(--blue)' }}
+              style={{ '--type-color': transferColor }}
               onClick={onTransferToNew}
             >
               {transferMode === TRANSFER_MOVE ? 'Create & move' : 'Create & copy'}
@@ -319,7 +364,7 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
             ].map(([mode, label, hint]) => (
               <button
                 key={mode}
-                className={`bulk-transfer-mode-btn${transferMode === mode ? ' bulk-transfer-mode-btn--on' : ''}`}
+                className={`bulk-transfer-mode-btn bulk-transfer-mode-btn--${mode}${transferMode === mode ? ' bulk-transfer-mode-btn--on' : ''}`}
                 onClick={() => setTransferMode(mode)}
                 role="radio"
                 aria-checked={transferMode === mode}
@@ -341,8 +386,8 @@ export function BulkActionBar({ visibleIds, referenceVisibleIds = [] }) {
             <button
               key={t.id}
               className="bulk-type-chip"
-              style={{ '--type-color': 'var(--blue)' }}
-              onClick={() => onTransferTo(t.id)}
+              style={{ '--type-color': transferColor }}
+              onClick={() => onTransferTo(t.id, t.name)}
               title={`${transferMode === TRANSFER_MOVE ? 'Move' : 'Copy'} the selected entries to "${t.name || 'Untitled lorebook'}" (${t.entryCount} there now)`}
             >
               {t.name || 'Untitled lorebook'}

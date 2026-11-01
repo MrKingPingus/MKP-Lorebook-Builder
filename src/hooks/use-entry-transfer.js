@@ -73,9 +73,16 @@ export function useEntryTransfer() {
   /**
    * Copy or move `ids` out of the ACTIVE lorebook into `destId`.
    *
-   * A move confirms first (locked decision 7) unless `confirmed` says the
-   * caller already asked — the confirmation lives in here rather than at the
-   * call sites so neither of the two can forget it.
+   * A move must be confirmed first (locked decision 7), and the CALLER asks —
+   * inline, in its own UI — then passes `confirmed: true`. A move without it is
+   * refused rather than performed, so a call site cannot forget to ask.
+   *
+   * This used to be `window.confirm()` in here, and that broke moves outright
+   * wherever the builder runs in a sandboxed frame: a frame without
+   * `allow-modals` gets no dialog, and `confirm()` silently answers *no*. Copy
+   * (which never asked) kept working, so it read as "move does nothing". The
+   * claude.ai test build is such a frame, and CharSnap embeds the builder in
+   * one too, so a browser dialog is not something this app can rely on.
    *
    * @returns { count, destId, destName, mode } on success, or null if nothing
    *          moved (cancelled, empty selection, missing book).
@@ -91,9 +98,7 @@ export function useEntryTransfer() {
     const result = transferEntries(source, dest, ids, mode);
     if (!result) return null;
 
-    if (mode === TRANSFER_MOVE && !confirmed) {
-      if (!window.confirm(moveConfirmMessage(result.count, dest.name))) return null;
-    }
+    if (mode === TRANSFER_MOVE && !confirmed) return null;
 
     if (mode === TRANSFER_MOVE) {
       pushSnapshot({ entries: [...(source.entries ?? [])] });
@@ -113,21 +118,16 @@ export function useEntryTransfer() {
    * somewhere else, and yanking the user out of the book they are working in
    * would be a surprising price for filing one entry away.
    *
-   * The move confirmation happens HERE, before the book exists, rather than
-   * inside `transferTo`. Confirming afterwards would mean a user who declines
-   * has already been given an empty stray lorebook they never asked for —
-   * strictly worse than the move they just refused.
+   * As with `transferTo`, a move needs `confirmed: true` — and it is checked
+   * BEFORE the book is created, so a move the caller has not confirmed never
+   * leaves an empty stray lorebook behind.
    */
-  function transferToNewLorebook(ids, name, mode) {
+  function transferToNewLorebook(ids, name, mode, { confirmed = false } = {}) {
     const trimmed = (name ?? '').trim();
     const source  = useLorebookStore.getState().lorebooks[activeLorebookId];
     const count   = countTransferable(source, ids);
     if (count === 0) return null;
-
-    if (mode === TRANSFER_MOVE
-      && !window.confirm(moveConfirmMessage(count, trimmed || DEFAULT_LOREBOOK.name))) {
-      return null;
-    }
+    if (mode === TRANSFER_MOVE && !confirmed) return null;
 
     const newId = createLorebook({ silent: true, activate: false, name: trimmed || null });
     if (!newId) return null; // library full
@@ -140,5 +140,12 @@ export function useEntryTransfer() {
     transferTo,
     transferToNewLorebook,
     goToLorebook: switchLorebook,
+    // The confirmation's wording, split into the question and the undo caveat
+    // so each surface can lay them out inline. One source for the text, so the
+    // menu and the bulk bar cannot drift apart on what they promise.
+    moveWarning: (count, destName) => {
+      const [question, note] = moveConfirmMessage(count, destName || DEFAULT_LOREBOOK.name).split('\n\n');
+      return { question, note };
+    },
   };
 }

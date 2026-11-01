@@ -6,6 +6,7 @@ import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useSettings }      from '../../hooks/use-settings.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
+import { TemplatesPopover } from '../feature/TemplatesPopover.jsx';
 import { ExportMenu }       from '../feature/ExportMenu.jsx';
 import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
 import { FAB_SIZES } from '../../constants/scaling.js';
@@ -84,6 +85,16 @@ export function Hotbar() {
   const [armedSlot, setArmedSlot] = useState(null);
   const [barWidth,  setBarWidth]  = useState(0);
   const hotbarRef            = useRef(null);
+  const fabRef               = useRef(null);
+  // The templates picker above the + button. One flag, two ways in — the
+  // + menu's "New entry from template" and Shift+Alt+N — so both open the same
+  // popover, measured from the + button at the moment it opens.
+  const newFromTemplateOpen    = useUi((s) => s.newFromTemplateOpen);
+  const setNewFromTemplateOpen = useUi((s) => s.setNewFromTemplateOpen);
+  const [templateAnchor, setTemplateAnchor] = useState(null);
+  useEffect(() => {
+    if (newFromTemplateOpen) setTemplateAnchor(fabRef.current?.getBoundingClientRect() ?? null);
+  }, [newFromTemplateOpen]);
   const openTimerRef         = useRef(null);
   const closeTimerRef        = useRef(null);
   const longPressTimerRef    = useRef(null);
@@ -202,6 +213,7 @@ export function Hotbar() {
 
       <div className="footer-fab-wrap">
         <button
+          ref={fabRef}
           className="footer-fab"
           onClick={onFabClick}
           onMouseEnter={onFabMouseEnter}
@@ -217,8 +229,18 @@ export function Hotbar() {
           +
         </button>
 
+        <TemplatesPopover
+          open={newFromTemplateOpen}
+          anchorRect={templateAnchor}
+          onClose={() => setNewFromTemplateOpen(false)}
+          dismissId="templates-new-from-fab"
+          ignoreRef={fabRef}
+        />
+
         {quickMenuOpen && !fabHidden && fabQuickMenuEnabled && (
           <FabQuickMenu
+            onNewFromTemplate={() => { closeMenu(); setNewFromTemplateOpen(true); }}
+            newFromTemplateChord={displayChord('new_entry_from_template')}
             actions={allActions}
             onAction={closeMenu}
             onClose={closeMenu}

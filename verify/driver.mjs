@@ -36,9 +36,12 @@ function resolveChromium() {
     const dirs = readdirSync(base)
       .filter((d) => d.startsWith('chromium-') && !d.includes('headless'))
       .sort(); // deterministic; any full chromium build works since we launch it directly
+    // Newer Playwright builds unpack to chrome-linux64/.
     for (const d of dirs) {
-      const p = join(base, d, 'chrome-linux', 'chrome');
-      if (existsSync(p)) return p;
+      for (const sub of ['chrome-linux', 'chrome-linux64']) {
+        const p = join(base, d, sub, 'chrome');
+        if (existsSync(p)) return p;
+      }
     }
   }
   return undefined; // let Playwright use its managed browser

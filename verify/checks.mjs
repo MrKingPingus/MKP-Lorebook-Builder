@@ -2871,7 +2871,10 @@ const SCENARIOS = [
   // does not cover. A transfer that only reached the store would pass every
   // check here except the reload.
   scenario('Copy and move one entry to another lorebook (#127)', async (page, check) => {
-    page.on('dialog', (d) => d.accept()); // the move confirmation
+    // A sandboxed frame (claude.ai artifacts, possibly CharSnap's iframe)
+    // refuses window.confirm() without asking. A move that relied on it did
+    // nothing there, so refuse it here too: the confirmation must be inline.
+    await page.addInitScript(() => { window.confirm = () => false; });
 
     await openBuilderWithFixture(page);              // "Reika Hirahara V2", 34
     await importBookAsNew(page, VARIANT_FIXTURE);    // "… — Variant", 29, now active
@@ -2925,6 +2928,12 @@ const SCENARIOS = [
     await menu.locator('.entry-actions-item', { hasText: 'Move to lorebook' }).click();
     await settle(page, 200);
     await page.locator('.entry-actions-flyout .entry-actions-item').first().click();
+    await settle(page, 200);
+    check('a move asks first, inside the panel',
+      await page.locator('.entry-actions-confirm').count(), 1);
+    check('nothing has moved before the answer',
+      await page.locator('.entry-card').count(), 35);
+    await page.locator('.entry-actions-item--move').click();
     await settle(page, 400);
     check('a move takes the entry out of the source book',
       await page.locator('.entry-card').count(), 34);
@@ -2992,7 +3001,7 @@ const SCENARIOS = [
   // Bulk copy/move (locked decision 10). Same service, reached from the
   // selection bar instead of one card's menu.
   scenario('Bulk copy and move the selection to another lorebook', async (page, check) => {
-    page.on('dialog', (d) => d.accept());
+    await page.addInitScript(() => { window.confirm = () => false; }); // see #127 scenario
 
     await openBuilderWithFixture(page);
     await enterSelectMode(page);
@@ -3007,11 +3016,21 @@ const SCENARIOS = [
     check('with no other book yet, only the create chip is offered',
       await page.locator('.bulk-action-chips .bulk-type-chip').count(), 1);
 
+    const copyColour = await page.locator('.bulk-transfer-mode-btn--on')
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
     await page.locator('.bulk-transfer-mode-btn', { hasText: 'Move' }).click();
+    await settle(page, 100);
+    check('Move is coloured apart from Copy, so the two never look alike',
+      (await page.locator('.bulk-transfer-mode-btn--on')
+        .evaluate((el) => getComputedStyle(el).backgroundColor)) !== copyColour, true);
     await page.locator('.bulk-type-chip', { hasText: 'New lorebook' }).click();
     await settle(page, 200);
     await page.locator('.bulk-transfer-input').fill('Archive');
     await page.locator('.bulk-type-chip', { hasText: 'Create & move' }).click();
+    await settle(page, 200);
+    check('a move asks first, in the row', await page.locator('.bulk-transfer-confirm').count(), 1);
+    check('nothing has moved before the answer', await page.locator('.entry-card').count(), 34);
+    await page.locator('.bulk-type-chip--confirm-move').click();
     await settle(page, 500);
 
     check('three entries left this book',
@@ -3161,6 +3180,50 @@ const SCENARIOS = [
     await settle(page, 600);
     check('and the new book gets its first entry from the template',
       await page.locator('.entry-card').count(), 1);
+  }),
+
+  // The + button's hover menu carries the same picker, and so does a hotkey —
+  // making an entry from a template without first finding an entry's ⋯ menu.
+  scenario('Entry templates: new entry from the + menu and the hotkey', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const menu   = page.locator('.entry-actions-menu');
+    const flyout = page.locator('.entry-actions-flyout');
+
+    await page.locator('.entry-actions-btn').first().click();
+    await menu.waitFor({ timeout: 4000 });
+    await menu.locator('.entry-actions-item', { hasText: 'Templates' }).click();
+    await flyout.waitFor({ timeout: 4000 });
+    await flyout.locator('.entry-actions-item', { hasText: 'Save this entry' }).click();
+    await settle(page, 200);
+    await flyout.locator('.entry-actions-input').fill('Starter');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await settle(page, 250);
+    const before = await page.locator('.entry-card').count();
+
+    await page.locator('.footer-fab').hover();
+    await settle(page, 500);
+    const item = page.locator('.fab-quick-menu-add', { hasText: 'New entry from template' });
+    check('the + menu offers a new entry from a template', await item.count(), 1);
+    await item.click();
+    await settle(page, 300);
+    check('which opens the picker', await page.locator('.templates-popover').count(), 1);
+    await page.locator('.templates-popover .entry-actions-item', { hasText: 'Starter' }).click();
+    await settle(page, 200);
+    await page.locator('.templates-popover .entry-actions-item', { hasText: 'New entry from this' }).click();
+    await settle(page, 600);
+    check('and a pick makes the entry', await page.locator('.entry-card').count(), before + 1);
+
+    await page.mouse.click(5, 5);
+    await settle(page, 200);
+    await page.keyboard.press('Alt+Shift+N');
+    await settle(page, 300);
+    check('Shift+Alt+N opens the same picker', await page.locator('.templates-popover').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('and Escape closes it', await page.locator('.templates-popover').count(), 0);
   }),
 
   // Templates are global and outlive the session, so the storage half needs its
