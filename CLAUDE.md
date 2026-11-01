@@ -85,6 +85,9 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 ## Deployment
 GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions environment and sets the base path to `/<repo-name>/` automatically. Push to `main` triggers deploy via `.github/workflows/main.yml`.
 
+## CharSnap (Jason's repo)
+This builder also ships inside `JasonYCao/charsnap-extensions` (folder `mkp-lorebook-builder/`), and Jason edits his copy too. **This repo is the one codebase; his is a destination we publish to and a source we merge from.** The procedure — sync his changes in, ship to our `main`, publish to him, and which paths never cross — is in **`docs/charsnap-workflow.md`**, along with where things currently stand. Read it before touching either repo. Always sync before publishing: a publish replaces his folder wholesale.
+
 ## Don't Do This
 - Don't hardcode strings, numbers, or colors in logic files — always import from `src/constants/`
 - Don't import stores or services directly in components — always go through a hook
