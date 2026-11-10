@@ -9296,3 +9296,83 @@ kbd {
 }
 .tpl-detail > .tpl-detail-name { flex: none; }
 .entry-condition-footer { display: flex; align-items: center; justify-content: space-between; }
+
+/* ── Phone entry editor: the ⋯ sheet (MobileEntryActionsSheet.jsx) ───────── */
+.entry-detail-more { font-size: 1.125rem; line-height: 1; padding: 4px 12px; }
+.mea-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 8900;
+  display: flex;
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+.mea-sheet {
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--border2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-family: var(--font);
+}
+.mea-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.mea-back { background: none; border: none; color: var(--blue); font: inherit; padding: 0 4px; }
+.mea-note { margin: 0; padding: 0 4px 10px; font-size: 0.8125rem; color: var(--muted2); }
+.mea-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--touch-floor);
+  padding: 10px 8px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+}
+.mea-item:disabled { color: var(--muted); }
+.mea-item--danger { color: var(--red); }
+.mea-item--quiet  { color: var(--muted2); justify-content: center; }
+.mea-item--move   { color: var(--green); font-weight: 600; }
+.mea-item-name  { min-width: 0; overflow-wrap: anywhere; }
+.mea-item-count { color: var(--muted2); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.mea-result { color: var(--green); }
+.mea-name-row { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); }
+.mea-name-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-floor);
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+.mea-go {
+  min-height: var(--touch-floor);
+  padding: 8px 12px;
+  background: var(--blue);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 600;
+}

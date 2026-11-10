@@ -15,6 +15,7 @@ import { CyclingSelect }   from '../ui/CyclingSelect.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { ConditionField }  from './ConditionField.jsx';
+import { MobileEntryActionsSheet } from './MobileEntryActionsSheet.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
@@ -78,6 +79,8 @@ export function EntryDetailPanel() {
     if (next.length !== entry.triggers.length) update({ triggers: next }, true);
   }
 
+  const [actionsOpen, setActionsOpen] = useState(false);
+
   function handleRemove() {
     if (!entry) return;
     removeEntry(entry.id);
@@ -125,10 +128,27 @@ export function EntryDetailPanel() {
             )
           )}
         </span>
-        <button className="entry-detail-remove touch-floor" onClick={handleRemove}>
-          Remove
+        {/* Was a bare Remove. The ⋯ sheet holds it (as Delete entry) with the
+            actions the desktop card's ⋯ menu has and this editor lacked. */}
+        <button
+          className="entry-detail-remove entry-detail-more touch-floor"
+          onClick={() => setActionsOpen(true)}
+          aria-label="More actions for this entry"
+          aria-haspopup="dialog"
+          disabled={!entry}
+        >
+          ⋯
         </button>
       </div>
+
+      {actionsOpen && entry && (
+        <MobileEntryActionsSheet
+          entry={entry}
+          onClose={() => setActionsOpen(false)}
+          onDelete={() => { setActionsOpen(false); handleRemove(); }}
+          onLeftBook={() => { setActionsOpen(false); handleBack(); }}
+        />
+      )}
 
       {/* Body — only rendered while there is an active entry */}
       {entry && (

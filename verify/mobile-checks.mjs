@@ -203,6 +203,61 @@ const SCENARIOS = [
   // accessibility tree and the focus order. So this scenario changes nothing —
   // it pins it, because both properties are one careless edit from becoming
   // `opacity: 0` or `width: 0`, which look identical and are not.
+  // The phone editor had Remove and nothing else: copy/move to another book and
+  // templates were desktop-only, reachable from the card's ⋯ menu. The editor's
+  // own ⋯ sheet carries them now.
+  scenario('Mobile: the entry editor\'s ⋯ sheet copies, moves, opens Templates and deletes', async (page, check, sweepPose) => {
+    await page.addInitScript(() => { window.confirm = () => false; }); // dialogs are refused in sandboxed frames
+    const total = await openBuilderWithFixture(page);
+    await openEntryDetail(page, 0);
+    const sheet = page.locator('.mea-sheet');
+
+    await tap(page, page.locator('.entry-detail-more'));
+    check('⋯ opens a sheet', await sheet.count(), 1);
+    check('with the four actions, and a way out',
+      (await sheet.locator('.mea-item').allInnerTexts()).join(' | '),
+      'Copy to lorebook… | Move to lorebook… | Templates… | Delete entry | Cancel');
+    await sweepPose('entry ⋯ sheet');
+
+    // ── copy, into a book made on the spot ──────────────────────────────────
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Copy to lorebook' }));
+    check('with one book it says so', (await sheet.locator('.mea-note').innerText()).includes('only lorebook'), true);
+    await tap(page, sheet.locator('.mea-item', { hasText: 'New lorebook' }));
+    await sheet.locator('.mea-name-input').fill('Offcuts');
+    await tap(page, sheet.locator('.mea-go'));
+    await settle(page, 300);
+    check('a copy reports where it went', (await sheet.locator('.mea-result').innerText()).includes('Offcuts'), true);
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Done' }));
+    check('and leaves you in the editor', await page.locator('.entry-detail-panel--open').count(), 1);
+
+    // ── templates ───────────────────────────────────────────────────────────
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Templates' }));
+    await settle(page, 300);
+    check('Templates opens the manager', await page.locator('.tpl-manager').count(), 1);
+    check('for this entry', await page.locator('.tpl-save-btn').count(), 1);
+    await sweepPose('templates manager');
+    await tap(page, page.locator('.tpl-manager-close'));
+
+    // ── move, which asks first ──────────────────────────────────────────────
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Move to lorebook' }));
+    await tap(page, sheet.locator('.mea-item--target', { hasText: 'Offcuts' }));
+    check('a move asks first, in the sheet', await sheet.locator('.mea-item--move').count(), 1);
+    await tap(page, sheet.locator('.mea-item--move'));
+    await settle(page, 400);
+    check('the entry left, and the editor went with it', await page.locator('.entry-detail-panel--open').count(), 0);
+    check('one entry fewer in this book', await page.locator('.entry-card').count(), total - 1);
+
+    // ── delete ──────────────────────────────────────────────────────────────
+    await openEntryDetail(page, 0);
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item--danger'));
+    await settle(page, 300);
+    check('Delete entry removes it and closes the editor',
+      await page.locator('.entry-card').count(), total - 2);
+  }),
+
   // #128: a phone has no status footer, so the feedback links' only home was
   // the lander. They now sit at the foot of Settings, with the version.
   scenario('Mobile: Settings carries the bug-report and feature-request links (#128)', async (page, check) => {
