@@ -52,7 +52,7 @@ export function MobileTitleMenu() {
   const tab       = hostMode ? 'import-export' : storedTab;
 
   const { lorebookSort, setLorebookSort } = useSettings();
-  const { sorted, items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById } =
+  const { sorted, items, createLorebook, switchLorebook, deleteLorebook, renameLorebookById, duplicateLorebookById } =
     useSortedLorebooks({ mode: lorebookSort, open });
   const { activeLorebook }  = useLorebook();
   const { entries }         = useEntries();
@@ -272,6 +272,13 @@ export function MobileTitleMenu() {
                         onClick={() => startRename(item)}
                       >
                         Rename
+                      </button>
+                      <button
+                        type="button"
+                        className="mtm-row-menu-item"
+                        onClick={() => { setRowMenuId(null); duplicateLorebookById(item.id); }}
+                      >
+                        Duplicate
                       </button>
                       <button
                         type="button"

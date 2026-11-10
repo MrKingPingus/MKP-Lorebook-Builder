@@ -41,10 +41,10 @@ npm run dev       # start Vite dev server (hot reload)
 npm run build     # production build → dist/
 npm run preview   # serve the production build locally
 npm run verify    # browser-driven behavioural checks (Playwright) — see verify/README.md
-npm run verify -- folders          # only scenarios whose name matches (a full run takes minutes)
+npm run verify -- folders          # only scenarios whose name matches (a full run is ~3 minutes)
 npm run charsnap:status            # sync state with Jason's repo — see docs/charsnap-workflow.md
 ```
-No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`. Pass a name substring to run a subset — a full run launches a fresh browser per scenario and takes several minutes. Set `VERIFY_URL` to test a production build (`vite preview`) rather than the dev server; CI does this.
+No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`. Pass a name substring to run a subset. Scenarios run four at a time, each in its own browser (`verify/pool.mjs`); `VERIFY_JOBS=1` runs them one at a time, which is how to tell a real failure from one that only appears under load. Set `VERIFY_URL` to test a production build (`vite preview`) rather than the dev server; CI does this.
 
 ## Architecture
 Browser-only SPA (React 18 + Vite 7). No backend, no database, no authentication. All persistence is `localStorage` via `storage-service.js`.

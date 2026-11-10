@@ -143,6 +143,10 @@ export const DEFAULT_FOLDER = {
   order:         0,
 };
 
+// Appended to a duplicated lorebook's name (#137), so the copy is never
+// mistaken for the original in the book list.
+export const DUPLICATE_NAME_SUFFIX = ' (copy)';
+
 export const DEFAULT_LOREBOOK = {
   id:              '',
   name:            'New Lorebook',

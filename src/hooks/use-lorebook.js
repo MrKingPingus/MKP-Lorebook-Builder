@@ -7,6 +7,8 @@ import { createEmptyLorebook, isPlaceholderLorebook } from '../services/entry-fa
 import { useSettingsStore }                from '../state/settings-store.js';
 import { addToIndex, promoteInIndex } from '../services/lorebook-index.js';
 import { LOREBOOK_KEY_PREFIX } from '../constants/storage-keys.js';
+import { DEFAULT_LOREBOOK, DUPLICATE_NAME_SUFFIX } from '../constants/defaults.js';
+import { duplicateLorebook } from '../services/lorebook-duplicate.js';
 
 export function useLorebook() {
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
@@ -161,11 +163,32 @@ export function useLorebook() {
     saveLorebookIndex(newIndex);
   }
 
+  // A full copy of any book in the library, alongside the original (#137).
+  // Leaves the active book alone, like ＋ New lorebook… in copy/move: making a
+  // copy is not a request to go and work in it. Returns the new id, or null
+  // when the source is gone or the library is full.
+  function duplicateLorebookById(id) {
+    const state  = useLorebookStore.getState();
+    const source = state.lorebooks[id] ?? readJson(LOREBOOK_KEY_PREFIX + id);
+    if (!source) return null;
+    const copy = duplicateLorebook(source, {
+      name: (source.name || DEFAULT_LOREBOOK.name) + DUPLICATE_NAME_SUFFIX,
+    });
+    const newIndex = addToIndex(state.lorebookIndex, copy);
+    if (!newIndex) return null; // full
+    setLorebook(copy);
+    setLorebookIndex(newIndex);
+    saveLorebook(copy);
+    saveLorebookIndex(newIndex);
+    return copy.id;
+  }
+
   return {
     activeLorebookId,
     activeLorebook,
     lorebookIndex,
     createLorebook,
+    duplicateLorebookById,
     switchLorebook,
     deleteLorebook,
     renameLorebook,

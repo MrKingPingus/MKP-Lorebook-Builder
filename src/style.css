@@ -3342,7 +3342,7 @@ img.logo-icon {
 
 /* Below the breakpoint even two controls plus a name is a squeeze, so the name
    takes its own line. §TOUCH-GROWN's floor applies to each select either way. */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .tpl-settings-row { flex-wrap: wrap; }
   .tpl-settings-row .tpl-settings-name { flex-basis: 100%; }
 }
@@ -3771,6 +3771,20 @@ img.logo-icon {
 }
 .tm-book:hover .tm-book-del,
 .tm-book:focus-visible .tm-book-del { opacity: 1; }
+
+/* Duplicate (#137): a word beside the ×, revealed the same way. */
+.tm-book-dup {
+  flex-shrink: 0;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition), color var(--transition);
+}
+.tm-book:hover .tm-book-dup,
+.tm-book:focus-visible .tm-book-dup { opacity: 1; }
+.tm-book-dup:hover { color: var(--text); }
 .tm-book-del:hover { color: var(--destructive); }
 
 .tm-confirm {
@@ -9069,3 +9083,23 @@ kbd {
   color: var(--bg);
 }
 .fab-quick-menu-chip--confirm .fab-quick-menu-chip-icon { color: var(--bg); }
+
+/* ── Settings foot: feedback links on phones (#128) ──────────────────────── */
+.settings-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  margin: 4px 0 12px;
+}
+.settings-feedback-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-floor);
+  color: var(--muted2);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+.settings-feedback-link:hover { color: var(--text); }
+.settings-feedback-version { color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }

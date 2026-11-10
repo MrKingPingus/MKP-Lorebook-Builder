@@ -3,6 +3,7 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
+import { runPool } from './pool.mjs';
 import { launch, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 import { readFileSync } from 'node:fs';
@@ -3197,6 +3198,51 @@ const SCENARIOS = [
       await page.locator('.entry-card').count(), 1);
   }),
 
+  // #137: a full copy of a lorebook, alongside it, without leaving this one.
+  scenario('Duplicate a lorebook from the title menu (#137)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const titleBefore = await page.locator('.title-field-name').first().innerText();
+    const total = await page.locator('.entry-card').count();
+
+    await page.locator('.title-field').first().click();
+    await settle(page, 300);
+    const books = page.locator('.tm-book');
+    check('one book to start with', await books.count(), 1);
+    await books.first().hover();
+    await settle(page, 150);
+    await page.locator('.tm-book-dup').first().click();
+    await settle(page, 400);
+    check('a second book appears', await books.count(), 2);
+    check('named as a copy',
+      (await page.locator('.tm-book-name').allInnerTexts()).some((n) => n.endsWith('(copy)')), true);
+    check('and we are still in the original',
+      await page.locator('.title-field-name').first().innerText(), titleBefore);
+
+    await page.locator('.tm-book', { hasText: '(copy)' }).click();
+    await settle(page, 600);
+    check('the copy holds every entry', await page.locator('.entry-card').count(), total);
+  }),
+
+  // #126: under display scaling the viewport can be a fractional width such as
+  // 767.2 CSS px. The app used to round that to 767 and pick its phone layout
+  // while the stylesheet, seeing 767.2, did not, so the window shrank to a box
+  // with the desktop hotbar floating in it. Layout and stylesheet must agree.
+  scenario('Breakpoint: a fractional width never splits layout from stylesheet (#126)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    const r = await page.evaluate(() => {
+      const fw = document.querySelector('.floating-window');
+      return {
+        fractional: document.documentElement.getBoundingClientRect().width % 1 !== 0,
+        stylesheetSaysPhone: matchMedia('(max-width: 767px)').matches,
+        layoutSaysPhone: fw.classList.contains('floating-window--mobile'),
+      };
+    });
+    check('the viewport really is a fractional width (else this proves nothing)', r.fractional, true);
+    check('the layout agrees with the stylesheet about phone vs desktop',
+      r.layoutSaysPhone, r.stylesheetSaysPhone);
+  }, { osScale: 1.25, width: 765, height: 800 }),
+
   // Clear All used window.confirm(), which a sandboxed frame refuses without
   // asking — so it did nothing there at all. It now asks by arming itself.
   scenario('Clear All asks with a second press, not a browser dialog', async (page, check) => {
@@ -3359,8 +3405,7 @@ export async function runAllChecks(filter = process.env.VERIFY_ONLY) {
   if (chosen.length !== SCENARIOS.length) {
     console.log(`Filter ${JSON.stringify(filter)} — running ${chosen.length}/${SCENARIOS.length} scenarios.`);
   }
-  const outcomes = [];
-  for (const s of chosen) outcomes.push(await runScenario(s));
+  const outcomes = await runPool(chosen, runScenario);
   const passed = outcomes.filter(Boolean).length;
   console.log(`\n${passed}/${outcomes.length} scenarios passed`);
   return outcomes.every(Boolean);

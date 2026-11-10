@@ -14,6 +14,7 @@
 // The grading exists because this suite was written to *find* the quirks in the
 // pre-overhaul mobile UI, not to pin them. A suite that failed on all of them
 // would be red from its first run and would bury any real regression.
+import { runPool } from './pool.mjs';
 import { launch, BASE_URL, openBuilderWithFixture, importBookAsNew, openSettings, openSettingsSection, enterSelectMode, selectCards, pairCrosstalk, pairCrosstalkMobile, openMobileTitleMenu, settle, tap, longPress, openEntryDetail, closeEntryDetail, openFilterPopover, dismissPopover, seedStorage, parkMouse, VARIANT_FIXTURE } from './driver.mjs';
 import { sweep, watchErrors } from './layout-invariants.mjs';
 import { writePreset, LIMITS } from '../fixtures/build-stress-book.mjs';
@@ -202,6 +203,20 @@ const SCENARIOS = [
   // accessibility tree and the focus order. So this scenario changes nothing —
   // it pins it, because both properties are one careless edit from becoming
   // `opacity: 0` or `width: 0`, which look identical and are not.
+  // #128: a phone has no status footer, so the feedback links' only home was
+  // the lander. They now sit at the foot of Settings, with the version.
+  scenario('Mobile: Settings carries the bug-report and feature-request links (#128)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    const foot = page.locator('.settings-feedback');
+    check('the feedback row is in Settings', await foot.count(), 1);
+    check('it links to the bug-report form',
+      (await foot.locator('a', { hasText: 'Report a bug' }).getAttribute('href')).includes('bug_report'), true);
+    check('and to the feature-request form',
+      (await foot.locator('a', { hasText: 'Request a feature' }).getAttribute('href')).includes('feature_request'), true);
+    check('beside the version', (await foot.locator('.settings-feedback-version').innerText()).startsWith('v'), true);
+  }),
+
   scenario('Mobile: the closed always-mounted layers are hidden, not just flat', async (page, check) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);
@@ -926,8 +941,7 @@ export async function runMobileChecks(only = '') {
 
   const outcomes = [];
   const allNotes = [];
-  for (const s of selected) {
-    const { ok, notes } = await runScenario(s);
+  for (const { ok, notes } of await runPool(selected, runScenario)) {
     outcomes.push(ok);
     allNotes.push(...notes);
   }

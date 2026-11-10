@@ -7,6 +7,7 @@
 // ?host=charsnap, and the two talk over postMessage exactly as CharSnap and
 // the builder do. Every scenario name starts with "Host:" so
 // `npm run verify -- host` runs this file alone.
+import { runPool } from './pool.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { launch, settle, tap, BASE_URL } from './driver.mjs';
@@ -551,7 +552,7 @@ export async function runHostChecks(filter = process.env.VERIFY_ONLY) {
     console.log(`Filter ${JSON.stringify(filter)} — running ${chosen.length}/${SCENARIOS.length} host scenarios.`);
   }
   const outcomes = [];
-  for (const s of chosen) outcomes.push(await runScenario(s));
+  outcomes.push(...await runPool(chosen, runScenario));
   const passed = outcomes.filter(Boolean).length;
   console.log(`\nHost: ${passed}/${outcomes.length} scenarios passed`);
   return outcomes.every(Boolean);

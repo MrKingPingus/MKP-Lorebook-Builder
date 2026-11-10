@@ -15,6 +15,7 @@ import { runWarningColorChecks } from './warning-color-checks.mjs';
 import { runEntryTransferChecks } from './entry-transfer-checks.mjs';
 import { runTemplateChecks } from './template-checks.mjs';
 import { runHostSerializeChecks } from './host-serialize-checks.mjs';
+import { runLorebookDuplicateChecks } from './lorebook-duplicate-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -43,6 +44,7 @@ const pureOk = [
   runEntryTransferChecks(),
   runTemplateChecks(),
   runHostSerializeChecks(),
+  runLorebookDuplicateChecks(),
 ].every(Boolean);
 
 let child = null;

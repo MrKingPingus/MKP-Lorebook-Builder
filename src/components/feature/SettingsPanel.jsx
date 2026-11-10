@@ -18,6 +18,8 @@ import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { KeybindingSettings }    from './KeybindingSettings.jsx';
 import { TemplatesSettings }     from './TemplatesSettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
+import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
+import { APP_VERSION }       from '../../constants/version.js';
 import { WARNING_SCALES, WARNING_SCALE_GRADIENT, scaleUsesThirdStop } from '../../constants/warning-scale.js';
 import {
   COLLAPSE_STAGE_ORDER,
@@ -775,6 +777,22 @@ export function SettingsPanel() {
         >
           Return to Landing Page?
         </button>
+      )}
+
+      {/* #128: on desktop these live in the status footer, beside the version,
+          and a phone has no status footer, so the lander was their only home.
+          The version comes along for the same reason it sits beside them on
+          desktop: filing a report is the moment it matters. */}
+      {isMobile && !filtering && (
+        <div className="settings-feedback">
+          <a className="settings-feedback-link touch-floor" href={BUG_REPORT_URL} target="_blank" rel="noreferrer">
+            🐞 Report a bug
+          </a>
+          <a className="settings-feedback-link touch-floor" href={FEATURE_REQUEST_URL} target="_blank" rel="noreferrer">
+            💡 Request a feature
+          </a>
+          <span className="settings-feedback-version">v{APP_VERSION}</span>
+        </div>
       )}
 
     </div>

@@ -268,8 +268,12 @@ way, so the test follows the app rather than assuming Linux.
 
 ## Running a subset
 
-A full run launches a fresh browser per scenario and takes several minutes.
-While iterating on one area, filter by name:
+A full run launches a fresh browser per scenario, four at a time (`pool.mjs`),
+and takes about three minutes. Output is printed one scenario at a time, in the
+order they finish. `VERIFY_JOBS=1` runs them one after another instead (the old
+behaviour, around 25 minutes): use it to tell a real failure from one that only
+shows up when several browsers share the machine. While iterating on one area,
+filter by name:
 
 ```bash
 npm run verify -- folders        # only scenarios with "folders" in the name

@@ -50,9 +50,18 @@ function resolveChromium() {
 // `args` are extra Chromium switches. The host suite needs one: a page served
 // through Playwright's request interception has no address space, so Chrome's
 // Local Network Access checks refuse to let it embed the dev server.
-export async function launch({ width = 1280, height = 900, mobile = false, deviceScaleFactor, args = [] } = {}) {
-  const browser = await chromium.launch({ headless: true, executablePath: resolveChromium(), args });
-  const context = await browser.newContext({
+//
+// `osScale` launches a real window under OS-style display scaling instead of an
+// emulated viewport, which is the only way to get a fractional CSS width (an
+// emulated viewport is always whole pixels). With osScale 1.25, a window of
+// width w comes out at roughly w × 1.0029 CSS px — 765 gives 767.2. #126 lived
+// in exactly that gap, so its scenario uses this.
+export async function launch({ width = 1280, height = 900, mobile = false, deviceScaleFactor, args = [], osScale } = {}) {
+  const browser = await chromium.launch({
+    headless: true, executablePath: resolveChromium(),
+    args: osScale ? [...args, `--force-device-scale-factor=${osScale}`, `--window-size=${width},${height}`] : args,
+  });
+  const context = await browser.newContext(osScale ? { viewport: null } : {
     viewport: { width, height },
     isMobile: mobile, hasTouch: mobile,
     deviceScaleFactor: deviceScaleFactor ?? (mobile ? 2 : 1),
