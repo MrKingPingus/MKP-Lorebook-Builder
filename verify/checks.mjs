@@ -186,6 +186,19 @@ const SCENARIOS = [
       await menu.locator('[role=menuitemcheckbox]', { hasText: 'Hide from Export' })
         .getAttribute('aria-checked'), 'true');
 
+    // ── always on (CharSnap, charsnap-extensions@363694a) ───────────────────
+    // It arrived as a footer button; the merge moved it in here with the other
+    // CharSnap switches. The badge is Jason's, and proves the flag was written.
+    const alwaysItem = menu.locator('[role=menuitemcheckbox]', { hasText: 'Always on' });
+    check('always on starts off', await alwaysItem.getAttribute('aria-checked'), 'false');
+    await alwaysItem.click();
+    await settle(page, 250);
+    check('the card shows the always-on badge',
+      await card.locator('.entry-always-on-icon').count(), 1);
+    check('and no footer button duplicates it',
+      await page.locator('.entry-always-on-btn').count(), 0);
+    await openMenu(); // the next block starts from an open menu
+
     // ── submenus fly out on hover, and Escape unwinds one level at a time ───
     // They were drill-ins first, replacing the panel with a ‹ Back row out of
     // it. A flyout keeps the root menu on screen, so moving between the three
@@ -1305,7 +1318,7 @@ const SCENARIOS = [
     await page.locator('.card-action-btn', { hasText: 'Expand' }).first().click();
     await settle(page, 300);
 
-    const box = page.locator('.entry-card').first().locator('textarea').first();
+    const box = page.locator('.entry-card').first().locator('.description-textarea');
     check('the card really is expanded', await box.count(), 1);
     await box.click({ modifiers: ['Shift'] });
     await settle(page, 250);
@@ -2483,7 +2496,7 @@ const SCENARIOS = [
     await settle(page, 300);
 
     // First edit of the session auto-saves a checkpoint of the pre-edit state.
-    const desc = card.locator('textarea').first();
+    const desc = card.locator('.description-textarea');
     await desc.click();
     await desc.type(' EDITED');
     await settle(page, 400);
@@ -2552,7 +2565,7 @@ const SCENARIOS = [
     check('hovering a chip opens synonyms',
       await page.locator('.thesaurus-popover').count(), 1);
 
-    await card.locator('textarea').first().hover();
+    await card.locator('.description-textarea').hover();
     await settle(page, 500);
     check('moving off the chip closes it',
       await page.locator('.thesaurus-popover').count(), 0);
@@ -2563,7 +2576,7 @@ const SCENARIOS = [
     await settle(page, 500);
     check('accepting a chip summons no popover',
       await page.locator('.thesaurus-popover').count(), 0);
-    await card.locator('textarea').first().click();
+    await card.locator('.description-textarea').click();
     await settle(page, 300);
     check('and none appears once focus moves to the description',
       await page.locator('.thesaurus-popover').count(), 0);

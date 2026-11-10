@@ -7,10 +7,12 @@ import { useLorebook }  from '../../hooks/use-lorebook.js';
 const SHOW_LIMIT = 12;
 
 const FIELD_LABEL = {
-  name:        'name',
-  triggers:    'triggers',
-  description: 'description',
-  entryType:   'type',
+  name:             'name',
+  triggers:         'triggers',
+  description:      'description',
+  entryType:        'type',
+  triggerCondition: 'trigger condition',
+  alwaysOn:         'always on',
 };
 
 export function HostSaveErrors() {

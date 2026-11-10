@@ -23,8 +23,13 @@ export function validateForHost(lorebook) {
     if (entryName.length === 0) push(index, 'name', 'Entry name is required');
     else if (entryName.length > HOST_LIMITS.name) push(index, 'name', `Entry name is over ${HOST_LIMITS.name} characters`);
 
+    // CharSnap fires an entry on a keyword trigger, on its plain-language
+    // trigger condition, or always; an entry needs at least one of the three.
+    const triggerCondition = typeof e?.triggerCondition === 'string' ? e.triggerCondition.trim() : '';
+    if (triggerCondition.length > HOST_LIMITS.triggerCondition) push(index, 'triggerCondition', `Trigger condition is over ${HOST_LIMITS.triggerCondition} characters`);
+
     const triggers = Array.isArray(e?.triggers) ? e.triggers : [];
-    if (triggers.length === 0) push(index, 'triggers', 'At least one trigger is required');
+    if (triggers.length === 0 && triggerCondition.length === 0 && e?.alwaysOn !== true) push(index, 'triggers', 'At least one trigger (or a trigger condition) is required');
     else if (triggers.length > HOST_LIMITS.triggers) push(index, 'triggers', `More than ${HOST_LIMITS.triggers} triggers`);
     else if (triggers.some((t) => typeof t !== 'string' || t.trim().length === 0)) push(index, 'triggers', 'A trigger is blank');
 

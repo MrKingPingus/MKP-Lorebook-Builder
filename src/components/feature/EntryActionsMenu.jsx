@@ -284,6 +284,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
 
   const isPublic = entry.isPublic === true;
   const isHidden = !!entry.hiddenFromExport;
+  const isAlwaysOn = entry.alwaysOn === true;
 
   /** The body of a Copy/Move flyout — a receipt, a name field, or the list. */
   /** Copy goes straight through. Move stops to ask first — inline, not with a
@@ -533,7 +534,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
 
           <div className="entry-actions-divider" role="separator" />
 
-          {/* Both of these are states as much as actions, so each carries a
+          {/* These are states as much as actions, so each carries a
               tick showing where it stands — in the right-hand column the
               chevrons above use, so every label in the menu starts flush. */}
           <button
@@ -549,6 +550,24 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
           >
             <span className="entry-actions-item-label">Public on CharSnap</span>
             <span className="entry-actions-tick" aria-hidden="true">{isPublic ? '✓' : ''}</span>
+          </button>
+
+          {/* CharSnap's always-on flag (charsnap-extensions@363694a), which
+              arrived as a footer button. It sits with Public because both are
+              CharSnap behaviour, not builder behaviour. */}
+          <button
+            className="entry-actions-item"
+            onClick={act(() => onUpdate({ alwaysOn: !isAlwaysOn }, true))}
+            onMouseEnter={leaveSub}
+            title={isAlwaysOn
+              ? 'Sent to the model every turn on CharSnap — choose to make it fire on triggers only'
+              : 'Fires on triggers or its condition — choose to send it every turn on CharSnap'}
+            role="menuitemcheckbox"
+            aria-checked={isAlwaysOn}
+            type="button"
+          >
+            <span className="entry-actions-item-label">Always on</span>
+            <span className="entry-actions-tick" aria-hidden="true">{isAlwaysOn ? '✓' : ''}</span>
           </button>
 
           <button

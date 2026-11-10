@@ -222,6 +222,30 @@ export function RollbackPanel({ snapshots, currentEntry, onRestore, onUpdateLabe
             )}
           </span>
         </div>
+        <div className="rollback-preview-row">
+          <span className="rollback-preview-label">
+            {diffOn && isFieldChanged('triggerCondition') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}
+            Condition
+          </span>
+          <span className="rollback-preview-value">
+            {typeof snap.triggerCondition === 'string' && snap.triggerCondition !== '' ? snap.triggerCondition : '(none)'}
+            {diffOn && delta?.triggerCondition && (
+              <span className="diff-after-hint"> → {delta.triggerCondition.after || '(none)'}</span>
+            )}
+          </span>
+        </div>
+        <div className="rollback-preview-row">
+          <span className="rollback-preview-label">
+            {diffOn && isFieldChanged('alwaysOn') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}
+            Always on
+          </span>
+          <span className="rollback-preview-value">
+            {snap.alwaysOn === true ? 'on' : 'off'}
+            {diffOn && delta?.alwaysOn && (
+              <span className="diff-after-hint"> → {delta.alwaysOn.after ? 'on' : 'off'}</span>
+            )}
+          </span>
+        </div>
         <div className="rollback-preview-row rollback-preview-row--desc">
           <span className="rollback-preview-label">
             {diffOn && isFieldChanged('description') && <span className="diff-modified-dot" title="Field changed since checkpoint">●</span>}

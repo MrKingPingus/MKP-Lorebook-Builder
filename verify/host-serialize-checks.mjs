@@ -94,7 +94,12 @@ export function runHostSerializeChecks() {
   check('unfiled entry has folderId null', out.builderMeta.entryMeta[1].folderId, null);
   check('allowedOverlaps go out', out.builderMeta.allowedOverlaps.join(','), 'keep');
   check('no builder-internal fields leak',
-    Object.keys(out.entries[0]).sort().join(','), 'description,disabled,entryType,isPublic,name,triggers');
+    Object.keys(out.entries[0]).sort().join(','), 'alwaysOn,description,disabled,entryType,isPublic,name,triggerCondition,triggers');
+  check('alwaysOn defaults to false on the wire', out.entries[0].alwaysOn, false);
+  check('triggerCondition defaults to empty on the wire', out.entries[0].triggerCondition, '');
+  check('alwaysOn goes out', toHostPayload(book({ entries: [entry({ alwaysOn: true })] })).entries[0].alwaysOn, true);
+  check('triggerCondition goes out verbatim',
+    toHostPayload(book({ entries: [entry({ triggerCondition: NASTY })] })).entries[0].triggerCondition, NASTY);
   check('a book never saved has hostId null', toHostPayload(book({ hostId: undefined })).hostId, null);
   check('an unknown type id still maps to a label', toHostPayload(book({ entries: [entry({ type: 'bogus' })] })).entries[0].entryType, 'Character');
 
@@ -138,6 +143,12 @@ export function runHostSerializeChecks() {
   check('numeric hostId is stringified', fromHostPayload({ hostId: 42, name: 'N', entries: [] }).hostId, '42');
   check('unknown entryType falls back to character',
     fromHostPayload({ name: 'N', entries: [{ name: 'a', entryType: 'Dragon' }] }).entries[0].type, 'character');
+  const carried = fromHostPayload({ name: 'N', entries: [{ name: 'a', alwaysOn: true, triggerCondition: 'when the moon rises' }, { name: 'b' }] });
+  check('alwaysOn comes back', carried.entries[0].alwaysOn, true);
+  check('triggerCondition comes back verbatim', carried.entries[0].triggerCondition, 'when the moon rises');
+  check('missing alwaysOn reads as false', carried.entries[1].alwaysOn, false);
+  check('missing triggerCondition reads as empty', carried.entries[1].triggerCondition, '');
+  check('non-string triggerCondition is rejected', fromHostPayload({ name: 'N', entries: [{ triggerCondition: 5 }] }).ok, false);
   check('missing name/description read as empty strings',
     fromHostPayload({ name: 'N', entries: [{}] }).entries[0].name + '|' + fromHostPayload({ name: 'N', entries: [{}] }).entries[0].description, '|');
 
@@ -175,6 +186,12 @@ export function runHostSerializeChecks() {
     contentHash(book({ entries: [{ ...base.entries[0], description: 'x' }, base.entries[1], base.entries[2]] })) === h, false);
   check('toggling hidden changes the hash',
     contentHash(book({ entries: [{ ...base.entries[0], hiddenFromExport: true }, base.entries[1], base.entries[2]] })) === h, false);
+  check('explicit off/empty fields hash like a draft that predates them',
+    contentHash(book({ entries: base.entries.map((e) => ({ ...e, alwaysOn: false, triggerCondition: '' })) })), h);
+  check('toggling alwaysOn changes the hash',
+    contentHash(book({ entries: [{ ...base.entries[0], alwaysOn: true }, base.entries[1], base.entries[2]] })) === h, false);
+  check('editing the trigger condition changes the hash',
+    contentHash(book({ entries: [{ ...base.entries[0], triggerCondition: 'at night' }, base.entries[1], base.entries[2]] })) === h, false);
   check('toggling isPublic changes the hash',
     contentHash(book({ entries: [{ ...base.entries[0], isPublic: false }, base.entries[1], base.entries[2]] })) === h, false);
   check('moving an entry between folders changes the hash',
@@ -194,6 +211,14 @@ export function runHostSerializeChecks() {
   check('hidden entries are validated too',
     fields(validateForHost(book({ entries: [entry({ hiddenFromExport: true, triggers: [] })] }))), '0:triggers');
   check('no triggers', fields(validateForHost(book({ entries: [entry({ triggers: [] })] }))), '0:triggers');
+  check('a trigger condition stands in for triggers',
+    validateForHost(book({ entries: [entry({ triggers: [], triggerCondition: 'when the moon rises' })] })).length, 0);
+  check('always-on stands in for triggers',
+    validateForHost(book({ entries: [entry({ triggers: [], alwaysOn: true })] })).length, 0);
+  check('a blank trigger condition does not',
+    fields(validateForHost(book({ entries: [entry({ triggers: [], triggerCondition: '   ' })] }))), '0:triggers');
+  check('trigger condition over the cap',
+    fields(validateForHost(book({ entries: [entry({ triggerCondition: 'x'.repeat(HOST_LIMITS.triggerCondition + 1) })] }))), '0:triggerCondition');
   check('too many triggers',
     fields(validateForHost(book({ entries: [entry({ triggers: Array.from({ length: HOST_LIMITS.triggers + 1 }, (_, i) => 't' + i) })] }))), '0:triggers');
   check('exactly the trigger cap is fine',

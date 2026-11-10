@@ -54,6 +54,30 @@ function PrivateEyeOffIcon() {
   );
 }
 
+// Always-on: a small filled circle "always lit". A trigger condition gets a
+// speech-bubble-with-check glyph — "fires when the chat says so".
+function AlwaysOnIcon() {
+  return (
+    <span className="entry-always-on-icon" title="Sent every turn on CharSnap (always on)" aria-label="Always on">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+      </svg>
+    </span>
+  );
+}
+
+function ConditionIcon() {
+  return (
+    <span className="entry-condition-icon" title="Has a trigger condition (judged against the chat each turn on CharSnap)" aria-label="Trigger condition">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        <polyline points="9 10 11 12 15 8"/>
+      </svg>
+    </span>
+  );
+}
+
 function ExportOffIcon() {
   return (
     <span className="entry-hidden-icon" title="Entry excluded from JSON export" aria-label="Hidden from export">
@@ -65,6 +89,16 @@ function ExportOffIcon() {
       </svg>
     </span>
   );
+}
+
+// Fields the reference comparison can copy across, and each one's value in
+// the shape the store expects (fresh array, normalised booleans/strings).
+const COPYABLE_FIELDS = ['name', 'type', 'description', 'triggers', 'alwaysOn', 'triggerCondition'];
+function referenceValue(ref, field) {
+  if (field === 'triggers')         return [...ref.triggers];
+  if (field === 'alwaysOn')         return ref.alwaysOn === true;
+  if (field === 'triggerCondition') return typeof ref.triggerCondition === 'string' ? ref.triggerCondition : '';
+  return ref[field];
 }
 
 export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseDown, onSelectionClick, density = 'full' }) {
@@ -214,9 +248,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   // state shouldn't require a second click on the badge to commit.
   function copyField(fieldName) {
     if (!matchedRefEntry) return;
-    const patch = fieldName === 'triggers'
-      ? { triggers: [...matchedRefEntry.triggers] }
-      : { [fieldName]: matchedRefEntry[fieldName] };
+    const patch = { [fieldName]: referenceValue(matchedRefEntry, fieldName) };
     const nextEntry = { ...entry, ...patch };
     update(patch, true);
     if (entriesShallowEqual(nextEntry, matchedRefEntry)) {
@@ -225,12 +257,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   }
   function copyAllFromReference() {
     if (!matchedRefEntry) return;
-    update({
-      name:        matchedRefEntry.name,
-      type:        matchedRefEntry.type,
-      description: matchedRefEntry.description,
-      triggers:    [...matchedRefEntry.triggers],
-    }, true);
+    update(Object.fromEntries(COPYABLE_FIELDS.map((f) => [f, referenceValue(matchedRefEntry, f)])), true);
     // Copy-All always results in a match, so always exit compare mode.
     setCompareEntryId(null);
   }
@@ -392,6 +419,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             {entry.isPublic === true && <PublicEyeIcon />}
             {entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
             {entry.hiddenFromExport && <ExportOffIcon />}
+            {entry.alwaysOn === true && <AlwaysOnIcon />}
+            {(entry.triggerCondition ?? '').trim() !== '' && <ConditionIcon />}
             {!hideEntryStats && (
               <div className="entry-card-mobile-stats">
                 <span style={{ color: warningColor(entry.triggers.length, triggerStops(warningScale), { gradient: isGradient(warningScale) }) }}>
@@ -488,6 +517,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         {!isCondensed && entry.isPublic === true && <PublicEyeIcon />}
         {!isCondensed && entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
         {!isCondensed && entry.hiddenFromExport && <ExportOffIcon />}
+        {!isCondensed && entry.alwaysOn === true && <AlwaysOnIcon />}
+        {!isCondensed && (entry.triggerCondition ?? '').trim() !== '' && <ConditionIcon />}
         {!isCondensed && sameNameRefId && (
           <button
             className={`entry-ref-badge entry-ref-badge--header touch-floor${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
@@ -630,6 +661,30 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             />
           </div>
 
+
+          {/* Trigger condition (CharSnap) */}
+          <div className={`entry-condition-section${isComparing && compareDelta?.changedFields.has('triggerCondition') ? ' entry-field--differs' : ''}`}>
+            <div className="field-label">
+              {isComparing && compareDelta?.changedFields.has('triggerCondition') && (
+                <span className="diff-modified-dot" title="Differs from reference">●</span>
+              )}
+              TRIGGER CONDITION
+              <span className="field-label-hint">{(entry.triggerCondition ?? '').length}/{HOST_LIMITS.triggerCondition}</span>
+            </div>
+            <textarea
+              className="entry-condition-field"
+              value={entry.triggerCondition ?? ''}
+              onChange={(e) => update({ triggerCondition: e.target.value.slice(0, HOST_LIMITS.triggerCondition) })}
+              placeholder="e.g. {{user}} asks about {{char}}'s childhood"
+              rows={2}
+              spellCheck={false}
+              maxLength={HOST_LIMITS.triggerCondition}
+            />
+            <div className="entry-condition-hint">
+              Plain-language rule for when this entry applies. CharSnap judges it against the recent chat every turn; it works with or without keywords.
+            </div>
+          </div>
+
           {/* Row 3: Suggestions tray — hidden in compare mode so both sides
               share the same minimal layout (the reference mirror doesn't
               render a tray). Exit compare mode to access suggestions. */}
@@ -688,6 +743,16 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
                           {compareDelta.changedFields.has('description') && (
                             <button className="copy-menu-item" onClick={() => { copyField('description'); setCopyMenuOpen(false); }} type="button">
                               Description
+                            </button>
+                          )}
+                          {compareDelta.changedFields.has('triggerCondition') && (
+                            <button className="copy-menu-item" onClick={() => { copyField('triggerCondition'); setCopyMenuOpen(false); }} type="button">
+                              Trigger condition
+                            </button>
+                          )}
+                          {compareDelta.changedFields.has('alwaysOn') && (
+                            <button className="copy-menu-item" onClick={() => { copyField('alwaysOn'); setCopyMenuOpen(false); }} type="button">
+                              Always on ({matchedRefEntry?.alwaysOn === true ? 'on' : 'off'} in reference)
                             </button>
                           )}
                         </div>

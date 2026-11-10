@@ -21,6 +21,11 @@ export function exportToJsonBlob(lorebook) {
         description: e.description ?? '',
         entryType:   TYPE_LABEL[e.type] ?? e.type,
         isPublic:    e.isPublic === true,
+        // Only when set, so books without them export exactly as before.
+        ...(e.alwaysOn === true ? { alwaysOn: true } : {}),
+        ...(typeof e.triggerCondition === 'string' && e.triggerCondition.trim() !== ''
+          ? { triggerCondition: e.triggerCondition }
+          : {}),
       };
     });
 

@@ -202,6 +202,27 @@ export function EntryDetailPanel() {
             />
           </div>
 
+
+          {/* Trigger condition (CharSnap) */}
+          <div className="entry-detail-section">
+            <div className="field-label">
+              TRIGGER CONDITION
+              <span className="field-label-hint">{(entry.triggerCondition ?? '').length}/{HOST_LIMITS.triggerCondition}</span>
+            </div>
+            <textarea
+              className="entry-condition-field"
+              value={entry.triggerCondition ?? ''}
+              onChange={(e) => update({ triggerCondition: e.target.value.slice(0, HOST_LIMITS.triggerCondition) })}
+              placeholder="e.g. {{user}} asks about {{char}}'s childhood"
+              rows={2}
+              spellCheck={false}
+              maxLength={HOST_LIMITS.triggerCondition}
+            />
+            <div className="entry-condition-hint">
+              Plain-language rule for when this entry applies. CharSnap judges it against the recent chat every turn; it works with or without keywords.
+            </div>
+          </div>
+
           {/* Suggestions */}
           <SuggestionsTray entry={entry} onAddTrigger={addTrigger} onAddTriggers={addTriggers} />
 
@@ -253,6 +274,15 @@ export function EntryDetailPanel() {
                 title="Exclude entry from JSON export"
               >
                 {entry.hiddenFromExport ? 'Hidden from Export' : 'Hide from Export'}
+              </button>
+              <button
+                className={`entry-always-on-btn touch-floor${entry.alwaysOn === true ? ' entry-always-on-btn--on' : ''}`}
+                onClick={() => update({ alwaysOn: entry.alwaysOn !== true }, true)}
+                title={entry.alwaysOn === true
+                  ? 'Sent to the model every turn on CharSnap — click to make it fire on triggers only'
+                  : 'Fires on triggers or its condition — click to send it every turn on CharSnap'}
+              >
+                {entry.alwaysOn === true ? 'Always on' : 'Always on: off'}
               </button>
               {crosstalkEnabled && referenceLorebook && (
                 <button
