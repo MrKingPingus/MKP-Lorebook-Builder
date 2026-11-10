@@ -16,7 +16,6 @@ import { useHostMode }          from '../../hooks/use-host.js';
 import { ThemeSettings }         from './ThemeSettings.jsx';
 import { AccessibilitySettings } from './AccessibilitySettings.jsx';
 import { KeybindingSettings }    from './KeybindingSettings.jsx';
-import { TemplatesSettings }     from './TemplatesSettings.jsx';
 import { HOTBAR_ACTIONS }    from '../../constants/hotbar-actions.js';
 import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
 import { APP_VERSION }       from '../../constants/version.js';
@@ -148,6 +147,7 @@ export function SettingsPanel() {
   const { openChooser: openReferenceChooser }   = useReferenceChooser();
   const setShowLander      = useUi((s) => s.setShowLander);
   const setActiveMenuPanel = useUi((s) => s.setActiveMenuPanel);
+  const openTemplatesManager = useUi((s) => s.openTemplatesManager);
 
   // Everything starts collapsed, so opening Settings shows the four section
   // titles and nothing else — the panel reads as a menu you choose from rather
@@ -232,7 +232,20 @@ export function SettingsPanel() {
         <SettingsDivider label="Templates" query={query} />
 
         <SettingsGroup id="templates" query={query}>
-          <TemplatesSettings />
+          {/* Templates have their own window now (TemplatesManager). This row is
+              the way in from Settings, so searching Settings for "templates"
+              still lands somewhere. */}
+          <div className="settings-hint">
+            Saved entry scaffolds, shared by every lorebook. Save, rename, sort into
+            categories and choose what a template holds, all in one window.
+          </div>
+          <button
+            type="button"
+            className="settings-action-btn tpl-open-manager"
+            onClick={() => { setActiveMenuPanel(null); openTemplatesManager(null); }}
+          >
+            Open the Templates manager
+          </button>
         </SettingsGroup>
 
         <SettingsDivider label="Writing aids" query={query} />

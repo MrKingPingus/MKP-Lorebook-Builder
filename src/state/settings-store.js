@@ -31,6 +31,8 @@ export const useSettingsStore = create((set) => ({
   setThesaurusEnabled:         (thesaurusEnabled)         => set({ thesaurusEnabled }),
   setCrosstalkSwapMode:        (crosstalkSwapMode)        => set({ crosstalkSwapMode }),
   setFunnyFishEnabled:         (funnyFishEnabled)         => set({ funnyFishEnabled }),
+  setTemplateSaveCondition:    (templateSaveCondition)    => set({ templateSaveCondition }),
+  setTemplateSaveAlwaysOn:     (templateSaveAlwaysOn)     => set({ templateSaveAlwaysOn }),
   setStorageQuotaProfile:      (storageQuotaProfile)      => set({ storageQuotaProfile }),
   setLegacyMenus:              (legacyMenus)              => set({ legacyMenus }),
   setLorebookSort:             (lorebookSort)             => set({ lorebookSort }),

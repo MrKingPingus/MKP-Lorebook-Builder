@@ -12,6 +12,8 @@
 // as unceremonious as they are.
 import { useTemplatesStore } from '../state/templates-store.js';
 import { useEntries }        from './use-entries.js';
+import { useSettingsStore }  from '../state/settings-store.js';
+import { TEMPLATE_OPTIONAL_FIELDS } from '../constants/templates.js';
 import { readJson, writeJson } from '../services/storage-service.js';
 import { TEMPLATES_KEY }       from '../constants/storage-keys.js';
 import {
@@ -49,10 +51,18 @@ export function useTemplates() {
 
   const atCapacity = templates.length >= MAX_TEMPLATES;
 
+  // Which opt-in fields the user has switched on (Templates manager → Options).
+  // Read at save time, not render time, so a save always follows the switch as
+  // it stands.
+  function optionalFieldsToSave() {
+    const settings = useSettingsStore.getState();
+    return TEMPLATE_OPTIONAL_FIELDS.filter((f) => settings[f.setting] === true).map((f) => f.id);
+  }
+
   // ── saving ────────────────────────────────────────────────────────────────
   function saveEntryAsTemplate(entry, { name, categoryId = null } = {}) {
     if (!entry || atCapacity) return null;
-    const template = templateFromEntry(entry, { name, categoryId });
+    const template = templateFromEntry(entry, { name, categoryId, include: optionalFieldsToSave() });
     if (!template) return null;
     useTemplatesStore.getState().addTemplate(template);
     persist();
@@ -79,7 +89,7 @@ export function useTemplates() {
    *  grew, and for the same reason: a scaffold you refine is one thing, not a
    *  growing pile of near-identical saves. */
   function overwriteTemplate(id, entry) {
-    const fresh = templateFromEntry(entry, { name: 'x' });
+    const fresh = templateFromEntry(entry, { name: 'x', include: optionalFieldsToSave() });
     if (!fresh) return;
     useTemplatesStore.getState().updateTemplate(id, { payload: fresh.payload });
     persist();

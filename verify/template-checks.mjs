@@ -172,6 +172,22 @@ export function runTemplateChecks() {
       tree.depthOf(cycle, 'p'), 2);
   }
 
+  // ── the two opt-in fields (Templates manager → Options) ───────────────────
+  {
+    const src = entry({ triggerCondition: 'When {{user}} asks.', alwaysOn: true });
+    const plain = templateFromEntry(src);
+    check('with the options off a template keeps its four-field shape',
+      Object.keys(plain.payload).sort(), ['description', 'name', 'triggers', 'type']);
+    const both = templateFromEntry(src, { include: ['triggerCondition', 'alwaysOn'] });
+    check('with them on it holds the condition', both.payload.triggerCondition, 'When {{user}} asks.');
+    check('and Always on', both.payload.alwaysOn, true);
+    check('both then show in the checklist', contentFields(both).slice(-2), ['triggerCondition', 'alwaysOn']);
+    const off = templateFromEntry(entry({ alwaysOn: false }), { include: ['alwaysOn'] });
+    check('an Always on that is off is not content', contentFields(off).includes('alwaysOn'), false);
+    const patch = applyTemplate(both, entry({ description: '' }), { fields: ['triggerCondition', 'alwaysOn'] });
+    check('applying carries just the ticked parts', patch, { triggerCondition: 'When {{user}} asks.', alwaysOn: true });
+  }
+
   const passed = results.filter(Boolean).length;
   console.log(`  ${passed}/${results.length} template checks passed`);
   return results.every(Boolean);

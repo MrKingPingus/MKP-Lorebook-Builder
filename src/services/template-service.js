@@ -24,6 +24,7 @@ import {
 export function fieldHasContent(payload, field) {
   const value = payload?.[field];
   if (value == null) return false;
+  if (typeof value === 'boolean') return value; // a flag has content only when it is on
   if (Array.isArray(value)) return value.length > 0;
   return String(value).trim().length > 0;
 }
@@ -45,7 +46,7 @@ export function needsChecklist(template) {
  * triggers are copied so editing the source entry afterwards cannot rewrite a
  * template that was already saved.
  */
-export function templateFromEntry(entry, { name, categoryId = null } = {}) {
+export function templateFromEntry(entry, { name, categoryId = null, include = [] } = {}) {
   if (!entry) return null;
   const now = Date.now();
   const label = (name ?? entry.name ?? '').trim();
@@ -60,6 +61,10 @@ export function templateFromEntry(entry, { name, categoryId = null } = {}) {
       type:        entry.type ?? '',
       triggers:    [...(entry.triggers ?? [])],
       description: entry.description ?? '',
+      // Opt-in fields: present only when asked for, so a template saved with
+      // the options off stays exactly the four-field shape it always had.
+      ...(include.includes('triggerCondition') ? { triggerCondition: entry.triggerCondition ?? '' } : {}),
+      ...(include.includes('alwaysOn')         ? { alwaysOn: entry.alwaysOn === true } : {}),
     },
   };
 }

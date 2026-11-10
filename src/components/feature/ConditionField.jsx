@@ -48,7 +48,7 @@ export function ConditionField({ value, onChange, className = '', differs = fals
         spellCheck={false}
         maxLength={LIMIT}
       />
-      <div className="description-footer">
+      <div className="entry-condition-footer">
         <CharCounter
           count={text.length}
           limit={LIMIT}

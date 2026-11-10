@@ -57,8 +57,9 @@ export const useUiStore = create((set) => ({
   pendingSettingsSection: null,  // accordion section id to auto-open next time the Settings panel mounts (deep-link); cleared once consumed
   mobileTitleMenuOpen: false,    // mobile-only — the title menu (lorebooks + import/export) opened from the lorebook name
   mobileTitleMenuTab:  'lorebooks', // 'lorebooks' | 'import-export' — which tab that menu is showing
-  newFromTemplateOpen:  false,   // the templates picker above the + button — opened by the + menu's
-                                 //   "New entry from template" and by Shift+Alt+N.
+  templatesManager:     null,    // null | { entryId } — the Templates manager window. `entryId` is the
+                                 //   entry it was opened from (its ⋯ menu), or null when opened with no
+                                 //   entry behind it: the + menu, Shift+Alt+N, the empty list, Settings.
   referenceChooserOpen: false,   // the reference chooser. Both surfaces open this one component: the
                                  //   mobile title menu's footer button and the hotbar's Reference action
                                  //   (and on desktop, the Lorebooks panel button). One pairing UI, three doors.
@@ -201,7 +202,8 @@ export const useUiStore = create((set) => ({
   closeMobileTitleMenu: ()    => set({ mobileTitleMenuOpen: false }),
   setMobileTitleMenuTab: (mobileTitleMenuTab) => set({ mobileTitleMenuTab }),
   setReferenceChooserOpen: (referenceChooserOpen) => set({ referenceChooserOpen }),
-  setNewFromTemplateOpen:  (newFromTemplateOpen)  => set({ newFromTemplateOpen }),
+  openTemplatesManager:    (entryId = null)       => set({ templatesManager: { entryId } }),
+  closeTemplatesManager:   ()                     => set({ templatesManager: null }),
   setTourOpen: (tourOpen) => set({ tourOpen }),
 
   // Every dismissable layer, shut at once.
@@ -228,6 +230,7 @@ export const useUiStore = create((set) => ({
     keyboardHelpOpen:      false,
     mobileTitleMenuOpen:   false,
     referenceChooserOpen:  false,
+    templatesManager:      null,
   }),
 
   setFolderFilter: (folderFilter) => set({ folderFilter }),

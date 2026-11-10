@@ -32,6 +32,8 @@ export function useSettings() {
   const crosstalkSwapMode        = useSettingsStore((s) => s.crosstalkSwapMode);
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const funnyFishEnabled         = useSettingsStore((s) => s.funnyFishEnabled);
+  const templateSaveCondition    = useSettingsStore((s) => s.templateSaveCondition);
+  const templateSaveAlwaysOn     = useSettingsStore((s) => s.templateSaveAlwaysOn);
   const storageQuotaProfile      = useSettingsStore((s) => s.storageQuotaProfile);
   const legacyMenus              = useSettingsStore((s) => s.legacyMenus);
   const lorebookSort             = useSettingsStore((s) => s.lorebookSort);
@@ -68,6 +70,8 @@ export function useSettings() {
       crosstalkSwapMode,
       thesaurusEnabled,
       funnyFishEnabled,
+      templateSaveCondition,
+      templateSaveAlwaysOn,
       storageQuotaProfile,
       legacyMenus,
       lorebookSort,
@@ -113,6 +117,8 @@ export function useSettings() {
     crosstalkSwapMode,
     thesaurusEnabled,
     funnyFishEnabled,
+    templateSaveCondition,
+    templateSaveAlwaysOn,
     storageQuotaProfile,
     legacyMenus,
     lorebookSort,
@@ -144,6 +150,8 @@ export function useSettings() {
     setThesaurusEnabled:         (v) => updateSetting('thesaurusEnabled', v),
     setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
     setFunnyFishEnabled:         (v) => updateSetting('funnyFishEnabled', v),
+    setTemplateSaveCondition:    (v) => updateSetting('templateSaveCondition', v),
+    setTemplateSaveAlwaysOn:     (v) => updateSetting('templateSaveAlwaysOn', v),
     setStorageQuotaProfile:      (v) => updateSetting('storageQuotaProfile', v),
     setLegacyMenus:              (v) => updateSetting('legacyMenus', v),
     setLorebookSort:             (v) => updateSetting('lorebookSort', v),

@@ -95,6 +95,11 @@ export const DEFAULT_SETTINGS = {
   // When on, the title-bar logo is the circular Sacabambaspis portrait at 45px.
   // When off, the original 📖 book emoji renders at its original 16px size.
   funnyFishEnabled:         true,
+  // Templates manager → Options. Off by default: a trigger condition and the
+  // Always on switch are usually specific to one entry, so a template only
+  // captures them when the user has said it should.
+  templateSaveCondition:    false,
+  templateSaveAlwaysOn:     false,
   // When on, hovering a suggestion chip (or long-pressing on mobile) opens a synonym popover
   // sourced from the Datamuse API (rel_syn, strict synonyms only). In-memory cache only.
   thesaurusEnabled:         true,

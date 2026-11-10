@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useCallback } from 'react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
+import { TemplatesManager }      from './components/feature/TemplatesManager.jsx';
 import { ReferenceChooser }      from './components/feature/ReferenceChooser.jsx';
 import { FeatureTour }           from './components/feature/FeatureTour.jsx';
 import { HostConflictDialog }    from './components/feature/HostConflictDialog.jsx';
@@ -207,7 +208,7 @@ export default function App() {
   // reserved defaults (collision-checked) that stay unwired until their batch.
   const handlers = useMemo(() => ({
     new_entry:           () => addEntry(),
-    new_entry_from_template: () => useUiStore.getState().setNewFromTemplateOpen(true),
+    new_entry_from_template: () => useUiStore.getState().openTemplatesManager(null),
     undo:                () => undo(),
     redo:                () => redo(),
     toggle_select:       () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
@@ -276,6 +277,7 @@ export default function App() {
           builder, so it has to outlive the view it was started from. */}
       <FeatureTour />
       <KeyboardHelpOverlay />
+      <TemplatesManager />
       {/* Host mode's "which copy?" prompts. At the root for the same reason as
           the chooser: it must sit over the mobile detail panel too. */}
       {hostMode && <HostConflictDialog />}

@@ -21,6 +21,19 @@ export const TEMPLATE_FIELDS = [
   { id: 'type',        label: 'Type' },
   { id: 'triggers',    label: 'Triggers' },
   { id: 'description', label: 'Description' },
+  // The two below are captured only when their option is on (see
+  // TEMPLATE_OPTIONAL_FIELDS). A template saved with one offers it in the load
+  // checklist like any other field, whatever the option says later.
+  { id: 'triggerCondition', label: 'Trigger condition' },
+  { id: 'alwaysOn',         label: 'Always on' },
+];
+
+/** Fields a template leaves out unless the user has opted in, with the setting
+ *  that opts in. Both are CharSnap behaviour that tends to belong to one entry,
+ *  which is why off is the default and the choice is the user's. */
+export const TEMPLATE_OPTIONAL_FIELDS = [
+  { id: 'triggerCondition', setting: 'templateSaveCondition', label: 'Save the trigger condition in new templates' },
+  { id: 'alwaysOn',         setting: 'templateSaveAlwaysOn',  label: 'Save Always on in new templates' },
 ];
 
 export const TEMPLATE_FIELD_IDS = TEMPLATE_FIELDS.map((f) => f.id);

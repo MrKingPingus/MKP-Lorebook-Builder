@@ -37,7 +37,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal }        from 'react-dom';
 import { Flyout }              from '../ui/Flyout.jsx';
-import { TemplatesPanel }      from './TemplatesPanel.jsx';
+import { useUi }               from '../../hooks/use-ui.js';
 import { useAnchoredPosition } from '../../hooks/use-anchored-position.js';
 import { useDismissLayer }     from '../../hooks/use-dismiss-layer.js';
 import { useFolders }          from '../../hooks/use-folders.js';
@@ -50,7 +50,6 @@ import { FLYOUT_OPEN_MS, FLYOUT_CLOSE_MS }    from '../../constants/scaling.js';
 const SUB_COPY      = 'copy';
 const SUB_MOVE      = 'move';
 const SUB_FOLDER    = 'folder';
-const SUB_TEMPLATES = 'templates';
 
 /** A root row that owns a flyout. Hover opens it, click toggles it, and the
  *  pointer may cross the gap to the panel without losing it — see the grace
@@ -109,11 +108,7 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const [result, setResult]       = useState(null);
   const [namingNew, setNamingNew] = useState(false);
   const [newName, setNewName]     = useState('');
-  // The templates panel holds its own half-typed state (a template name, a
-  // rename, a checklist mid-tick). It says so through onPin rather than this
-  // menu trying to guess, because only the panel knows when it has something
-  // to lose.
-  const [panelPinned, setPanelPinned] = useState(false);
+  const openTemplatesManager = useUi((s) => s.openTemplatesManager);
   const btnRef     = useRef(null);
   const menuRef    = useRef(null);
   const newNameRef = useRef(null);
@@ -125,14 +120,13 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
 
   // A flyout showing a name field or a receipt is holding something the user
   // would lose — so it stops tracking the pointer and waits to be dismissed.
-  const pinned = namingNew || !!result || panelPinned || !!pendingMove;
+  const pinned = namingNew || !!result || !!pendingMove;
 
   const closeSub = useCallback(() => {
     setOpenSub(null);
     setResult(null);
     setNamingNew(false);
     setNewName('');
-    setPanelPinned(false);
     setPendingMove(null);
   }, []);
 
@@ -523,14 +517,19 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
             </button>
           </SubmenuRow>
 
-          <SubmenuRow
-            id={SUB_TEMPLATES}
-            label="Templates"
+          {/* Not a submenu: templates open their own window (TemplatesManager),
+              which stays put while you save, pick, rename and file. As a hover
+              flyout it closed under the pointer and showed one level at a time. */}
+          <button
+            className="entry-actions-item"
+            onClick={act(() => openTemplatesManager(entry.id))}
+            onMouseEnter={leaveSub}
             title="Save this entry as a reusable template, or fill it from one"
-            openSub={openSub} onHover={hoverSub} onLeave={leaveSub} onToggle={toggleSub}
+            role="menuitem"
+            type="button"
           >
-            <TemplatesPanel entry={entry} onDone={close} onPin={setPanelPinned} />
-          </SubmenuRow>
+            <span className="entry-actions-item-label">Templates…</span>
+          </button>
 
           <div className="entry-actions-divider" role="separator" />
 
