@@ -26,6 +26,10 @@ export const DUPE_FLASH_MS            = 1500;
 export const CONDITION_WARN_YELLOW_FRACTION = 1 / 2;
 export const CONDITION_WARN_ORANGE_FRACTION = 2 / 3;
 export const CONDITION_FLASH_MS      = 1600;  // how long the condition field stays highlighted after its header badge is clicked
+// In text copied off a CharSnap page (txt-import.js), a line longer than this
+// is description. Names cap at 50 on CharSnap and triggers are a word or a
+// short phrase, so nothing in a header or a trigger list reaches it.
+export const PAGE_TRIGGER_LINE_MAX   = 80;
 export const CONFIRM_PRESS_WINDOW_MS  = 3000;  // a destructive button stays armed this long for its second press (use-confirm-press)
 export const MENU_PANEL_WIDTH         = 320;
 // Per-entry ⋯ overflow menu. Portalled and anchored, so this is the width the
