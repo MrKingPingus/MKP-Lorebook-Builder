@@ -9,7 +9,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "verify": "node verify/run.mjs"
+    "verify": "node verify/run.mjs",
+    "charsnap:status": "bash scripts/charsnap.sh status",
+    "charsnap:sync": "bash scripts/charsnap.sh sync",
+    "charsnap:publish": "bash scripts/charsnap.sh publish"
   },
   "dependencies": {
     "lz-string": "^1.5.0",

@@ -1,5 +1,15 @@
 # MKP Lorebook Builder
 
+> **Where this folder comes from.** It is published from
+> [MrKingPingus/MKP-Lorebook-Builder](https://github.com/MrKingPingus/MKP-Lorebook-Builder),
+> where the builder is developed, and each update replaces it wholesale. Edits
+> made here on `main` are welcome: they are merged back into that repo before
+> every update, so nothing on `main` is lost.
+>
+> **Working on the builder for MrKingPingus?** Start in that repo, not this one,
+> and run `npm run charsnap:status` first. Its `docs/charsnap-workflow.md` has the
+> procedure.
+
 A browser-based tool for building and managing lorebooks for AI chatbots. No install, no account — open it and start writing.
 
 **[Try the live version](https://mrkingpingus.github.io/MKP-Lorebook-Builder/)** — the app running on GitHub Pages, to look at before deploying anything.
