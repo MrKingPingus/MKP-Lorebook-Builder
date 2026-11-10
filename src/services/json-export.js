@@ -6,7 +6,8 @@ import { ENTRY_TYPES } from '../constants/entry-types.js';
 // (e.g. 'PlotEvent') that the platform reads back on import.
 export const TYPE_LABEL = Object.fromEntries(ENTRY_TYPES.map((t) => [t.id, t.label]));
 
-export function exportToJsonBlob(lorebook) {
+/** The CharSnap-format JSON text of a lorebook. */
+export function exportToJson(lorebook) {
   // hiddenFromExport entries are omitted entirely. The rest are renumbered
   // 1..N as string keys to match the CharSnap keyed-object shape. App-internal
   // fields (id, lastModified, snapshots, ignoreLimitWarnings, hiddenFromExport)
@@ -30,8 +31,11 @@ export function exportToJsonBlob(lorebook) {
     });
 
   const exported = { name: lorebook.name, entries };
-  const json = JSON.stringify(exported, null, 2);
-  return new Blob([json], { type: 'application/json' });
+  return JSON.stringify(exported, null, 2);
+}
+
+export function exportToJsonBlob(lorebook) {
+  return new Blob([exportToJson(lorebook)], { type: 'application/json' });
 }
 
 export function downloadBlob(blob, filename) {

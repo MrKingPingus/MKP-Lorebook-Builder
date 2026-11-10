@@ -6,12 +6,16 @@ import { createPortal } from 'react-dom';
 import { useUi }       from '../../hooks/use-ui.js';
 import { useLorebook } from '../../hooks/use-lorebook.js';
 import { useExport }   from '../../hooks/use-export.js';
+import { useBackup }   from '../../hooks/use-backup.js';
+import { useHostMode } from '../../hooks/use-host.js';
 
 const MENU_WIDTH = 236;
 
 export function ExportMenu() {
   const anchor          = useUi((s) => s.exportMenuAnchor);
   const closeExportMenu = useUi((s) => s.closeExportMenu);
+  const { exportEverything } = useBackup();
+  const hostMode = useHostMode();
   const { activeLorebook } = useLorebook();
   const { exportJson, exportTxt, exportDocx, copyJsonToClipboard,
           defaultExportFilename, resolveExportFilename } = useExport();
@@ -100,6 +104,17 @@ export function ExportMenu() {
         <button className="export-menu-btn" onClick={() => download(exportDocx, 'docx')}>⬇ DOCX</button>
       </div>
       <button className="export-menu-btn export-menu-btn--outline" onClick={copy}>⎘ Copy JSON</button>
+      {/* #129: every lorebook, settings and templates. Not offered inside
+          CharSnap, which stores the book itself. */}
+      {!hostMode && (
+        <button
+          className="export-menu-btn export-menu-btn--outline export-everything-btn"
+          onClick={() => { exportEverything(); closeExportMenu(); }}
+          title="Every lorebook, your settings and your templates in one zip. Restore it from the landing page."
+        >
+          ⬇ Everything (.zip)
+        </button>
+      )}
     </div>,
     document.body
   );

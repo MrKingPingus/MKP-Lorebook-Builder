@@ -17,6 +17,7 @@ import { runTemplateChecks } from './template-checks.mjs';
 import { runHostSerializeChecks } from './host-serialize-checks.mjs';
 import { runLorebookDuplicateChecks } from './lorebook-duplicate-checks.mjs';
 import { runTxtImportChecks } from './txt-import-checks.mjs';
+import { runBackupArchiveChecks } from './backup-archive-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -47,6 +48,7 @@ const pureOk = [
   runHostSerializeChecks(),
   runLorebookDuplicateChecks(),
   runTxtImportChecks(),
+  await runBackupArchiveChecks(),
 ].every(Boolean);
 
 let child = null;

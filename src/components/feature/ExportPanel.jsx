@@ -4,6 +4,8 @@ import { useEntries }   from '../../hooks/use-entries.js';
 import { useLorebook }  from '../../hooks/use-lorebook.js';
 import { useExport }    from '../../hooks/use-export.js';
 import { useConfirmPress } from '../../hooks/use-confirm-press.js';
+import { useBackup }       from '../../hooks/use-backup.js';
+import { useHostMode }     from '../../hooks/use-host.js';
 import { DUPE_FLASH_MS } from '../../constants/limits.js';
 
 export function ExportPanel() {
@@ -62,6 +64,8 @@ export function ExportPanel() {
   // Press twice rather than window.confirm(), which sandboxed frames refuse
   // without asking. See use-confirm-press.js.
   const confirmPress = useConfirmPress();
+  const { exportEverything } = useBackup();
+  const hostMode = useHostMode();
   const confirmingClear = confirmPress.armedId === 'clear_all';
   function clearAll() {
     confirmPress.press('clear_all', true, () => {
@@ -121,6 +125,20 @@ export function ExportPanel() {
           <button className="export-btn export-btn--outline" onClick={downloadDocxTemplate}>⬇ DOCX</button>
         </div>
       </div>
+
+      {/* #129. Hidden inside CharSnap, which stores the book itself. */}
+      {!hostMode && (
+        <div className="export-section">
+          <div className="export-section-label">Everything</div>
+          <button className="export-btn export-everything-btn" onClick={exportEverything}>
+            ⬇ Export everything (.zip)
+          </button>
+          <div className="export-info">
+            Every lorebook, your settings and your templates in one file. Bring it back
+            with Restore Backup on the landing page, in this browser or another.
+          </div>
+        </div>
+      )}
 
       <div className="export-section">
         <div className="export-section-label">Danger zone</div>

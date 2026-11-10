@@ -799,6 +799,18 @@ templates are not in one.** Every mutation in `use-templates.js` writes through
 immediately. This is the third time that rule has bitten in this pass; it is now
 written at the top of both hooks that break it.
 
+### Launch pass (2026-11-10): decisions made while wrapping up for CharSnap
+
+Recorded here so the reasons survive; the user-facing descriptions are in `CHANGELOG.md`.
+
+- **Templates are one window, not a submenu** (tester feedback). The hover flyout closed under the pointer and showed one level at a time, and three surfaces each did part of the job. `TemplatesManager.jsx` replaces the flyout panel, the + button popover and the Settings block. Every route opens it through `ui-store.templatesManager = { entryId }`; with no entry behind it, Save / Fill / Update are not offered.
+- **Trigger condition and Always on in templates are opt-in, default off** (user decision: "it's the user's decision at the end of the day"). Two settings gate what a *save* captures. A template that holds either offers it in the load checklist regardless of the settings, so turning an option off later never hides content a template already has.
+- **A backup holds every book twice** (#129): `lorebooks/` in CharSnap's export format, importable alone, and `builder-data/` as the builder holds it. A restore reads only `builder-data/`, because the export format drops hidden entries, folders and checkpoints. Every restored book gets new ids via `duplicateLorebook`, so restoring into the browser a backup came from cannot overwrite anything. "Replace everything" downloads a backup of the current state first. Both are hidden in host mode, where CharSnap stores the book.
+- **`duplicateLorebook` strips every `host*` field** (#137). A copy that kept `hostId` would save over the original on CharSnap.
+- **`useMobile` asks the stylesheet's media query** (#126) rather than comparing `innerWidth`: the two disagree at fractional widths under display scaling. `use-host.js` still compares `innerWidth`; it is Jason's file and was left alone.
+- **No `window.confirm()` anywhere.** Sandboxed frames without `allow-modals` answer *no* without showing anything. Moves confirm inline; one-shot destructive buttons use `use-confirm-press.js` (press twice).
+- **CharSnap page copies are parsed by their three-line header** (#121): name / bare type / Public|Private. It is tried before the labelled formats because a description can contain a line like `Type: Method of travel`.
+
 ### CharSnap host mode, and the one thing it cannot express (2026-09-03)
 
 Host mode arrived from `JasonYCao/charsnap-extensions@b35da60` and was merged

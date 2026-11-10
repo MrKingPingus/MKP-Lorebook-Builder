@@ -264,7 +264,7 @@ npx playwright install --with-deps chromium
 npm run verify
 ```
 
-A full run launches a fresh browser per scenario and takes several minutes. To run just a slice of it, pass a name substring:
+A full run launches a fresh browser per scenario, four at a time, and takes about three minutes. To run just a slice of it, pass a name substring:
 
 ```bash
 npm run verify -- folders

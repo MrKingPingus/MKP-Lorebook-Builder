@@ -3214,6 +3214,79 @@ const SCENARIOS = [
       await page.locator('.entry-card').count(), 1);
   }),
 
+  // #129: every lorebook, settings and templates out as one zip, and back in
+  // from the landing page.
+  scenario('Export everything, then restore it from the landing page (#129)', async (page, check) => {
+    const total = await openBuilderWithFixture(page);
+    const title = await page.locator('.title-field-name').first().innerText();
+
+    await page.locator('.hotbar').locator('button', { hasText: 'Export' }).first().click();
+    await page.locator('.export-menu').waitFor({ timeout: 3000 });
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.locator('.export-menu .export-everything-btn').click(),
+    ]);
+    check('the backup is a dated zip',
+      /^lorebook-builder-backup-\d{4}-\d{2}-\d{2}\.zip$/.test(download.suggestedFilename()), true);
+    const zipPath = await download.path();
+
+    // ── add alongside ───────────────────────────────────────────────────────
+    await page.reload();
+    await settle(page, 500);
+    const tile  = page.locator('.lander-tile', { hasText: 'Restore Backup' });
+    const input = tile.locator('xpath=following-sibling::input[1]');
+    await input.setInputFiles(zipPath);
+    const dialog = page.locator('.restore-dialog');
+    await dialog.waitFor({ timeout: 4000 });
+    check('picking a file only reads it: it says what the backup holds',
+      (await dialog.locator('.restore-line').innerText()).includes('1 lorebook'), true);
+    check('and leads with the choice that cannot lose anything',
+      await dialog.locator('input[name=restore-mode]').first().isChecked(), true);
+    await dialog.locator('.restore-go').click();
+    await settle(page, 400);
+    check('it reports what it restored',
+      (await dialog.locator('.restore-outcome').innerText()).includes('Restored 1 lorebook'), true);
+    await dialog.locator('.restore-done').click();
+    await settle(page, 300);
+    const recents = await page.locator('.lander-recent-item').allInnerTexts();
+    check('the original is still there, and the restored one beside it', recents.length, 2);
+    check('renamed, because its name was taken',
+      recents.some((r) => r.includes(`${title} (restored)`)), true);
+
+    await page.locator('.lander-recent-item', { hasText: '(restored)' }).click();
+    await settle(page, 700);
+    check('with every entry', await page.locator('.entry-card').count(), total);
+
+    // ── replace everything ──────────────────────────────────────────────────
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-tile', { hasText: 'Restore Backup' })
+      .locator('xpath=following-sibling::input[1]').setInputFiles(zipPath);
+    await dialog.waitFor({ timeout: 4000 });
+    await dialog.locator('input[name=restore-mode]').nth(1).check();
+    const [safety] = await Promise.all([
+      page.waitForEvent('download'),
+      dialog.locator('.restore-go').click(),
+    ]);
+    check('replacing downloads a backup of what was here first',
+      safety.suggestedFilename().endsWith('.zip'), true);
+    await settle(page, 400);
+    await dialog.locator('.restore-done').click();
+    await settle(page, 300);
+    const after = await page.locator('.lander-recent-item').allInnerTexts();
+    check('then leaves only the backup\'s lorebook', after.length, 1);
+    check('under its own name, now that nothing else holds it',
+      after[0].includes(title) && !after[0].includes('(restored)'), true);
+
+    // ── something that is not a backup ──────────────────────────────────────
+    await page.locator('.lander-tile', { hasText: 'Restore Backup' })
+      .locator('xpath=following-sibling::input[1]').setInputFiles(FIXTURE);
+    await settle(page, 400);
+    check('a file that is not a backup is refused, in words',
+      (await page.locator('.lander-restore-error').innerText()).includes('not a zip'), true);
+    check('and opens nothing', await dialog.count(), 0);
+  }),
+
   // #137: a full copy of a lorebook, alongside it, without leaving this one.
   scenario('Duplicate a lorebook from the title menu (#137)', async (page, check) => {
     await openBuilderWithFixture(page);
