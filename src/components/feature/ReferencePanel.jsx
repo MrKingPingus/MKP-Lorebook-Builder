@@ -265,6 +265,25 @@ export function ReferencePanel() {
                           </div>
                         </div>
                       </div>
+                      <div className={`entry-condition-section${refDelta.changedFields.has('triggerCondition') ? ' entry-field--differs' : ''}`}>
+                        <div className="field-label">
+                          {refDelta.changedFields.has('triggerCondition') && (
+                            <span className="diff-modified-dot" title="Differs from the active entry">●</span>
+                          )}
+                          TRIGGER CONDITION
+                          {refDelta.changedFields.has('alwaysOn') && (
+                            <span className="field-label-hint" title="Always-on differs from the active entry">always on: {entry.alwaysOn === true ? 'on' : 'off'} ●</span>
+                          )}
+                        </div>
+                        <textarea
+                          className="entry-condition-field"
+                          value={typeof entry.triggerCondition === 'string' ? entry.triggerCondition : ''}
+                          readOnly
+                          tabIndex={-1}
+                          rows={2}
+                          placeholder="(no trigger condition)"
+                        />
+                      </div>
                       <DescriptionArea
                         value={entry.description}
                         onChange={() => {}}

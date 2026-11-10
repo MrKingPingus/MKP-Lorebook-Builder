@@ -25,6 +25,9 @@ export function toHostPayload(lorebook) {
     entryType:   TYPE_LABEL[e.type] ?? TYPE_LABEL[normalizeType(e.type)],
     isPublic:    e.isPublic === true,
     disabled:    e.hiddenFromExport === true,
+    // CharSnap chat fields (edited on the card / in the mobile editor).
+    alwaysOn:         e.alwaysOn === true,
+    triggerCondition: typeof e.triggerCondition === 'string' ? e.triggerCondition : '',
   }));
 
   const folders = (lorebook?.folders ?? []).map((f) => ({
@@ -104,6 +107,8 @@ export function fromHostPayload(payload) {
     if (name.error) return fail(name.error);
     const description = optionalString(raw.description, `entries[${i}].description`);
     if (description.error) return fail(description.error);
+    const triggerCondition = optionalString(raw.triggerCondition, `entries[${i}].triggerCondition`);
+    if (triggerCondition.error) return fail(triggerCondition.error);
 
     let triggers = [];
     if (raw.triggers != null) {
@@ -121,6 +126,8 @@ export function fromHostPayload(payload) {
       description:      description.value,
       isPublic:         raw.isPublic === true,
       hiddenFromExport: raw.disabled === true,
+      alwaysOn:         raw.alwaysOn === true,
+      triggerCondition: triggerCondition.value,
       folderId:         null,
     }));
   }
@@ -183,7 +190,8 @@ function cyrb53(str, seed = 0) {
 }
 
 /** Canonical projection of what a save would send: name, every entry's saved
- *  fields in order (including its folder placement), the folders minus their
+ *  fields in order (including its folder placement and the CharSnap-only
+ *  alwaysOn / triggerCondition it carries), the folders minus their
  *  collapse state, and the acknowledged overlaps. Ids, timestamps, checkpoints
  *  and limit-warning flags are builder-local and excluded, so a book loaded
  *  from the host hashes the same as the copy that was saved to it. */
@@ -198,6 +206,11 @@ export function contentHash(lorebook) {
       e.isPublic === true,
       e.hiddenFromExport === true,
       e.folderId == null ? null : String(e.folderId),
+      // Appended only when set, so a draft hashed by a build that predates
+      // these fields still reads clean after upgrading.
+      ...(e.alwaysOn === true || (typeof e.triggerCondition === 'string' && e.triggerCondition !== '')
+        ? [e.alwaysOn === true, typeof e.triggerCondition === 'string' ? e.triggerCondition : '']
+        : []),
     ]),
     f: (lorebook?.folders ?? []).map((f) => [
       String(f.id),

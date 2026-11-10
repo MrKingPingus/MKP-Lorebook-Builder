@@ -50,10 +50,11 @@ export const HOST_CONNECT_HINT_MS = 4000;
 /** CharSnap's schema limits. The host rejects anything over these; the builder
  *  validates before posting and hard-caps typing so the rejection is rare. */
 export const HOST_LIMITS = {
-  name:         50,
-  description:  1500,
-  triggers:     25,
-  lorebookName: 50,
+  name:             50,
+  description:      1500,
+  triggers:         25,
+  triggerCondition: 300,
+  lorebookName:     50,
 };
 
 /** `builderMeta.version` the builder writes and the only one it reads. */

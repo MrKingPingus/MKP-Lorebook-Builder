@@ -1,5 +1,6 @@
 // Validate and normalize a raw JSON lorebook object before applying it to the store
 import { ENTRY_TYPES, DEFAULT_TYPE } from '../constants/entry-types.js';
+import { HOST_LIMITS } from '../constants/host.js';
 import { MAX_TRIGGERS } from '../constants/limits.js';
 import { createEmptyEntry } from './entry-factory.js';
 import { unescapeImportedEntry } from './unescape-import.js';
@@ -91,6 +92,12 @@ function normalizeEntry(raw, index) {
   // treat an absent/non-boolean value as private (false).
   const isPublic = typeof src.isPublic === 'boolean' ? src.isPublic : false;
 
+  // CharSnap chat fields: sent every turn (alwaysOn) and the plain-language
+  // trigger condition. Absent reads as off / empty.
+  // SillyTavern books call always-on `constant`.
+  const alwaysOn = src.alwaysOn === true || src.constant === true;
+  const triggerCondition = typeof src.triggerCondition === 'string' ? src.triggerCondition.slice(0, HOST_LIMITS.triggerCondition) : '';
+
   return {
     entry: {
       ...createEmptyEntry(),
@@ -99,6 +106,8 @@ function normalizeEntry(raw, index) {
       triggers,
       description,
       isPublic,
+      alwaysOn,
+      triggerCondition,
     },
     warning: blanked.length > 0 ? { index, fields: blanked } : null,
   };

@@ -8652,3 +8652,56 @@ kbd {
 
 /* Title menu without the lorebooks column (host mode). */
 .title-menu--io-only .tm-col--io { width: 100%; }
+
+/* ── Trigger condition + always-on (CharSnap fields) ───────────────────── */
+.entry-condition-section {
+  margin-top: 10px;
+}
+.entry-condition-field {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  resize: vertical;
+  min-height: 2.6em;
+  font-family: inherit;
+}
+.entry-condition-hint {
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  line-height: 1.35;
+}
+.entry-always-on-btn {
+  padding: 3px 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.6875rem;
+  color: var(--muted2);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.entry-always-on-btn:hover {
+  color: var(--text);
+  border-color: var(--muted2);
+}
+.entry-always-on-btn--on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.entry-always-on-btn--on:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.entry-always-on-icon,
+.entry-condition-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  margin-left: 6px;
+}

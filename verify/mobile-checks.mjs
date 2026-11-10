@@ -692,7 +692,7 @@ const SCENARIOS = [
     await openEntryDetail(page, 0);
     check('all 25 trigger chips render',
       await page.locator('.entry-detail-panel--open .chip').count(), LIMITS.MAX_TRIGGERS);
-    const desc = await page.locator('.entry-detail-panel--open textarea').first().inputValue();
+    const desc = await page.locator('.entry-detail-panel--open .description-textarea').inputValue();
     check('the description arrives at the character cap', desc.length, LIMITS.CHAR_LIMIT);
     await sweepPose('detail panel at every limit', { scope: '.entry-detail-panel--open' });
   }),

@@ -114,6 +114,8 @@ export const DEFAULT_ENTRY = {
   ignoreLimitWarnings: { description: false, triggers: false },
   isPublic:            false,  // CharSnap visibility flag — mirrors CharSnap's private-by-default; round-trips through JSON import/export
   hiddenFromExport:    false,  // when true, entry remains in builder but is excluded from all export formats
+  alwaysOn:            false,  // CharSnap: sent to the model every turn regardless of triggers (Always on button).
+  triggerCondition:    '',     // CharSnap: plain-language rule for when the entry applies, judged per chat turn (Trigger condition field).
   folderId:            null,   // builder-only folder assignment; null = top level. Never exported.
                                //   An id with no matching folder renders top-level, so a history
                                //   undo that removes a folder can never orphan an entry.

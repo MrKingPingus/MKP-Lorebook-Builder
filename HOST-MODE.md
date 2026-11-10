@@ -67,12 +67,22 @@ field flat beside it. Unknown `mkp:*` types are ignored by both sides.
   "description": "A basalt fortress on the caldera rim.",
   "entryType": "Location",
   "isPublic": true,
-  "disabled": false
+  "disabled": false,
+  "alwaysOn": false,
+  "triggerCondition": ""
 }
 ```
 
 - `entryType` is one of `Character | Item | PlotEvent | Location | Other`
   (the label form). The builder maps unknown values to `Character`.
+- `alwaysOn` and `triggerCondition` are CharSnap chat fields: an always-on
+  entry is sent to the model every turn, and a trigger condition is a
+  plain-language rule ("the scene is at night in the harbor") judged against
+  the recent conversation each turn. The builder edits both (the **Always on**
+  button and the **Trigger condition** field on every entry). They come in on
+  `mkp:load` and go back out on `mkp:save`; missing on the wire reads as
+  `false` / `""`. An entry with a condition or `alwaysOn` may have no keyword
+  triggers.
 - `disabled` is the builder's *Hide from export* flag. A disabled entry stays in
   the book but never fires in chat. It round-trips: `hiddenFromExport` ⇄
   `disabled`.
@@ -172,7 +182,9 @@ fresh**; otherwise start an empty draft. The first `mkp:saved` for it stamps the
 `hostId` the host assigned.
 
 The content hash covers: name, every entry's `name / entryType / triggers /
-description / isPublic / disabled / folderId` in order, folders minus their
+description / isPublic / disabled / folderId` in order (plus `alwaysOn` and
+`triggerCondition` whenever either is set, so drafts from before those fields
+existed still hash the same), folders minus their
 `collapseState`, and `allowedOverlaps`. Builder ids, timestamps, checkpoints and
 limit-warning flags are excluded, so a book that comes back from the host
 hashes the same as the copy that was saved.
@@ -208,7 +220,8 @@ The builder validates before posting and hard-caps typing at:
 |---|---|
 | lorebook name | 1–50 characters (`index: -1`) |
 | entry name | 1–50 characters |
-| triggers | 1–25, none blank |
+| triggers | 0–25, none blank; an entry needs at least one trigger, or a trigger condition, or `alwaysOn` |
+| `triggerCondition` | 0–300 characters |
 | description | 1–1500 characters |
 | `entryType` | one of the five labels |
 

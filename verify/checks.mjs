@@ -1040,7 +1040,7 @@ const SCENARIOS = [
     await page.locator('.card-action-btn', { hasText: 'Expand' }).first().click();
     await settle(page, 300);
 
-    const box = page.locator('.entry-card').first().locator('textarea').first();
+    const box = page.locator('.entry-card').first().locator('.description-textarea');
     check('the card really is expanded', await box.count(), 1);
     await box.click({ modifiers: ['Shift'] });
     await settle(page, 250);
@@ -2203,7 +2203,7 @@ const SCENARIOS = [
     await settle(page, 300);
 
     // First edit of the session auto-saves a checkpoint of the pre-edit state.
-    const desc = card.locator('textarea').first();
+    const desc = card.locator('.description-textarea');
     await desc.click();
     await desc.type(' EDITED');
     await settle(page, 400);
@@ -2272,7 +2272,7 @@ const SCENARIOS = [
     check('hovering a chip opens synonyms',
       await page.locator('.thesaurus-popover').count(), 1);
 
-    await card.locator('textarea').first().hover();
+    await card.locator('.description-textarea').hover();
     await settle(page, 500);
     check('moving off the chip closes it',
       await page.locator('.thesaurus-popover').count(), 0);
@@ -2283,7 +2283,7 @@ const SCENARIOS = [
     await settle(page, 500);
     check('accepting a chip summons no popover',
       await page.locator('.thesaurus-popover').count(), 0);
-    await card.locator('textarea').first().click();
+    await card.locator('.description-textarea').click();
     await settle(page, 300);
     check('and none appears once focus moves to the description',
       await page.locator('.thesaurus-popover').count(), 0);
