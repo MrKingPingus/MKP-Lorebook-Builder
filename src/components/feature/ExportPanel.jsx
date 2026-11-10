@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useEntries }   from '../../hooks/use-entries.js';
 import { useLorebook }  from '../../hooks/use-lorebook.js';
 import { useExport }    from '../../hooks/use-export.js';
+import { useConfirmPress } from '../../hooks/use-confirm-press.js';
 import { DUPE_FLASH_MS } from '../../constants/limits.js';
 
 export function ExportPanel() {
@@ -58,10 +59,15 @@ export function ExportPanel() {
     await copyJsonToClipboard(activeLorebook);
   }
 
+  // Press twice rather than window.confirm(), which sandboxed frames refuse
+  // without asking. See use-confirm-press.js.
+  const confirmPress = useConfirmPress();
+  const confirmingClear = confirmPress.armedId === 'clear_all';
   function clearAll() {
-    if (!window.confirm('Are you sure?')) return;
-    clearAllEntries();
-    renameLorebook('');
+    confirmPress.press('clear_all', true, () => {
+      clearAllEntries();
+      renameLorebook('');
+    });
   }
 
   return (
@@ -118,8 +124,12 @@ export function ExportPanel() {
 
       <div className="export-section">
         <div className="export-section-label">Danger zone</div>
-        <button className="export-btn export-btn--danger" onClick={clearAll}>
-          ✕ Clear all entries
+        <button
+          className={`export-btn export-btn--danger${confirmingClear ? ' export-btn--confirm' : ''}`}
+          onClick={clearAll}
+          onBlur={confirmPress.disarm}
+        >
+          {confirmingClear ? '✕ Click again to clear everything' : '✕ Clear all entries'}
         </button>
       </div>
     </div>

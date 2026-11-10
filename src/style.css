@@ -6713,6 +6713,8 @@ kbd {
   .suggestions-toggle,
   .suggestions-phrase-btn,
   .suggestion-chip { min-height: var(--touch-floor); }
+  /* A one-short-word chip ("ice", "fey") is narrower than a fingertip too. */
+  .suggestion-chip { min-width: var(--touch-floor); }
   .suggestions-reroll {
     min-height: var(--touch-floor);
     min-width:  var(--touch-floor);
@@ -9055,3 +9057,15 @@ kbd {
   color: var(--accent);
   margin-left: 6px;
 }
+
+/* ── Press-twice confirmation (use-confirm-press.js) ─────────────────────────
+   A destructive button that has been pressed once and is waiting for its
+   second press. Red and filled, so the changed label is not the only signal. */
+.footer-btn.footer-btn--confirm,
+.fab-quick-menu-chip.fab-quick-menu-chip--confirm,
+.export-btn.export-btn--confirm {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--bg);
+}
+.fab-quick-menu-chip--confirm .fab-quick-menu-chip-icon { color: var(--bg); }

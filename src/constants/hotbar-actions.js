@@ -19,7 +19,9 @@ export const HOTBAR_ACTIONS = [
     label:   'Clear All',
     icon:    '✕',
     title:   'Clear all entries',
-    confirm: 'Clear all entries? This can be undone.',
+    // Shown on the button itself once a first press arms it; a second press
+    // acts. See use-confirm-press.js for why this is not a dialog.
+    confirm: 'Click again to clear',
   },
   {
     id:      'make_all_public',

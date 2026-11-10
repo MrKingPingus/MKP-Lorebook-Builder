@@ -20,6 +20,7 @@ export const THESAURUS_RELATED_MAX     = 50;  // words requested from Datamuse b
 export const THESAURUS_RELATED_MIN_FREQ = 0.5; // drop related words below this usage frequency (per million words); words with no frequency data are kept
 export const THESAURUS_RELATED_PER_POS  = 12;  // cap on related words shown per part-of-speech group
 export const DUPE_FLASH_MS            = 1500;
+export const CONFIRM_PRESS_WINDOW_MS  = 3000;  // a destructive button stays armed this long for its second press (use-confirm-press)
 export const MENU_PANEL_WIDTH         = 320;
 // Per-entry ⋯ overflow menu. Portalled and anchored, so this is the width the
 // positioner clamps against the viewport rather than a CSS guess.

@@ -5,6 +5,7 @@ import { useKeybindings }   from '../../hooks/use-keybindings.js';
 import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useSettings }      from '../../hooks/use-settings.js';
+import { useConfirmPress }  from '../../hooks/use-confirm-press.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
 import { TemplatesPopover } from '../feature/TemplatesPopover.jsx';
 import { ExportMenu }       from '../feature/ExportMenu.jsx';
@@ -18,6 +19,7 @@ const HOVER_OPEN_MS  = 200;
 const HOVER_CLOSE_MS = 200;
 
 function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, onArm, chord = null }) {
+  const confirmPress = useConfirmPress();
   // While the "Add to hotbar" pin flow is active, every slot (filled or empty)
   // is an armable drop target — clicking arms it rather than running its action.
   if (pinMode) {
@@ -41,11 +43,9 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
   const { descriptor, execute, disabled, active } = action;
 
+  const confirming = confirmPress.armedId === descriptor.id;
   function handleClick(e) {
-    if (descriptor.confirm) {
-      if (!window.confirm(descriptor.confirm)) return;
-    }
-    execute(e);
+    confirmPress.press(descriptor.id, !!descriptor.confirm, () => execute(e));
   }
 
   // A boolean `active` (true OR false) marks this as a stateful toggle, so it
@@ -55,13 +55,14 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
   return (
     <button
-      className={`footer-btn touch-floor${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
+      className={`footer-btn touch-floor${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}${confirming ? ' footer-btn--confirm' : ''}`}
       onClick={handleClick}
+      onBlur={confirmPress.disarm}
       disabled={disabled}
       title={chord ? `${descriptor.title} (${chord})` : descriptor.title}
     >
       <span className="hotbar-slot-icon">{descriptor.icon} </span>
-      <span className="hotbar-slot-text">{descriptor.label}</span>
+      <span className="hotbar-slot-text">{confirming ? descriptor.confirm : descriptor.label}</span>
     </button>
   );
 }

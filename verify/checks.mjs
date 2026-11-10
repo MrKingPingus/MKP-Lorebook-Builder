@@ -315,7 +315,7 @@ const SCENARIOS = [
     const card = page.locator('.entry-card').first();
     await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
     await settle(page, 200);
-    const textarea = card.locator('textarea').first();
+    const textarea = card.locator('.description-textarea');
     const counter  = card.locator('.char-counter').first();
 
     async function typeChars(n) {
@@ -3195,6 +3195,41 @@ const SCENARIOS = [
     await settle(page, 600);
     check('and the new book gets its first entry from the template',
       await page.locator('.entry-card').count(), 1);
+  }),
+
+  // Clear All used window.confirm(), which a sandboxed frame refuses without
+  // asking — so it did nothing there at all. It now asks by arming itself.
+  scenario('Clear All asks with a second press, not a browser dialog', async (page, check) => {
+    await page.addInitScript(() => { window.confirm = () => false; });
+    await openBuilderWithFixture(page);
+    const total = await page.locator('.entry-card').count();
+
+    await page.locator('.footer-fab').hover();
+    await settle(page, 500);
+    const chip = page.locator('.fab-quick-menu-chip', { hasText: 'Clear All' });
+    check('the + menu offers Clear All', await chip.count(), 1);
+    await chip.click();
+    await settle(page, 150);
+    check('one press only arms it', await page.locator('.entry-card').count(), total);
+    check('and says what the next press does',
+      await page.locator('.fab-quick-menu-chip--confirm').innerText().then((t) => t.includes('Click again')), true);
+
+    await page.locator('.fab-quick-menu-chip--confirm').click();
+    await settle(page, 300);
+    check('the second press clears, with no dialog involved',
+      await page.locator('.entry-card').count(), 0);
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('and it is still one undo away', await page.locator('.entry-card').count(), total);
+
+    // Left alone, the arm lapses — a stray first press is harmless.
+    await page.locator('.footer-fab').hover();
+    await settle(page, 500);
+    await page.locator('.fab-quick-menu-chip', { hasText: 'Clear All' }).click();
+    await settle(page, 3300);
+    check('an unanswered arm lapses back to Clear All',
+      await page.locator('.fab-quick-menu-chip--confirm').count(), 0);
+    check('having cleared nothing', await page.locator('.entry-card').count(), total);
   }),
 
   // The + button's hover menu carries the same picker, and so does a hotkey —
