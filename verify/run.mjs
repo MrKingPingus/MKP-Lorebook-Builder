@@ -16,6 +16,7 @@ import { runEntryTransferChecks } from './entry-transfer-checks.mjs';
 import { runTemplateChecks } from './template-checks.mjs';
 import { runHostSerializeChecks } from './host-serialize-checks.mjs';
 import { runLorebookDuplicateChecks } from './lorebook-duplicate-checks.mjs';
+import { runTxtImportChecks } from './txt-import-checks.mjs';
 import { BASE_URL } from './driver.mjs';
 
 async function serverUp() {
@@ -45,6 +46,7 @@ const pureOk = [
   runTemplateChecks(),
   runHostSerializeChecks(),
   runLorebookDuplicateChecks(),
+  runTxtImportChecks(),
 ].every(Boolean);
 
 let child = null;

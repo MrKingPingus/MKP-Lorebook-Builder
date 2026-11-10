@@ -14,6 +14,7 @@ import { TitleCharCounter } from '../ui/TitleCharCounter.jsx';
 import { CyclingSelect }   from '../ui/CyclingSelect.jsx';
 import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
+import { ConditionField }  from './ConditionField.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
@@ -204,24 +205,11 @@ export function EntryDetailPanel() {
 
 
           {/* Trigger condition (CharSnap) */}
-          <div className="entry-detail-section">
-            <div className="field-label">
-              TRIGGER CONDITION
-              <span className="field-label-hint">{(entry.triggerCondition ?? '').length}/{HOST_LIMITS.triggerCondition}</span>
-            </div>
-            <textarea
-              className="entry-condition-field"
-              value={entry.triggerCondition ?? ''}
-              onChange={(e) => update({ triggerCondition: e.target.value.slice(0, HOST_LIMITS.triggerCondition) })}
-              placeholder="e.g. {{user}} asks about {{char}}'s childhood"
-              rows={2}
-              spellCheck={false}
-              maxLength={HOST_LIMITS.triggerCondition}
-            />
-            <div className="entry-condition-hint">
-              Plain-language rule for when this entry applies. CharSnap judges it against the recent chat every turn; it works with or without keywords.
-            </div>
-          </div>
+          <ConditionField
+            className="entry-detail-section"
+            value={entry.triggerCondition}
+            onChange={(triggerCondition) => update({ triggerCondition })}
+          />
 
           {/* Suggestions */}
           <SuggestionsTray entry={entry} onAddTrigger={addTrigger} onAddTriggers={addTriggers} />

@@ -9103,3 +9103,23 @@ kbd {
 }
 .settings-feedback-link:hover { color: var(--text); }
 .settings-feedback-version { color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+/* ── Trigger condition: header badge as a button, and the field's highlight ── */
+.entry-condition-icon--btn {
+  padding: 2px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.entry-condition-icon--btn:hover { background: var(--surface3); }
+.entry-condition-section--flash .entry-condition-field {
+  animation: condition-flash 1.6s ease-out;
+}
+@keyframes condition-flash {
+  0%, 60% { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+  100%    { box-shadow: 0 0 0 3px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entry-condition-section--flash .entry-condition-field { animation: none; border-color: var(--accent); }
+}

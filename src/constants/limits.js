@@ -20,6 +20,12 @@ export const THESAURUS_RELATED_MAX     = 50;  // words requested from Datamuse b
 export const THESAURUS_RELATED_MIN_FREQ = 0.5; // drop related words below this usage frequency (per million words); words with no frequency data are kept
 export const THESAURUS_RELATED_PER_POS  = 12;  // cap on related words shown per part-of-speech group
 export const DUPE_FLASH_MS            = 1500;
+// Trigger condition counter: where it turns yellow and orange, as fractions of
+// its cap. The same proportions as the description's defaults (750 and 1000 of
+// 1500), so the two counters in an entry change colour at the same fill.
+export const CONDITION_WARN_YELLOW_FRACTION = 1 / 2;
+export const CONDITION_WARN_ORANGE_FRACTION = 2 / 3;
+export const CONDITION_FLASH_MS      = 1600;  // how long the condition field stays highlighted after its header badge is clicked
 export const CONFIRM_PRESS_WINDOW_MS  = 3000;  // a destructive button stays armed this long for its second press (use-confirm-press)
 export const MENU_PANEL_WIDTH         = 320;
 // Per-entry ⋯ overflow menu. Portalled and anchored, so this is the width the

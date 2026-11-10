@@ -28,6 +28,8 @@ import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW,
 import { useHtmlEscape }                            from '../../hooks/use-html-escape.js';
 import { useHostMode }                              from '../../hooks/use-host.js';
 import { HOST_LIMITS }                              from '../../constants/host.js';
+import { CONDITION_FLASH_MS }                       from '../../constants/limits.js';
+import { ConditionField }                           from './ConditionField.jsx';
 
 // Header status badges. CharSnap entries default to private, so Public is the
 // exception worth flagging — an open eye = "made Public". Hidden-from-Export
@@ -67,14 +69,26 @@ function AlwaysOnIcon() {
   );
 }
 
-function ConditionIcon() {
+// With `onClick` it is a button: pressing it opens the entry and highlights
+// the Trigger condition field, which is the quickest answer to "what is this
+// icon". Without one (the phone card, where a tap opens the editor anyway) it
+// stays a plain badge.
+function ConditionIcon({ onClick }) {
+  const Tag = onClick ? 'button' : 'span';
   return (
-    <span className="entry-condition-icon" title="Has a trigger condition (judged against the chat each turn on CharSnap)" aria-label="Trigger condition">
+    <Tag
+      className={`entry-condition-icon${onClick ? ' entry-condition-icon--btn' : ''}`}
+      title={onClick
+        ? 'Has a trigger condition: CharSnap judges it against the chat each turn. Click to show it.'
+        : 'Has a trigger condition (judged against the chat each turn on CharSnap)'}
+      aria-label={onClick ? 'Show this entry\'s trigger condition' : 'Trigger condition'}
+      {...(onClick ? { type: 'button', onClick } : {})}
+    >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         <polyline points="9 10 11 12 15 8"/>
       </svg>
-    </span>
+    </Tag>
   );
 }
 
@@ -314,6 +328,19 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
     setRollbackOpen(false);
   }
 
+  // The header's condition badge: open the card and point at the field.
+  const [conditionFlash, setConditionFlash] = useState(false);
+  const conditionFlashTimer = useRef(null);
+  useEffect(() => () => clearTimeout(conditionFlashTimer.current), []);
+  function showCondition(e) {
+    e.stopPropagation();
+    if (isSearchFocused) setSearchFocusedId(null);
+    setLocalCollapsed(false);
+    setConditionFlash(true);
+    clearTimeout(conditionFlashTimer.current);
+    conditionFlashTimer.current = setTimeout(() => setConditionFlash(false), CONDITION_FLASH_MS);
+  }
+
   function toggleCollapse() {
     if (collapsed) {
       if (isSearchFocused) setSearchFocusedId(null);
@@ -518,7 +545,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         {!isCondensed && entry.isPublic !== true && markPrivateEntries && <PrivateEyeOffIcon />}
         {!isCondensed && entry.hiddenFromExport && <ExportOffIcon />}
         {!isCondensed && entry.alwaysOn === true && <AlwaysOnIcon />}
-        {!isCondensed && (entry.triggerCondition ?? '').trim() !== '' && <ConditionIcon />}
+        {!isCondensed && (entry.triggerCondition ?? '').trim() !== '' && (
+          <ConditionIcon onClick={isSelectMode ? undefined : showCondition} />
+        )}
         {!isCondensed && sameNameRefId && (
           <button
             className={`entry-ref-badge entry-ref-badge--header touch-floor${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}
@@ -663,27 +692,13 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
 
 
           {/* Trigger condition (CharSnap) */}
-          <div className={`entry-condition-section${isComparing && compareDelta?.changedFields.has('triggerCondition') ? ' entry-field--differs' : ''}`}>
-            <div className="field-label">
-              {isComparing && compareDelta?.changedFields.has('triggerCondition') && (
-                <span className="diff-modified-dot" title="Differs from reference">●</span>
-              )}
-              TRIGGER CONDITION
-              <span className="field-label-hint">{(entry.triggerCondition ?? '').length}/{HOST_LIMITS.triggerCondition}</span>
-            </div>
-            <textarea
-              className="entry-condition-field"
-              value={entry.triggerCondition ?? ''}
-              onChange={(e) => update({ triggerCondition: e.target.value.slice(0, HOST_LIMITS.triggerCondition) })}
-              placeholder="e.g. {{user}} asks about {{char}}'s childhood"
-              rows={2}
-              spellCheck={false}
-              maxLength={HOST_LIMITS.triggerCondition}
-            />
-            <div className="entry-condition-hint">
-              Plain-language rule for when this entry applies. CharSnap judges it against the recent chat every turn; it works with or without keywords.
-            </div>
-          </div>
+          <ConditionField
+            className="entry-condition-section"
+            value={entry.triggerCondition}
+            onChange={(triggerCondition) => update({ triggerCondition })}
+            differs={!!(isComparing && compareDelta?.changedFields.has('triggerCondition'))}
+            flash={conditionFlash}
+          />
 
           {/* Row 3: Suggestions tray — hidden in compare mode so both sides
               share the same minimal layout (the reference mirror doesn't

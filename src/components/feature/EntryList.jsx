@@ -84,11 +84,16 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   if (renderTree.length === 0) {
     return (
       <div className="entry-list-empty">
+        {/* One span: the container is a flex box, which would turn each run
+            of text and the link into separate items and drop the space
+            between "or" and the link. */}
+        <span>
         No entries yet. Press {displayChord('new_entry')} or click + to add one
         {/* Only once there is something to offer. An empty book is exactly
             where templates earn their keep, and it was the one place with no
             route to them — every other way in hangs off an entry's ⋯ menu. */}
         {hasTemplates && <>, or <TemplatesButton /></>}.
+        </span>
       </div>
     );
   }

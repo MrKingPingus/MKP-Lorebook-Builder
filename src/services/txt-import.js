@@ -1,5 +1,6 @@
 // Parse plain-text lorebook files into an array of entry objects.
-// Supports four formats (detected automatically):
+// Supports five formats (detected automatically):
+//   0. CharSnap page copy: text selected and copied off a CharSnap lorebook page
 //   1. Entry-labeled: Entry:/Type:/Triggers:/Description: field labels
 //   2. Type-anchored: bare name line + Type:/Triggers:/Description: labels (DOCX exports)
 //   3. Template:  === Name [type] === headers with --- dividers
@@ -26,6 +27,95 @@ function normalizeType(raw) {
   if (typeof raw !== 'string') return IMPORT_DEFAULT;
   const snake = raw.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
   return VALID_TYPES.has(snake) ? snake : IMPORT_DEFAULT;
+}
+
+// ── CharSnap page copy (#121) ───────────────────────────────────────────────
+// What you get by selecting a lorebook on CharSnap and copying it. No labels
+// and no dividers; each entry is a three-line header, its description, then a
+// trigger list with one trigger per line:
+//
+//   Gummi Ship            ← name
+//   Character             ← type, on its own line
+//   Public                ← visibility, on its own line
+//   The Gummi Ship is…    ← description (any number of paragraphs)
+//
+//   Triggers:
+//   gummi
+//   ship
+//   Trigger Condition:    ← optional
+//   When traveling to other worlds.
+//   Nobody                ← the next entry's name follows straight on
+//
+// The header is the only structure there is, so it is the anchor: a line
+// followed by a bare type line and a bare Public/Private line. That is what
+// tells the last trigger from the next entry's name. It has to be tried before
+// the labelled formats, because a description may hold a line like
+// "Type: Method of travel", which the Type-anchored parser takes as a label.
+const PAGE_TYPES = new Map(ENTRY_TYPES.map((t) => [t.label.toLowerCase(), t.id]));
+PAGE_TYPES.set('plot event', 'plot_event');
+const PAGE_VISIBILITY     = /^(public|private)$/i;
+const PAGE_TRIGGERS_LABEL = /^Triggers:\s*(.*)$/i;
+const PAGE_CONDITION_LABEL = /^Trigger Condition:\s*(.*)$/i;
+
+function isPageHeaderAt(lines, i) {
+  return (
+    lines[i].trim() !== '' &&
+    i + 2 < lines.length &&
+    PAGE_TYPES.has(lines[i + 1].trim().toLowerCase()) &&
+    PAGE_VISIBILITY.test(lines[i + 2].trim())
+  );
+}
+
+/** True when the text opens with a CharSnap page header. */
+function looksLikeCharSnapPage(lines) {
+  const first = lines.findIndex((l) => l.trim() !== '');
+  return first !== -1 && isPageHeaderAt(lines, first);
+}
+
+function parseCharSnapPage(lines) {
+  const starts = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (isPageHeaderAt(lines, i)) { starts.push(i); i += 2; }
+  }
+
+  return starts.map((start, n) => {
+    const end  = n + 1 < starts.length ? starts[n + 1] : lines.length;
+    const name = lines[start].trim();
+    const type = PAGE_TYPES.get(lines[start + 1].trim().toLowerCase());
+    const isPublic = lines[start + 2].trim().toLowerCase() === 'public';
+
+    const description = [];
+    const triggers    = [];
+    const condition   = [];
+    let into = description;
+
+    for (const raw of lines.slice(start + 3, end)) {
+      const line = raw.trim();
+      const cond = line.match(PAGE_CONDITION_LABEL);
+      const trig = !cond && line.match(PAGE_TRIGGERS_LABEL);
+      if (cond) {
+        into = condition;
+        if (cond[1]) condition.push(cond[1]);
+      } else if (trig && into === description) {
+        into = triggers;
+        // "Triggers: a, b" on one line, should a page ever render them so.
+        triggers.push(...trig[1].split(',').map((t) => t.trim()).filter(Boolean));
+      } else if (into === description) {
+        description.push(raw.replace(/\s+$/, ''));
+      } else if (line) {
+        into.push(line);
+      }
+    }
+
+    return createEmptyEntry({
+      name,
+      type,
+      isPublic,
+      triggers,
+      description:      description.join('\n').replace(/\n{3,}/g, '\n\n').trim(),
+      triggerCondition: condition.join(' '),
+    });
+  });
 }
 
 /**
@@ -272,7 +362,9 @@ export function parseTxtToEntries(text) {
   const lines = text.split('\n');
 
   let entries;
-  if (lines.some((l) => /^\*\*Entry Name:\*\*/i.test(l.trim()))) {
+  if (looksLikeCharSnapPage(lines)) {
+    entries = parseCharSnapPage(lines);
+  } else if (lines.some((l) => /^\*\*Entry Name:\*\*/i.test(l.trim()))) {
     entries = parseMarkdownBoldFormat(lines);
   } else if (lines.some((l) => /^Entry:\s*/i.test(l.trim()))) {
     entries = parseEntryLabeledFormat(lines);
