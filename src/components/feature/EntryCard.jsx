@@ -488,7 +488,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   return (
     <div
       id={`entry-${entry.id}`}
-      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}${isCondensed ? ' entry-card--condensed' : ''}`}
+      className={`entry-card${isSelected ? ' entry-card--selected' : ''}${isSelectMode ? ' entry-card--selectable' : ''}${isCrossFlashing ? ' entry-card--cross-flash' : ''}${isCondensed ? ' entry-card--condensed' : ''}${isComparing ? ' entry-card--comparing' : ''}`}
       style={{ '--type-color': typeColor }}
       onClick={isSelectMode ? () => toggleSelected(entry.id, 'active') : undefined}
     >
@@ -697,6 +697,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             value={entry.triggerCondition}
             onChange={(triggerCondition) => update({ triggerCondition })}
             differs={!!(isComparing && compareDelta?.changedFields.has('triggerCondition'))}
+            compact={isComparing}
             flash={conditionFlash}
           />
 

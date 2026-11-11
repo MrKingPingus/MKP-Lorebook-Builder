@@ -2595,6 +2595,24 @@ const SCENARIOS = [
       await page.locator('.thesaurus-popover').count(), 1);
   }),
 
+  // #100: in compare mode the active card and its reference copy should read
+  // as one table, each row at the same height in both. Parts on one side only
+  // (the × on chips, Allow-all-overlap, the trigger counter, the condition's
+  // counter and hint, the description's copy buttons) pushed them apart.
+  scenario('Compare mode: the two cards line up row for row (#100)', async (page, check) => {
+    await pairCrosstalk(page);
+    await page.locator('.build-panel .entry-ref-badge--diff').first().click();
+    await settle(page, 700);
+    const rows = ['.entry-fields-row', '.trigger-section', '.entry-condition-section', '.description-wrapper'];
+    const offsets = await page.evaluate((rows) => {
+      const act = document.querySelector('.entry-card--comparing');
+      const ref = document.querySelector('.entry-card--reference-mirror');
+      const at = (root, sel) => Math.round(root.querySelector(sel).getBoundingClientRect().top - root.getBoundingClientRect().top);
+      return rows.map((sel) => at(act, sel) - at(ref, sel));
+    }, rows);
+    check('every row starts at the same height in both cards (differences, px)', offsets.join(','), '0,0,0,0');
+  }),
+
   // #99: a trigger that conflicts with another entry opens the conflict
   // popover on hover, so its synonyms were unreachable. The conflict popover
   // now has a Synonyms… button, which opens synonyms pinned: they appear where

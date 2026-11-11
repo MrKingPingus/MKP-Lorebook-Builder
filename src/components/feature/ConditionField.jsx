@@ -21,7 +21,9 @@ const TIERS = {
   red:    LIMIT,
 };
 
-export function ConditionField({ value, onChange, className = '', differs = false, flash = false }) {
+// `compact` drops the counter and hint, for compare mode: the reference copy
+// beside it has neither, and the two cards line up row for row (#100).
+export function ConditionField({ value, onChange, className = '', differs = false, flash = false, compact = false }) {
   const { tieredCounterEnabled, warningScale } = useSettings();
   const ref  = useRef(null);
   const text = value ?? '';
@@ -48,6 +50,7 @@ export function ConditionField({ value, onChange, className = '', differs = fals
         spellCheck={false}
         maxLength={LIMIT}
       />
+      {!compact && (<>
       <div className="entry-condition-footer">
         <CharCounter
           count={text.length}
@@ -60,6 +63,7 @@ export function ConditionField({ value, onChange, className = '', differs = fals
       <div className="entry-condition-hint">
         Plain-language rule for when this entry applies. CharSnap judges it against the recent chat every turn; it works with or without keywords.
       </div>
+      </>)}
     </div>
   );
 }

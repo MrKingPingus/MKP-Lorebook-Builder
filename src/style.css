@@ -9464,3 +9464,18 @@ kbd {
 }
 .reference-entry-condition-label { font-weight: 600; color: var(--muted2); text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.04em; }
 .reference-entry-always-on { display: inline-block; margin-left: 8px; font-weight: 600; color: var(--accent); }
+
+/* ── Compare mode: the two cards line up row for row (#100) ───────────────────
+   Anything on one side only is hidden or given a same-sized stand-in on the
+   other. The active card is .entry-card--comparing; the reference copy beside
+   it is .entry-card--reference-mirror. */
+.entry-card--comparing .trigger-chips-footer { display: none; }
+/* The reference's chips have no ×, so they were narrower and wrapped onto
+   fewer rows. An empty slot the ×'s size keeps the widths equal. */
+.entry-card--reference-mirror .chip::after { content: ''; width: 16px; height: 16px; flex: none; }
+.entry-card--comparing .trigger-section-header,
+.entry-card--reference-mirror .trigger-section-header { min-height: 26px; }
+.entry-card--comparing .description-area-label,
+.entry-card--reference-mirror .description-area-label { min-height: 26px; }
+.entry-card--comparing .description-area-label .field-label-hint,
+.entry-card--reference-mirror .description-area-label .field-label-hint { white-space: nowrap; }
