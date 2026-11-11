@@ -2596,6 +2596,46 @@ const SCENARIOS = [
       await page.locator('.thesaurus-popover').count(), 1);
   }),
 
+  // Tester: the folder name filled the whole bar, so every click on the bar
+  // renamed, and opening or closing meant finding the small button. The bar
+  // now opens and closes on a double-click, like an entry's header.
+  scenario('Folders: double-click the bar to open or close it', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).click();
+    await settle(page, 200);
+    await page.keyboard.press('Escape'); // leave the name as it is
+    await settle(page, 150);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-action-chips .bulk-type-chip').filter({ hasNotText: 'New Folder' }).first().click();
+    await settle(page, 300);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    const header = page.locator('.folder-header').first();
+    const toggle = header.locator('.folder-collapse-btn');
+    const expanded = () => toggle.getAttribute('aria-expanded');
+    const nameBox = await header.locator('.folder-name').boundingBox();
+    const barBox  = await header.boundingBox();
+    check('the name takes only its own width, leaving most of the bar free',
+      nameBox.width < barBox.width / 2, true);
+
+    const before = await expanded();
+    const spacer = await header.locator('.folder-header-spacer').boundingBox();
+    await page.mouse.dblclick(spacer.x + spacer.width / 2, spacer.y + spacer.height / 2);
+    await settle(page, 250);
+    check('double-clicking the empty bar toggles the folder', (await expanded()) !== before, true);
+    check('without starting a rename', await header.locator('.folder-name-input').count(), 0);
+    await page.mouse.dblclick(spacer.x + spacer.width / 2, spacer.y + spacer.height / 2);
+    await settle(page, 250);
+    check('and again toggles it back', await expanded(), before);
+
+    await header.locator('.folder-name').click();
+    await settle(page, 150);
+    check('a click on the name still renames', await header.locator('.folder-name-input').count(), 1);
+  }),
+
   // #97: Firefox cannot place the text cursor by clicking inside a draggable
   // element. Cards were always draggable, so in Firefox a click in any field
   // put the cursor at its start. This browser is Chromium, which is immune, so

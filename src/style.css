@@ -2650,7 +2650,7 @@ img.logo-icon {
 }
 
 .folder-name {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   text-align: left;
   padding: 2px 2px;
@@ -9481,3 +9481,5 @@ kbd {
 .entry-card--reference-mirror .description-area-label { min-height: 26px; }
 .entry-card--comparing .description-area-label .field-label-hint,
 .entry-card--reference-mirror .description-area-label .field-label-hint { white-space: nowrap; }
+
+.folder-header-spacer { flex: 1; align-self: stretch; cursor: default; }

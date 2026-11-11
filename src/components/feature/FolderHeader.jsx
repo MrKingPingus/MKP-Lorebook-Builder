@@ -113,6 +113,14 @@ export function FolderHeader({
       ref={rootRef}
       onDragOver={onHeaderDragOver}
       onDrop={onHeaderDrop}
+      // Double-click the bar to open or close the folder, the way an entry's
+      // header works. Same action as the collapse button. Controls on the bar
+      // keep their own clicks, and the name still renames on a single click.
+      onDoubleClick={(e) => {
+        if (e.target.closest('button, input, select, a, .folder-drag-handle, .folder-color-picker')) return;
+        window.getSelection?.()?.removeAllRanges();
+        cycleCollapse(folder.id);
+      }}
       // Shift+click anywhere on the header takes everything inside the folder,
       // ctrl+click gives it back. Capture phase so the gesture never reaches
       // the collapse / rename / nest / delete buttons underneath it.
@@ -174,6 +182,9 @@ export function FolderHeader({
           {folder.name || NEW_FOLDER_NAME}
         </button>
       )}
+      {/* The name is only as wide as its text, so the rest of the bar is free
+          to double-click. It used to fill the bar, and every click renamed. */}
+      {!editing && <span className="folder-header-spacer" aria-hidden="true" />}
 
       <span className="folder-count" title={`${count} entr${count === 1 ? 'y' : 'ies'} in this folder`}>
         {count}
