@@ -72,6 +72,18 @@ export function WindowHeader() {
     closeTimer.current = setTimeout(() => setTitleOpen(false), TITLE_MENU_CLOSE_MS);
   }
 
+  // A press inside a hover-opened menu means the user is now working in it,
+  // so it pins, the same as clicking the title would. Without this, choosing
+  // Import's "click to browse" opened the system file picker, the pointer
+  // counted as leaving the menu, and the menu closed behind the picker,
+  // taking its file input with it: the chosen file went nowhere and the user
+  // had to start again. A pinned menu already survived that, which is why it
+  // only ever failed on the first try.
+  function engageTitleMenu() {
+    clearTimeout(closeTimer.current);
+    setPinned(true);
+  }
+
   function handleTitleClick() {
     clearTimers();
     if (pinned) {
@@ -204,6 +216,7 @@ export function WindowHeader() {
               onClose={closeTitleMenu}
               onMouseEnter={() => clearTimeout(closeTimer.current)}
               onMouseLeave={hoverClose}
+              onEngage={engageTitleMenu}
             />
           )}
         </div>

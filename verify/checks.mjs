@@ -3338,6 +3338,31 @@ const SCENARIOS = [
     }
   }),
 
+  // Tester: importing from the title menu "closes the window" on the first try.
+  // A hover-opened menu closed when the system file picker took the pointer
+  // away, unmounting its file input, so the chosen file went nowhere.
+  scenario('Title menu: browsing for a file keeps a hover-opened menu open', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const menu = page.locator('.title-menu');
+    await page.locator('.title-field').first().hover();
+    await settle(page, 500);
+    check('hovering the title opens the menu', await menu.count(), 1);
+    check('unpinned', await page.locator('.title-field--pinned').count(), 0);
+
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      menu.locator('.drop-zone').first().click(),
+    ]);
+    // The picker has the pointer now; to the page, it has left the menu.
+    await page.mouse.move(5, 880);
+    await settle(page, 900);
+    check('the menu stays open while the picker is up', await menu.count(), 1);
+    await chooser.setFiles(VARIANT_FIXTURE);
+    await settle(page, 600);
+    check('and the chosen file reaches the import flow',
+      await menu.locator('.import-flow-head').count(), 1);
+  }),
+
   // The header logo opens a menu of links to the builder's author.
   scenario('The header logo opens the creator menu', async (page, check) => {
     await openBuilderWithFixture(page);

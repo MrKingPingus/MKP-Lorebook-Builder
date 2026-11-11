@@ -35,7 +35,7 @@ import {
 // sizing menu. This component only renders and reports that it wants to close.
 // `hideBooks` (host mode) drops the lorebooks column: CharSnap decides which
 // book is open, so the menu is import / export alone, in one column.
-export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave, hideBooks = false }) {
+export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave, onEngage, hideBooks = false }) {
   const menuRef = useRef(null);
   const [pos, setPos] = useState(null);
 
@@ -143,6 +143,7 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave, hid
       onMouseDown={(e) => e.stopPropagation()}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onMouseDownCapture={onEngage}
     >
       {/* ── Left: lorebooks, or a rail back to them while importing ── */}
       {hideBooks ? null : takingOver ? (
