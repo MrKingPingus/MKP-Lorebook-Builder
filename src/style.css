@@ -25,7 +25,11 @@
   --border:   #374151;
   --border2:  #4b5563;
   --text:     #e5e7eb;
-  --muted:    #6b7280;
+  /* Was #6b7280: 3.0–3.7:1 against these surfaces, under the 4.5:1 WCAG AA
+     floor for small text, and the settings headings and hints that use it
+     were hard to read. This clears 4.8:1 on every surface and stays a step
+     below --muted2, so the hierarchy holds. */
+  --muted:    #8b95a5;
   --muted2:   #9ca3af;
   --coral:    #f87171;
   --green:    #34d399;
@@ -117,7 +121,7 @@ html { font-size: calc(100% * var(--ui-scale, 1)); }
   --border:   #cbd5e1;
   --border2:  #94a3b8;
   --text:     #0f172a;
-  --muted:    #64748b;
+  --muted:    #56657a; /* was #64748b: 3.9:1 on --surface3; this is 4.8–5.9:1 */
   --muted2:   #475569;
   --coral:    #e11d48;
   --green:    #059669;
@@ -9441,3 +9445,20 @@ kbd {
 .creator-menu-item:hover, .creator-menu-item:focus-visible { background: var(--surface3); outline: none; }
 .creator-menu-item--quiet { color: var(--muted2); }
 @media (max-width: 767px) { .creator-menu-item { min-height: var(--touch-floor); } }
+
+/* Reference card → Details: the trigger condition and Always on (E3). */
+.reference-entry-condition {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--surface3);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+.reference-entry-condition-label { font-weight: 600; color: var(--muted2); text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.04em; }
+.reference-entry-always-on { display: inline-block; margin-left: 8px; font-weight: 600; color: var(--accent); }

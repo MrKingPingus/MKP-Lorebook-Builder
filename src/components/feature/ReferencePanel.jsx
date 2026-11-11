@@ -155,6 +155,10 @@ export function ReferencePanel() {
               const snapshotCount = entry.snapshots?.length ?? 0;
               const isExpanded    = expandedIds.has(entry.id);
               const hasDescription = (entry.description ?? '').length > 0;
+              const condition      = typeof entry.triggerCondition === 'string' ? entry.triggerCondition.trim() : '';
+              // What the Details button opens: the description, and the two
+              // CharSnap fields, which a reference card had no other way to show.
+              const hasDetails     = hasDescription || condition !== '' || entry.alwaysOn === true;
               const isSelected    = selectedIds.has(entry.id);
               const sameNameActiveId   = refToActive.get(entry.id) ?? null;
               const matchedActiveEntry = matchedActiveByRef.get(entry.id) ?? null;
@@ -361,13 +365,14 @@ export function ReferencePanel() {
                           ↺ {snapshotCount}
                         </span>
                       )}
-                      {hasDescription && (
+                      {hasDetails && (
                         <button
-                          className="card-action-btn"
+                          className="card-action-btn reference-details-btn"
                           onMouseDown={stopSwap}
                           onClick={(e) => toggleExpanded(entry.id, e)}
+                          title="Show this entry's description and trigger condition"
                         >
-                          {isExpanded ? '▲ Desc' : '▼ Desc'}
+                          {isExpanded ? '▲ Details' : '▼ Details'}
                         </button>
                       )}
                     </div>
@@ -387,6 +392,16 @@ export function ReferencePanel() {
                           </span>
                         );
                       })}
+                    </div>
+                  )}
+                  {isExpanded && (condition !== '' || entry.alwaysOn === true) && (
+                    <div className="reference-entry-condition" onMouseDown={stopSwap}>
+                      {condition !== '' && (
+                        <><span className="reference-entry-condition-label">Trigger condition</span> {condition}</>
+                      )}
+                      {entry.alwaysOn === true && (
+                        <span className="reference-entry-always-on">Always on</span>
+                      )}
                     </div>
                   )}
                   {isExpanded && hasDescription && (

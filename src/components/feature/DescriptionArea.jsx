@@ -7,7 +7,7 @@ import { useUi }        from '../../hooks/use-ui.js';
 import { useHostMode }  from '../../hooks/use-host.js';
 import { CHAR_LIMIT } from '../../constants/limits.js';
 import { HOST_LIMITS } from '../../constants/host.js';
-import { warningColor, charStops, isGradient } from '../../services/warning-color.js';
+import { warningColor, charStops, isGradient, WARN_GREEN } from '../../services/warning-color.js';
 
 export function DescriptionArea({
   value,
@@ -36,14 +36,15 @@ export function DescriptionArea({
   const overRed    = value.length >= stops[1];
   const pillTier   = overRed ? 'red' : 'yellow';
 
-  // Blue border when override is active; otherwise the warning scale, with no
-  // border at all below the first threshold.
+  // Blue border when override is active; otherwise the counter's own colour,
+  // from the moment the counter leaves green. It used to wait for the first
+  // threshold, which on the gradient scale left the counter amber while the
+  // border was still plain, so the two disagreed about how full the box was.
   const tieredBorderStyle = (() => {
     if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
-    if (!tieredCounterEnabled || !overYellow) return {};
-    return {
-      borderColor: warningColor(value.length, stops, { gradient: isGradient(warningScale) }),
-    };
+    if (!tieredCounterEnabled) return {};
+    const color = warningColor(value.length, stops, { gradient: isGradient(warningScale) });
+    return color === WARN_GREEN ? {} : { borderColor: color };
   })();
 
   // Autogrow: resize the textarea to fit its content.

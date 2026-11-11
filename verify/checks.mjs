@@ -4,7 +4,7 @@
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
 import { runPool } from './pool.mjs';
-import { launch, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
+import { launch, openReferenceChooser, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -398,6 +398,10 @@ const SCENARIOS = [
     const easing = await counterColor();
     check('gradient: mid-run-up is neither green nor yellow',
       easing !== gRgb && easing !== yRgb, true);
+    // The border follows the counter from the moment it leaves green. It used
+    // to wait for the first threshold, so here the two disagreed (F4).
+    check('gradient: the box border already wears the counter\'s colour',
+      await textarea.evaluate((el) => getComputedStyle(el).borderTopColor), easing);
 
     // ── the setting survives a reload ───────────────────────────────────────
     // A reload lands on the lander, so the builder has to be re-entered before
@@ -3285,6 +3289,53 @@ const SCENARIOS = [
     check('a file that is not a backup is refused, in words',
       (await page.locator('.lander-restore-error').innerText()).includes('not a zip'), true);
     check('and opens nothing', await dialog.count(), 0);
+  }),
+
+  // E3 (tester): with a reference book paired, a reference card had no way to
+  // show its trigger condition, so two entries' conditions could not be read
+  // side by side. Its Details button now shows the condition and Always on.
+  scenario('Reference cards show the trigger condition under Details', async (page, check) => {
+    // Give an entry of the book that becomes the reference a condition first.
+    await openBuilderWithFixture(page, VARIANT_FIXTURE);
+    const first = page.locator('.entry-card').first();
+    const refName = (await rowNames(page))[0];
+    await first.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await first.locator('.entry-condition-field').fill('When {{user}} visits the archive.');
+    await settle(page, 400);
+    await importBookAsNew(page, FIXTURE);
+    await openReferenceChooser(page);
+    await page.locator('.ref-chooser-row').first().click();
+    await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+
+    const card = page.locator('.reference-entry-card', { hasText: refName }).first();
+    await card.locator('.reference-details-btn').click();
+    await settle(page, 200);
+    check('Details shows the reference entry\'s trigger condition',
+      (await card.locator('.reference-entry-condition').innerText()).includes('When {{user}} visits the archive.'), true);
+    check('alongside its description', await card.locator('.reference-entry-description').count(), 1);
+  }),
+
+  // H1 (tester): small grey text in dark mode was 3.0–3.7:1 against its
+  // backgrounds. Every theme's dim grey must clear WCAG AA (4.5:1) on every
+  // surface it can sit on.
+  scenario('Dim grey text clears 4.5:1 contrast on every surface, dark and light', async (page, check) => {
+    await openBuilderWithFixture(page);
+    for (const theme of ['dark', 'light']) {
+      const ratios = await page.evaluate((theme) => {
+        document.documentElement.setAttribute('data-theme', theme);
+        const css = getComputedStyle(document.documentElement);
+        const rgb = (v) => {
+          const d = document.createElement('div'); d.style.color = v; document.body.appendChild(d);
+          const m = getComputedStyle(d).color.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number); d.remove(); return m;
+        };
+        const lum = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+          .reduce((a, c, i) => a + c * [0.2126, 0.7152, 0.0722][i], 0);
+        const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+        const muted = rgb(css.getPropertyValue('--muted'));
+        return ['--bg', '--surface', '--surface2', '--surface3'].map((s) => ratio(muted, rgb(css.getPropertyValue(s))));
+      }, theme);
+      check(`${theme}: --muted clears 4.5:1 on all four surfaces`, Math.min(...ratios) >= 4.5, true);
+    }
   }),
 
   // The header logo opens a menu of links to the builder's author.
