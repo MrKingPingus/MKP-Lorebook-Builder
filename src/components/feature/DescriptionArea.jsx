@@ -65,15 +65,34 @@ export function DescriptionArea({
   //      runs. If we only measure once per value change, the stored height
   //      is wrong for the final width. ResizeObserver re-measures whenever
   //      the textarea's width actually changes.
+  //   4. the collapse must not reach the page. Measuring needs the box at
+  //      height:auto for an instant, and for that instant everything below
+  //      it moves up and the list gets shorter. Where the list was scrolled
+  //      near its end, some browsers (Safari has no scroll anchoring) clamp
+  //      the scroll position to the shorter list and never give it back, so
+  //      every keystroke threw the user up the column. The wrapper holds its
+  //      height while the box is measured, so nothing outside it moves; any
+  //      scroll position that moved anyway is put back.
   const resize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
+    const wrap = el.parentElement;
+    const scrollers = [];
+    for (let p = wrap?.parentElement; p; p = p.parentElement) {
+      if (p.scrollHeight > p.clientHeight) scrollers.push([p, p.scrollTop]);
+    }
+    const heldMinHeight = wrap?.style.minHeight ?? '';
+    if (wrap) wrap.style.minHeight = `${wrap.offsetHeight}px`;
+
     el.style.height = 'auto';
     // eslint-disable-next-line no-unused-expressions
     el.offsetHeight; // force reflow so scrollHeight reflects the new wrap
     const cs = window.getComputedStyle(el);
     const border = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
     el.style.height = `${el.scrollHeight + border}px`;
+
+    if (wrap) wrap.style.minHeight = heldMinHeight;
+    for (const [p, top] of scrollers) if (p.scrollTop !== top) p.scrollTop = top;
   }, []);
 
   useLayoutEffect(() => {

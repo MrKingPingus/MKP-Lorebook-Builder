@@ -258,7 +258,7 @@ export function EntryDetailPanel() {
                   ? (rollback.hasUnsavedChanges
                       ? 'Edited since your newest checkpoint — open to save one'
                       : 'View and restore entry checkpoints')
-                  : 'Turn on checkpoints for this lorebook'}
+                  : 'Checkpoints are off for this lorebook. Click to turn them on.'}
               >
                 {rollback.enabled ? (
                   <>
@@ -267,7 +267,7 @@ export function EntryDetailPanel() {
                     )}
                     {`↺ Checkpoints${rollback.snapshots.length > 0 ? ` (${rollback.snapshots.length})` : ''}`}
                   </>
-                ) : 'Enable checkpoints'}
+                ) : '↺ Checkpoints: off'}
               </button>
               <button
                 className={`entry-public-btn touch-floor${entry.isPublic === true ? ' entry-public-btn--public' : ''}`}

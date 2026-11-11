@@ -19,6 +19,7 @@ import { useSelection }         from '../../hooks/use-selection.js';
 import { useNameMatch }         from '../../hooks/use-name-match.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { entriesShallowEqual, diffEntries } from '../../services/diff-service.js';
+import { EntryStatusIcons } from '../ui/EntryStatusIcons.jsx';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { Chip }                 from '../ui/Chip.jsx';
@@ -28,7 +29,7 @@ import { ENTRY_TYPES }          from '../../constants/entry-types.js';
 export function ReferencePanel() {
   const { referenceLorebook, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const { items }                                                   = useLorebookSwitcher();
-  const { hideEntryStats, counterTiers, tieredCounterEnabled, warningScale } = useSettings();
+  const { hideEntryStats, counterTiers, tieredCounterEnabled, warningScale, markPrivateEntries } = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
   const { refToActive, activeToRef, matchedActiveByRef }            = useNameMatch();
@@ -192,6 +193,7 @@ export function ReferencePanel() {
                       <span className="entry-label" style={{ color: typeColor }}>
                         #{idx + 1}: {entry.name || '(unnamed)'}
                       </span>
+                      <EntryStatusIcons entry={entry} markPrivateEntries={markPrivateEntries} />
                       <button
                         className={`entry-ref-badge entry-ref-badge--header entry-ref-badge--diff touch-floor${isComparingHere ? ' entry-ref-badge--comparing' : ''}`}
                         onMouseDown={stopSwap}
@@ -315,6 +317,7 @@ export function ReferencePanel() {
                     <span className="reference-entry-label" style={{ color: typeColor }}>
                       #{idx + 1}: {entry.name || '(unnamed)'}
                     </span>
+                    <EntryStatusIcons entry={entry} markPrivateEntries={markPrivateEntries} />
                     {sameNameActiveId && (() => {
                       const isComparing = compareEntryId === sameNameActiveId;
                       return (

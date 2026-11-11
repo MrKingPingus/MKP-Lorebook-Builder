@@ -7199,7 +7199,9 @@ kbd {
   background: var(--border);
   border-color: var(--border2);
 }
-.rollback-toggle-btn--disabled,
+/* Off is a state you can change, not a dead control: full strength, with the
+   label saying "off". At 40% opacity testers could not tell it was there. */
+.rollback-toggle-btn--disabled { color: var(--muted2); }
 .rollback-toggle-btn:disabled {
   opacity: 0.4;
   cursor: default;

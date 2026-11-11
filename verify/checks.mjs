@@ -2483,8 +2483,9 @@ const SCENARIOS = [
     // The button enables checkpoints itself rather than sending you to Settings,
     // and opens the panel so the state change is visible.
     const enable = card.locator('.rollback-toggle-btn');
-    check('the disabled state offers to enable, not to navigate',
-      (await enable.innerText()).trim(), 'Enable checkpoints');
+    check('the off state says so, at full strength',
+      [(await enable.innerText()).trim(), await enable.evaluate((el) => getComputedStyle(el).opacity)].join(' | '),
+      '↺ Checkpoints: off | 1');
     await enable.click();
     await settle(page, 300);
     check('pressing it turns checkpoints on for the book',
@@ -3386,6 +3387,12 @@ const SCENARIOS = [
     check('Details shows the reference entry\'s trigger condition',
       (await card.locator('.reference-entry-condition').innerText()).includes('When {{user}} visits the archive.'), true);
     check('alongside its description', await card.locator('.reference-entry-description').count(), 1);
+    // Tester point 1: the reference card's header showed none of the entry's
+    // badges, so a condition could only be found by opening each card.
+    check('and its header carries the condition badge, like the active card\'s',
+      await card.locator('.reference-entry-header .entry-condition-icon').count(), 1);
+    check('and the public badge where the entry is public',
+      await card.locator('.reference-entry-header .entry-public-icon').count(), 1);
   }),
 
   // H1 (tester): small grey text in dark mode was 3.0–3.7:1 against its
