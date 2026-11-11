@@ -9400,3 +9400,44 @@ kbd {
   .tpl-manager-backdrop:has(.restore-dialog) { padding: 16px; }
   .restore-dialog .tpl-btn, .restore-dialog .tpl-field-check { min-height: var(--touch-floor); }
 }
+
+/* ── Header logo → creator menu (CreatorMenu.jsx) ──────────────────────────── */
+.header-logo-btn {
+  display: inline-flex;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+.header-logo-btn:hover { transform: rotate(-8deg) scale(1.06); }
+.header-logo-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .header-logo-btn:hover { transform: none; } }
+.creator-menu {
+  position: fixed;
+  z-index: 9100;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font-family: var(--font);
+}
+.creator-menu-head { padding: 6px 10px 4px; font-size: 0.6875rem; color: var(--muted2); letter-spacing: 0.04em; text-transform: uppercase; }
+.creator-menu-item {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+.creator-menu-item:hover, .creator-menu-item:focus-visible { background: var(--surface3); outline: none; }
+.creator-menu-item--quiet { color: var(--muted2); }
+@media (max-width: 767px) { .creator-menu-item { min-height: var(--touch-floor); } }

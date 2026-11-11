@@ -3287,6 +3287,27 @@ const SCENARIOS = [
     check('and opens nothing', await dialog.count(), 0);
   }),
 
+  // The header logo opens a menu of links to the builder's author.
+  scenario('The header logo opens the creator menu', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.header-logo-btn').click();
+    await settle(page, 150);
+    const menu = page.locator('.creator-menu');
+    check('clicking the logo opens the menu', await menu.count(), 1);
+    check('with the CharSnap creator page',
+      await menu.locator('a', { hasText: 'CharSnap' }).getAttribute('href'),
+      'https://charsnap.ai/creator/34759b54-7247-4380-9b48-e41af8452870');
+    check('and GitHub', await menu.locator('a', { hasText: 'GitHub' }).getAttribute('href'), 'https://github.com/MrKingPingus');
+    check('each opening in a new tab', await menu.locator('a[target=_blank]').count(), 3);
+    await page.keyboard.press('Escape');
+    await settle(page, 150);
+    check('Escape closes it', await menu.count(), 0);
+    await page.locator('.header-logo-btn').click();
+    await page.mouse.click(600, 500);
+    await settle(page, 150);
+    check('so does a click elsewhere', await menu.count(), 0);
+  }),
+
   // #137: a full copy of a lorebook, alongside it, without leaving this one.
   scenario('Duplicate a lorebook from the title menu (#137)', async (page, check) => {
     await openBuilderWithFixture(page);

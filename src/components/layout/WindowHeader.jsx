@@ -8,6 +8,7 @@ import { useSettings }          from '../../hooks/use-settings.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useHostMode }          from '../../hooks/use-host.js';
 import { MenuButton }           from './MenuButton.jsx';
+import { CreatorMenu }          from './CreatorMenu.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { TitleMenu }            from '../feature/TitleMenu.jsx';
 import { HostSaveButton }       from '../feature/HostSaveButton.jsx';
@@ -123,10 +124,12 @@ export function WindowHeader() {
           somewhere. The mark alone still identifies the app, and a phone user
           knows which app they opened. */}
       <div className="header-logo" onPointerDown={(e) => e.stopPropagation()}>
-        {funnyFishEnabled
-          ? <img className="logo-icon" src={logoUrl} alt="" />
-          : <span className="logo-icon">📖</span>
-        }
+        <CreatorMenu>
+          {funnyFishEnabled
+            ? <img className="logo-icon" src={logoUrl} alt="About the maker" />
+            : <span className="logo-icon" aria-label="About the maker">📖</span>
+          }
+        </CreatorMenu>
         {!isMobile && <span className="logo-text">LOREBOOK BUILDER</span>}
       </div>
 
