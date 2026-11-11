@@ -38,7 +38,7 @@ export function CreatorMenu({ children }) {
       <button
         ref={btnRef}
         type="button"
-        className="header-logo-btn"
+        className="header-logo-btn touch-floor"
         onClick={() => (open ? close() : setAnchor(btnRef.current.getBoundingClientRect()))}
         aria-haspopup="menu"
         aria-expanded={open}
