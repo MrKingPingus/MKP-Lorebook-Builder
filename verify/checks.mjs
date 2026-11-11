@@ -5,6 +5,8 @@
 // private, 0 hidden-from-export.
 import { runPool } from './pool.mjs';
 import { launch, openReferenceChooser, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
+// A CharSnap page copy saved as OpenDocument; see fixtures/README.md.
+const ODT_FIXTURE = new URL('../fixtures/charsnap-page-copy.odt', import.meta.url).pathname;
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -3361,6 +3363,14 @@ const SCENARIOS = [
     await settle(page, 600);
     check('and the chosen file reaches the import flow',
       await menu.locator('.import-flow-head').count(), 1);
+  }),
+
+  // Tester request: OpenOffice / LibreOffice files. An .odt is read by its own
+  // reader into the same text parser the Word and paste paths use.
+  scenario('Import an OpenDocument (.odt) file', async (page, check) => {
+    const count = await openBuilderWithFixture(page, ODT_FIXTURE);
+    check('a CharSnap page copy saved as .odt imports as its 8 entries', count, 8);
+    check('in order', (await rowNames(page)).slice(0, 2).join(' / '), 'Corridors of Darkness / Gummi Ship');
   }),
 
   // The header logo opens a menu of links to the builder's author.

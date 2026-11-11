@@ -18,3 +18,7 @@ Load it via the app's normal Import (File or Paste) flow. Note that
 `hiddenFromExport` is an app-internal flag and is **not** carried in the
 CharSnap JSON, so an imported book always arrives fully visible; toggle
 Hide-from-Export inside the app when testing that feature.
+
+## charsnap-page-copy.odt
+
+A lorebook copied off a CharSnap page into a Word document, as a tester did, then converted to OpenDocument with LibreOffice (`soffice --headless --convert-to odt`). It has no Public/Private lines and a blank line between every line. It must import as 8 entries; `verify/checks.mjs` drives it through the landing page's Import File.

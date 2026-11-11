@@ -2,6 +2,7 @@
 // page-copy format (#121): a real paste in that shape came out as one
 // 10,000-character entry.
 import { parseTxtToEntries } from '../src/services/txt-import.js';
+import { odtParagraphs } from '../src/services/odt-import.js';
 
 // The shape of text copied off a CharSnap lorebook page. Note the traps it
 // carries on purpose: a "Type:" line inside a description, a trigger list that
@@ -97,6 +98,17 @@ export function runTxtImportChecks() {
   check('freeform paragraphs still split on blank lines', freeform.map((e) => e.name), ['Alpha', 'Beta']);
   const typeWord = parseTxtToEntries('Alpha\nCharacter\nA line that is not a visibility word.\n\nBeta\nMore text.');
   check('a type word alone, without Public/Private under it, is not a page header', typeWord.length, 2);
+
+  // ── OpenDocument text (.odt) ──────────────────────────────────────────────
+  const xml = '<office:document-content><office:body><office:text>'
+    + '<text:h text:outline-level="1">Lantern Road</text:h>'
+    + '<text:p>Location</text:p>'
+    + '<text:p text:style-name="P1">Runs&#160;from the <text:span>harbour</text:span> &amp; the hills.<text:s text:c="2"/>Lit<text:line-break/>nightly.</text:p>'
+    + '<text:p/>'
+    + '<text:list><text:list-item><text:p>Triggers:</text:p></text:list-item></text:list>'
+    + '</office:text></office:body></office:document-content>';
+  check('.odt: headings and paragraphs come out in order, one per item',
+    odtParagraphs(xml), ['Lantern Road', 'Location', 'Runs\u00a0from the harbour & the hills.  Lit\nnightly.', '', 'Triggers:']);
 
   const passed = results.filter(Boolean).length;
   console.log(`  ${passed}/${results.length} txt-import checks passed`);

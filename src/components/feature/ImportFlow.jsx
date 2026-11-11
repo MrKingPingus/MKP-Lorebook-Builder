@@ -60,7 +60,7 @@ function SourceStage({ flow, fileInputRef }) {
           <DropZone onFile={flow.handleFile} accept={IMPORT_ACCEPT} inputRef={fileInputRef}>
             <div className="drop-zone-content">
               {flow.loading ? '⏳ Parsing…' : 'Drop a file or click to browse'}
-              <span className="import-flow-formats">TXT · DOCX · JSON</span>
+              <span className="import-flow-formats">TXT · DOCX · ODT · JSON</span>
             </div>
           </DropZone>
           {/* Pasting is the niche path, so it stays secondary rather than
