@@ -3559,6 +3559,8 @@ img.logo-icon {
 .chip-conflict-action--revoke { color: var(--muted2); }
 .chip-conflict-action--allow:hover  { background: rgba(96,165,250,.12); }
 .chip-conflict-action--revoke:hover { background: var(--surface3); }
+.chip-conflict-action--synonyms { color: var(--text); }
+.chip-conflict-action--synonyms:hover { background: var(--surface3); }
 
 /* ── Hidden-from-export popover ── */
 .hidden-entries-popover {

@@ -2595,6 +2595,36 @@ const SCENARIOS = [
       await page.locator('.thesaurus-popover').count(), 1);
   }),
 
+  // #99: a trigger that conflicts with another entry opens the conflict
+  // popover on hover, so its synonyms were unreachable. The conflict popover
+  // now has a Synonyms… button, which opens synonyms pinned: they appear where
+  // the pointer already is, so they must not close when it moves.
+  scenario('Synonyms are reachable from a conflicting trigger (#99)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const [a, b] = [page.locator('.entry-card').nth(0), page.locator('.entry-card').nth(1)];
+    for (const card of [a, b]) {
+      await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
+      await card.locator('.trigger-input').fill('lanternlight');
+      await card.locator('.trigger-input').press('Enter');
+      await settle(page, 200);
+    }
+    const chip = b.locator('.chip', { hasText: 'lanternlight' });
+    await chip.hover();
+    await settle(page, 400);
+    const conflict = page.locator('.chip-conflict-popover');
+    check('the shared trigger opens the conflict popover', await conflict.count(), 1);
+    await conflict.locator('.chip-conflict-action--synonyms').click();
+    await settle(page, 300);
+    check('Synonyms… swaps it for the synonyms popover',
+      [await conflict.count(), await page.locator('.thesaurus-popover').count()].join(','), '0,1');
+    await page.mouse.move(20, 20, { steps: 4 });
+    await settle(page, 600);
+    check('which stays when the pointer moves away', await page.locator('.thesaurus-popover').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('and closes on Escape', await page.locator('.thesaurus-popover').count(), 0);
+  }),
+
   scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {
     await openBuilderWithFixture(page);
     await page.keyboard.press('?');
