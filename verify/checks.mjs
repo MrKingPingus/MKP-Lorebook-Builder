@@ -2595,6 +2595,29 @@ const SCENARIOS = [
       await page.locator('.thesaurus-popover').count(), 1);
   }),
 
+  // #97: Firefox cannot place the text cursor by clicking inside a draggable
+  // element. Cards were always draggable, so in Firefox a click in any field
+  // put the cursor at its start. This browser is Chromium, which is immune, so
+  // the check is on the cause: at rest nothing around a text field is
+  // draggable, and pressing the handle is what arms a drag.
+  scenario('No card is draggable at rest, so Firefox can place the cursor (#97)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const card = page.locator('.entry-card').first();
+    await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await settle(page, 200);
+    const draggableAroundFields = () => page.evaluate(() =>
+      [...document.querySelectorAll('input, textarea')].filter((el) => el.closest('[draggable="true"]')).length);
+    check('no text field sits inside a draggable element', await draggableAroundFields(), 0);
+
+    const handle = page.locator('.entry-card .drag-handle, .entry-card [class*="drag-handle"]').first();
+    await handle.hover();
+    await page.mouse.down();
+    check('pressing the handle arms that row', await page.locator('.entry-list-item[draggable="true"]').count(), 1);
+    await page.mouse.up();
+    await settle(page, 100);
+    check('and releasing disarms it', await page.locator('[draggable="true"]').count(), 0);
+  }),
+
   // #100: in compare mode the active card and its reference copy should read
   // as one table, each row at the same height in both. Parts on one side only
   // (the × on chips, Allow-all-overlap, the trigger counter, the condition's
