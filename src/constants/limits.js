@@ -30,6 +30,7 @@ export const CONDITION_FLASH_MS      = 1600;  // how long the condition field st
 // is description. Names cap at 50 on CharSnap and triggers are a word or a
 // short phrase, so nothing in a header or a trigger list reaches it.
 export const PAGE_TRIGGER_LINE_MAX   = 80;
+export const FAB_LONG_PRESS_CLICK_GRACE_MS = 600; // after a long-press on + is released, how long its trailing click is ignored
 export const CONFIRM_PRESS_WINDOW_MS  = 3000;  // a destructive button stays armed this long for its second press (use-confirm-press)
 export const MENU_PANEL_WIDTH         = 320;
 // Per-entry ⋯ overflow menu. Portalled and anchored, so this is the width the

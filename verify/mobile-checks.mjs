@@ -388,6 +388,16 @@ const SCENARIOS = [
     await page.keyboard.press('Escape');
     await settle(page, 300);
     quirk('Escape closes the FAB quick menu', await page.locator('.fab-quick-menu').count(), 0);
+
+    // A long hold. The tap after a long-press used to be suppressed for only
+    // 600ms from the moment the menu opened, so holding for over a second
+    // opened the menu *and* added an entry. Caught by CI, whose slower
+    // machine released the first press late.
+    await page.locator('.fab-quick-menu').count() && await page.mouse.click(5, 5);
+    await settle(page, 200);
+    await longPress(page, page.locator('.footer-fab'), 1600);
+    check('a long hold opens the menu too', await page.locator('.fab-quick-menu').count(), 1);
+    check('and still adds no entry', await page.locator('.entry-card').count(), before);
   }),
 
   scenario('Mobile: a short tap on the FAB adds an entry', async (page, check) => {

@@ -8,7 +8,7 @@ import { useSettings }      from '../../hooks/use-settings.js';
 import { useConfirmPress }  from '../../hooks/use-confirm-press.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
 import { ExportMenu }       from '../feature/ExportMenu.jsx';
-import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
+import { THESAURUS_LONG_PRESS_MS, FAB_LONG_PRESS_CLICK_GRACE_MS } from '../../constants/limits.js';
 import { FAB_SIZES } from '../../constants/scaling.js';
 
 // Hover delays for the FAB quick menu — slightly longer than the suggestion
@@ -161,14 +161,19 @@ export function Hotbar() {
     longPressTimerRef.current = setTimeout(() => {
       suppressNextClickRef.current = true;
       setQuickMenuOpen(true);
-      // Self-heal: some mobile browsers swallow the click after a long-press
-      // (context menu wins). Auto-clear so a later legitimate click isn't lost.
-      setTimeout(() => { suppressNextClickRef.current = false; }, 600);
     }, THESAURUS_LONG_PRESS_MS);
   }
   function onFabPointerUp() {
     if (!isMobile) return;
     clearTimeout(longPressTimerRef.current);
+    // Self-heal: some mobile browsers swallow the click after a long-press
+    // (context menu wins), so the suppression must not outlive the gesture
+    // and eat a later, real tap. Timed from the release: it used to run from
+    // the moment the menu opened, so a hold longer than about a second outlived
+    // it and the release's click added an entry as well as opening the menu.
+    if (suppressNextClickRef.current) {
+      setTimeout(() => { suppressNextClickRef.current = false; }, FAB_LONG_PRESS_CLICK_GRACE_MS);
+    }
   }
 
   function onFabClick() {
