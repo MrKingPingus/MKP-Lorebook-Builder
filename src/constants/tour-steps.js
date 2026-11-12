@@ -165,12 +165,54 @@ export const TOUR_STEPS_MOBILE = [
 ];
 
 /**
- * Desktop steps. Empty on purpose: 0.10.0 changed nothing on a desktop, so the
- * lander offers no tour there rather than offering one that says so. The list
- * fills in the first time a release has something desktop-shaped to say — the
- * spotlight, the bubble, the runner and the demo books are all viewport-blind.
+ * Desktop steps — what 0.11.0 added. Ordered as a walk outward from one entry:
+ * its ⋯ menu, what is in it, templates, the trigger condition inside the
+ * entry, then the backup that covers everything.
  */
-export const TOUR_STEPS_DESKTOP = [];
+export const TOUR_STEPS_DESKTOP = [
+  {
+    id:        'entry-menu',
+    target:    '.entry-actions-btn',
+    title:     'Everything for one entry, in one place',
+    body:      'Every entry has this ⋯ button, even when it is closed. Give it a click.',
+    arrive:    async (api) => { await api.closeLayers(); },
+    advanceOn: '.entry-actions-menu',
+  },
+  {
+    // The payoff for the step above. The menu is tall, which is fine: it is the
+    // subject, as the select-actions step is on a phone.
+    id:     'entry-menu-open',
+    target: '.entry-actions-menu',
+    title:  'Copy, move, file, and more',
+    body:   'Send this entry to another lorebook, file it in a folder, or set how it behaves on CharSnap. Point at an item with an arrow to see its choices.',
+    arrive: async (api) => { await api.closeLayers(); await api.openEntryMenu(); },
+  },
+  {
+    id:     'templates',
+    target: '.tpl-manager',
+    title:  'Templates for entries you write again and again',
+    body:   'Save an entry as a template, then start new ones from it, in any lorebook. The + button opens this too.',
+    arrive: async (api) => { await api.closeLayers(); await api.openTemplatesManager(); },
+  },
+  {
+    id:     'condition',
+    target: '.entry-condition-section',
+    title:  'Say when an entry should come up',
+    body:   'Write a plain sentence, like “when someone asks about the king”. CharSnap reads it every turn of a chat, with or without trigger words.',
+    arrive: async (api) => {
+      await api.closeLayers();
+      await api.expandFirstEntry();
+      await api.scrollIntoView('.entry-condition-section');
+    },
+  },
+  {
+    id:     'backup',
+    target: '.export-menu .export-everything-btn',
+    title:  'Every lorebook in one file',
+    body:   'Everything (.zip) saves all your lorebooks, settings and templates together. Restore Backup on the home screen brings them back, here or on another computer.',
+    arrive: async (api) => { await api.closeLayers(); await api.openExportMenu(); },
+  },
+];
 
 /** The step list for a viewport, or an empty list when there's nothing to tour. */
 export function tourStepsFor({ isMobile }) {

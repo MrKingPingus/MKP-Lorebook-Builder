@@ -2203,38 +2203,50 @@ const SCENARIOS = [
     check('Escape closes it too', await notice.count(), 0);
   }),
 
-  scenario('Feature tour: a desktop release with nothing to tour offers no tour', async (page, check) => {
-    // 0.10.0 replaced the screenshot gallery with a tour that drives the real
-    // app, and made the step list per-platform. Nothing changed on desktop that
-    // release, so `TOUR_STEPS_DESKTOP` is deliberately empty — and the contract
-    // this pins is that an empty list means *no offer*, not an empty tour.
-    //
-    // The button on the lander is evergreen rather than tied to the update
-    // notice, so it is the one that would otherwise lead somewhere blank.
+  scenario('Feature tour: the desktop tour walks 0.11.0 and tidies up after itself', async (page, check) => {
+    // 0.10.0 changed nothing on desktop, so desktop had no tour. 0.11.0 is
+    // mostly desktop: the ⋯ menu, templates, trigger conditions and backup.
+    // Each step must find its target in the real app, and finishing must
+    // leave the user's own books as they were.
     if (!latestReleaseHasUserContent()) {
       check('skipped — the newest release is internal-only', true, true);
       return;
     }
+    const pageErrors = [];
+    page.on('pageerror', (e) => pageErrors.push(e.message));
 
     await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await page.evaluate(() => {
-      localStorage.removeItem('mkp_last_seen_release');
-    });
+    await page.evaluate(() => { localStorage.removeItem('mkp_last_seen_release'); });
     await page.reload({ waitUntil: 'networkidle' });
     await settle(page, 400);
 
     const notice = page.locator('.update-notice');
-    check('the update notice still shows', await notice.count(), 1);
-    check('but offers no tour button',
-      await notice.locator('.update-notice-btn--primary').count(), 0);
-    check('and its dismiss reads Close rather than Not now',
-      (await notice.locator('.update-notice-btn').first().textContent())?.trim(), 'Close');
-
+    check('the update notice offers the tour', await notice.locator('.update-notice-btn--primary').count(), 1);
     await page.keyboard.press('Escape');
     await settle(page, 300);
-    check('the lander offers no tour either', await page.locator('.lander-tour-btn').count(), 0);
-    check('and nothing from the retired gallery is left behind',
-      await page.locator('.tour-panel, .tour-zoom, .tour-dot').count(), 0);
+    check('and so does the lander', await page.locator('.lander-tour-btn').count(), 1);
+
+    await page.locator('.lander-tour-btn').first().click();
+    await page.locator('.tour-bubble').waitFor({ timeout: 6000 });
+    const titles = [];
+    for (let i = 0; i < 5; i++) {
+      await settle(page, 600);
+      titles.push(`${await page.locator('.tour-progress').innerText()}: ${await page.locator('.tour-ring').count()} ring`);
+      if (i === 0) {
+        // The first step invites a click on the ⋯ button, and following it
+        // moves the tour on by itself.
+        await page.locator('.entry-actions-btn').first().click();
+        continue;
+      }
+      await page.locator('.tour-btn--primary').click();
+    }
+    check('every step found what it points at', titles.join(' | '),
+      '1 of 5: 1 ring | 2 of 5: 1 ring | 3 of 5: 1 ring | 4 of 5: 1 ring | 5 of 5: 1 ring');
+    await settle(page, 600);
+    check('Done closes the tour', await page.locator('.tour-bubble').count(), 0);
+    check('without a crash on the way out', pageErrors.join(' | '), '');
+    check('and the sample books are gone with it',
+      await page.locator('.lander-recent-item', { hasText: 'Camelot' }).count(), 0);
   }),
 
   scenario('Side panel slides open without the entry list lurching', async (page, check) => {

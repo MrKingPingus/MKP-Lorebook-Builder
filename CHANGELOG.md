@@ -2,7 +2,7 @@
 
 ---
 
-## 0.11.0 — 2026-09-03
+## 0.11.0 — 2026-11-12
 
 ### New
 
@@ -23,6 +23,7 @@
 - **Export everything, and restore it.** **Everything (.zip)** in the Export menu downloads every lorebook, your settings and your entry templates as one file. **Restore Backup** on the landing page brings such a file back, in this browser or another: it tells you what the backup holds, then either adds its lorebooks alongside yours (a name that's taken arrives as *Name (restored)*) or replaces what's here after downloading a backup of it first. Lorebooks come back with their folders, checkpoints and hidden entries. The zip also holds each lorebook as an ordinary JSON file, so a single book can be pulled out and imported on its own, here or on CharSnap. ([#129](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/129))
 - **The fish in the corner is a button now.** Click the logo for links to the builder's maker on CharSnap and GitHub.
 - **Import OpenDocument files (`.odt`)** from LibreOffice or OpenOffice, alongside TXT, DOCX and JSON. They used to be offered and then fail with an unhelpful error.
+- **A tour of what's new, on desktop too.** **Take the tour** on the home screen walks through the entry ⋯ menu, templates, trigger conditions and the new backup, using a sample lorebook, and tidies it away when you're done.
 - **Duplicate a lorebook.** Hover a book in the title menu and press **Duplicate**, or use **Duplicate** in a book's **⋯** menu on a phone. The copy appears beside the original as *Name (copy)*, with every entry, folder and checkpoint, and you stay in the book you were in. ([#137](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/137))
 - **Warning colours come in three scales now** — Settings → Appearance & Accessibility → **Warning color scale**. **Three colors** is the green / yellow / red you already have, and stays the default. **Four colors** adds orange between them, which frees red to mean *at the limit* rather than *getting long* — so you can keep a warning at 1000 characters and still be told when you cross 1500, instead of choosing between them. **Gradient** drops the steps entirely — green, easing into yellow as it nears your first threshold, then on through orange to red, with no edges anywhere. The green hand-off scales with your own thresholds rather than being a fixed run of characters, so it sits two thirds of the way to your first one (at the default, that means solid green to 500 and a fade over the last 250). Whichever you pick applies everywhere at once — description and trigger counters, the entry title counter, the coloured field borders, and the storage ring. ([#131](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/131))
 - **A third character threshold**, on the four-colour and gradient scales. Your existing two numbers keep the meanings they had — the second one just paints orange instead of red — and the new third one sits above them at the character limit. Switching scales never moves a threshold you set.

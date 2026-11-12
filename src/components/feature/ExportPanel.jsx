@@ -26,6 +26,12 @@ export function ExportPanel() {
   useEffect(() => { setFilenameOverride(defaultName); }, [activeLorebook?.id]);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+  // Above the no-lorebook return below: hooks must run on every render, and
+  // the panel can lose its lorebook while open (ending the tour removes its
+  // sample books, deleting the last book does the same).
+  const confirmPress = useConfirmPress();
+  const { exportEverything } = useBackup();
+  const hostMode = useHostMode();
 
   async function runCopy(which, fn) {
     try {
@@ -63,9 +69,6 @@ export function ExportPanel() {
 
   // Press twice rather than window.confirm(), which sandboxed frames refuse
   // without asking. See use-confirm-press.js.
-  const confirmPress = useConfirmPress();
-  const { exportEverything } = useBackup();
-  const hostMode = useHostMode();
   const confirmingClear = confirmPress.armedId === 'clear_all';
   function clearAll() {
     confirmPress.press('clear_all', true, () => {

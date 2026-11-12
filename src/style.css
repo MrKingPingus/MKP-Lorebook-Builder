@@ -8666,6 +8666,11 @@ kbd {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
 }
+/* The bubble was sized for a phone. On a desktop, edge to edge is a banner
+   across the whole app; a centred column reads as a caption. */
+@media (min-width: 768px) {
+  .tour-bubble { left: 50%; right: auto; width: min(560px, calc(100vw - 16px)); transform: translateX(-50%); }
+}
 .tour-bubble-title {
   margin: 0 0 6px;
   font-size: 0.9375rem;
