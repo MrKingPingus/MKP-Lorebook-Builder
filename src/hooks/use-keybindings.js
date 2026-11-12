@@ -4,6 +4,7 @@
 // use this hook rather than touching keychord.js or the store directly.
 import { useMemo, useCallback } from 'react';
 import { useSettings } from './use-settings.js';
+import { useHostStore } from '../state/host-store.js';
 import {
   KEYBINDINGS,
   KEYBINDING_MAP,
@@ -25,11 +26,13 @@ function effectiveChords(def, override) {
 export function useKeybindings() {
   const { keybindings, setKeybindings } = useSettings();
   const overrides = keybindings || {};
+  const hostMode  = useHostStore((s) => s.enabled);
 
-  // Resolved rows for display (Settings table, help overlay).
+  // Resolved rows for display (Settings table, help overlay). Host-only
+  // actions exist only while embedded, so standalone lists are unchanged.
   const rows = useMemo(
     () =>
-      KEYBINDINGS.map((def) => {
+      KEYBINDINGS.filter((def) => !def.hostOnly || hostMode).map((def) => {
         const override = overrides[def.id];
         const chords = effectiveChords(def, override);
         return {
@@ -42,7 +45,7 @@ export function useKeybindings() {
           display: chords.map(formatChord).join(' / '),
         };
       }),
-    [overrides],
+    [overrides, hostMode],
   );
 
   // Compact binding list for the dispatcher: only what it needs to match.

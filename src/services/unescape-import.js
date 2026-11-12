@@ -24,6 +24,9 @@ export function unescapeImportedEntry(entry) {
     ...entry,
     name:        unescapeImportedString(entry.name),
     description: unescapeImportedString(entry.description),
+    ...(typeof entry.triggerCondition === 'string'
+      ? { triggerCondition: unescapeImportedString(entry.triggerCondition) }
+      : {}),
     triggers:    Array.isArray(entry.triggers)
       ? entry.triggers.map(unescapeImportedString)
       : entry.triggers,

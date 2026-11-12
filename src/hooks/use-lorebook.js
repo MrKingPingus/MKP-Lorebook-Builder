@@ -7,6 +7,8 @@ import { createEmptyLorebook, isPlaceholderLorebook } from '../services/entry-fa
 import { useSettingsStore }                from '../state/settings-store.js';
 import { addToIndex, promoteInIndex } from '../services/lorebook-index.js';
 import { LOREBOOK_KEY_PREFIX } from '../constants/storage-keys.js';
+import { DEFAULT_LOREBOOK, DUPLICATE_NAME_SUFFIX } from '../constants/defaults.js';
+import { duplicateLorebook } from '../services/lorebook-duplicate.js';
 
 export function useLorebook() {
   const activeLorebookId = useLorebookStore((s) => s.activeLorebookId);
@@ -31,11 +33,22 @@ export function useLorebook() {
   // `ephemeral` marks a book that must never reach localStorage — the feature
   // tour's samples. It rides on the lorebook and on its index entry, and
   // `saveLorebook`/`saveLorebookIndex` are what enforce it; see storage-service.
-  function createLorebook({ silent = false, ephemeral = false } = {}) {
+  //
+  // `activate: false` creates the book without switching to it, and `name`
+  // names it up front. The copy/move-to-lorebook path uses both: "＋ New
+  // lorebook…" as a transfer target is a thing you do to somewhere ELSE, so
+  // yanking the user out of the book they are working in would be a surprising
+  // price for filing one entry away — and the name has to be set here rather
+  // than by a follow-up `renameLorebookById`, because that reads the index from
+  // its hook closure, which is one tick stale in the middle of a create.
+  //
+  // Returns the new book's id, or null if the library is full.
+  function createLorebook({ silent = false, ephemeral = false, activate = true, name = null } = {}) {
     const rollbackDefaultEnabled = useSettingsStore.getState().rollbackDefaultEnabled;
     const lb = createEmptyLorebook({
       ...(rollbackDefaultEnabled ? { rollback: { enabled: true, snapshotCount: 3 } } : {}),
       ...(ephemeral ? { ephemeral: true } : {}),
+      ...(name ? { name } : {}),
     });
     // From getState(), not the hook closure — same reason switchLorebook and
     // deleteLorebook do. Two creates in one tick (the tour loads two sample
@@ -45,15 +58,18 @@ export function useLorebook() {
     // created and persisted. Found by the tour's reference step showing "no
     // lorebook is paired" with an empty candidate list.
     const newIndex = addToIndex(useLorebookStore.getState().lorebookIndex, lb);
-    if (!newIndex) return; // full
+    if (!newIndex) return null; // full
     setLorebook(lb);
     setLorebookIndex(newIndex);
-    setActiveLorebookId(lb.id);
     saveLorebook(lb);
     saveLorebookIndex(newIndex);
-    clearHistory();
-    clearSelection();
-    if (!silent) setPendingFocusLorebookName(true);
+    if (activate) {
+      setActiveLorebookId(lb.id);
+      clearHistory();
+      clearSelection();
+      if (!silent) setPendingFocusLorebookName(true);
+    }
+    return lb.id;
   }
 
   function switchLorebook(id) {
@@ -147,11 +163,32 @@ export function useLorebook() {
     saveLorebookIndex(newIndex);
   }
 
+  // A full copy of any book in the library, alongside the original (#137).
+  // Leaves the active book alone, like ＋ New lorebook… in copy/move: making a
+  // copy is not a request to go and work in it. Returns the new id, or null
+  // when the source is gone or the library is full.
+  function duplicateLorebookById(id) {
+    const state  = useLorebookStore.getState();
+    const source = state.lorebooks[id] ?? readJson(LOREBOOK_KEY_PREFIX + id);
+    if (!source) return null;
+    const copy = duplicateLorebook(source, {
+      name: (source.name || DEFAULT_LOREBOOK.name) + DUPLICATE_NAME_SUFFIX,
+    });
+    const newIndex = addToIndex(state.lorebookIndex, copy);
+    if (!newIndex) return null; // full
+    setLorebook(copy);
+    setLorebookIndex(newIndex);
+    saveLorebook(copy);
+    saveLorebookIndex(newIndex);
+    return copy.id;
+  }
+
   return {
     activeLorebookId,
     activeLorebook,
     lorebookIndex,
     createLorebook,
+    duplicateLorebookById,
     switchLorebook,
     deleteLorebook,
     renameLorebook,

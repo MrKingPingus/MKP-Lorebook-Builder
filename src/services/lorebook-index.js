@@ -1,4 +1,4 @@
-// Multi-lorebook index management: add, remove, promote recent, timestamp, key allocation (max 10)
+// Multi-lorebook index management: add, remove, promote recent, timestamp, key allocation (max MAX_LOREBOOKS, 50)
 import { MAX_LOREBOOKS } from '../constants/limits.js';
 
 /** Allocate the smallest unused key (1-MAX_LOREBOOKS) for a new lorebook slot. */
@@ -29,8 +29,24 @@ export function addToIndex(index, lorebook) {
     // as a whole and `saveLorebookIndex` filters on this to keep the tour's
     // sample books out of storage.
     ...(lorebook.ephemeral ? { ephemeral: true } : {}),
+    // Host mode: the CharSnap id this draft belongs to, so an mkp:load can find
+    // its local copy from the index alone. Absent on every standalone book.
+    ...(lorebook.hostId != null ? { hostId: lorebook.hostId } : {}),
   };
   return [entry, ...index];
+}
+
+/** Pick the host-bound draft to drop when storage is full: the least recently
+ *  touched one that `isEvictable(id)` accepts (the caller decides what "clean"
+ *  means — it has the books, this only has the index). Null if none qualifies.
+ *  Standalone books are never candidates: they have no host copy to fall back on. */
+export function evictOldestHostDraft(index, isEvictable) {
+  const candidates = (index ?? []).filter((item) =>
+    item.hostId != null && !item.ephemeral && isEvictable(item.id)
+  );
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0));
+  return candidates[0].id;
 }
 
 /** Remove a lorebook entry from the index by id. */

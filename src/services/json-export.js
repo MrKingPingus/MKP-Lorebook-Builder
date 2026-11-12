@@ -4,9 +4,10 @@ import { ENTRY_TYPES } from '../constants/entry-types.js';
 
 // Internal type ids (e.g. 'plot_event') map to the CharSnap entry-type labels
 // (e.g. 'PlotEvent') that the platform reads back on import.
-const TYPE_LABEL = Object.fromEntries(ENTRY_TYPES.map((t) => [t.id, t.label]));
+export const TYPE_LABEL = Object.fromEntries(ENTRY_TYPES.map((t) => [t.id, t.label]));
 
-export function exportToJsonBlob(lorebook) {
+/** The CharSnap-format JSON text of a lorebook. */
+export function exportToJson(lorebook) {
   // hiddenFromExport entries are omitted entirely. The rest are renumbered
   // 1..N as string keys to match the CharSnap keyed-object shape. App-internal
   // fields (id, lastModified, snapshots, ignoreLimitWarnings, hiddenFromExport)
@@ -21,12 +22,20 @@ export function exportToJsonBlob(lorebook) {
         description: e.description ?? '',
         entryType:   TYPE_LABEL[e.type] ?? e.type,
         isPublic:    e.isPublic === true,
+        // Only when set, so books without them export exactly as before.
+        ...(e.alwaysOn === true ? { alwaysOn: true } : {}),
+        ...(typeof e.triggerCondition === 'string' && e.triggerCondition.trim() !== ''
+          ? { triggerCondition: e.triggerCondition }
+          : {}),
       };
     });
 
   const exported = { name: lorebook.name, entries };
-  const json = JSON.stringify(exported, null, 2);
-  return new Blob([json], { type: 'application/json' });
+  return JSON.stringify(exported, null, 2);
+}
+
+export function exportToJsonBlob(lorebook) {
+  return new Blob([exportToJson(lorebook)], { type: 'application/json' });
 }
 
 export function downloadBlob(blob, filename) {
@@ -35,5 +44,7 @@ export function downloadBlob(blob, filename) {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Revoke on the next tick, not synchronously: the click only *starts* the
+  // download, and some browsers resolve the blob URL after this frame.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

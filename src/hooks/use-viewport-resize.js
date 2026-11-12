@@ -2,9 +2,12 @@
 // tracks intended size so the window restores when the viewport grows back
 import { useEffect } from 'react';
 import { useUiStore } from '../state/ui-store.js';
+import { useHostStore } from '../state/host-store.js';
 
 export function useViewportResize() {
   useEffect(() => {
+    // Host mode: the frame is the window; CSS follows the iframe's size.
+    if (useHostStore.getState().enabled) return undefined;
     let intendedW = null;
     let intendedH = null;
 

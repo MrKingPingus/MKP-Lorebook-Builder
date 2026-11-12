@@ -1,19 +1,17 @@
 // Combined trigger/max and char/limit badge — format: "4/25 trg 438/1500 chr"
 // Both halves use the same threshold coloring as TriggerChips and CharCounter.
-import { MAX_TRIGGERS, TRIGGER_WARN_YELLOW, CHAR_LIMIT } from '../../constants/limits.js';
+import { MAX_TRIGGERS, CHAR_LIMIT } from '../../constants/limits.js';
+import {
+  warningColor, charStops, triggerStops, isGradient, WARN_GREEN,
+} from '../../services/warning-color.js';
 
-export function StatsBadge({ triggerCount, charCount, counterTiers, tieredEnabled = true }) {
-  const { yellow: charYellow = 750, red: charRed = 1000 } = counterTiers ?? {};
+export function StatsBadge({ triggerCount, charCount, counterTiers, tieredEnabled = true, warningScale }) {
+  const gradient = isGradient(warningScale);
 
-  const trgColor = triggerCount >= MAX_TRIGGERS      ? 'var(--red)'
-    : triggerCount >= TRIGGER_WARN_YELLOW             ? 'var(--yellow)'
-    : 'var(--green)';
-
+  const trgColor = warningColor(triggerCount, triggerStops(warningScale), { gradient });
   const chrColor = tieredEnabled
-    ? (charCount >= charRed    ? 'var(--red)'
-      : charCount >= charYellow ? 'var(--yellow)'
-      : 'var(--green)')
-    : 'var(--green)';
+    ? warningColor(charCount, charStops(counterTiers, warningScale), { gradient })
+    : WARN_GREEN;
 
   return (
     <span className="stats-badge">

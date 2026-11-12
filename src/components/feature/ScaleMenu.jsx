@@ -10,10 +10,12 @@
 // so an in-window flyout could only open LEFT (back over the menu) without
 // being clipped. Portalled, flyouts open RIGHT into the page and flip left only
 // when the viewport genuinely has no room.
-import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createPortal }   from 'react-dom';
+import { Flyout }         from '../ui/Flyout.jsx';
 import { useSettings }    from '../../hooks/use-settings.js';
 import { useWindowScale } from '../../hooks/use-window-scale.js';
+import { useHostMode }    from '../../hooks/use-host.js';
 import { UI_SCALE_STEPS, DEFAULT_UI_SCALE } from '../../constants/accessibility.js';
 import {
   FAB_SIZE_OPTIONS,
@@ -77,56 +79,6 @@ function CommitNumberInput({ value, min, max, onCommit, ariaLabel }) {
   );
 }
 
-/** Portalled flyout, positioned from its row. Opens right; flips left only if the viewport can't fit it. */
-function Flyout({ anchorEl, onMouseEnter, onMouseLeave, children }) {
-  const ref = useRef(null);
-  const [pos, setPos] = useState(null);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el || !anchorEl) return;
-    const row  = anchorEl.getBoundingClientRect();
-    const box  = el.getBoundingClientRect();
-    const padd = FLYOUT_VIEWPORT_PAD;
-
-    // Prefer right. Flip only when the flyout genuinely will not fit.
-    let left = row.right + FLYOUT_GAP_PX;
-    if (left + box.width > window.innerWidth - padd) {
-      const flipped = row.left - box.width - FLYOUT_GAP_PX;
-      left = flipped >= padd ? flipped : Math.max(padd, window.innerWidth - box.width - padd);
-    }
-
-    // Bottom-anchored: the menu hangs off a bar at the base of the window, so
-    // flyouts grow upward. Clamp to the viewport's top edge for tall ones.
-    let top = row.bottom - box.height;
-    if (top < padd) top = padd;
-    if (top + box.height > window.innerHeight - padd) {
-      top = Math.max(padd, window.innerHeight - box.height - padd);
-    }
-
-    setPos({ left, top });
-  }, [anchorEl, children]);
-
-  return createPortal(
-    <div
-      ref={ref}
-      className="scale-flyout"
-      role="menu"
-      style={{
-        position: 'fixed',
-        left: pos?.left ?? -9999,
-        top:  pos?.top  ?? -9999,
-        visibility: pos ? 'visible' : 'hidden',
-      }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      {children}
-    </div>,
-    document.body,
-  );
-}
-
 function ScaleRow({ id, label, value, openRow, onHoverRow, onLeaveRow, onToggleRow, onMenuEnter, onMenuLeave, children }) {
   const open = openRow === id;
   const rowRef = useRef(null);
@@ -154,6 +106,7 @@ function ScaleRow({ id, label, value, openRow, onHoverRow, onLeaveRow, onToggleR
       <span className="scale-row-arrow" aria-hidden="true">▶</span>
       {open && (
         <Flyout
+          className="scale-flyout"
           anchorEl={rowRef.current}
           onMouseEnter={() => { onHoverRow(id, true); onMenuEnter?.(); }}
           onMouseLeave={(e) => { onLeaveRow(); onMenuLeave?.(e); }}
@@ -198,6 +151,8 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
     windowSize, activePresetId, applySize, applyPreset,
     resetWindow, saveCurrentAsDefault,
   } = useWindowScale();
+  // Host mode: the window is the iframe, so there is no size to pick.
+  const hostMode = useHostMode();
 
   useEffect(() => () => {
     clearTimeout(openTimer.current);
@@ -244,7 +199,7 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
   // user may depend on, and wiping it from a general "reset sizing" would be
   // hostile in a way the other three resets are not.
   function resetAllSizing() {
-    resetWindow();
+    if (!hostMode) resetWindow();
     setEntryHeaderSize('default');
     setFabSize('large');
     setOpenRow(null);
@@ -274,6 +229,7 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
     >
       <div className="scale-menu-head">Sizing &amp; scale</div>
 
+      {!hostMode && (
       <ScaleRow id="window" label="Window size" value={windowLabel} {...rowProps}>
         {WINDOW_SIZE_PRESETS.map((preset) => (
           <FlyoutItem
@@ -330,6 +286,7 @@ export function ScaleMenu({ anchorRect, onMouseEnter, onMouseLeave }) {
           <span className="flyout-item-label">Reset to default</span>
         </button>
       </ScaleRow>
+      )}
 
       <ScaleRow id="text" label="Text size" value={scaleLabel} {...rowProps}>
         {UI_SCALE_STEPS.map((step) => (

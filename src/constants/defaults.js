@@ -1,6 +1,7 @@
 // Default shapes for new entries, lorebook, settings, and window size/position
 import { DEFAULT_TYPE } from './entry-types.js';
-import { CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
+import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from './limits.js';
+import { DEFAULT_WARNING_SCALE } from './warning-scale.js';
 import { DEFAULT_COLLAPSE_STAGES } from './folders.js';
 
 // 1200×900 is the "healthy" working size: wide enough for a comfortable entry
@@ -20,7 +21,15 @@ export const LEGACY_DEFAULT_WINDOW = { width: 760, height: 620 };
 export const DEFAULT_WINDOW_FRACTION = 2 / 3;
 
 export const DEFAULT_SETTINGS = {
-  counterTiers:             { yellow: CHAR_WARN_YELLOW, red: CHAR_WARN_RED },
+  // Description-counter thresholds, ascending. `orange` is the danger stop —
+  // the one the three-colour scale paints red — and `red` is the at-the-limit
+  // stop the four-colour and gradient scales add on top. A pre-existing
+  // `{ yellow, red }` is migrated into this shape on boot (see App.jsx), which
+  // is why `red` here is the cap and not CHAR_WARN_RED.
+  counterTiers:             { yellow: CHAR_WARN_YELLOW, orange: CHAR_WARN_RED, red: CHAR_LIMIT },
+  // How counters, field borders and the storage ring turn a number into a
+  // colour: 'three' | 'four' | 'gradient' (see constants/warning-scale.js).
+  warningScale:             DEFAULT_WARNING_SCALE,
   rollbackDefaultEnabled:   false, // when true, new lorebooks start with rollback On
   defaultWindowWidth:       DEFAULT_WINDOW.width,
   defaultWindowHeight:      DEFAULT_WINDOW.height,
@@ -86,6 +95,11 @@ export const DEFAULT_SETTINGS = {
   // When on, the title-bar logo is the circular Sacabambaspis portrait at 45px.
   // When off, the original 📖 book emoji renders at its original 16px size.
   funnyFishEnabled:         true,
+  // Templates manager → Options. Off by default: a trigger condition and the
+  // Always on switch are usually specific to one entry, so a template only
+  // captures them when the user has said it should.
+  templateSaveCondition:    false,
+  templateSaveAlwaysOn:     false,
   // When on, hovering a suggestion chip (or long-pressing on mobile) opens a synonym popover
   // sourced from the Datamuse API (rel_syn, strict synonyms only). In-memory cache only.
   thesaurusEnabled:         true,
@@ -114,6 +128,8 @@ export const DEFAULT_ENTRY = {
   ignoreLimitWarnings: { description: false, triggers: false },
   isPublic:            false,  // CharSnap visibility flag — mirrors CharSnap's private-by-default; round-trips through JSON import/export
   hiddenFromExport:    false,  // when true, entry remains in builder but is excluded from all export formats
+  alwaysOn:            false,  // CharSnap: sent to the model every turn regardless of triggers (Always on button).
+  triggerCondition:    '',     // CharSnap: plain-language rule for when the entry applies, judged per chat turn (Trigger condition field).
   folderId:            null,   // builder-only folder assignment; null = top level. Never exported.
                                //   An id with no matching folder renders top-level, so a history
                                //   undo that removes a folder can never orphan an entry.
@@ -131,6 +147,10 @@ export const DEFAULT_FOLDER = {
   collapseState: '',
   order:         0,
 };
+
+// Appended to a duplicated lorebook's name (#137), so the copy is never
+// mistaken for the original in the book list.
+export const DUPLICATE_NAME_SUFFIX = ' (copy)';
 
 export const DEFAULT_LOREBOOK = {
   id:              '',

@@ -76,19 +76,19 @@ jobs:
       # - `--host 127.0.0.1` pins the bind. Vite preview defaults to `localhost`,
       #   which on a runner resolves to ::1 as well as 127.0.0.1 — Node then
       #   listens on IPv6 only, and every probe to 127.0.0.1 is refused.
-      # - The probe and VERIFY_URL both carry the Pages base path. vite.config.js
-      #   sets `base: /<repo>/` whenever GITHUB_ACTIONS is set, which is true in
-      #   this job and not only in the deploy, so the app is not served at `/`.
-      #   Testing under the real base is the more faithful check anyway: it is
-      #   what Pages serves, and it is where a BASE_URL bug — the tour images,
-      #   say — would actually show up.
+      # - The probe and VERIFY_URL are the server root. vite.config.js builds
+      #   with relative asset paths (`base: './'`, since the CharSnap host-mode
+      #   import), so one build works under any path: Pages' /<repo>/, CharSnap's
+      #   folder, anywhere. `vite preview` serves dist/ at `/` only, so loading
+      #   it from /<repo>/ asked for /<repo>/assets/… and got 404s, and every
+      #   scenario saw a blank page. Relative paths are what make the subpath
+      #   work on Pages, and they behave the same at the root.
       #
       # The failure branch dumps a verbose curl as well as the server log,
       # so the next time this breaks it says why instead of just timing out.
       - name: Serve the production build
         run: |
-          BASE="/${GITHUB_REPOSITORY#*/}/"
-          URL="http://127.0.0.1:4173${BASE}"
+          URL="http://127.0.0.1:4173/"
           npx vite preview --port 4173 --strictPort --host 127.0.0.1 > /tmp/preview.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -sf -o /dev/null "$URL"; then ready=1; break; fi
@@ -102,7 +102,6 @@ jobs:
           fi
           echo "VERIFY_URL=$URL" >> "$GITHUB_ENV"
 
-      # VERIFY_URL comes from the step above via $GITHUB_ENV. Setting it here
-      # as well would override that with a guess at the base path.
+      # VERIFY_URL comes from the step above via $GITHUB_ENV.
       - name: Verify
         run: npm run verify

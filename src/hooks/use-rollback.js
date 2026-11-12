@@ -111,6 +111,10 @@ export function useRollback({ entry, onUpdate }) {
       type:        snapshot.type,
       description: snapshot.description,
       triggers:    [...snapshot.triggers],
+      // Only checkpoints that captured these fields restore them; an older
+      // checkpoint leaves the entry's current values alone.
+      ...(snapshot.alwaysOn !== undefined ? { alwaysOn: snapshot.alwaysOn === true } : {}),
+      ...(typeof snapshot.triggerCondition === 'string' ? { triggerCondition: snapshot.triggerCondition } : {}),
     }, true);
     clearSessionTouch(entry.id);
   }

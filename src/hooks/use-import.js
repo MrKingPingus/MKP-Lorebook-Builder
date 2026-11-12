@@ -1,9 +1,12 @@
 // Hook wrapping import services — components use this instead of importing services directly
 import { parseTxtToEntries, readTxtFile } from '../services/txt-import.js';
 import { importFromDocx }                 from '../services/docx-import.js';
+import { importFromOdt }                  from '../services/odt-import.js';
 import { readJsonFile, importFromJson }   from '../services/json-import.js';
 
-const EXT_TO_FORMAT = { txt: 'txt', docx: 'docx', odt: 'docx', json: 'json' };
+// `.odt` has its own reader. It was once routed to the DOCX path, where
+// mammoth, which reads Word documents only, threw an opaque error on it.
+const EXT_TO_FORMAT = { txt: 'txt', docx: 'docx', odt: 'odt', json: 'json' };
 
 export function useImport() {
   function detectFormat(filename) {
@@ -13,7 +16,7 @@ export function useImport() {
 
   async function parseFile(file) {
     const fmt = detectFormat(file.name);
-    if (!fmt) throw new Error('Unsupported file type.');
+    if (!fmt) throw new Error('Unsupported file type. Import a TXT, DOCX, ODT or JSON file.');
 
     if (fmt === 'txt') {
       const text = await readTxtFile(file);
@@ -22,6 +25,11 @@ export function useImport() {
 
     if (fmt === 'docx') {
       const entries = await importFromDocx(file);
+      return { entries, name: null, warnings: [] };
+    }
+
+    if (fmt === 'odt') {
+      const entries = await importFromOdt(file);
       return { entries, name: null, warnings: [] };
     }
 

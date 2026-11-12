@@ -4,7 +4,7 @@ import { useLorebookStore } from '../state/lorebook-store.js';
 import { useHistoryStore } from '../state/history-store.js';
 import { findReplace, countMatches, matchDetails } from '../services/find-replace.js';
 
-const DEFAULT_SCOPE = { title: true, triggers: true, description: true };
+const DEFAULT_SCOPE = { title: true, triggers: true, description: true, wholeWord: true };
 
 // `lorebookIds` is optional. Default is `[activeLorebookId]`; in crosstalk
 // with a reference set, `[activeLorebookId, referenceLorebookId]` (nulls and
@@ -57,7 +57,8 @@ export function useFindReplace({ lorebookIds } = {}) {
 
   function toggleScope(field) {
     if (field === 'all') {
-      setScope(DEFAULT_SCOPE);
+      // "All" is about which fields; it leaves Whole words as it was.
+      setScope((prev) => ({ ...DEFAULT_SCOPE, wholeWord: prev.wholeWord }));
       return;
     }
     setScope((prev) => ({ ...prev, [field]: !prev[field] }));

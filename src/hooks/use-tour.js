@@ -148,6 +148,39 @@ export function useTour() {
   const api = useMemo(() => ({
     closeLayers: async () => {
       useUiStore.getState().closeAllLayers();
+      useUiStore.getState().setSearchFocusedId(null);
+      await wait(TOUR_STEP_SETTLE_MS);
+    },
+    // ── desktop (0.11.0) ──────────────────────────────────────────────────
+    // The entry ⋯ menu's open state is local to EntryActionsMenu, so, like the
+    // Actions menu above, the honest way to open it is to press it.
+    openEntryMenu: async () => {
+      if (!document.querySelector('.entry-actions-menu')) {
+        document.querySelector('.entry-actions-btn')?.click();
+      }
+      await wait(TOUR_STEP_SETTLE_MS);
+    },
+    // Opened for the first entry, so the window shows the save button a user
+    // would see coming from that entry's ⋯ menu.
+    openTemplatesManager: async () => {
+      const lb = useLorebookStore.getState();
+      const first = lb.lorebooks[lb.activeLorebookId]?.entries?.[0];
+      useUiStore.getState().openTemplatesManager(first?.id ?? null);
+      await wait(TOUR_STEP_SETTLE_MS);
+    },
+    // Search focus forces a card open without touching its own state, and
+    // closeLayers lets it go again.
+    expandFirstEntry: async () => {
+      const lb = useLorebookStore.getState();
+      const first = lb.lorebooks[lb.activeLorebookId]?.entries?.[0];
+      if (first) useUiStore.getState().setSearchFocusedId(first.id);
+      await wait(TOUR_STEP_SETTLE_MS);
+    },
+    openExportMenu: async () => {
+      if (!document.querySelector('.export-menu')) {
+        const btn = [...document.querySelectorAll('.hotbar button')].find((b) => /Export/.test(b.textContent));
+        btn?.click();
+      }
       await wait(TOUR_STEP_SETTLE_MS);
     },
     setSearchMode: async (mode) => {

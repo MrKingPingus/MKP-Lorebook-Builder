@@ -3,6 +3,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useEntries }   from '../../hooks/use-entries.js';
 import { useLorebook }  from '../../hooks/use-lorebook.js';
 import { useExport }    from '../../hooks/use-export.js';
+import { useConfirmPress } from '../../hooks/use-confirm-press.js';
+import { useBackup }       from '../../hooks/use-backup.js';
+import { useHostMode }     from '../../hooks/use-host.js';
 import { DUPE_FLASH_MS } from '../../constants/limits.js';
 
 export function ExportPanel() {
@@ -23,6 +26,12 @@ export function ExportPanel() {
   useEffect(() => { setFilenameOverride(defaultName); }, [activeLorebook?.id]);
 
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+  // Above the no-lorebook return below: hooks must run on every render, and
+  // the panel can lose its lorebook while open (ending the tour removes its
+  // sample books, deleting the last book does the same).
+  const confirmPress = useConfirmPress();
+  const { exportEverything } = useBackup();
+  const hostMode = useHostMode();
 
   async function runCopy(which, fn) {
     try {
@@ -58,10 +67,14 @@ export function ExportPanel() {
     await copyJsonToClipboard(activeLorebook);
   }
 
+  // Press twice rather than window.confirm(), which sandboxed frames refuse
+  // without asking. See use-confirm-press.js.
+  const confirmingClear = confirmPress.armedId === 'clear_all';
   function clearAll() {
-    if (!window.confirm('Are you sure?')) return;
-    clearAllEntries();
-    renameLorebook('');
+    confirmPress.press('clear_all', true, () => {
+      clearAllEntries();
+      renameLorebook('');
+    });
   }
 
   return (
@@ -116,10 +129,28 @@ export function ExportPanel() {
         </div>
       </div>
 
+      {/* #129. Hidden inside CharSnap, which stores the book itself. */}
+      {!hostMode && (
+        <div className="export-section">
+          <div className="export-section-label">Everything</div>
+          <button className="export-btn export-everything-btn" onClick={exportEverything}>
+            ⬇ Export everything (.zip)
+          </button>
+          <div className="export-info">
+            Every lorebook, your settings and your templates in one file. Bring it back
+            with Restore Backup on the landing page, in this browser or another.
+          </div>
+        </div>
+      )}
+
       <div className="export-section">
         <div className="export-section-label">Danger zone</div>
-        <button className="export-btn export-btn--danger" onClick={clearAll}>
-          ✕ Clear all entries
+        <button
+          className={`export-btn export-btn--danger${confirmingClear ? ' export-btn--confirm' : ''}`}
+          onClick={clearAll}
+          onBlur={confirmPress.disarm}
+        >
+          {confirmingClear ? '✕ Click again to clear everything' : '✕ Clear all entries'}
         </button>
       </div>
     </div>

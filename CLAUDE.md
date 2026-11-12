@@ -1,6 +1,15 @@
 # CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Start of every session — before anything else
+```bash
+npm install
+npm run charsnap:status
+```
+- It says **BEHIND** → run `npm run charsnap:sync` first, then build and verify. Jason's copy of the builder has moved on, and work done on top of a stale base gets harder to merge.
+- It lists a branch **with commits not on main** while you are on `main` → that work is not in your checkout. Ask the user which branch to continue before editing anything.
+- It says **STOP: … not MrKingPingus/MKP-Lorebook-Builder** → you are in the wrong repo. Builder work never happens in `charsnap-extensions`.
+
 ## Plan
 See `docs/plan.md`. Work phases in order. Do not build ahead.
 
@@ -32,9 +41,10 @@ npm run dev       # start Vite dev server (hot reload)
 npm run build     # production build → dist/
 npm run preview   # serve the production build locally
 npm run verify    # browser-driven behavioural checks (Playwright) — see verify/README.md
-npm run verify -- folders          # only scenarios whose name matches (a full run takes minutes)
+npm run verify -- folders          # only scenarios whose name matches (a full run is ~3 minutes)
+npm run charsnap:status            # sync state with Jason's repo — see docs/charsnap-workflow.md
 ```
-No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`. Pass a name substring to run a subset — a full run launches a fresh browser per scenario and takes several minutes. Set `VERIFY_URL` to test a production build (`vite preview`) rather than the dev server; CI does this.
+No linters are configured. `npm run verify` drives the real app headlessly to check entry-level features end-to-end (starts/stops its own dev server); reusable navigation pathways live in `verify/driver.mjs`. Pass a name substring to run a subset. Scenarios run four at a time, each in its own browser (`verify/pool.mjs`); `VERIFY_JOBS=1` runs them one at a time, which is how to tell a real failure from one that only appears under load. Set `VERIFY_URL` to test a production build (`vite preview`) rather than the dev server; CI does this.
 
 ## Architecture
 Browser-only SPA (React 18 + Vite 7). No backend, no database, no authentication. All persistence is `localStorage` via `storage-service.js`.
@@ -83,7 +93,10 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 - `docs/tour-voice.md` — how to write feature-tour captions (read before adding or editing a tour step)
 
 ## Deployment
-GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions environment and sets the base path to `/<repo-name>/` automatically. Push to `main` triggers deploy via `.github/workflows/main.yml`.
+GitHub Pages. `vite.config.js` builds with relative asset paths (`base: './'`), so the same `dist/` works under Pages' `/<repo-name>/`, inside CharSnap's folder, or at any path. Push to `main` triggers deploy via `.github/workflows/main.yml`. CI (`verify.yml`) serves the build with `vite preview` at the server root.
+
+## CharSnap (Jason's repo)
+This builder also ships inside `JasonYCao/charsnap-extensions` (folder `mkp-lorebook-builder/`), and Jason edits his copy too. **This repo is the one codebase; his is a destination we publish to and a source we merge from.** The procedure is three scripts — `npm run charsnap:status`, `charsnap:sync`, `charsnap:publish -- X.Y.Z` (`scripts/charsnap.sh`) — and **`docs/charsnap-workflow.md`** explains them, the conflicts to expect, and where things currently stand. Use the scripts rather than hand-typed git: they refuse to sync onto a dirty tree, to publish a build that is behind Jason's `main`, or to publish anything not yet pushed here. Never reword or squash a `Sync charsnap-extensions@<sha>` commit; the next sync finds its base by that subject.
 
 ## Don't Do This
 - Don't hardcode strings, numbers, or colors in logic files — always import from `src/constants/`

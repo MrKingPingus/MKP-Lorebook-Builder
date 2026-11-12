@@ -3,7 +3,10 @@
 // fresh browser so state never leaks between them. Values are anchored to the
 // committed fixture (fixtures/reika-test-book.json): 34 entries, 29 public / 5
 // private, 0 hidden-from-export.
-import { launch, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
+import { runPool } from './pool.mjs';
+import { launch, openReferenceChooser, openBuilderWithFixture, importBookAsNew, enterSelectMode, selectCards, exportJson, countPrivate, openSettings, openSettingsSection, pairCrosstalk, settle, dragTo, rowNames, scrollListToBottom, enableCondensedStage, openScaleMenu, setScaleOption, closeScaleMenu, BASE_URL, FIXTURE, VARIANT_FIXTURE } from './driver.mjs';
+// A CharSnap page copy saved as OpenDocument; see fixtures/README.md.
+const ODT_FIXTURE = new URL('../fixtures/charsnap-page-copy.odt', import.meta.url).pathname;
 import { VARIANT_COUNTS, VARIANT_MARKER } from '../fixtures/build-variant-book.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -126,8 +129,8 @@ const SCENARIOS = [
     await openBuilderWithFixture(page);
     check('private badges default off', await page.locator('.entry-private-icon').count(), 0);
     await openSettings(page);
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    const cb = editing.locator('label:has-text("Mark private entries") input[type="checkbox"]');
+    const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
+    const cb = appearance.locator('label:has-text("Mark private entries") input[type="checkbox"]');
     await cb.waitFor({ timeout: 4000 });
     await cb.check();
     await settle(page, 150);
@@ -135,6 +138,286 @@ const SCENARIOS = [
     await settle(page, 300);
     check('private badges after enabling', await page.locator('.entry-private-icon').count(), 5);
     check('public badges unchanged', await page.locator('.entry-public-icon').count(), 29);
+  }),
+
+  // The per-entry ⋯ menu. The point of the scenario is not that each action
+  // works — most of them worked before — but that they are all reachable on a
+  // COLLAPSED card, which none of them were: Remove was the only per-entry
+  // action in the header, and the rest lived in a footer that only an expanded
+  // card renders.
+  scenario('Entry ⋯ menu: every per-entry action, without expanding the card', async (page, check) => {
+    const count = await openBuilderWithFixture(page);
+    const card = page.locator('.entry-card').first();
+
+    check('cards start collapsed', await page.locator('.entry-card-body').count(), 0);
+    check('the ⋯ button replaced Remove',
+      await page.locator('.card-action-btn--remove').count(), 0);
+    check('and every card carries one', await page.locator('.entry-actions-btn').count(), count);
+
+    const menu = page.locator('.entry-actions-menu');
+    const openMenu = async () => {
+      await card.locator('.entry-actions-btn').click();
+      await menu.waitFor({ timeout: 4000 });
+      await settle(page, 150);
+    };
+
+    // ── visibility, from a collapsed card ───────────────────────────────────
+    await openMenu();
+    check('the menu is portalled out of the clipping list',
+      await menu.evaluate((el) => el.parentElement === document.body), true);
+    const publicItem = menu.locator('[role=menuitemcheckbox]', { hasText: 'Public on CharSnap' });
+    check('the first fixture entry reads as public',
+      await publicItem.getAttribute('aria-checked'), 'true');
+    await publicItem.click();
+    await settle(page, 250);
+    check('the menu closes after acting', await menu.count(), 0);
+    check('and the card lost its public badge',
+      await card.locator('.entry-public-icon').count(), 0);
+    check('the book is one entry less public',
+      await page.locator('.entry-public-icon').count(), 28);
+    check('all without ever expanding a card',
+      await page.locator('.entry-card-body').count(), 0);
+
+    // ── hide from export ────────────────────────────────────────────────────
+    await openMenu();
+    await menu.locator('[role=menuitemcheckbox]', { hasText: 'Hide from Export' }).click();
+    await settle(page, 250);
+    check('the card shows the hidden-from-export badge',
+      await card.locator('.entry-hidden-icon').count(), 1);
+    await openMenu();
+    check('and the menu now reports it as ticked',
+      await menu.locator('[role=menuitemcheckbox]', { hasText: 'Hide from Export' })
+        .getAttribute('aria-checked'), 'true');
+
+    // ── always on (CharSnap, charsnap-extensions@363694a) ───────────────────
+    // It arrived as a footer button; the merge moved it in here with the other
+    // CharSnap switches. The badge is Jason's, and proves the flag was written.
+    const alwaysItem = menu.locator('[role=menuitemcheckbox]', { hasText: 'Always on' });
+    check('always on starts off', await alwaysItem.getAttribute('aria-checked'), 'false');
+    await alwaysItem.click();
+    await settle(page, 250);
+    check('the card shows the always-on badge',
+      await card.locator('.entry-always-on-icon').count(), 1);
+    check('and no footer button duplicates it',
+      await page.locator('.entry-always-on-btn').count(), 0);
+    await openMenu(); // the next block starts from an open menu
+
+    // ── submenus fly out on hover, and Escape unwinds one level at a time ───
+    // They were drill-ins first, replacing the panel with a ‹ Back row out of
+    // it. A flyout keeps the root menu on screen, so moving between the three
+    // submenus costs no clicks — which is what the rest of this block asserts.
+    const flyout = page.locator('.entry-actions-flyout');
+    await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).hover();
+    await settle(page, 400);
+    check('hovering a submenu row opens its flyout, no click needed', await flyout.count(), 1);
+    check('and the root menu is still showing behind it', await menu.count(), 1);
+
+    const menuBox = await menu.boundingBox();
+    const flyBox  = await flyout.boundingBox();
+    check('which the flyout sits beside rather than on top of',
+      Math.round(flyBox.x) >= Math.round(menuBox.x + menuBox.width), true);
+
+    // Sliding to another submenu row swaps the panel without a click, and
+    // reaching across the gap into the panel must not drop it.
+    await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).hover();
+    await settle(page, 250);
+    check('sliding to the next submenu row swaps the panel', await flyout.count(), 1);
+    await flyout.locator('.entry-actions-item').first().hover();
+    await settle(page, 500);
+    check('and the gap between row and panel is crossable', await flyout.count(), 1);
+
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('Escape closes the flyout first', await flyout.count(), 0);
+    check('and leaves the menu itself open', await menu.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('a second Escape closes the menu', await menu.count(), 0);
+
+    // ── filing into a folder, still without expanding ───────────────────────
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).click();
+    await settle(page, 250);
+    await openMenu();
+    await menu.locator('.entry-actions-item', { hasText: 'Move to folder' }).click();
+    await settle(page, 200);
+    await page.locator('.entry-actions-flyout .entry-actions-item', { hasText: 'New Folder' }).first().click();
+    await settle(page, 300);
+    check('the entry is filed', await page.locator('.folder-entries .entry-card').count(), 1);
+    check('no entry was lost filing it', await page.locator('.entry-card').count(), count);
+    // Reopening from inside the folder names the folder it is in, so the menu
+    // reports state rather than only offering an action.
+    await page.locator('.folder-entries .entry-card').first().locator('.entry-actions-btn').click();
+    await menu.waitFor({ timeout: 4000 });
+    check('the menu names the folder it is in',
+      // nth(2): Copy/Move to lorebook lead the root menu, folder is third.
+      (await menu.locator('.entry-actions-item').nth(2).innerText()).includes('New Folder'), true);
+    // A tick shows state on the two checkbox rows, and it is the LAST thing in
+    // its row — a leading tick column indented those two away from every other
+    // label for a mark that is absent most of the time.
+    check('the state ticks sit in the trailing column, so labels start flush',
+      await menu.locator('[role=menuitemcheckbox]').first()
+        .evaluate((el) => el.lastElementChild.classList.contains('entry-actions-tick')), true);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    // ── the menu follows its button through a scroll ────────────────────────
+    // It is position: fixed over a list that scrolls, so this is the behaviour
+    // holding it onto the card. Closing instead looks equivalent until you open
+    // the menu right after expanding a card: that smooth-scrolls, and a smooth
+    // scroll keeps emitting events long enough to shut a menu opened after it.
+    await openMenu();
+    const before = await menu.boundingBox();
+    await page.locator('.entry-list').evaluate((el) => { el.scrollTop += 120; });
+    await settle(page, 300);
+    check('a scroll does not close the menu', await menu.count(), 1);
+    const after = await menu.boundingBox();
+    check('the menu tracked the card down the list',
+      Math.abs((before.y - after.y) - 120) < 4, true);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    await page.locator('.entry-list').evaluate((el) => { el.scrollTop = 0; });
+    await settle(page, 250);
+
+    // Expanding smooth-scrolls; the menu must still open during the tail of it.
+    await page.locator('.entry-card').nth(1).locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await openMenu();
+    check('the menu opens during a smooth scroll', await menu.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    await page.locator('.entry-card').nth(1).locator('.card-action-btn', { hasText: 'Collapse' }).click();
+    await settle(page, 250);
+
+    // ── the footer kept checkpoints and nothing else ────────────────────────
+    await page.locator('.entry-card').last().locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await settle(page, 250);
+    const footer = page.locator('.rollback-footer');
+    check('the footer still exists', await footer.count(), 1);
+    check('and holds only the checkpoints button',
+      await footer.locator('button').count(), 1);
+    check('the moved controls left the footer',
+      await footer.locator('.entry-public-btn, .hide-from-export-btn, .move-to-folder').count(), 0);
+
+    // ── delete ──────────────────────────────────────────────────────────────
+    await page.locator('.entry-card').first().locator('.entry-actions-btn').click();
+    await menu.waitFor({ timeout: 4000 });
+    await settle(page, 200);
+    await menu.locator('.entry-actions-item', { hasText: 'Delete entry' }).click();
+    await settle(page, 300);
+    check('delete removed one entry', await page.locator('.entry-card').count(), count - 1);
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('and it comes back with undo', await page.locator('.entry-card').count(), count);
+  }),
+
+  scenario('Warning scale: three / four / gradient reach the real counters', async (page, check) => {
+    await openBuilderWithFixture(page);
+
+    // Drive one entry's description to a known length and read the colour the
+    // app actually paints. Reading computed style is the point of doing this in
+    // a browser at all — the pure checks already prove the maths.
+    const card = page.locator('.entry-card').first();
+    await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await settle(page, 200);
+    const textarea = card.locator('.description-textarea');
+    const counter  = card.locator('.description-footer .char-counter');
+
+    async function typeChars(n) {
+      await textarea.evaluate((el, len) => {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+        setter.call(el, 'x'.repeat(len));
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      }, n);
+      await settle(page, 200);
+    }
+    const counterColor = () => counter.evaluate((el) => getComputedStyle(el).color);
+    // The token values for this theme, resolved once so the assertions compare
+    // against the palette rather than against hexes duplicated from style.css.
+    const token = (name) => page.evaluate(
+      (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
+    const [GREEN, YELLOW, ORANGE, RED] = await Promise.all(
+      ['--green', '--yellow', '--orange', '--red'].map(token));
+    const asRgb = (hex) => page.evaluate((h) => {
+      const d = document.createElement('div');
+      d.style.color = h; document.body.appendChild(d);
+      const c = getComputedStyle(d).color; d.remove(); return c;
+    }, hex);
+    const [gRgb, yRgb, oRgb, rRgb] = await Promise.all([GREEN, YELLOW, ORANGE, RED].map(asRgb));
+
+    check('an orange token exists in the default theme', ORANGE.length > 0, true);
+
+    // ── three colours (the default) ─────────────────────────────────────────
+    await typeChars(500);
+    check('three-colour: 500 chars is green', await counterColor(), gRgb);
+    await typeChars(800);
+    check('three-colour: 800 chars is yellow', await counterColor(), yRgb);
+    await typeChars(1200);
+    check('three-colour: 1200 chars is red', await counterColor(), rRgb);
+
+    // ── switch to four ──────────────────────────────────────────────────────
+    await openSettings(page);
+    const appear = await openSettingsSection(page, 'Appearance & Accessibility');
+    const scale = appear.locator('.settings-group', { hasText: 'Warning color scale' }).locator('select');
+    await scale.waitFor({ timeout: 4000 });
+    await scale.selectOption('four');
+    await settle(page, 200);
+    // The third threshold input only exists on a three-stop scale.
+    const thresholds = appear.locator('.settings-group', { hasText: 'Character count thresholds' });
+    check('four-colour exposes a third threshold input',
+      await thresholds.locator('input[type="number"]').count(), 3);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    check('four-colour: 1200 chars is now orange, not red', await counterColor(), oRgb);
+    await typeChars(1600);
+    check('four-colour: past the cap is red', await counterColor(), rRgb);
+    await typeChars(800);
+    check('four-colour: the yellow band is unmoved', await counterColor(), yRgb);
+
+    // ── switch to gradient ──────────────────────────────────────────────────
+    await openSettings(page);
+    const appear2 = await openSettingsSection(page, 'Appearance & Accessibility');
+    await appear2.locator('.settings-group', { hasText: 'Warning color scale' })
+      .locator('select').selectOption('gradient');
+    await settle(page, 200);
+    await page.keyboard.press('Escape');
+    await settle(page, 300);
+
+    await typeChars(875);
+    const mid = await counterColor();
+    check('gradient: a mid-band value is neither pure yellow nor pure orange',
+      mid !== yRgb && mid !== oRgb, true);
+    // A color-mix() resolves to oklab()/color() in computed style rather than
+    // rgb(), depending on the engine — assert it is a real colour function
+    // carrying numbers, not the empty string a bad token reference gives.
+    check('gradient: and it resolves to a real colour, not a blank',
+      /^(rgb|oklab|color)\(/.test(mid) && /\d/.test(mid), true);
+    await typeChars(400);
+    check('gradient: well below the first threshold is flat green', await counterColor(), gRgb);
+    // The run-up: green holds to two thirds of the threshold, then eases in.
+    await typeChars(500);
+    check('gradient: green still holds at the hand-off point', await counterColor(), gRgb);
+    await typeChars(625);
+    const easing = await counterColor();
+    check('gradient: mid-run-up is neither green nor yellow',
+      easing !== gRgb && easing !== yRgb, true);
+    // The border follows the counter from the moment it leaves green. It used
+    // to wait for the first threshold, so here the two disagreed (F4).
+    check('gradient: the box border already wears the counter\'s colour',
+      await textarea.evaluate((el) => getComputedStyle(el).borderTopColor), easing);
+
+    // ── the setting survives a reload ───────────────────────────────────────
+    // A reload lands on the lander, so the builder has to be re-entered before
+    // Settings is reachable at all.
+    await page.reload();
+    await settle(page, 600);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 600);
+    await openSettings(page);
+    const appear3 = await openSettingsSection(page, 'Appearance & Accessibility');
+    check('the chosen scale persists across a reload',
+      await appear3.locator('.settings-group', { hasText: 'Warning color scale' })
+        .locator('select').inputValue(),
+      'gradient');
   }),
 
   scenario('Default hotkeys + help overlay + Escape dismiss', async (page, check) => {
@@ -253,7 +536,9 @@ const SCENARIOS = [
     const before = await cards.count();
     await openSettings(page);
     await openSettingsSection(page, 'Layout & Controls');
-    const row = page.locator('.kbd-settings-row', { hasText: 'New entry' });
+    // By label, exactly: "New entry from template" also contains "New entry".
+    const row = page.locator('.kbd-settings-row')
+      .filter({ has: page.locator('.kbd-settings-label', { hasText: /^New entry$/ }) });
     const captureBtn = row.locator('.kbd-capture-btn');
     await captureBtn.click();
     await settle(page, 120);
@@ -735,8 +1020,8 @@ const SCENARIOS = [
       await page.locator('.entry-card--condensed .stats-badge').count(), 0);
 
     await openSettings(page);
-    const editing = await openSettingsSection(page, 'Editing & Entries');
-    await editing.locator('label:has-text("Show entry stats on condensed rows") input').check();
+    const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
+    await appearance.locator('label:has-text("Show entry stats on condensed rows") input').check();
     await settle(page, 200);
     await page.keyboard.press('Escape');
     await settle(page, 350);
@@ -1040,7 +1325,7 @@ const SCENARIOS = [
     await page.locator('.card-action-btn', { hasText: 'Expand' }).first().click();
     await settle(page, 300);
 
-    const box = page.locator('.entry-card').first().locator('textarea').first();
+    const box = page.locator('.entry-card').first().locator('.description-textarea');
     check('the card really is expanded', await box.count(), 1);
     await box.click({ modifiers: ['Shift'] });
     await settle(page, 250);
@@ -1918,38 +2203,50 @@ const SCENARIOS = [
     check('Escape closes it too', await notice.count(), 0);
   }),
 
-  scenario('Feature tour: a desktop release with nothing to tour offers no tour', async (page, check) => {
-    // 0.10.0 replaced the screenshot gallery with a tour that drives the real
-    // app, and made the step list per-platform. Nothing changed on desktop that
-    // release, so `TOUR_STEPS_DESKTOP` is deliberately empty — and the contract
-    // this pins is that an empty list means *no offer*, not an empty tour.
-    //
-    // The button on the lander is evergreen rather than tied to the update
-    // notice, so it is the one that would otherwise lead somewhere blank.
+  scenario('Feature tour: the desktop tour walks 0.11.0 and tidies up after itself', async (page, check) => {
+    // 0.10.0 changed nothing on desktop, so desktop had no tour. 0.11.0 is
+    // mostly desktop: the ⋯ menu, templates, trigger conditions and backup.
+    // Each step must find its target in the real app, and finishing must
+    // leave the user's own books as they were.
     if (!latestReleaseHasUserContent()) {
       check('skipped — the newest release is internal-only', true, true);
       return;
     }
+    const pageErrors = [];
+    page.on('pageerror', (e) => pageErrors.push(e.message));
 
     await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-    await page.evaluate(() => {
-      localStorage.removeItem('mkp_last_seen_release');
-    });
+    await page.evaluate(() => { localStorage.removeItem('mkp_last_seen_release'); });
     await page.reload({ waitUntil: 'networkidle' });
     await settle(page, 400);
 
     const notice = page.locator('.update-notice');
-    check('the update notice still shows', await notice.count(), 1);
-    check('but offers no tour button',
-      await notice.locator('.update-notice-btn--primary').count(), 0);
-    check('and its dismiss reads Close rather than Not now',
-      (await notice.locator('.update-notice-btn').first().textContent())?.trim(), 'Close');
-
+    check('the update notice offers the tour', await notice.locator('.update-notice-btn--primary').count(), 1);
     await page.keyboard.press('Escape');
     await settle(page, 300);
-    check('the lander offers no tour either', await page.locator('.lander-tour-btn').count(), 0);
-    check('and nothing from the retired gallery is left behind',
-      await page.locator('.tour-panel, .tour-zoom, .tour-dot').count(), 0);
+    check('and so does the lander', await page.locator('.lander-tour-btn').count(), 1);
+
+    await page.locator('.lander-tour-btn').first().click();
+    await page.locator('.tour-bubble').waitFor({ timeout: 6000 });
+    const titles = [];
+    for (let i = 0; i < 5; i++) {
+      await settle(page, 600);
+      titles.push(`${await page.locator('.tour-progress').innerText()}: ${await page.locator('.tour-ring').count()} ring`);
+      if (i === 0) {
+        // The first step invites a click on the ⋯ button, and following it
+        // moves the tour on by itself.
+        await page.locator('.entry-actions-btn').first().click();
+        continue;
+      }
+      await page.locator('.tour-btn--primary').click();
+    }
+    check('every step found what it points at', titles.join(' | '),
+      '1 of 5: 1 ring | 2 of 5: 1 ring | 3 of 5: 1 ring | 4 of 5: 1 ring | 5 of 5: 1 ring');
+    await settle(page, 600);
+    check('Done closes the tour', await page.locator('.tour-bubble').count(), 0);
+    check('without a crash on the way out', pageErrors.join(' | '), '');
+    check('and the sample books are gone with it',
+      await page.locator('.lander-recent-item', { hasText: 'Camelot' }).count(), 0);
   }),
 
   scenario('Side panel slides open without the entry list lurching', async (page, check) => {
@@ -2111,8 +2408,23 @@ const SCENARIOS = [
     // Sub-dividers give each section a visible internal order.
     const editing = await openSettingsSection(page, 'Editing & Entries');
     const editingDividers = await editing.locator('.settings-divider-label').allInnerTexts();
-    check('Editing & Entries is divided into four runs',
-      editingDividers.join(',').toLowerCase(), 'writing aids,counters,entry badges,entry checkpoints');
+    // Three runs: reusable scaffolds, what helps you write, and what protects
+    // what you wrote. The display-only groups went to Appearance on 2026-08-31;
+    // Templates arrived on 2026-09-02.
+    check('Editing & Entries is divided into three runs',
+      editingDividers.join(',').toLowerCase(), 'templates,writing aids,entry checkpoints');
+
+    const appearance = await openSettingsSection(page, 'Appearance & Accessibility');
+    const appearanceDividers = await appearance.locator('.settings-divider-label').allInnerTexts();
+    check('Appearance & Accessibility took the display groups',
+      appearanceDividers.join(',').toLowerCase(),
+      'theme,warnings & counters,entry display,accessibility,fun');
+    // The counter colours and the thresholds that drive them must not be split
+    // across sections — the whole point of moving them was to keep them together.
+    check('the warning scale and its thresholds sit together',
+      await appearance.locator('.settings-group', { hasText: 'Warning color scale' }).count()
+      + await appearance.locator('.settings-group', { hasText: 'Character count thresholds' }).count(),
+      2);
 
     // Entry checkpoints is the tallest block and a set-once, per-book opt-in, so
     // it deliberately trails its section rather than leading it.
@@ -2183,8 +2495,9 @@ const SCENARIOS = [
     // The button enables checkpoints itself rather than sending you to Settings,
     // and opens the panel so the state change is visible.
     const enable = card.locator('.rollback-toggle-btn');
-    check('the disabled state offers to enable, not to navigate',
-      (await enable.innerText()).trim(), 'Enable checkpoints');
+    check('the off state says so, at full strength',
+      [(await enable.innerText()).trim(), await enable.evaluate((el) => getComputedStyle(el).opacity)].join(' | '),
+      '↺ Checkpoints: off | 1');
     await enable.click();
     await settle(page, 300);
     check('pressing it turns checkpoints on for the book',
@@ -2203,7 +2516,7 @@ const SCENARIOS = [
     await settle(page, 300);
 
     // First edit of the session auto-saves a checkpoint of the pre-edit state.
-    const desc = card.locator('textarea').first();
+    const desc = card.locator('.description-textarea');
     await desc.click();
     await desc.type(' EDITED');
     await settle(page, 400);
@@ -2272,7 +2585,7 @@ const SCENARIOS = [
     check('hovering a chip opens synonyms',
       await page.locator('.thesaurus-popover').count(), 1);
 
-    await card.locator('textarea').first().hover();
+    await card.locator('.description-textarea').hover();
     await settle(page, 500);
     check('moving off the chip closes it',
       await page.locator('.thesaurus-popover').count(), 0);
@@ -2283,7 +2596,7 @@ const SCENARIOS = [
     await settle(page, 500);
     check('accepting a chip summons no popover',
       await page.locator('.thesaurus-popover').count(), 0);
-    await card.locator('textarea').first().click();
+    await card.locator('.description-textarea').click();
     await settle(page, 300);
     check('and none appears once focus moves to the description',
       await page.locator('.thesaurus-popover').count(), 0);
@@ -2293,6 +2606,156 @@ const SCENARIOS = [
     await settle(page, 500);
     check('a genuine hover afterwards still opens synonyms',
       await page.locator('.thesaurus-popover').count(), 1);
+  }),
+
+  // Find & Replace on desktop had no coverage at all (plan.md, Open/deferred).
+  // Tester: replacing "foxian" turned "Foxians" into "bobs burgerss". Whole
+  // words is now the default, so that search finds nothing inside "Foxians".
+  scenario('Find & Replace: whole words by default, and the replace lands', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const first = page.locator('.entry-card').first();
+    await first.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await first.locator('.entry-name-field').fill('Foxians');
+    await first.locator('.description-textarea').fill('A foxian and the Foxians.');
+    await settle(page, 300);
+
+    await page.locator('.search-mode-select').first().selectOption('find-replace');
+    await page.locator('.find-input').first().fill('foxian');
+    await page.locator('.replace-input').first().fill('bobs burgers');
+    await settle(page, 300);
+    const button = page.locator('.replace-all-btn').first();
+    check('whole words: only the standalone word counts', (await button.innerText()).includes('(1)'), true);
+
+    await button.click();
+    await page.locator('.replace-scope-popover').waitFor({ timeout: 4000 });
+    const whole = page.locator('.replace-scope-wholeword input');
+    check('the option is on by default', await whole.isChecked(), true);
+    await page.locator('.replace-scope-proceed').first().click();
+    await settle(page, 500);
+    const book = await exportJson(page);
+    const entry = Object.values(book.entries).find((e) => e.name.startsWith('Foxians') || e.name.startsWith('bobs'));
+    check('the name "Foxians" is untouched', entry.name, 'Foxians');
+    check('and only the whole word was replaced', entry.description, 'A bobs burgers and the Foxians.');
+
+    // Off, it finds inside words again, as it always did.
+    await page.locator('.find-input').first().fill('Foxian');
+    await settle(page, 200);
+    await button.click();
+    await page.locator('.replace-scope-popover').waitFor({ timeout: 4000 });
+    await page.locator('.replace-scope-wholeword input').uncheck();
+    await settle(page, 200);
+    check('with it off, matches inside words count again', (await button.innerText()).includes('(2)'), true);
+  }),
+
+  // Tester: the folder name filled the whole bar, so every click on the bar
+  // renamed, and opening or closing meant finding the small button. The bar
+  // now opens and closes on a double-click, like an entry's header.
+  scenario('Folders: double-click the bar to open or close it', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.filter-action-btn', { hasText: 'Folder' }).click();
+    await settle(page, 200);
+    await page.keyboard.press('Escape'); // leave the name as it is
+    await settle(page, 150);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1]);
+    await page.locator('.bulk-action-apply', { hasText: 'Move to folder' }).click();
+    await page.locator('.bulk-action-chips .bulk-type-chip').filter({ hasNotText: 'New Folder' }).first().click();
+    await settle(page, 300);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    const header = page.locator('.folder-header').first();
+    const toggle = header.locator('.folder-collapse-btn');
+    const expanded = () => toggle.getAttribute('aria-expanded');
+    const nameBox = await header.locator('.folder-name').boundingBox();
+    const barBox  = await header.boundingBox();
+    check('the name takes only its own width, leaving most of the bar free',
+      nameBox.width < barBox.width / 2, true);
+
+    const before = await expanded();
+    const spacer = await header.locator('.folder-header-spacer').boundingBox();
+    await page.mouse.dblclick(spacer.x + spacer.width / 2, spacer.y + spacer.height / 2);
+    await settle(page, 250);
+    check('double-clicking the empty bar toggles the folder', (await expanded()) !== before, true);
+    check('without starting a rename', await header.locator('.folder-name-input').count(), 0);
+    await page.mouse.dblclick(spacer.x + spacer.width / 2, spacer.y + spacer.height / 2);
+    await settle(page, 250);
+    check('and again toggles it back', await expanded(), before);
+
+    await header.locator('.folder-name').click();
+    await settle(page, 150);
+    check('a click on the name still renames', await header.locator('.folder-name-input').count(), 1);
+  }),
+
+  // #97: Firefox cannot place the text cursor by clicking inside a draggable
+  // element. Cards were always draggable, so in Firefox a click in any field
+  // put the cursor at its start. This browser is Chromium, which is immune, so
+  // the check is on the cause: at rest nothing around a text field is
+  // draggable, and pressing the handle is what arms a drag.
+  scenario('No card is draggable at rest, so Firefox can place the cursor (#97)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const card = page.locator('.entry-card').first();
+    await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await settle(page, 200);
+    const draggableAroundFields = () => page.evaluate(() =>
+      [...document.querySelectorAll('input, textarea')].filter((el) => el.closest('[draggable="true"]')).length);
+    check('no text field sits inside a draggable element', await draggableAroundFields(), 0);
+
+    const handle = page.locator('.entry-card .drag-handle, .entry-card [class*="drag-handle"]').first();
+    await handle.hover();
+    await page.mouse.down();
+    check('pressing the handle arms that row', await page.locator('.entry-list-item[draggable="true"]').count(), 1);
+    await page.mouse.up();
+    await settle(page, 100);
+    check('and releasing disarms it', await page.locator('[draggable="true"]').count(), 0);
+  }),
+
+  // #100: in compare mode the active card and its reference copy should read
+  // as one table, each row at the same height in both. Parts on one side only
+  // (the × on chips, Allow-all-overlap, the trigger counter, the condition's
+  // counter and hint, the description's copy buttons) pushed them apart.
+  scenario('Compare mode: the two cards line up row for row (#100)', async (page, check) => {
+    await pairCrosstalk(page);
+    await page.locator('.build-panel .entry-ref-badge--diff').first().click();
+    await settle(page, 700);
+    const rows = ['.entry-fields-row', '.trigger-section', '.entry-condition-section', '.description-wrapper'];
+    const offsets = await page.evaluate((rows) => {
+      const act = document.querySelector('.entry-card--comparing');
+      const ref = document.querySelector('.entry-card--reference-mirror');
+      const at = (root, sel) => Math.round(root.querySelector(sel).getBoundingClientRect().top - root.getBoundingClientRect().top);
+      return rows.map((sel) => at(act, sel) - at(ref, sel));
+    }, rows);
+    check('every row starts at the same height in both cards (differences, px)', offsets.join(','), '0,0,0,0');
+  }),
+
+  // #99: a trigger that conflicts with another entry opens the conflict
+  // popover on hover, so its synonyms were unreachable. The conflict popover
+  // now has a Synonyms… button, which opens synonyms pinned: they appear where
+  // the pointer already is, so they must not close when it moves.
+  scenario('Synonyms are reachable from a conflicting trigger (#99)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const [a, b] = [page.locator('.entry-card').nth(0), page.locator('.entry-card').nth(1)];
+    for (const card of [a, b]) {
+      await card.locator('.card-action-btn', { hasText: 'Expand' }).click();
+      await card.locator('.trigger-input').fill('lanternlight');
+      await card.locator('.trigger-input').press('Enter');
+      await settle(page, 200);
+    }
+    const chip = b.locator('.chip', { hasText: 'lanternlight' });
+    await chip.hover();
+    await settle(page, 400);
+    const conflict = page.locator('.chip-conflict-popover');
+    check('the shared trigger opens the conflict popover', await conflict.count(), 1);
+    await conflict.locator('.chip-conflict-action--synonyms').click();
+    await settle(page, 300);
+    check('Synonyms… swaps it for the synonyms popover',
+      [await conflict.count(), await page.locator('.thesaurus-popover').count()].join(','), '0,1');
+    await page.mouse.move(20, 20, { steps: 4 });
+    await settle(page, 600);
+    check('which stays when the pointer moves away', await page.locator('.thesaurus-popover').count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+    check('and closes on Escape', await page.locator('.thesaurus-popover').count(), 0);
   }),
 
   scenario('Settings: the ? cheat sheet deep-links to the keybinding editor', async (page, check) => {
@@ -2586,6 +3049,696 @@ const SCENARIOS = [
       (await page.locator('.menu-dropdown-item').allInnerTexts()).join(' | '),
       'Lorebooks | Import / Export | Settings');
   }),
+
+  // Copy / move an entry to another lorebook (GitHub #127). The thing worth
+  // testing hardest is not the copy — it is that the DESTINATION survives,
+  // because the destination is a book that is not on screen and that autosave
+  // does not cover. A transfer that only reached the store would pass every
+  // check here except the reload.
+  scenario('Copy and move one entry to another lorebook (#127)', async (page, check) => {
+    // A sandboxed frame (claude.ai artifacts, possibly CharSnap's iframe)
+    // refuses window.confirm() without asking. A move that relied on it did
+    // nothing there, so refuse it here too: the confirmation must be inline.
+    await page.addInitScript(() => { window.confirm = () => false; });
+
+    await openBuilderWithFixture(page);              // "Reika Hirahara V2", 34
+    await importBookAsNew(page, VARIANT_FIXTURE);    // "… — Variant", 29, now active
+    await settle(page, 300);
+    check('the variant book is the one we are standing in',
+      await page.locator('.entry-card').count(), VARIANT_COUNTS.total);
+
+    const menu = page.locator('.entry-actions-menu');
+    const openMenu = async (i = 0) => {
+      await page.locator('.entry-actions-btn').nth(i).click();
+      await menu.waitFor({ timeout: 4000 });
+      await settle(page, 150);
+    };
+    const firstName = (await rowNames(page))[0];
+
+    // ── copy ────────────────────────────────────────────────────────────────
+    await openMenu();
+    await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).click();
+    await settle(page, 200);
+    const flyout = page.locator('.entry-actions-flyout');
+    check('the target list offers the other book, and only it',
+      await flyout.locator('.entry-actions-item').count(), 2); // target + ＋ New lorebook…
+    check('and says how many entries are already in it',
+      await flyout.locator('.entry-actions-count').first().innerText(), '34');
+
+    await flyout.locator('.entry-actions-item').first().click();
+    await settle(page, 300);
+    check('the flyout reports where it went rather than just closing',
+      (await flyout.locator('.entry-actions-result').innerText()).includes('Copied to'), true);
+    check('a copy leaves the source book alone',
+      await page.locator('.entry-card').count(), VARIANT_COUNTS.total);
+
+    // ── the copy is really there, and really persisted ──────────────────────
+    await flyout.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
+    await settle(page, 500);
+    check('the destination gained exactly one entry',
+      await page.locator('.entry-card').count(), 35);
+    check('and it is the entry we sent, appended at the end',
+      (await rowNames(page)).at(-1), firstName);
+
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 700);
+    check('the copy survived a reload — it was written, not just stored in memory',
+      await page.locator('.entry-card').count(), 35);
+
+    // ── move, back the other way ────────────────────────────────────────────
+    const movedName = (await rowNames(page))[0];
+    await openMenu();
+    await menu.locator('.entry-actions-item', { hasText: 'Move to lorebook' }).click();
+    await settle(page, 200);
+    await page.locator('.entry-actions-flyout .entry-actions-item').first().click();
+    await settle(page, 200);
+    check('a move asks first, inside the panel',
+      await page.locator('.entry-actions-confirm').count(), 1);
+    check('nothing has moved before the answer',
+      await page.locator('.entry-card').count(), 35);
+    await page.locator('.entry-actions-item--move').click();
+    await settle(page, 400);
+    check('a move takes the entry out of the source book',
+      await page.locator('.entry-card').count(), 34);
+    // No receipt here, unlike a copy: the row left the list, so the menu
+    // hanging off it went with it. The confirmation the user just answered is
+    // what named the destination. See `finish()` in EntryActionsMenu.jsx.
+    check('and the menu goes with the card it was attached to',
+      await menu.count(), 0);
+    check('flyout and all', await page.locator('.entry-actions-flyout').count(), 0);
+
+    // Locked decision 7: undoable on the source side only. The entry comes
+    // back here; the destination keeps its copy, which is the whole reason the
+    // confirmation spells it out.
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('undo restores it on the side it left',
+      await page.locator('.entry-card').count(), 35);
+    check('and it is the one that left, by name',
+      (await rowNames(page)).includes(movedName), true);
+  }),
+
+  // "＋ New lorebook…" as a transfer target (locked decision 9). Its one
+  // non-obvious promise is that it does NOT switch you to the book it makes.
+  scenario('Transfer target: a brand-new lorebook, without leaving this one', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const titleBefore = await page.locator('.title-field-name').first().innerText();
+
+    const menu = page.locator('.entry-actions-menu');
+    await page.locator('.entry-actions-btn').first().click();
+    await menu.waitFor({ timeout: 4000 });
+    await menu.locator('.entry-actions-item', { hasText: 'Copy to lorebook' }).click();
+    await settle(page, 200);
+    const flyout = page.locator('.entry-actions-flyout');
+    check('with one book there is nothing to copy to yet',
+      (await flyout.locator('.entry-actions-note').innerText()).includes('only lorebook'), true);
+
+    await flyout.locator('.entry-actions-item', { hasText: 'New lorebook' }).click();
+    await settle(page, 200);
+    check('the item becomes a name field', await flyout.locator('.entry-actions-input').count(), 1);
+    check('and takes the caret, so you can just type',
+      await flyout.locator('.entry-actions-input').evaluate((el) => el === document.activeElement), true);
+
+    // Nothing to hover here, so the panel would time out and close on its own
+    // if a half-typed name did not pin it open.
+    await page.mouse.move(10, 10);
+    await settle(page, 700);
+    check('a half-typed name pins the panel open', await flyout.locator('.entry-actions-input').count(), 1);
+
+    await flyout.locator('.entry-actions-input').fill('Offcuts');
+    await page.keyboard.press('Enter');
+    await settle(page, 400);
+    check('the receipt names the book it just made',
+      (await flyout.locator('.entry-actions-result').innerText()).includes('Offcuts'), true);
+    check('the source book is untouched — this was a copy',
+      await page.locator('.entry-card').count(), 34);
+    check('and we are still standing in it, not in the new book',
+      await page.locator('.title-field-name').first().innerText(), titleBefore);
+
+    await flyout.locator('.entry-actions-item', { hasText: 'Open that lorebook' }).click();
+    await settle(page, 600);
+    check('going there finds the one entry we sent',
+      await page.locator('.entry-card').count(), 1);
+  }),
+
+  // Bulk copy/move (locked decision 10). Same service, reached from the
+  // selection bar instead of one card's menu.
+  scenario('Bulk copy and move the selection to another lorebook', async (page, check) => {
+    await page.addInitScript(() => { window.confirm = () => false; }); // see #127 scenario
+
+    await openBuilderWithFixture(page);
+    await enterSelectMode(page);
+    await selectCards(page, '.build-panel', [0, 1, 2]);
+    await settle(page, 150);
+
+    const toBook = page.locator('.bulk-action-apply', { hasText: 'To Lorebook' });
+    await toBook.click();
+    await settle(page, 200);
+    check('the row opens on Copy, the reversible verb',
+      await page.locator('.bulk-transfer-mode-btn--on').innerText(), 'Copy');
+    check('with no other book yet, only the create chip is offered',
+      await page.locator('.bulk-action-chips .bulk-type-chip').count(), 1);
+
+    const copyColour = await page.locator('.bulk-transfer-mode-btn--on')
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    await page.locator('.bulk-transfer-mode-btn', { hasText: 'Move' }).click();
+    await settle(page, 100);
+    check('Move is coloured apart from Copy, so the two never look alike',
+      (await page.locator('.bulk-transfer-mode-btn--on')
+        .evaluate((el) => getComputedStyle(el).backgroundColor)) !== copyColour, true);
+    await page.locator('.bulk-type-chip', { hasText: 'New lorebook' }).click();
+    await settle(page, 200);
+    await page.locator('.bulk-transfer-input').fill('Archive');
+    await page.locator('.bulk-type-chip', { hasText: 'Create & move' }).click();
+    await settle(page, 200);
+    check('a move asks first, in the row', await page.locator('.bulk-transfer-confirm').count(), 1);
+    check('nothing has moved before the answer', await page.locator('.entry-card').count(), 34);
+    await page.locator('.bulk-type-chip--confirm-move').click();
+    await settle(page, 500);
+
+    check('three entries left this book',
+      await page.locator('.entry-card').count(), 31);
+    check('and the row says where they went',
+      (await page.locator('.bulk-transfer-result').innerText()).includes('Moved 3 entries to'), true);
+    check('the selection is spent, so the next batch starts clean',
+      await page.locator('.bulk-action-count').innerText(), '0 selected');
+
+    await page.locator('.bulk-type-chip', { hasText: 'Open it' }).click();
+    await settle(page, 600);
+    check('all three arrived', await page.locator('.entry-card').count(), 3);
+
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 700);
+    check('and they were written, not just held in memory',
+      await page.locator('.entry-card').count(), 3);
+  }),
+
+  // Entry Templates (Phase 12, GitHub #114), in the Templates manager: one
+  // floating window, opened from an entry's ⋯ menu, the + menu, Shift+Alt+N,
+  // the empty list or Settings. It replaced a hover submenu, a popover and a
+  // Settings block that each did part of the job.
+  scenario('Entry templates: save one, fill an entry, start a new one', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const manager = page.locator('.tpl-manager');
+    const openFor = async (i) => {
+      await page.locator('.entry-actions-btn').nth(i).click();
+      await page.locator('.entry-actions-menu .entry-actions-item', { hasText: 'Templates' }).click();
+      await manager.waitFor({ timeout: 4000 });
+      await settle(page, 150);
+    };
+    const total = await page.locator('.entry-card').count();
+    const [firstName] = await rowNames(page);
+
+    await openFor(0);
+    check('the ⋯ menu itself is gone once the window is up', await page.locator('.entry-actions-menu').count(), 0);
+    check('nothing saved yet, and it says how to start',
+      (await manager.locator('.tpl-empty').first().innerText()).includes('Nothing saved yet'), true);
+    await manager.locator('.tpl-save-btn').click();
+    await settle(page, 150);
+    check('saving proposes the entry\'s own name',
+      await manager.locator('.tpl-save-input').inputValue(), firstName);
+    await manager.locator('.tpl-save-input').fill('Scaffold');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+    check('the new template is listed', await manager.locator('.tpl-list-row', { hasText: 'Scaffold' }).count(), 1);
+    check('and already selected, ready to use',
+      await manager.locator('.tpl-detail-name').inputValue(), 'Scaffold');
+    check('it holds the four things a template normally holds',
+      (await manager.locator('.tpl-fields').first().locator('.tpl-field-check').allInnerTexts()).join(', '),
+      'Title, Type, Triggers, Description');
+    check('the window stays open after a save, unlike the flyout it replaced', await manager.count(), 1);
+    await manager.locator('.tpl-manager-close').click();
+    await settle(page, 200);
+    check('and closes when asked', await manager.count(), 0);
+
+    // ── fill a different entry, which already has a description ─────────────
+    const card = page.locator('.entry-card').nth(1);
+    const before = await exportJson(page);
+    const target = Object.values(before.entries)[1];
+    await openFor(1);
+    await manager.locator('.tpl-list-row', { hasText: 'Scaffold' }).click();
+    await settle(page, 150);
+    check('filling over a description asks what to do with it',
+      await manager.locator('.tpl-desc-mode').count(), 1);
+    check('and leads with the choice that loses nothing',
+      await manager.locator('.tpl-desc-mode input').first().isChecked(), true);
+    // Leave the title alone: tick off Title so only the rest lands.
+    await manager.locator('.tpl-field-check', { hasText: 'Title' }).locator('input').uncheck();
+    await manager.locator('.tpl-fill-btn').click();
+    await settle(page, 400);
+    check('a fill closes the window', await manager.count(), 0);
+
+    const after = Object.values((await exportJson(page)).entries)[1];
+    check('an unticked field is left alone', after.name, target.name);
+    check('the description was added to, not replaced',
+      after.description.startsWith(target.description) && after.description.length > target.description.length, true);
+    check('triggers were merged in, not swapped',
+      target.triggers.every((t) => after.triggers.includes(t)), true);
+
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    const undone = Object.values((await exportJson(page)).entries)[1];
+    check('the whole fill is one undo step',
+      undone.description === target.description && undone.triggers.length === target.triggers.length, true);
+    void card;
+
+    // ── new entry from the template ─────────────────────────────────────────
+    await openFor(0);
+    await manager.locator('.tpl-list-row', { hasText: 'Scaffold' }).click();
+    await manager.locator('.tpl-new-btn').click();
+    await settle(page, 500);
+    check('"New entry from this" adds an entry', await page.locator('.entry-card').count(), total + 1);
+    check('carrying the template\'s title', Object.values((await exportJson(page)).entries).at(-1).name, firstName);
+  }),
+
+  scenario('Entry templates: reachable from an empty lorebook, the + menu, the hotkey and Settings', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const manager = page.locator('.tpl-manager');
+    await page.locator('.entry-actions-btn').first().click();
+    await page.locator('.entry-actions-menu .entry-actions-item', { hasText: 'Templates' }).click();
+    await manager.waitFor({ timeout: 4000 });
+    await manager.locator('.tpl-save-btn').click();
+    await manager.locator('.tpl-save-input').fill('Starter');
+    await page.keyboard.press('Enter');
+    await settle(page, 300);
+    await page.keyboard.press('Escape');
+    await settle(page, 250);
+    check('Escape closes the window', await manager.count(), 0);
+    const before = await page.locator('.entry-card').count();
+
+    // ── the + menu ──────────────────────────────────────────────────────────
+    await page.locator('.footer-fab').hover();
+    await settle(page, 500);
+    await page.locator('.fab-quick-menu-add', { hasText: 'New entry from template' }).click();
+    await settle(page, 300);
+    check('the + menu opens the same window', await manager.count(), 1);
+    check('with no entry behind it there is nothing to save', await manager.locator('.tpl-save-btn').count(), 0);
+    await manager.locator('.tpl-list-row', { hasText: 'Starter' }).click();
+    check('and nothing to fill', await manager.locator('.tpl-fill-btn').count(), 0);
+    await manager.locator('.tpl-new-btn').click();
+    await settle(page, 500);
+    check('but a pick still makes an entry', await page.locator('.entry-card').count(), before + 1);
+
+    // ── the hotkey ──────────────────────────────────────────────────────────
+    await page.mouse.click(5, 5);
+    await settle(page, 200);
+    await page.keyboard.press('Alt+Shift+N');
+    await settle(page, 300);
+    check('Shift+Alt+N opens it too', await manager.count(), 1);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    // ── Settings ────────────────────────────────────────────────────────────
+    await openSettings(page);
+    const section = await openSettingsSection(page, 'Editing & Entries');
+    await section.locator('.tpl-open-manager').click();
+    await settle(page, 300);
+    check('Settings has a way in', await manager.count(), 1);
+    check('and steps aside for it', await page.locator('.settings-panel').count() === 0
+      || !(await page.locator('.tpl-open-manager').isVisible()), true);
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    // ── a fresh book: no entries, so no ⋯ menu anywhere ─────────────────────
+    await page.locator('.title-field').first().click();
+    await settle(page, 300);
+    await page.locator('.tm-new').click();
+    await settle(page, 600);
+    await page.locator('.lb-name-modal-close').click();
+    await settle(page, 400);
+    check('the new book is empty', await page.locator('.entry-card').count(), 0);
+    check('the sentence keeps its space before the link',
+      (await page.locator('.entry-list-empty').innerText()).includes('or start from a template'), true);
+    await page.locator('.templates-link').click();
+    await settle(page, 300);
+    check('the empty state opens the window', await manager.count(), 1);
+    await manager.locator('.tpl-list-row', { hasText: 'Starter' }).click();
+    await manager.locator('.tpl-new-btn').click();
+    await settle(page, 500);
+    check('and the new book gets its first entry from the template',
+      await page.locator('.entry-card').count(), 1);
+  }),
+
+  // #129: every lorebook, settings and templates out as one zip, and back in
+  // from the landing page.
+  scenario('Export everything, then restore it from the landing page (#129)', async (page, check) => {
+    const total = await openBuilderWithFixture(page);
+    const title = await page.locator('.title-field-name').first().innerText();
+
+    await page.locator('.hotbar').locator('button', { hasText: 'Export' }).first().click();
+    await page.locator('.export-menu').waitFor({ timeout: 3000 });
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.locator('.export-menu .export-everything-btn').click(),
+    ]);
+    check('the backup is a dated zip',
+      /^lorebook-builder-backup-\d{4}-\d{2}-\d{2}\.zip$/.test(download.suggestedFilename()), true);
+    const zipPath = await download.path();
+
+    // ── add alongside ───────────────────────────────────────────────────────
+    await page.reload();
+    await settle(page, 500);
+    const tile  = page.locator('.lander-tile', { hasText: 'Restore Backup' });
+    const input = tile.locator('xpath=following-sibling::input[1]');
+    await input.setInputFiles(zipPath);
+    const dialog = page.locator('.restore-dialog');
+    await dialog.waitFor({ timeout: 4000 });
+    check('picking a file only reads it: it says what the backup holds',
+      (await dialog.locator('.restore-line').innerText()).includes('1 lorebook'), true);
+    check('and leads with the choice that cannot lose anything',
+      await dialog.locator('input[name=restore-mode]').first().isChecked(), true);
+    await dialog.locator('.restore-go').click();
+    await settle(page, 400);
+    check('it reports what it restored',
+      (await dialog.locator('.restore-outcome').innerText()).includes('Restored 1 lorebook'), true);
+    await dialog.locator('.restore-done').click();
+    await settle(page, 300);
+    const recents = await page.locator('.lander-recent-item').allInnerTexts();
+    check('the original is still there, and the restored one beside it', recents.length, 2);
+    check('renamed, because its name was taken',
+      recents.some((r) => r.includes(`${title} (restored)`)), true);
+
+    await page.locator('.lander-recent-item', { hasText: '(restored)' }).click();
+    await settle(page, 700);
+    check('with every entry', await page.locator('.entry-card').count(), total);
+
+    // ── replace everything ──────────────────────────────────────────────────
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-tile', { hasText: 'Restore Backup' })
+      .locator('xpath=following-sibling::input[1]').setInputFiles(zipPath);
+    await dialog.waitFor({ timeout: 4000 });
+    await dialog.locator('input[name=restore-mode]').nth(1).check();
+    const [safety] = await Promise.all([
+      page.waitForEvent('download'),
+      dialog.locator('.restore-go').click(),
+    ]);
+    check('replacing downloads a backup of what was here first',
+      safety.suggestedFilename().endsWith('.zip'), true);
+    await settle(page, 400);
+    await dialog.locator('.restore-done').click();
+    await settle(page, 300);
+    const after = await page.locator('.lander-recent-item').allInnerTexts();
+    check('then leaves only the backup\'s lorebook', after.length, 1);
+    check('under its own name, now that nothing else holds it',
+      after[0].includes(title) && !after[0].includes('(restored)'), true);
+
+    // ── something that is not a backup ──────────────────────────────────────
+    await page.locator('.lander-tile', { hasText: 'Restore Backup' })
+      .locator('xpath=following-sibling::input[1]').setInputFiles(FIXTURE);
+    await settle(page, 400);
+    check('a file that is not a backup is refused, in words',
+      (await page.locator('.lander-restore-error').innerText()).includes('not a zip'), true);
+    check('and opens nothing', await dialog.count(), 0);
+  }),
+
+  // E3 (tester): with a reference book paired, a reference card had no way to
+  // show its trigger condition, so two entries' conditions could not be read
+  // side by side. Its Details button now shows the condition and Always on.
+  scenario('Reference cards show the trigger condition under Details', async (page, check) => {
+    // Give an entry of the book that becomes the reference a condition first.
+    await openBuilderWithFixture(page, VARIANT_FIXTURE);
+    const first = page.locator('.entry-card').first();
+    const refName = (await rowNames(page))[0];
+    await first.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await first.locator('.entry-condition-field').fill('When {{user}} visits the archive.');
+    await settle(page, 400);
+    await importBookAsNew(page, FIXTURE);
+    await openReferenceChooser(page);
+    await page.locator('.ref-chooser-row').first().click();
+    await page.locator('.reference-panel-entries').waitFor({ timeout: 4000 });
+
+    const card = page.locator('.reference-entry-card', { hasText: refName }).first();
+    await card.locator('.reference-details-btn').click();
+    await settle(page, 200);
+    check('Details shows the reference entry\'s trigger condition',
+      (await card.locator('.reference-entry-condition').innerText()).includes('When {{user}} visits the archive.'), true);
+    check('alongside its description', await card.locator('.reference-entry-description').count(), 1);
+    // Tester point 1: the reference card's header showed none of the entry's
+    // badges, so a condition could only be found by opening each card.
+    check('and its header carries the condition badge, like the active card\'s',
+      await card.locator('.reference-entry-header .entry-condition-icon').count(), 1);
+    check('and the public badge where the entry is public',
+      await card.locator('.reference-entry-header .entry-public-icon').count(), 1);
+  }),
+
+  // H1 (tester): small grey text in dark mode was 3.0–3.7:1 against its
+  // backgrounds. Every theme's dim grey must clear WCAG AA (4.5:1) on every
+  // surface it can sit on.
+  scenario('Dim grey text clears 4.5:1 contrast on every surface, dark and light', async (page, check) => {
+    await openBuilderWithFixture(page);
+    for (const theme of ['dark', 'light']) {
+      const ratios = await page.evaluate((theme) => {
+        document.documentElement.setAttribute('data-theme', theme);
+        const css = getComputedStyle(document.documentElement);
+        const rgb = (v) => {
+          const d = document.createElement('div'); d.style.color = v; document.body.appendChild(d);
+          const m = getComputedStyle(d).color.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number); d.remove(); return m;
+        };
+        const lum = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+          .reduce((a, c, i) => a + c * [0.2126, 0.7152, 0.0722][i], 0);
+        const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+        const muted = rgb(css.getPropertyValue('--muted'));
+        return ['--bg', '--surface', '--surface2', '--surface3'].map((s) => ratio(muted, rgb(css.getPropertyValue(s))));
+      }, theme);
+      check(`${theme}: --muted clears 4.5:1 on all four surfaces`, Math.min(...ratios) >= 4.5, true);
+    }
+  }),
+
+  // Tester: importing from the title menu "closes the window" on the first try.
+  // A hover-opened menu closed when the system file picker took the pointer
+  // away, unmounting its file input, so the chosen file went nowhere.
+  scenario('Title menu: browsing for a file keeps a hover-opened menu open', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const menu = page.locator('.title-menu');
+    await page.locator('.title-field').first().hover();
+    await settle(page, 500);
+    check('hovering the title opens the menu', await menu.count(), 1);
+    check('unpinned', await page.locator('.title-field--pinned').count(), 0);
+
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      menu.locator('.drop-zone').first().click(),
+    ]);
+    // The picker has the pointer now; to the page, it has left the menu.
+    await page.mouse.move(5, 880);
+    await settle(page, 900);
+    check('the menu stays open while the picker is up', await menu.count(), 1);
+    await chooser.setFiles(VARIANT_FIXTURE);
+    await settle(page, 600);
+    check('and the chosen file reaches the import flow',
+      await menu.locator('.import-flow-head').count(), 1);
+  }),
+
+  // Tester request: OpenOffice / LibreOffice files. An .odt is read by its own
+  // reader into the same text parser the Word and paste paths use.
+  scenario('Import an OpenDocument (.odt) file', async (page, check) => {
+    const count = await openBuilderWithFixture(page, ODT_FIXTURE);
+    check('a CharSnap page copy saved as .odt imports as its 8 entries', count, 8);
+    check('in order', (await rowNames(page)).slice(0, 2).join(' / '), 'Corridors of Darkness / Gummi Ship');
+  }),
+
+  // The header logo opens a menu of links to the builder's author.
+  scenario('The header logo opens the creator menu', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await page.locator('.header-logo-btn').click();
+    await settle(page, 150);
+    const menu = page.locator('.creator-menu');
+    check('clicking the logo opens the menu', await menu.count(), 1);
+    check('with the CharSnap creator page',
+      await menu.locator('a', { hasText: 'CharSnap' }).getAttribute('href'),
+      'https://charsnap.ai/creator/34759b54-7247-4380-9b48-e41af8452870');
+    check('and GitHub', await menu.locator('a', { hasText: 'GitHub' }).getAttribute('href'), 'https://github.com/MrKingPingus');
+    check('each opening in a new tab', await menu.locator('a[target=_blank]').count(), 3);
+    await page.keyboard.press('Escape');
+    await settle(page, 150);
+    check('Escape closes it', await menu.count(), 0);
+    await page.locator('.header-logo-btn').click();
+    await page.mouse.click(600, 500);
+    await settle(page, 150);
+    check('so does a click elsewhere', await menu.count(), 0);
+  }),
+
+  // #137: a full copy of a lorebook, alongside it, without leaving this one.
+  scenario('Duplicate a lorebook from the title menu (#137)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const titleBefore = await page.locator('.title-field-name').first().innerText();
+    const total = await page.locator('.entry-card').count();
+
+    await page.locator('.title-field').first().click();
+    await settle(page, 300);
+    const books = page.locator('.tm-book');
+    check('one book to start with', await books.count(), 1);
+    await books.first().hover();
+    await settle(page, 150);
+    await page.locator('.tm-book-dup').first().click();
+    await settle(page, 400);
+    check('a second book appears', await books.count(), 2);
+    check('named as a copy',
+      (await page.locator('.tm-book-name').allInnerTexts()).some((n) => n.endsWith('(copy)')), true);
+    check('and we are still in the original',
+      await page.locator('.title-field-name').first().innerText(), titleBefore);
+
+    await page.locator('.tm-book', { hasText: '(copy)' }).click();
+    await settle(page, 600);
+    check('the copy holds every entry', await page.locator('.entry-card').count(), total);
+  }),
+
+  // #126: under display scaling the viewport can be a fractional width such as
+  // 767.2 CSS px. The app used to round that to 767 and pick its phone layout
+  // while the stylesheet, seeing 767.2, did not, so the window shrank to a box
+  // with the desktop hotbar floating in it. Layout and stylesheet must agree.
+  scenario('Breakpoint: a fractional width never splits layout from stylesheet (#126)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await settle(page, 300);
+    const r = await page.evaluate(() => {
+      const fw = document.querySelector('.floating-window');
+      return {
+        fractional: document.documentElement.getBoundingClientRect().width % 1 !== 0,
+        stylesheetSaysPhone: matchMedia('(max-width: 767px)').matches,
+        layoutSaysPhone: fw.classList.contains('floating-window--mobile'),
+      };
+    });
+    check('the viewport really is a fractional width (else this proves nothing)', r.fractional, true);
+    check('the layout agrees with the stylesheet about phone vs desktop',
+      r.layoutSaysPhone, r.stylesheetSaysPhone);
+  }, { osScale: 1.25, width: 765, height: 800 }),
+
+  // Clear All used window.confirm(), which a sandboxed frame refuses without
+  // asking — so it did nothing there at all. It now asks by arming itself.
+  scenario('Clear All asks with a second press, not a browser dialog', async (page, check) => {
+    await page.addInitScript(() => { window.confirm = () => false; });
+    await openBuilderWithFixture(page);
+    const total = await page.locator('.entry-card').count();
+
+    await page.locator('.footer-fab').hover();
+    await settle(page, 500);
+    const chip = page.locator('.fab-quick-menu-chip', { hasText: 'Clear All' });
+    check('the + menu offers Clear All', await chip.count(), 1);
+    await chip.click();
+    await settle(page, 150);
+    check('one press only arms it', await page.locator('.entry-card').count(), total);
+    check('and says what the next press does',
+      await page.locator('.fab-quick-menu-chip--confirm').innerText().then((t) => t.includes('Click again')), true);
+
+    await page.locator('.fab-quick-menu-chip--confirm').click();
+    await settle(page, 300);
+    check('the second press clears, with no dialog involved',
+      await page.locator('.entry-card').count(), 0);
+    await page.keyboard.press('Control+z');
+    await settle(page, 300);
+    check('and it is still one undo away', await page.locator('.entry-card').count(), total);
+
+    // Left alone, the arm lapses — a stray first press is harmless.
+    await page.locator('.footer-fab').hover();
+    await settle(page, 500);
+    await page.locator('.fab-quick-menu-chip', { hasText: 'Clear All' }).click();
+    await settle(page, 3300);
+    check('an unanswered arm lapses back to Clear All',
+      await page.locator('.fab-quick-menu-chip--confirm').count(), 0);
+    check('having cleared nothing', await page.locator('.entry-card').count(), total);
+  }),
+
+  // Templates are global and outlive the session, so the storage half needs its
+  // own coverage — they are not in a lorebook, so autosave never touches them.
+  scenario('Entry templates: categories, options, and surviving a reload', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const manager = page.locator('.tpl-manager');
+    const openFor = async (i) => {
+      await page.locator('.entry-actions-btn').nth(i).click();
+      await page.locator('.entry-actions-menu .entry-actions-item', { hasText: 'Templates' }).click();
+      await manager.waitFor({ timeout: 4000 });
+      await settle(page, 150);
+    };
+    const save = async (name) => {
+      await manager.locator('.tpl-save-btn').click();
+      await manager.locator('.tpl-save-input').fill(name);
+      await page.keyboard.press('Enter');
+      await settle(page, 300);
+    };
+
+    await openFor(0);
+    await save('Scaffold');
+
+    // ── categories ──────────────────────────────────────────────────────────
+    await manager.locator('.tpl-manager-tab', { hasText: 'Categories' }).click();
+    await manager.locator('.settings-action-btn', { hasText: 'New category' }).click();
+    await settle(page, 200);
+    const catName = manager.locator('.tpl-settings-row--category .tpl-settings-name').first();
+    await catName.fill('Characters');
+    await catName.press('Enter');
+    await settle(page, 200);
+    await manager.locator('.tpl-manager-tab', { hasText: /^Templates$/ }).click();
+    await manager.locator('.tpl-list-row', { hasText: 'Scaffold' }).click();
+    await manager.locator('.tpl-detail-cat').selectOption({ label: 'Characters' });
+    await settle(page, 200);
+    check('a filed template moves under its category\'s heading',
+      (await manager.locator('.tpl-list-heading').allInnerTexts()).join(', '), 'CHARACTERS');
+
+    // ── rename, in place ────────────────────────────────────────────────────
+    await manager.locator('.tpl-detail-name').fill('Character sheet');
+    await manager.locator('.tpl-detail-name').press('Enter');
+    await settle(page, 200);
+    check('renaming updates the list', await manager.locator('.tpl-list-row', { hasText: 'Character sheet' }).count(), 1);
+
+    // ── the two opt-in fields ───────────────────────────────────────────────
+    await manager.locator('.tpl-manager-tab', { hasText: 'Categories' }).click();
+    const options = manager.locator('.tpl-option input');
+    check('both options start off', (await options.nth(0).isChecked()) || (await options.nth(1).isChecked()), false);
+    await options.nth(0).check();
+    await options.nth(1).check();
+    await page.keyboard.press('Escape');
+    await settle(page, 200);
+
+    // Give the entry a condition and Always on, then save it again.
+    await page.locator('.entry-card').first().locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await page.locator('.entry-card').first().locator('.entry-condition-field').fill('When {{user}} asks.');
+    await page.locator('.entry-actions-btn').first().click();
+    await page.locator('.entry-actions-menu [role=menuitemcheckbox]', { hasText: 'Always on' }).click();
+    await settle(page, 250);
+    await openFor(0);
+    await save('With extras');
+    check('with the options on, a new template holds the two extra parts',
+      (await manager.locator('.tpl-fields').first().locator('.tpl-field-check').allInnerTexts()).join(', '),
+      'Title, Type, Triggers, Description, Trigger condition, Always on');
+    await manager.locator('.tpl-list-row', { hasText: 'Character sheet' }).click();
+    check('a template saved before is not changed by them',
+      await manager.locator('.tpl-fields').first().locator('.tpl-field-check').count(), 4);
+
+    // ── everything survives a reload ────────────────────────────────────────
+    await page.reload();
+    await settle(page, 500);
+    await page.locator('.lander-recent-item, .lander-start-tile').first().click();
+    await settle(page, 700);
+    await openFor(0);
+    check('templates survive a reload', await manager.locator('.tpl-list-row').count(), 2);
+    check('so does the category and what is filed in it',
+      (await manager.locator('.tpl-list-heading').allInnerTexts()).includes('CHARACTERS'), true);
+    await manager.locator('.tpl-manager-tab', { hasText: 'Categories' }).click();
+    check('and the options', await manager.locator('.tpl-option input').first().isChecked(), true);
+
+    // ── delete takes two presses ────────────────────────────────────────────
+    await manager.locator('.tpl-manager-tab', { hasText: /^Templates$/ }).click();
+    await manager.locator('.tpl-list-row', { hasText: 'With extras' }).click();
+    await manager.locator('.tpl-delete-btn').click();
+    await settle(page, 150);
+    check('one press only arms Delete', await manager.locator('.tpl-list-row').count(), 2);
+    await manager.locator('.tpl-delete-btn').click();
+    await settle(page, 200);
+    check('the second deletes', await manager.locator('.tpl-list-row').count(), 1);
+
+    // Deleting a category never deletes what is in it.
+    await manager.locator('.tpl-manager-tab', { hasText: 'Categories' }).click();
+    await manager.locator('.tpl-settings-row--category .tpl-mini--danger').first().click();
+    await settle(page, 200);
+    await manager.locator('.tpl-manager-tab', { hasText: /^Templates$/ }).click();
+    check('a deleted category hands its templates back to Uncategorized',
+      (await manager.locator('.tpl-list-heading').allInnerTexts()).join(', '), 'UNCATEGORIZED');
+  }),
 ];
 
 // A full run launches a fresh browser per scenario, so it costs minutes. When
@@ -2600,18 +3753,18 @@ function selectScenarios(filter) {
   return SCENARIOS.filter((s) => terms.some((t) => s.name.toLowerCase().includes(t)));
 }
 
+// Returns true / false for a run, or null when the filter matched nothing here
+// — run.mjs fails the run only if the filter matched nothing in ANY suite, so
+// `npm run verify -- host` can run the host suite alone without this one
+// counting as a failure.
 export async function runAllChecks(filter = process.env.VERIFY_ONLY) {
-  console.log(`Fixture: ${FIXTURE}`);
   const chosen = selectScenarios(filter);
-  if (chosen.length === 0) {
-    console.log(`\nNo scenario name matches ${JSON.stringify(filter)} — nothing to run.`);
-    return false;
-  }
+  if (chosen.length === 0) return null;
+  console.log(`Fixture: ${FIXTURE}`);
   if (chosen.length !== SCENARIOS.length) {
     console.log(`Filter ${JSON.stringify(filter)} — running ${chosen.length}/${SCENARIOS.length} scenarios.`);
   }
-  const outcomes = [];
-  for (const s of chosen) outcomes.push(await runScenario(s));
+  const outcomes = await runPool(chosen, runScenario);
   const passed = outcomes.filter(Boolean).length;
   console.log(`\n${passed}/${outcomes.length} scenarios passed`);
   return outcomes.every(Boolean);

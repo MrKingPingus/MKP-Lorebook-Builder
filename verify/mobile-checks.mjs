@@ -14,6 +14,7 @@
 // The grading exists because this suite was written to *find* the quirks in the
 // pre-overhaul mobile UI, not to pin them. A suite that failed on all of them
 // would be red from its first run and would bury any real regression.
+import { runPool } from './pool.mjs';
 import { launch, BASE_URL, openBuilderWithFixture, importBookAsNew, openSettings, openSettingsSection, enterSelectMode, selectCards, pairCrosstalk, pairCrosstalkMobile, openMobileTitleMenu, settle, tap, longPress, openEntryDetail, closeEntryDetail, openFilterPopover, dismissPopover, seedStorage, parkMouse, VARIANT_FIXTURE } from './driver.mjs';
 import { sweep, watchErrors } from './layout-invariants.mjs';
 import { writePreset, LIMITS } from '../fixtures/build-stress-book.mjs';
@@ -202,6 +203,75 @@ const SCENARIOS = [
   // accessibility tree and the focus order. So this scenario changes nothing —
   // it pins it, because both properties are one careless edit from becoming
   // `opacity: 0` or `width: 0`, which look identical and are not.
+  // The phone editor had Remove and nothing else: copy/move to another book and
+  // templates were desktop-only, reachable from the card's ⋯ menu. The editor's
+  // own ⋯ sheet carries them now.
+  scenario('Mobile: the entry editor\'s ⋯ sheet copies, moves, opens Templates and deletes', async (page, check, sweepPose) => {
+    await page.addInitScript(() => { window.confirm = () => false; }); // dialogs are refused in sandboxed frames
+    const total = await openBuilderWithFixture(page);
+    await openEntryDetail(page, 0);
+    const sheet = page.locator('.mea-sheet');
+
+    await tap(page, page.locator('.entry-detail-more'));
+    check('⋯ opens a sheet', await sheet.count(), 1);
+    check('with the four actions, and a way out',
+      (await sheet.locator('.mea-item').allInnerTexts()).join(' | '),
+      'Copy to lorebook… | Move to lorebook… | Templates… | Delete entry | Cancel');
+    await sweepPose('entry ⋯ sheet');
+
+    // ── copy, into a book made on the spot ──────────────────────────────────
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Copy to lorebook' }));
+    check('with one book it says so', (await sheet.locator('.mea-note').innerText()).includes('only lorebook'), true);
+    await tap(page, sheet.locator('.mea-item', { hasText: 'New lorebook' }));
+    await sheet.locator('.mea-name-input').fill('Offcuts');
+    await tap(page, sheet.locator('.mea-go'));
+    await settle(page, 300);
+    check('a copy reports where it went', (await sheet.locator('.mea-result').innerText()).includes('Offcuts'), true);
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Done' }));
+    check('and leaves you in the editor', await page.locator('.entry-detail-panel--open').count(), 1);
+
+    // ── templates ───────────────────────────────────────────────────────────
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Templates' }));
+    await settle(page, 300);
+    check('Templates opens the manager', await page.locator('.tpl-manager').count(), 1);
+    check('for this entry', await page.locator('.tpl-save-btn').count(), 1);
+    await sweepPose('templates manager');
+    await tap(page, page.locator('.tpl-manager-close'));
+
+    // ── move, which asks first ──────────────────────────────────────────────
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Move to lorebook' }));
+    await tap(page, sheet.locator('.mea-item--target', { hasText: 'Offcuts' }));
+    check('a move asks first, in the sheet', await sheet.locator('.mea-item--move').count(), 1);
+    await tap(page, sheet.locator('.mea-item--move'));
+    await settle(page, 400);
+    check('the entry left, and the editor went with it', await page.locator('.entry-detail-panel--open').count(), 0);
+    check('one entry fewer in this book', await page.locator('.entry-card').count(), total - 1);
+
+    // ── delete ──────────────────────────────────────────────────────────────
+    await openEntryDetail(page, 0);
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item--danger'));
+    await settle(page, 300);
+    check('Delete entry removes it and closes the editor',
+      await page.locator('.entry-card').count(), total - 2);
+  }),
+
+  // #128: a phone has no status footer, so the feedback links' only home was
+  // the lander. They now sit at the foot of Settings, with the version.
+  scenario('Mobile: Settings carries the bug-report and feature-request links (#128)', async (page, check) => {
+    await openBuilderWithFixture(page);
+    await openSettings(page);
+    const foot = page.locator('.settings-feedback');
+    check('the feedback row is in Settings', await foot.count(), 1);
+    check('it links to the bug-report form',
+      (await foot.locator('a', { hasText: 'Report a bug' }).getAttribute('href')).includes('bug_report'), true);
+    check('and to the feature-request form',
+      (await foot.locator('a', { hasText: 'Request a feature' }).getAttribute('href')).includes('feature_request'), true);
+    check('beside the version', (await foot.locator('.settings-feedback-version').innerText()).startsWith('v'), true);
+  }),
+
   scenario('Mobile: the closed always-mounted layers are hidden, not just flat', async (page, check) => {
     await openBuilderWithFixture(page);
     await settle(page, 400);
@@ -318,6 +388,16 @@ const SCENARIOS = [
     await page.keyboard.press('Escape');
     await settle(page, 300);
     quirk('Escape closes the FAB quick menu', await page.locator('.fab-quick-menu').count(), 0);
+
+    // A long hold. The tap after a long-press used to be suppressed for only
+    // 600ms from the moment the menu opened, so holding for over a second
+    // opened the menu *and* added an entry. Caught by CI, whose slower
+    // machine released the first press late.
+    await page.locator('.fab-quick-menu').count() && await page.mouse.click(5, 5);
+    await settle(page, 200);
+    await longPress(page, page.locator('.footer-fab'), 1600);
+    check('a long hold opens the menu too', await page.locator('.fab-quick-menu').count(), 1);
+    check('and still adds no entry', await page.locator('.entry-card').count(), before);
   }),
 
   scenario('Mobile: a short tap on the FAB adds an entry', async (page, check) => {
@@ -692,7 +772,7 @@ const SCENARIOS = [
     await openEntryDetail(page, 0);
     check('all 25 trigger chips render',
       await page.locator('.entry-detail-panel--open .chip').count(), LIMITS.MAX_TRIGGERS);
-    const desc = await page.locator('.entry-detail-panel--open textarea').first().inputValue();
+    const desc = await page.locator('.entry-detail-panel--open .description-textarea').inputValue();
     check('the description arrives at the character cap', desc.length, LIMITS.CHAR_LIMIT);
     await sweepPose('detail panel at every limit', { scope: '.entry-detail-panel--open' });
   }),
@@ -921,12 +1001,12 @@ export async function runMobileChecks(only = '') {
     ? SCENARIOS.filter((s) => filters.some((f) => s.name.toLowerCase().includes(f)))
     : SCENARIOS;
 
-  if (selected.length === 0) return true;
+  // null = the filter matched nothing here (see run.mjs); not a failure.
+  if (selected.length === 0) return null;
 
   const outcomes = [];
   const allNotes = [];
-  for (const s of selected) {
-    const { ok, notes } = await runScenario(s);
+  for (const { ok, notes } of await runPool(selected, runScenario)) {
     outcomes.push(ok);
     allNotes.push(...notes);
   }

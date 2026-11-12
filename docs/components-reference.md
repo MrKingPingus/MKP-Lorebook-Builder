@@ -53,7 +53,7 @@ Use this to identify which file to look at based on what's visible on screen.
 | Folder filter state — selection, menu options, and the predicate that narrows a list. Active-book only; prunes stale ids on read | `src/hooks/use-folder-filter.js` |
 | Drag-and-drop state machine (drop target, spring-loaded folders, auto-scroll, single-snapshot commit) — wired in `EntryList.jsx`; the folder header is the drag source for a folder | `src/hooks/use-entry-drag.js` |
 | Modifier+click selection (shift/ctrl ranges) — wired in `EntryList.jsx` (owns the display-ordered id list) and handled on the capture phase in `EntryCard.jsx` / `FolderHeader.jsx` headers | `src/hooks/use-selection-macros.js` |
-| The "Move to folder" button + menu in an entry card's footer | `src/components/feature/MoveToFolderButton.jsx` |
+| The per-entry `⋯` overflow menu in a card's **header** — copy/move to another lorebook, move to folder, public/private, hide from export, delete. Portalled and anchored, and it follows its button on scroll rather than closing (the list under it scrolls). Submenus are hover flyouts via `ui/Flyout.jsx`. Replaced the footer's "Move to folder" button, which is gone | `src/components/feature/EntryActionsMenu.jsx` |
 | The entry name field inside a card | `src/components/feature/EntryName.jsx` |
 | The description textarea and its char counter | `src/components/feature/DescriptionArea.jsx` |
 | The highlighted text overlay on descriptions (search matches) | `src/components/feature/DescriptionHighlight.jsx` |
@@ -62,6 +62,12 @@ Use this to identify which file to look at based on what's visible on screen.
 | The suggestion tray below triggers (lightbulb + reroll) | `src/components/feature/SuggestionsTray.jsx` |
 | Find & replace bar | `src/components/feature/FindReplace.jsx` |
 | Phrase builder mode (pill row with drag reorder) | `src/components/feature/PhraseBuilder.jsx` |
+| A portalled submenu panel that hangs off a menu row — opens right, flips left only when the viewport cannot fit it, measures itself so its size can depend on its contents. Used by the entry `⋯` menu and the footer's sizing menu | `src/components/ui/Flyout.jsx` |
+| The Entry Templates picker — browse, save, load, manage. Rendered in the `⋯` menu's flyout AND from the entry list's empty state, with a nullable `entry`: an empty lorebook has no `⋯` menu, and that is exactly where a template is wanted | `src/components/feature/TemplatesPanel.jsx` |
+| That panel's standalone popover, for surfaces with no entry to hang a menu off | `src/components/feature/TemplatesButton.jsx` |
+| Settings → Editing & Entries → Templates — the full management surface (move between categories, re-parent categories) | `src/components/feature/TemplatesSettings.jsx` |
+| Templates state, persistence, and the two load actions | `src/hooks/use-templates.js` |
+| Copy/move to another lorebook, shared by the `⋯` menu and the bulk bar — target list, persistence, history, and the move confirmation | `src/hooks/use-entry-transfer.js` |
 | The bulk action bar. Desktop lays every action out flat; mobile is `display: contents` and renders a count readout plus one `Actions ▾` menu as members of the filter row, because the flat bar is 891px of content in a 336px row (14C) | `src/components/feature/BulkActionBar.jsx` |
 | The lorebook tab switcher at the top | `src/components/feature/LorebookSwitcher.jsx` |
 | The full lorebook management panel | `src/components/feature/LorebookPanel.jsx` |

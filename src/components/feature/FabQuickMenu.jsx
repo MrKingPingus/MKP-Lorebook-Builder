@@ -5,9 +5,12 @@
 // a slot to arm it, then click an action chip here to drop it in.
 import { useEffect, useRef } from 'react';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
+import { useConfirmPress } from '../../hooks/use-confirm-press.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 
 export function FabQuickMenu({
+  onNewFromTemplate,
+  newFromTemplateChord,
   actions,
   onAction,
   onClose,
@@ -40,6 +43,7 @@ export function FabQuickMenu({
   }, [onClose]);
 
   const armed = armedSlot != null;
+  const confirmPress = useConfirmPress();
 
   return (
     <div
@@ -56,14 +60,16 @@ export function FabQuickMenu({
           const { descriptor, execute, disabled, active } = action;
           function handleClick(e) {
             if (pinMode) { onAssign?.(descriptor.id); return; }
-            if (descriptor.confirm && !window.confirm(descriptor.confirm)) return;
-            execute(e);
-            onAction();
+            confirmPress.press(descriptor.id, !!descriptor.confirm, () => {
+              execute(e);
+              onAction();
+            });
           }
+          const confirming = confirmPress.armedId === descriptor.id;
           return (
             <button
               key={descriptor.id}
-              className={`fab-quick-menu-chip${active ? ' fab-quick-menu-chip--active' : ''}${pinMode ? ' fab-quick-menu-chip--assign' : ''}`}
+              className={`fab-quick-menu-chip${active ? ' fab-quick-menu-chip--active' : ''}${pinMode ? ' fab-quick-menu-chip--assign' : ''}${confirming ? ' fab-quick-menu-chip--confirm' : ''}`}
               onClick={handleClick}
               disabled={pinMode ? !armed : disabled}
               title={pinMode
@@ -72,7 +78,7 @@ export function FabQuickMenu({
               role="menuitem"
             >
               <span className="fab-quick-menu-chip-icon">{descriptor.icon}</span>
-              <span className="fab-quick-menu-chip-label">{descriptor.label}</span>
+              <span className="fab-quick-menu-chip-label">{confirming ? descriptor.confirm : descriptor.label}</span>
             </button>
           );
         })}
@@ -80,13 +86,28 @@ export function FabQuickMenu({
 
       <div className="fab-quick-menu-footer">
         {!pinMode ? (
-          <button
-            className="fab-quick-menu-add"
-            onClick={onEnterPin}
-            title="Pin an action to a hotbar slot"
-          >
-            📌 Add to hotbar
-          </button>
+          <>
+            <button
+              className="fab-quick-menu-add"
+              onClick={onEnterPin}
+              title="Pin an action to a hotbar slot"
+            >
+              📌 Add to hotbar
+            </button>
+            {/* Beside "Add to hotbar", where the footer had spare room. It sits
+                in this menu because the menu hangs off the + button, and "new
+                entry, but from a template" is that button's own job one step
+                further — the same reasoning as its Shift+Alt+N shortcut. */}
+            {onNewFromTemplate && (
+              <button
+                className="fab-quick-menu-add"
+                onClick={onNewFromTemplate}
+                title={`Start a new entry from a saved template (${newFromTemplateChord})`}
+              >
+                📄 New entry from template
+              </button>
+            )}
+          </>
         ) : (
           <>
             <span className="fab-quick-menu-hint">

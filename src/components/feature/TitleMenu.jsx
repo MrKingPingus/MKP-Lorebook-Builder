@@ -33,14 +33,16 @@ import {
 // Open/close orchestration (hover, pin, outside click, resize) lives in
 // WindowHeader alongside the trigger, the same way StatusFooter owns it for the
 // sizing menu. This component only renders and reports that it wants to close.
-export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
+// `hideBooks` (host mode) drops the lorebooks column: CharSnap decides which
+// book is open, so the menu is import / export alone, in one column.
+export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave, onEngage, hideBooks = false }) {
   const menuRef = useRef(null);
   const [pos, setPos] = useState(null);
 
   const { lorebookSort, setLorebookSort } = useSettings();
   // `open` is constant here: TitleMenu only exists while the menu is open, so
   // mounting is the "list opened" moment the snapshot keys off.
-  const { items, sorted, createLorebook, switchLorebook, deleteLorebook } =
+  const { items, sorted, createLorebook, switchLorebook, deleteLorebook, duplicateLorebookById } =
     useSortedLorebooks({ mode: lorebookSort, open: true });
   const { activeLorebook } = useLorebook();
   const { entries }        = useEntries();
@@ -90,8 +92,9 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
     setPos({ left, top, maxHeight });
   }, [anchorRect]);
 
-  const width = Math.min(TITLE_MENU_WIDTH_PX, window.innerWidth - TITLE_MENU_EDGE_PAD_PX * 2);
-  const stacked = width < TITLE_MENU_STACK_BELOW_PX;
+  const fullWidth = hideBooks ? Math.round(TITLE_MENU_WIDTH_PX / 2) : TITLE_MENU_WIDTH_PX;
+  const width = Math.min(fullWidth, window.innerWidth - TITLE_MENU_EDGE_PAD_PX * 2);
+  const stacked = !hideBooks && width < TITLE_MENU_STACK_BELOW_PX;
 
   const confirmDeleteName = confirmDeleteId
     ? (items.find((i) => i.id === confirmDeleteId)?.name || '(unnamed)')
@@ -125,7 +128,7 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
   return createPortal(
     <div
       ref={menuRef}
-      className={`title-menu${stacked ? ' title-menu--stacked' : ''}`}
+      className={`title-menu${stacked ? ' title-menu--stacked' : ''}${hideBooks ? ' title-menu--io-only' : ''}`}
       role="dialog"
       aria-label="Lorebooks and import / export"
       style={{
@@ -140,9 +143,10 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
       onMouseDown={(e) => e.stopPropagation()}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onMouseDownCapture={onEngage}
     >
       {/* ── Left: lorebooks, or a rail back to them while importing ── */}
-      {takingOver ? (
+      {hideBooks ? null : takingOver ? (
         <div className="tm-rail">
           <button
             type="button"
@@ -185,6 +189,18 @@ export function TitleMenu({ anchorRect, onClose, onMouseEnter, onMouseLeave }) {
               >
                 <span className="tm-book-name">{item.name || '(unnamed)'}</span>
                 {item.relativeTime && <span className="tm-book-time">{item.relativeTime}</span>}
+                {/* #137. A word, like every per-book action on the phone's
+                    menu, and revealed on hover like the × beside it. */}
+                <span
+                  className="tm-book-dup"
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Duplicate "${item.name || '(unnamed)'}"`}
+                  title="Make a full copy of this lorebook, alongside it"
+                  onClick={(e) => { e.stopPropagation(); duplicateLorebookById(item.id); }}
+                >
+                  Duplicate
+                </span>
                 <span
                   className="tm-book-del"
                   role="button"

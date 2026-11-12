@@ -44,7 +44,14 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   // thesaurus-popover swap is logged as a known bug under "Known Bugs" in
   // docs/plan.md; until that's fixed the thesaurus is unreachable on
   // conflict chips.
-  const thesaurusAvailable = !readOnly && thesaurusEnabled && (onReplace || onAddTriggers) && !conflictEntries;
+  // A chip with a conflict ring opens the conflict popover on hover, so its
+  // synonyms are reached through that popover's Synonyms… button instead (#99).
+  const thesaurusPossible  = !readOnly && thesaurusEnabled && !!(onReplace || onAddTriggers);
+  const thesaurusAvailable = thesaurusPossible && !conflictEntries;
+  // Opened from the conflict popover, the synonyms popover appears where the
+  // pointer already is, and the first mouse move would read as leaving it.
+  // So it ignores the pointer and waits for Escape or a click outside.
+  const [thesaurusPinned, setThesaurusPinned] = useState(false);
   const thesaurusHoverTimerRef       = useRef(null);
   const thesaurusLongPressTimerRef   = useRef(null);
   const thesaurusSuppressNextClickRef = useRef(false);
@@ -97,7 +104,13 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
   // from one to the other is a single atomic state change with no in-between.
   function openThesaurusPopover()  { setActivePopover('thesaurus'); }
   function closeThesaurusPopover() {
+    setThesaurusPinned(false);
     setActivePopover((p) => (p === 'thesaurus' ? null : p));
+  }
+  function switchToThesaurus() {
+    clearTimeout(hoverTimer.current);
+    setThesaurusPinned(true);
+    setActivePopover('thesaurus');
   }
 
   // Desktop hover. Skipped when a conflict popover is in play (the conflict UI
@@ -196,8 +209,12 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
 
   // Combined hover handlers so a chip with both conflict and thesaurus
   // potential routes hover to the right popover (conflict wins).
+  // Both popovers are portaled, but React still counts them as inside the
+  // chip, so the pointer landing on the synonyms popover reads as entering
+  // the chip. Pinned synonyms must not be swapped back for the conflict
+  // popover that way; that swap is what sank the first attempt at #99.
   const handleMouseEnter = (e) => {
-    if (conflictEntries) openPopover();
+    if (conflictEntries) { if (!thesaurusPinned) openPopover(); }
     else                 onChipMouseEnter(e);
   };
   const handleMouseLeave = (e) => {
@@ -291,6 +308,11 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
             })()}
           </div>
           <div className="chip-conflict-popover-divider" />
+          {thesaurusPossible && (
+            <button className="chip-conflict-action chip-conflict-action--synonyms" onClick={switchToThesaurus}>
+              Synonyms…
+            </button>
+          )}
           {onAllow && (
             <button className="chip-conflict-action chip-conflict-action--allow" onClick={onAllow}>
               Allow overlap
@@ -305,7 +327,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
         document.body
       )}
 
-      {thesaurusAvailable && thesaurusOpen && (
+      {thesaurusPossible && thesaurusOpen && (
         <ThesaurusPopover
           word={label}
           anchorEl={chipRef.current}
@@ -315,7 +337,7 @@ export function Chip({ label, onDelete, onRename, color, highlight, ringColor, c
           onAddTriggers={onAddTriggers ? onThesaurusAdd : undefined}
           onClose={closeThesaurusPopover}
           onMouseEnter={onThesaurusPopoverMouseEnter}
-          onMouseLeave={onThesaurusPopoverMouseLeave}
+          onMouseLeave={thesaurusPinned ? undefined : onThesaurusPopoverMouseLeave}
         />
       )}
     </span>

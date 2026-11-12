@@ -8,10 +8,12 @@
 // folder, between two top-level rows leaves every folder, onto a folder header
 // files into it — so one gesture writes order and `folderId` as a single
 // undoable step. See services/drag-drop.js.
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { EntryCard }     from './EntryCard.jsx';
 import { FolderHeader }  from './FolderHeader.jsx';
+import { TemplatesButton } from './TemplatesButton.jsx';
 import { useEntries }    from '../../hooks/use-entries.js';
+import { useTemplates } from '../../hooks/use-templates.js';
 import { useFolders }    from '../../hooks/use-folders.js';
 import { useKeybindings } from '../../hooks/use-keybindings.js';
 import { useUi }         from '../../hooks/use-ui.js';
@@ -27,6 +29,8 @@ import { FOLDER_BEFORE_BAND } from '../../constants/drag.js';
 
 export function EntryList({ entries, groupByType, showFolders = true }) {
   const { updateEntry, removeEntry } = useEntries();
+  const { templates } = useTemplates();
+  const hasTemplates = templates.length > 0;
   const { folders, renderedCollapseState } = useFolders();
   const { filterActive } = useFolderFilter();
   const { handleSelectionClick, selectFolderEntries } = useSelectionMacros();
@@ -36,6 +40,14 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   const searchQuery = useUi((s) => s.searchQuery);
   const isDragFromHandle       = useRef(false);
   const isFolderDragFromHandle = useRef(false);
+  // Which row, if any, may start a drag right now (#97). A row is only marked
+  // draggable between a press on its handle (or anywhere on a condensed row
+  // outside a text field) and the release. Firefox cannot place the text
+  // cursor by clicking inside a draggable element: it lands at the start of
+  // the field, and only the keyboard can move it. A card that was always
+  // draggable did that to every field in it. Chrome is unaffected, which is
+  // why it went unseen.
+  const [armedDrag, setArmedDrag] = useState(null); // entry id, 'folder:<id>', or null
   const listRef                = useRef(null);
   const tailRef                = useRef(null);
   const drag = useEntryDrag(listRef);
@@ -45,6 +57,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     function resetFlag() {
       isDragFromHandle.current = false;
       isFolderDragFromHandle.current = false;
+      setArmedDrag(null);
     }
     window.addEventListener('mouseup', resetFlag);
     return () => window.removeEventListener('mouseup', resetFlag);
@@ -80,7 +93,16 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
   if (renderTree.length === 0) {
     return (
       <div className="entry-list-empty">
-        No entries yet. Press {displayChord('new_entry')} or click + to add one.
+        {/* One span: the container is a flex box, which would turn each run
+            of text and the link into separate items and drop the space
+            between "or" and the link. */}
+        <span>
+        No entries yet. Press {displayChord('new_entry')} or click + to add one
+        {/* Only once there is something to offer. An empty book is exactly
+            where templates earn their keep, and it was the one place with no
+            route to them — every other way in hangs off an entry's ⋯ menu. */}
+        {hasTemplates && <>, or <TemplatesButton /></>}.
+        </span>
       </div>
     );
   }
@@ -109,7 +131,12 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
     // a condensed folder is exactly where bulk rearranging happens.
     const canDrag = !dragDisabled;
     const dragProps = !canDrag ? {} : {
-      draggable: true,
+      draggable: armedDrag === entry.id,
+      // A condensed row has no handle: a press anywhere on it arms the drag,
+      // except inside a text field, which must stay clickable.
+      onMouseDownCapture: density !== 'condensed' ? undefined : (e) => {
+        if (!e.target.closest?.('input, textarea, select, [contenteditable="true"]')) setArmedDrag(entry.id);
+      },
       onDragStart: (e) => {
         if (density !== 'condensed' && !isDragFromHandle.current) { e.preventDefault(); return; }
         if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
@@ -131,7 +158,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
       // Anything watching there for the end of a drag — the window backstop
       // below, and the test harness's drag manager — otherwise never learns the
       // gesture finished and treats the next one as a drag still in progress.
-      onDragEnd:  () => { drag.endDrag(); isDragFromHandle.current = false; },
+      onDragEnd:  () => { drag.endDrag(); isDragFromHandle.current = false; setArmedDrag(null); },
     };
 
     return (
@@ -147,7 +174,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
           onRemove={removeEntry}
           onSelectionClick={(e) => handleSelectionClick(e, entry.id, 'active', orderedIds)}
           density={density}
-          onDragHandleMouseDown={dragDisabled ? undefined : () => { isDragFromHandle.current = true; }}
+          onDragHandleMouseDown={dragDisabled ? undefined : () => { isDragFromHandle.current = true; setArmedDrag(entry.id); }}
         />
       </div>
     );
@@ -182,13 +209,15 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
         // which stalls the browser's drag session outright — no entry inside a
         // folder could be dragged at all.
         const folderDragProps = dragDisabled ? {} : {
-          draggable: true,
+          // Armed by the handle only, for the same reason as entry rows: the
+          // header holds the rename field.
+          draggable: armedDrag === `folder:${folder.id}`,
           onDragStart: (e) => {
             if (!isFolderDragFromHandle.current) { e.preventDefault(); return; }
             if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
             drag.startFolderDrag(folder.id);
           },
-          onDragEnd: () => { drag.endDrag(); isFolderDragFromHandle.current = false; },
+          onDragEnd: () => { drag.endDrag(); isFolderDragFromHandle.current = false; setArmedDrag(null); },
         };
 
         out.push(
@@ -204,7 +233,7 @@ export function EntryList({ entries, groupByType, showFolders = true }) {
               entryIds={flattenRenderItems([item]).map((e) => e.id)}
               onFolderSelectionClick={selectFolderEntries}
               dragProps={folderDragProps}
-              onDragHandleMouseDown={dragDisabled ? undefined : () => { isFolderDragFromHandle.current = true; }}
+              onDragHandleMouseDown={dragDisabled ? undefined : () => { isFolderDragFromHandle.current = true; setArmedDrag(`folder:${folder.id}`); }}
               onHeaderDragOver={dragDisabled ? undefined : (e) => {
                 if (!drag.isDragging) return;
                 e.preventDefault();

@@ -14,13 +14,33 @@ const STOP_WORDS = new Set([
   'other','such','same','own','each','all','any','few','some','very',
 ]);
 
+// One word: a letter, then letters, apostrophes and hyphens. Capitals are
+// allowed after the first letter; "SHAWTY" was read as six one-letter words
+// when only lowercase could follow, and the pairs of those became "S H".
+const WORD = /[A-Za-z][A-Za-z'’-]*/g;
+
+/**
+ * Lowercase any clause written entirely in capitals. A shouted line ("SHAWTY
+ * GOT LOW") is ordinary words, not a row of names, so it should suggest what
+ * the same line in lowercase would. An all-caps word inside normal text
+ * ("Organization XIII") is untouched and still reads as a name.
+ */
+function calmShouting(text) {
+  return String(text ?? '').replace(/[^.!?,;:\n]+/g, (clause) => {
+    const words = clause.match(WORD) || [];
+    const letters = words.filter((w) => /[A-Za-z]{2}/.test(w));
+    const shouted = letters.length >= 2 && letters.every((w) => w === w.toUpperCase());
+    return shouted ? clause.toLowerCase() : clause;
+  });
+}
+
 function isCapitalized(w) {
   return w.length > 0 && w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase();
 }
 
 /** Extract proper-noun tokens from raw text, preserving original casing. */
 function extractProperNouns(text) {
-  const words = text.match(/[A-Za-z][a-z''-]{1,}/g) || [];
+  const words = (text.match(WORD) || []).filter((w) => w.length >= 2);
   return words.filter((w) => {
     if (w.length < 2) return false;
     return isCapitalized(w) && !STOP_WORDS.has(w.toLowerCase());
@@ -29,7 +49,7 @@ function extractProperNouns(text) {
 
 /** Extract all significant lowercase tokens from text. */
 function extractTokens(text) {
-  const words = text.match(/[a-zA-Z][a-z''-]{1,}/g) || [];
+  const words = (text.match(WORD) || []).filter((w) => w.length >= 2);
   return words
     .map((w) => w.toLowerCase())
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
@@ -57,7 +77,7 @@ function uniqueCaseInsensitive(arr) {
 export function generateSuggestionPool(entry, existingTriggers = []) {
   const existing = new Set(existingTriggers.map((t) => t.toLowerCase()));
   const nameText = entry.name  || '';
-  const descText = entry.description || '';
+  const descText = calmShouting(entry.description || '');
 
   const candidates = [];
 
@@ -66,8 +86,9 @@ export function generateSuggestionPool(entry, existingTriggers = []) {
     candidates.push(nameText.trim());
   }
 
-  // Proper nouns from name (highest weight — added early)
-  candidates.push(...extractProperNouns(nameText));
+  // Proper nouns from name (highest weight — added early). An all-caps name
+  // is read like a shouted line; the full name above keeps its own casing.
+  candidates.push(...extractProperNouns(calmShouting(nameText)));
 
   // Proper nouns from description
   candidates.push(...extractProperNouns(descText));
@@ -83,7 +104,7 @@ export function generateSuggestionPool(entry, existingTriggers = []) {
   // Splitting on sentence/clause punctuation prevents cross-boundary pairs like "Reika. Reika".
   const clauses = descText.split(/[.!?,;:\n]+/);
   for (const clause of clauses) {
-    const rawWords = clause.match(/[A-Za-z][a-z''-]*/g) || [];
+    const rawWords = clause.match(WORD) || [];
     for (let i = 0; i < rawWords.length - 1; i++) {
       const a = rawWords[i];
       const b = rawWords[i + 1];

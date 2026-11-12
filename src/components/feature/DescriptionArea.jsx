@@ -4,7 +4,10 @@ import { DescriptionHighlight } from './DescriptionHighlight.jsx';
 import { CharCounter }  from '../ui/CharCounter.jsx';
 import { useSettings }  from '../../hooks/use-settings.js';
 import { useUi }        from '../../hooks/use-ui.js';
-import { CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from '../../constants/limits.js';
+import { useHostMode }  from '../../hooks/use-host.js';
+import { CHAR_LIMIT } from '../../constants/limits.js';
+import { HOST_LIMITS } from '../../constants/host.js';
+import { warningColor, charStops, isGradient, WARN_GREEN } from '../../services/warning-color.js';
 
 export function DescriptionArea({
   value,
@@ -20,20 +23,28 @@ export function DescriptionArea({
   hideFooter          = false,
 }) {
   const textareaRef = useRef(null);
-  const { counterTiers, tieredCounterEnabled } = useSettings();
+  const { counterTiers, tieredCounterEnabled, warningScale } = useSettings();
   const searchQuery = useUi((s) => s.searchQuery);
+  // Host mode hard-caps typing at CharSnap's limit; standalone only warns.
+  const hostMode    = useHostMode();
 
-  const overYellow = value.length >= CHAR_WARN_YELLOW;
-  const overRed    = value.length >= CHAR_WARN_RED;
+  // The border reads the same stops as the counter below it. It used to read
+  // the CONSTANTS instead, so a user who moved their thresholds got a counter
+  // and a border disagreeing about when the text was too long.
+  const stops      = charStops(counterTiers, warningScale);
+  const overYellow = value.length >= stops[0];
+  const overRed    = value.length >= stops[1];
   const pillTier   = overRed ? 'red' : 'yellow';
 
-  // Blue border when override is active; otherwise tiered yellow/red
+  // Blue border when override is active; otherwise the counter's own colour,
+  // from the moment the counter leaves green. It used to wait for the first
+  // threshold, which on the gradient scale left the counter amber while the
+  // border was still plain, so the two disagreed about how full the box was.
   const tieredBorderStyle = (() => {
     if (ignoreLimitWarning && overYellow) return { borderColor: 'var(--blue)' };
     if (!tieredCounterEnabled) return {};
-    if (value.length >= CHAR_WARN_RED)    return { borderColor: 'var(--red)' };
-    if (value.length >= CHAR_WARN_YELLOW) return { borderColor: 'var(--yellow)' };
-    return {};
+    const color = warningColor(value.length, stops, { gradient: isGradient(warningScale) });
+    return color === WARN_GREEN ? {} : { borderColor: color };
   })();
 
   // Autogrow: resize the textarea to fit its content.
@@ -54,15 +65,34 @@ export function DescriptionArea({
   //      runs. If we only measure once per value change, the stored height
   //      is wrong for the final width. ResizeObserver re-measures whenever
   //      the textarea's width actually changes.
+  //   4. the collapse must not reach the page. Measuring needs the box at
+  //      height:auto for an instant, and for that instant everything below
+  //      it moves up and the list gets shorter. Where the list was scrolled
+  //      near its end, some browsers (Safari has no scroll anchoring) clamp
+  //      the scroll position to the shorter list and never give it back, so
+  //      every keystroke threw the user up the column. The wrapper holds its
+  //      height while the box is measured, so nothing outside it moves; any
+  //      scroll position that moved anyway is put back.
   const resize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
+    const wrap = el.parentElement;
+    const scrollers = [];
+    for (let p = wrap?.parentElement; p; p = p.parentElement) {
+      if (p.scrollHeight > p.clientHeight) scrollers.push([p, p.scrollTop]);
+    }
+    const heldMinHeight = wrap?.style.minHeight ?? '';
+    if (wrap) wrap.style.minHeight = `${wrap.offsetHeight}px`;
+
     el.style.height = 'auto';
     // eslint-disable-next-line no-unused-expressions
     el.offsetHeight; // force reflow so scrollHeight reflects the new wrap
     const cs = window.getComputedStyle(el);
     const border = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
     el.style.height = `${el.scrollHeight + border}px`;
+
+    if (wrap) wrap.style.minHeight = heldMinHeight;
+    for (const [p, top] of scrollers) if (p.scrollTop !== top) p.scrollTop = top;
   }, []);
 
   useLayoutEffect(() => {
@@ -109,6 +139,7 @@ export function DescriptionArea({
           readOnly={readOnly}
           placeholder="Entry description…"
           spellCheck={true}
+          maxLength={hostMode ? HOST_LIMITS.description : undefined}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           style={tieredBorderStyle}
@@ -121,6 +152,7 @@ export function DescriptionArea({
             limit={CHAR_LIMIT}
             tiers={counterTiers}
             tieredEnabled={tieredCounterEnabled}
+            warningScale={warningScale}
           />
           {overYellow && onToggleLimitWarning && (
             <button

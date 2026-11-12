@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MKP host harness</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font: 13px/1.4 system-ui, sans-serif; background: #0b0f14; color: #d6dde6; display: flex; flex-direction: column; height: 100vh; }
+    header { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border-bottom: 1px solid #263140; background: #101620; }
+    header strong { margin-right: 6px; }
+    button { font: inherit; padding: 4px 9px; border-radius: 5px; border: 1px solid #3b4a5e; background: #17202c; color: #e6edf3; cursor: pointer; }
+    button:hover { border-color: #58a6ff; }
+    .group { display: flex; gap: 4px; align-items: center; padding: 2px 6px; border: 1px dashed #263140; border-radius: 6px; }
+    .group span { color: #8b949e; font-size: 11px; margin-right: 2px; }
+    main { display: grid; grid-template-columns: 1fr 340px; flex: 1; min-height: 0; }
+    iframe { width: 100%; height: 100%; border: 0; background: #000; }
+    aside { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid #263140; }
+    aside h2 { margin: 0; padding: 6px 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8b949e; border-bottom: 1px solid #263140; }
+    pre { margin: 0; padding: 8px 10px; flex: 1; overflow: auto; font-size: 11px; white-space: pre-wrap; word-break: break-word; }
+    .in  { color: #7ee787; }
+    .out { color: #79c0ff; }
+    .bad { color: #ff7b72; }
+    #status { font-size: 11px; color: #8b949e; margin-left: auto; }
+    /* Phone-width: the builder must get the full width (its own mobile layout
+       keys off the iframe's width), so the log drops below it and the toolbar
+       scrolls sideways instead of wrapping into a wall of buttons. */
+    @media (max-width: 700px) {
+      header { flex-wrap: nowrap; overflow-x: auto; }
+      main { grid-template-columns: 1fr; grid-template-rows: 1fr 140px; }
+      aside { border-left: 0; border-top: 1px solid #263140; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Host harness</strong>
+    <div class="group"><span>load</span>
+      <button id="load-sample" title="mkp:load with the sample book (hostId lb_sample)">Sample</button>
+      <button id="load-newer"  title="Same hostId, newer updatedAt, one entry rewritten">Newer copy</button>
+      <button id="load-new"    title="mkp:load with hostId null (a book CharSnap has not created)">New (null)</button>
+    </div>
+    <div class="group"><span>host →</span>
+      <button id="theme"        title="mkp:theme with a GitHub-dark-ish palette">Theme</button>
+      <button id="set-name"     title="mkp:set-name">Set name</button>
+      <button id="request-save" title="mkp:request-save">Request save</button>
+    </div>
+    <div class="group"><span>reply</span>
+      <button id="reply-saved"           title="mkp:saved for the last mkp:save">Saved</button>
+      <button id="reply-rejected"        title="mkp:save-rejected, entry #2 description">Rejected</button>
+      <button id="reply-failed-conflict" title="mkp:save-failed reason=conflict">Failed (conflict)</button>
+      <button id="reply-failed-error"    title="mkp:save-failed reason=error">Failed (error)</button>
+      <label title="Answer every mkp:request-load with the newer copy, as a real host would re-fetch"><input type="checkbox" id="auto-request-load" /> auto-answer request-load</label>
+    </div>
+    <div class="group">
+      <button id="reload" title="Reload the iframe (keeps this log)">Reload frame</button>
+      <button id="clear"  title="Clear the log">Clear log</button>
+    </div>
+    <span id="status">waiting for mkp:ready…</span>
+  </header>
+  <main>
+    <iframe id="builder" name="builder" allow="clipboard-write"></iframe>
+    <aside>
+      <h2>Messages</h2>
+      <pre id="log"></pre>
+    </aside>
+  </main>
+
+  <script>
+    // ── configuration ───────────────────────────────────────────────────────
+    // ?builder= overrides the iframe URL. The default is the Vite dev server.
+    const params  = new URLSearchParams(location.search);
+    const BUILDER = params.get('builder') || 'http://localhost:5173/?host=charsnap';
+    const BUILDER_ORIGIN = new URL(BUILDER).origin;
+
+    const iframe = document.getElementById('builder');
+    const logEl  = document.getElementById('log');
+    const status = document.getElementById('status');
+
+    // Everything the harness sees or sends, for Playwright to read.
+    window.__messages = [];   // { dir: 'in' | 'out', type, data, at }
+    window.__rejected = [];   // inbound messages dropped for a bad origin/source
+
+    function log(cls, text) {
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = `${new Date().toLocaleTimeString()}  ${text}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function send(msg) {
+      iframe.contentWindow.postMessage(msg, BUILDER_ORIGIN);
+      window.__messages.push({ dir: 'out', type: msg.type, data: msg, at: Date.now() });
+      log('out', `→ ${msg.type} ${JSON.stringify(msg).slice(0, 400)}`);
+    }
+
+    window.addEventListener('message', (event) => {
+      // Both checks matter: origin says who, source says which frame.
+      if (event.origin !== BUILDER_ORIGIN || event.source !== iframe.contentWindow) {
+        window.__rejected.push({ origin: event.origin, data: event.data });
+        log('bad', `dropped message from ${event.origin}`);
+        return;
+      }
+      const data = event.data;
+      if (!data || typeof data !== 'object' || typeof data.type !== 'string') return;
+      window.__messages.push({ dir: 'in', type: data.type, data, at: Date.now() });
+      log('in', `← ${data.type} ${JSON.stringify(data).slice(0, 400)}`);
+      if (data.type === 'mkp:ready') status.textContent = `ready · protocol ${data.protocolVersion} · app ${data.appVersion}`;
+      if (data.type === 'mkp:dirty') status.textContent = data.dirty ? 'dirty' : 'clean';
+      if (data.type === 'mkp:save')  status.textContent = `save posted (${data.entries.length} entries)`;
+      if (data.type === 'mkp:request-load') {
+        status.textContent = 'builder asked for a fresh load';
+        // A real host re-fetches and re-sends mkp:load. The harness answers
+        // with the "newer copy" when the checkbox is on (Playwright sets it).
+        // Stamped at answer time: a re-fetch is newer than any save the
+        // harness confirmed earlier (whose updatedAt was also "now").
+        if (document.getElementById('auto-request-load').checked) {
+          setTimeout(() => send({ ...NEWER, updatedAt: new Date().toISOString() }), 50);
+        }
+      }
+    });
+
+    // ── fixtures ────────────────────────────────────────────────────────────
+    // Text deliberately carries the characters a file importer would rewrite
+    // (backslashes, escaped asterisks, quotes) — host loads must be verbatim.
+    const SAMPLE = {
+      type: 'mkp:load',
+      hostId: 'lb_sample',
+      name: 'Harness Sample',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+      entries: [
+        {
+          name: 'Ashfall Keep',
+          triggers: ['keep', 'fortress'],
+          description: 'A basalt fortress on the caldera rim. Marked \\*important\\* — "quoted", it\'s C:\\Users\\path.',
+          entryType: 'Location',
+          isPublic: true,
+          disabled: false,
+        },
+        {
+          name: 'Mara Vell',
+          triggers: ['mara', 'vell'],
+          description: 'Captain of the keep\'s watch. Suspicious of outsiders.',
+          entryType: 'Character',
+          isPublic: false,
+          disabled: false,
+        },
+        {
+          name: 'The Ember Rite',
+          triggers: ['rite', 'ember'],
+          description: 'A hidden entry — arrives as disabled, stays out of chat.',
+          entryType: 'PlotEvent',
+          isPublic: false,
+          disabled: true,
+        },
+      ],
+      builderMeta: {
+        version: 1,
+        folders: [{ id: 'f1', name: 'Places', color: '#fbbf24', parentId: null, collapseState: 'full', order: 1 }],
+        entryMeta: [{ folderId: 'f1' }, { folderId: null }, { folderId: null }],
+        allowedOverlaps: [],
+      },
+    };
+
+    const NEWER = {
+      ...SAMPLE,
+      name: 'Harness Sample (server edit)',
+      updatedAt: '2026-09-02T00:00:00.000Z',
+      entries: [
+        { ...SAMPLE.entries[0], description: 'Rewritten on CharSnap after the builder loaded it.' },
+        SAMPLE.entries[1],
+        SAMPLE.entries[2],
+      ],
+    };
+
+    const NEW_BOOK = { type: 'mkp:load', hostId: null, name: 'New Lorebook', updatedAt: null, entries: [], builderMeta: null };
+
+    const THEME = {
+      type: 'mkp:theme',
+      tokens: {
+        '--bg': '#101418', '--surface': '#161b22', '--border': '#30363d', '--text': '#e6edf3',
+        '--muted': '#8b949e', '--accent': '#f0883e', '--blue': '#58a6ff',
+      },
+    };
+
+    window.__SAMPLE = SAMPLE;
+    window.__NEWER  = NEWER;
+    window.__THEME  = THEME;
+
+    function lastSave() {
+      const saves = window.__messages.filter((m) => m.dir === 'in' && m.type === 'mkp:save');
+      return saves.length ? saves[saves.length - 1].data : null;
+    }
+
+    // ── buttons ─────────────────────────────────────────────────────────────
+    const on = (id, fn) => document.getElementById(id).addEventListener('click', fn);
+    on('load-sample',  () => send(SAMPLE));
+    on('load-newer',   () => send(NEWER));
+    on('load-new',     () => send(NEW_BOOK));
+    on('theme',        () => send(THEME));
+    on('set-name',     () => send({ type: 'mkp:set-name', name: 'Renamed by Host' }));
+    on('request-save', () => send({ type: 'mkp:request-save' }));
+    on('reply-saved',  () => {
+      const s = lastSave();
+      send({ type: 'mkp:saved', hostId: s?.hostId ?? 'lb_new', updatedAt: new Date().toISOString() });
+    });
+    on('reply-rejected', () => send({
+      type: 'mkp:save-rejected',
+      errors: [{ index: 1, field: 'description', message: 'Description is over 1500 characters' }],
+    }));
+    on('reply-failed-conflict', () => send({ type: 'mkp:save-failed', reason: 'conflict', message: 'Lorebook was changed elsewhere' }));
+    on('reply-failed-error',    () => send({ type: 'mkp:save-failed', reason: 'error',    message: 'Network error while saving' }));
+    on('reload', () => window.__reload());
+    on('clear',  () => { logEl.textContent = ''; });
+
+    // ── helpers for Playwright ──────────────────────────────────────────────
+    window.__send   = send;
+    window.__reload = () => {
+      // A cache-busting param forces a real navigation even when the src is
+      // otherwise unchanged. ?host=charsnap stays in the URL.
+      iframe.src = `${BUILDER}${BUILDER.includes('?') ? '&' : '?'}r=${Date.now()}`;
+      status.textContent = 'reloading frame…';
+    };
+    window.__last = (type) => {
+      const list = window.__messages.filter((m) => m.type === type);
+      return list.length ? list[list.length - 1].data : null;
+    };
+    window.__count = (type) => window.__messages.filter((m) => m.type === type).length;
+
+    iframe.src = BUILDER;
+  </script>
+</body>
+</html>

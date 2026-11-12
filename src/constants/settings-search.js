@@ -16,17 +16,24 @@ export const SETTINGS_GROUP_KEYWORDS = {
   // ── Editing & Entries ──────────────────────────────────────────────
   suggestions:      'suggestions tray collapsed default hide triggers ideas',
   thesaurus:        'thesaurus synonyms dictionary api words related lookup',
-  tieredCounters:   'tiered counter colors colours green yellow red threshold description triggers',
-  counterThresholds:'character count thresholds limit yellow red numbers chars',
-  statsBadges:      'entry stats badges hide trigger count character count header',
-  condensedStats:   'condensed rows stats badges folders compact',
-  fullCardsSelect:  'full entry cards select mode selecting condensed compact mobile rows density',
-  privateMarker:    'private entries mark marker eye charsnap public visibility',
+  templates:        'templates template scaffold preset reuse save load boilerplate starter categories entry',
   entryHistory:     'entry checkpoints history rollback snapshots undo restore versions backup',
   historyDefault:   'entry checkpoints history default new lorebooks rollback',
 
   // ── Appearance & Accessibility ─────────────────────────────────────
+  // The counter and entry-badge groups moved here from Editing & Entries on
+  // 2026-08-31. Their keywords keep every word someone would have typed while
+  // looking for them in the old place — 'entries', 'editing' and 'writing'
+  // included — because the point of this file is that the move is invisible to
+  // anyone who searches instead of browsing.
   theme:            'theme colors colours dark light high contrast custom palette appearance',
+  tieredCounters:   'tiered counter colors colours green yellow red threshold description triggers entries editing writing',
+  warningScale:     'warning color colour scale three four gradient orange green yellow red counters bands steps fade entries editing writing limit',
+  counterThresholds:'character count thresholds limit yellow orange red numbers chars entries editing writing length',
+  statsBadges:      'entry stats badges hide trigger count character count header entries editing',
+  condensedStats:   'condensed rows stats badges folders compact entries editing',
+  fullCardsSelect:  'full entry cards select mode selecting condensed compact mobile rows density entries editing',
+  privateMarker:    'private entries mark marker eye charsnap public visibility entries editing',
   accessibility:    'accessibility text size scale font larger reduce motion animation high contrast',
   funnyFish:        'funny fish logo sacabambaspis book emoji icon title bar',
 

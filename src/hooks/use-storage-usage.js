@@ -11,6 +11,7 @@ import {
   STORAGE_WARN_THRESHOLD,
   STORAGE_DANGER_THRESHOLD,
 } from '../constants/limits.js';
+import { warningColor, storageStops, isGradient } from '../services/warning-color.js';
 
 // Returns the uncompressed character count of the snapshot arrays and of the whole lorebook.
 // storage-service applies the snapshots/total ratio to actual (post-compression) bytes so
@@ -37,6 +38,7 @@ function tierFor(percent) {
 export function useStorageUsage() {
   const [usage, setUsage] = useState(() => getStorageBreakdown({ measureLorebook }));
   const profile = useSettingsStore((s) => s.storageQuotaProfile);
+  const warningScale = useSettingsStore((s) => s.warningScale);
   const quotaBytes = getStorageQuota(profile);
 
   useEffect(() => {
@@ -53,6 +55,13 @@ export function useStorageUsage() {
   const totalBytes = usage.totalBytes;
   const percent    = quotaBytes > 0 ? Math.min(1, totalBytes / quotaBytes) : 0;
   const tier       = tierFor(percent);
+  // The ring's resting colour is muted, not green — it is a gauge, not a health
+  // readout, and a green ring at 3% full would read as an achievement. Callers
+  // hand this to CSS as --tier-color so one value drives ring, bar and text.
+  const tierColor  = warningColor(percent, storageStops(warningScale), {
+    gradient: isGradient(warningScale),
+    base: 'var(--muted2)',
+  });
 
-  return { totalBytes, quotaBytes, percent, tier, breakdown: usage.breakdown, refresh };
+  return { totalBytes, quotaBytes, percent, tier, tierColor, breakdown: usage.breakdown, refresh };
 }

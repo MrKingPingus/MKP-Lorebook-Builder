@@ -189,6 +189,23 @@ export const useLorebookStore = create((set, get) => ({
       };
     }),
 
+  // Shallow-merge arbitrary fields onto one lorebook by id. Host mode uses it
+  // to stamp `hostId` / `hostSyncedAt` / `hostSyncedHash` after a save; a
+  // `hostId` in the patch is mirrored onto the index item so the index can be
+  // searched by host id without loading every book.
+  patchLorebook: (id, patch) =>
+    set((state) => {
+      const lorebook = state.lorebooks[id];
+      if (!lorebook) return {};
+      const next = { lorebooks: { ...state.lorebooks, [id]: { ...lorebook, ...patch } } };
+      if (Object.prototype.hasOwnProperty.call(patch, 'hostId')) {
+        next.lorebookIndex = state.lorebookIndex.map((item) =>
+          item.id === id ? { ...item, hostId: patch.hostId } : item
+        );
+      }
+      return next;
+    }),
+
   setLorebookRollback: (patch) =>
     set((state) => {
       const id = state.activeLorebookId;

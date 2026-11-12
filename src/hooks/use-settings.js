@@ -9,6 +9,7 @@ export function useSettings() {
   const defaultWindowWidth       = useSettingsStore((s) => s.defaultWindowWidth);
   const defaultWindowHeight      = useSettingsStore((s) => s.defaultWindowHeight);
   const tieredCounterEnabled     = useSettingsStore((s) => s.tieredCounterEnabled);
+  const warningScale             = useSettingsStore((s) => s.warningScale);
   const hideSuggestionsByDefault = useSettingsStore((s) => s.hideSuggestionsByDefault);
   const hideEntryStats           = useSettingsStore((s) => s.hideEntryStats);
   const markPrivateEntries       = useSettingsStore((s) => s.markPrivateEntries);
@@ -31,6 +32,8 @@ export function useSettings() {
   const crosstalkSwapMode        = useSettingsStore((s) => s.crosstalkSwapMode);
   const thesaurusEnabled         = useSettingsStore((s) => s.thesaurusEnabled);
   const funnyFishEnabled         = useSettingsStore((s) => s.funnyFishEnabled);
+  const templateSaveCondition    = useSettingsStore((s) => s.templateSaveCondition);
+  const templateSaveAlwaysOn     = useSettingsStore((s) => s.templateSaveAlwaysOn);
   const storageQuotaProfile      = useSettingsStore((s) => s.storageQuotaProfile);
   const legacyMenus              = useSettingsStore((s) => s.legacyMenus);
   const lorebookSort             = useSettingsStore((s) => s.lorebookSort);
@@ -44,6 +47,7 @@ export function useSettings() {
       defaultWindowWidth,
       defaultWindowHeight,
       tieredCounterEnabled,
+      warningScale,
       hideSuggestionsByDefault,
       hideEntryStats,
       markPrivateEntries,
@@ -66,6 +70,8 @@ export function useSettings() {
       crosstalkSwapMode,
       thesaurusEnabled,
       funnyFishEnabled,
+      templateSaveCondition,
+      templateSaveAlwaysOn,
       storageQuotaProfile,
       legacyMenus,
       lorebookSort,
@@ -88,6 +94,7 @@ export function useSettings() {
     defaultWindowWidth,
     defaultWindowHeight,
     tieredCounterEnabled,
+    warningScale,
     hideSuggestionsByDefault,
     hideEntryStats,
     markPrivateEntries,
@@ -110,6 +117,8 @@ export function useSettings() {
     crosstalkSwapMode,
     thesaurusEnabled,
     funnyFishEnabled,
+    templateSaveCondition,
+    templateSaveAlwaysOn,
     storageQuotaProfile,
     legacyMenus,
     lorebookSort,
@@ -118,6 +127,7 @@ export function useSettings() {
     setDefaultWindowWidth:       (v) => updateSetting('defaultWindowWidth', v),
     setDefaultWindowHeight:      (v) => updateSetting('defaultWindowHeight', v),
     setTieredCounterEnabled:     (v) => updateSetting('tieredCounterEnabled', v),
+    setWarningScale:             (v) => updateSetting('warningScale', v),
     setHideSuggestionsByDefault: (v) => updateSetting('hideSuggestionsByDefault', v),
     setHideEntryStats:           (v) => updateSetting('hideEntryStats', v),
     setMarkPrivateEntries:       (v) => updateSetting('markPrivateEntries', v),
@@ -140,6 +150,8 @@ export function useSettings() {
     setThesaurusEnabled:         (v) => updateSetting('thesaurusEnabled', v),
     setCrosstalkSwapMode:        (v) => updateSetting('crosstalkSwapMode', v),
     setFunnyFishEnabled:         (v) => updateSetting('funnyFishEnabled', v),
+    setTemplateSaveCondition:    (v) => updateSetting('templateSaveCondition', v),
+    setTemplateSaveAlwaysOn:     (v) => updateSetting('templateSaveAlwaysOn', v),
     setStorageQuotaProfile:      (v) => updateSetting('storageQuotaProfile', v),
     setLegacyMenus:              (v) => updateSetting('legacyMenus', v),
     setLorebookSort:             (v) => updateSetting('lorebookSort', v),

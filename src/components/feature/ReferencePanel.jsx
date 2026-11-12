@@ -19,6 +19,7 @@ import { useSelection }         from '../../hooks/use-selection.js';
 import { useNameMatch }         from '../../hooks/use-name-match.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { entriesShallowEqual, diffEntries } from '../../services/diff-service.js';
+import { EntryStatusIcons } from '../ui/EntryStatusIcons.jsx';
 import { TypeColorDot }         from '../ui/TypeColorDot.jsx';
 import { StatsBadge }           from '../ui/StatsBadge.jsx';
 import { Chip }                 from '../ui/Chip.jsx';
@@ -28,7 +29,7 @@ import { ENTRY_TYPES }          from '../../constants/entry-types.js';
 export function ReferencePanel() {
   const { referenceLorebook, setReferenceLorebookId, swapReference } = useReferenceLorebook();
   const { items }                                                   = useLorebookSwitcher();
-  const { hideEntryStats, counterTiers, tieredCounterEnabled }      = useSettings();
+  const { hideEntryStats, counterTiers, tieredCounterEnabled, warningScale, markPrivateEntries } = useSettings();
   const { conflictMap, allowedOverlaps }                            = useCrosstalk();
   const { isSelectMode, selectedIds, toggleSelected }               = useSelection();
   const { refToActive, activeToRef, matchedActiveByRef }            = useNameMatch();
@@ -155,6 +156,10 @@ export function ReferencePanel() {
               const snapshotCount = entry.snapshots?.length ?? 0;
               const isExpanded    = expandedIds.has(entry.id);
               const hasDescription = (entry.description ?? '').length > 0;
+              const condition      = typeof entry.triggerCondition === 'string' ? entry.triggerCondition.trim() : '';
+              // What the Details button opens: the description, and the two
+              // CharSnap fields, which a reference card had no other way to show.
+              const hasDetails     = hasDescription || condition !== '' || entry.alwaysOn === true;
               const isSelected    = selectedIds.has(entry.id);
               const sameNameActiveId   = refToActive.get(entry.id) ?? null;
               const matchedActiveEntry = matchedActiveByRef.get(entry.id) ?? null;
@@ -188,6 +193,7 @@ export function ReferencePanel() {
                       <span className="entry-label" style={{ color: typeColor }}>
                         #{idx + 1}: {entry.name || '(unnamed)'}
                       </span>
+                      <EntryStatusIcons entry={entry} markPrivateEntries={markPrivateEntries} />
                       <button
                         className={`entry-ref-badge entry-ref-badge--header entry-ref-badge--diff touch-floor${isComparingHere ? ' entry-ref-badge--comparing' : ''}`}
                         onMouseDown={stopSwap}
@@ -207,6 +213,7 @@ export function ReferencePanel() {
                             charCount={entry.description.length}
                             counterTiers={counterTiers}
                             tieredEnabled={tieredCounterEnabled}
+                            warningScale={warningScale}
                           />
                         )}
                         {snapshotCount > 0 && (
@@ -265,6 +272,25 @@ export function ReferencePanel() {
                           </div>
                         </div>
                       </div>
+                      <div className={`entry-condition-section${refDelta.changedFields.has('triggerCondition') ? ' entry-field--differs' : ''}`}>
+                        <div className="field-label">
+                          {refDelta.changedFields.has('triggerCondition') && (
+                            <span className="diff-modified-dot" title="Differs from the active entry">●</span>
+                          )}
+                          TRIGGER CONDITION
+                          {refDelta.changedFields.has('alwaysOn') && (
+                            <span className="field-label-hint" title="Always-on differs from the active entry">always on: {entry.alwaysOn === true ? 'on' : 'off'} ●</span>
+                          )}
+                        </div>
+                        <textarea
+                          className="entry-condition-field"
+                          value={typeof entry.triggerCondition === 'string' ? entry.triggerCondition : ''}
+                          readOnly
+                          tabIndex={-1}
+                          rows={2}
+                          placeholder="(no trigger condition)"
+                        />
+                      </div>
                       <DescriptionArea
                         value={entry.description}
                         onChange={() => {}}
@@ -291,6 +317,7 @@ export function ReferencePanel() {
                     <span className="reference-entry-label" style={{ color: typeColor }}>
                       #{idx + 1}: {entry.name || '(unnamed)'}
                     </span>
+                    <EntryStatusIcons entry={entry} markPrivateEntries={markPrivateEntries} />
                     {sameNameActiveId && (() => {
                       const isComparing = compareEntryId === sameNameActiveId;
                       return (
@@ -330,6 +357,7 @@ export function ReferencePanel() {
                           charCount={entry.description.length}
                           counterTiers={counterTiers}
                           tieredEnabled={tieredCounterEnabled}
+                          warningScale={warningScale}
                         />
                       )}
                       {snapshotCount > 0 && (
@@ -340,13 +368,14 @@ export function ReferencePanel() {
                           ↺ {snapshotCount}
                         </span>
                       )}
-                      {hasDescription && (
+                      {hasDetails && (
                         <button
-                          className="card-action-btn"
+                          className="card-action-btn reference-details-btn"
                           onMouseDown={stopSwap}
                           onClick={(e) => toggleExpanded(entry.id, e)}
+                          title="Show this entry's description and trigger condition"
                         >
-                          {isExpanded ? '▲ Desc' : '▼ Desc'}
+                          {isExpanded ? '▲ Details' : '▼ Details'}
                         </button>
                       )}
                     </div>
@@ -366,6 +395,16 @@ export function ReferencePanel() {
                           </span>
                         );
                       })}
+                    </div>
+                  )}
+                  {isExpanded && (condition !== '' || entry.alwaysOn === true) && (
+                    <div className="reference-entry-condition" onMouseDown={stopSwap}>
+                      {condition !== '' && (
+                        <><span className="reference-entry-condition-label">Trigger condition</span> {condition}</>
+                      )}
+                      {entry.alwaysOn === true && (
+                        <span className="reference-entry-always-on">Always on</span>
+                      )}
                     </div>
                   )}
                   {isExpanded && hasDescription && (

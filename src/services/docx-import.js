@@ -1,11 +1,12 @@
-// Dynamically load Mammoth.js from CDN, parse the .docx structure (headings + paragraphs),
-// and build entries from it. Falls back to raw-text + txt-import for unstructured docs.
+// Dynamically import Mammoth.js from the bundle, parse the .docx structure (headings +
+// paragraphs), and build entries from it. Falls back to raw-text + txt-import for
+// unstructured docs. Mammoth is code-split rather than CDN-loaded so Word import works
+// offline and the deployment runs no third-party JavaScript.
 import { parseTxtToEntries } from './txt-import.js';
 import { createEmptyEntry } from './entry-factory.js';
 import { unescapeImportedEntry } from './unescape-import.js';
 import { ENTRY_TYPES } from '../constants/entry-types.js';
-
-const MAMMOTH_CDN = 'https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js';
+import { MAX_TRIGGERS } from '../constants/limits.js';
 
 const HEADING_TAGS = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
 const TRIGGER_LABEL = /^(Triggers|Keywords|Tags|Aliases):\s*/i;
@@ -17,14 +18,7 @@ let mammothPromise = null;
 
 function loadMammoth() {
   if (mammothPromise) return mammothPromise;
-  mammothPromise = new Promise((resolve, reject) => {
-    if (window.mammoth) { resolve(window.mammoth); return; }
-    const script = document.createElement('script');
-    script.src = MAMMOTH_CDN;
-    script.onload = () => resolve(window.mammoth);
-    script.onerror = () => reject(new Error('Failed to load Mammoth.js from CDN.'));
-    document.head.appendChild(script);
-  });
+  mammothPromise = import('mammoth').then((mod) => mod.default ?? mod);
   return mammothPromise;
 }
 
@@ -71,7 +65,8 @@ function parseHtmlToEntries(html) {
       entries.push(createEmptyEntry({
         name:        current.name,
         type:        current.type ?? 'other',
-        triggers:    current.triggers,
+        // Same cap as the JSON and TXT importers.
+        triggers:    current.triggers.slice(0, MAX_TRIGGERS),
         description: current.descLines.join('\n').trim(),
       }));
     }

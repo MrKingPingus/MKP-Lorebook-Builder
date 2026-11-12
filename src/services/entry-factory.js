@@ -11,20 +11,32 @@ export function createEmptyEntry(overrides = {}) {
   return { ...DEFAULT_ENTRY, id: uid(), lastModified: Date.now(), ...overrides };
 }
 
-// Clone an entry for cross-book copy: fresh id, fresh lastModified, no
-// snapshots and no folder (both belong to the source book — a folderId carried
-// across would dangle in the destination, and would silently re-file the entry
-// if it ever got copied back). Triggers/ignoreLimitWarnings get shallow copies
-// so the destination can mutate independently.
-export function cloneEntry(entry) {
+// Clone an entry for cross-book copy: fresh id and no folder (a folderId names
+// a folder in the SOURCE book, so carrying it across would dangle in the
+// destination — and would silently re-file the entry if it ever got copied
+// back). Triggers/ignoreLimitWarnings get shallow copies so the destination can
+// mutate independently.
+//
+// Two of those defaults are negotiable, and the copy/move-to-lorebook path
+// negotiates both:
+//
+// - `keepSnapshots` carries the entry's checkpoints across. The cross-PANEL
+//   copy drops them because it is a reference gesture — you are pulling a
+//   neighbouring book's entry over to work from, not relocating it. A transfer
+//   between lorebooks is the opposite: the checkpoints are the thing you would
+//   most regret leaving behind, so #127's paths pass this.
+// - `keepModified` leaves `lastModified` alone. A move did not change the
+//   entry, it relocated it, and "recently modified" is a sort option — refresh
+//   it and every moved entry jumps to the top of its new book for no reason.
+export function cloneEntry(entry, { keepSnapshots = false, keepModified = false } = {}) {
   return {
     ...entry,
     id:                  uid(),
-    lastModified:        Date.now(),
     folderId:            null,
-    snapshots:           [],
     triggers:            [...(entry.triggers ?? [])],
     ignoreLimitWarnings: { ...(entry.ignoreLimitWarnings ?? {}) },
+    ...(keepModified  ? {} : { lastModified: Date.now() }),
+    ...(keepSnapshots ? { snapshots: [...(entry.snapshots ?? [])] } : { snapshots: [] }),
   };
 }
 

@@ -17,6 +17,9 @@ export function buildSnapshot(entry) {
     type:        entry.type,
     description: entry.description,
     triggers:    [...entry.triggers],
+    // CharSnap chat fields (see host-serialize.js); older checkpoints lack them.
+    alwaysOn:         entry.alwaysOn === true,
+    triggerCondition: typeof entry.triggerCondition === 'string' ? entry.triggerCondition : '',
     timestamp:   Date.now(),
     label:       '',  // user-editable; empty means display the formatted timestamp
     pinned:      false,
@@ -71,7 +74,11 @@ export function contentMatchesLatestSnapshot(entry, snapshots) {
     entry.type        === latest.type        &&
     entry.description === latest.description &&
     entry.triggers.length === latest.triggers.length &&
-    entry.triggers.every((t, i) => t === latest.triggers[i])
+    entry.triggers.every((t, i) => t === latest.triggers[i]) &&
+    // Checkpoints saved before these fields existed compare as off / empty.
+    (entry.alwaysOn === true) === (latest.alwaysOn === true) &&
+    (typeof entry.triggerCondition === 'string' ? entry.triggerCondition : '') ===
+      (typeof latest.triggerCondition === 'string' ? latest.triggerCondition : '')
   );
 }
 

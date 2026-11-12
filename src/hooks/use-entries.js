@@ -18,11 +18,16 @@ export function useEntries() {
     pushSnapshot({ entries: [...entries] });
   }
 
+  // Returns the entry it created. Nothing needed that until Entry Templates —
+  // "create new entry from template" has to add the row and then patch the row
+  // it just added, and finding it again by scanning entries[] would be looking
+  // up something we were already holding.
   function addEntry() {
     snapshot();
     const newEntry = createEmptyEntry();
     updateActiveEntries([...entries, newEntry]);
     useUiStore.getState().setPendingFocusEntryId(newEntry.id);
+    return newEntry;
   }
 
   function updateEntry(id, patch, discrete = false) {

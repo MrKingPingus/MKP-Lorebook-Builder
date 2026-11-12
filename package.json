@@ -1,19 +1,22 @@
 {
   "name": "mkp-lorebook-builder",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Browser-only utility for creating and managing lorebooks for AI chatbots",
-  "license": "ISC",
+  "license": "MIT",
   "author": "",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "verify": "node verify/run.mjs"
+    "verify": "node verify/run.mjs",
+    "charsnap:status": "bash scripts/charsnap.sh status",
+    "charsnap:sync": "bash scripts/charsnap.sh sync",
+    "charsnap:publish": "bash scripts/charsnap.sh publish"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
     "lz-string": "^1.5.0",
+    "mammoth": "^1.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.4"

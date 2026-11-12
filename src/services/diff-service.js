@@ -86,6 +86,8 @@ export function diffEntries(before, after) {
     description:      null,
     triggers:         null,
     hiddenFromExport: null,
+    alwaysOn:         null,
+    triggerCondition: null,
   };
 
   const aName = a.name ?? '';
@@ -130,6 +132,20 @@ export function diffEntries(before, after) {
     delta.hiddenFromExport = { before: aHidden, after: bHidden };
   }
 
+  const aAlways = a.alwaysOn === true;
+  const bAlways = b.alwaysOn === true;
+  if (aAlways !== bAlways) {
+    delta.changedFields.add('alwaysOn');
+    delta.alwaysOn = { before: aAlways, after: bAlways };
+  }
+
+  const aCond = typeof a.triggerCondition === 'string' ? a.triggerCondition : '';
+  const bCond = typeof b.triggerCondition === 'string' ? b.triggerCondition : '';
+  if (aCond !== bCond) {
+    delta.changedFields.add('triggerCondition');
+    delta.triggerCondition = { before: aCond, after: bCond };
+  }
+
   return delta;
 }
 
@@ -142,6 +158,8 @@ export function entriesShallowEqual(a, b) {
   if ((a.type ?? '')        !== (b.type ?? ''))        return false;
   if ((a.description ?? '') !== (b.description ?? '')) return false;
   if (!!a.hiddenFromExport  !== !!b.hiddenFromExport)  return false;
+  if ((a.alwaysOn === true) !== (b.alwaysOn === true)) return false;
+  if ((typeof a.triggerCondition === 'string' ? a.triggerCondition : '') !== (typeof b.triggerCondition === 'string' ? b.triggerCondition : '')) return false;
   const at = a.triggers ?? [];
   const bt = b.triggers ?? [];
   if (at.length !== bt.length) return false;

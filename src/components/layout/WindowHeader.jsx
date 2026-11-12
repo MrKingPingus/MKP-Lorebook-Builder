@@ -6,9 +6,12 @@ import { useMobile }     from '../../hooks/use-mobile.js';
 import { useUi }                from '../../hooks/use-ui.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
+import { useHostMode }          from '../../hooks/use-host.js';
 import { MenuButton }           from './MenuButton.jsx';
+import { CreatorMenu }          from './CreatorMenu.jsx';
 import { StorageUsageRing }     from './StorageUsageRing.jsx';
 import { TitleMenu }            from '../feature/TitleMenu.jsx';
+import { HostSaveButton }       from '../feature/HostSaveButton.jsx';
 import { TITLE_MENU_OPEN_MS, TITLE_MENU_CLOSE_MS } from '../../constants/title-menu.js';
 import logoUrl from '../../assets/Sacabambaspis2.png';
 
@@ -18,6 +21,9 @@ export function WindowHeader() {
   const { activeLorebook, renameLorebook } = useLorebook();
   const { funnyFishEnabled }               = useSettings();
   const { crosstalkEnabled }               = useReferenceLorebook();
+  // Host mode: CharSnap owns the lorebook's name and which book is open, so
+  // the header has no drag, no close, no rename, and a Save button instead.
+  const hostMode                           = useHostMode();
   const setShowLander                      = useUi((s) => s.setShowLander);
   const openMobileTitleMenu                = useUi((s) => s.openMobileTitleMenu);
   const [renaming, setRenaming] = useState(false);
@@ -66,6 +72,18 @@ export function WindowHeader() {
     closeTimer.current = setTimeout(() => setTitleOpen(false), TITLE_MENU_CLOSE_MS);
   }
 
+  // A press inside a hover-opened menu means the user is now working in it,
+  // so it pins, the same as clicking the title would. Without this, choosing
+  // Import's "click to browse" opened the system file picker, the pointer
+  // counted as leaving the menu, and the menu closed behind the picker,
+  // taking its file input with it: the chosen file went nowhere and the user
+  // had to start again. A pinned menu already survived that, which is why it
+  // only ever failed on the first try.
+  function engageTitleMenu() {
+    clearTimeout(closeTimer.current);
+    setPinned(true);
+  }
+
   function handleTitleClick() {
     clearTimers();
     if (pinned) {
@@ -111,17 +129,19 @@ export function WindowHeader() {
   return (
     <div
       className="window-header"
-      onPointerDown={isMobile ? undefined : onPointerDown}
+      onPointerDown={(isMobile || hostMode) ? undefined : onPointerDown}
     >
       {/* Logo. The wordmark is desktop-only: at 360px it is 211px of the
           screen with 55px of dead space beside it, and the title has to live
           somewhere. The mark alone still identifies the app, and a phone user
           knows which app they opened. */}
       <div className="header-logo" onPointerDown={(e) => e.stopPropagation()}>
-        {funnyFishEnabled
-          ? <img className="logo-icon" src={logoUrl} alt="" />
-          : <span className="logo-icon">📖</span>
-        }
+        <CreatorMenu>
+          {funnyFishEnabled
+            ? <img className="logo-icon" src={logoUrl} alt="About the maker" />
+            : <span className="logo-icon" aria-label="About the maker">📖</span>
+          }
+        </CreatorMenu>
         {!isMobile && <span className="logo-text">LOREBOOK BUILDER</span>}
       </div>
 
@@ -137,9 +157,9 @@ export function WindowHeader() {
         <button
           ref={titleBtnRef}
           className={`title-field title-field--mobile touch-floor${titleOpen ? ' title-field--open' : ''}`}
-          onClick={() => openMobileTitleMenu()}
+          onClick={() => openMobileTitleMenu(hostMode ? 'import-export' : undefined)}
           aria-haspopup="dialog"
-          title="Lorebooks, import and export"
+          title={hostMode ? 'Import and export' : 'Lorebooks, import and export'}
         >
           <span className="title-field-name">
             {activeLorebook?.name || 'Untitled lorebook'}
@@ -174,10 +194,12 @@ export function WindowHeader() {
               className={`title-field${titleOpen ? ' title-field--open' : ''}${pinned ? ' title-field--pinned' : ''}`}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={handleTitleClick}
-              onDoubleClick={startRename}
+              onDoubleClick={hostMode ? undefined : startRename}
               onMouseEnter={hoverOpen}
               onMouseLeave={hoverClose}
-              title="Lorebooks, import and export — double-click to rename"
+              title={hostMode
+                ? 'Import and export — rename this lorebook from CharSnap'
+                : 'Lorebooks, import and export — double-click to rename'}
               aria-haspopup="dialog"
               aria-expanded={titleOpen}
             >
@@ -190,9 +212,11 @@ export function WindowHeader() {
           {titleOpen && (
             <TitleMenu
               anchorRect={titleAnchor}
+              hideBooks={hostMode}
               onClose={closeTitleMenu}
               onMouseEnter={() => clearTimeout(closeTimer.current)}
               onMouseLeave={hoverClose}
+              onEngage={engageTitleMenu}
             />
           )}
         </div>
@@ -205,11 +229,14 @@ export function WindowHeader() {
             footer, so it stays in the header there. */}
         {isMobile && <StorageUsageRing />}
 
+        {/* Host mode: the explicit write to CharSnap */}
+        {hostMode && <HostSaveButton compact={isMobile} />}
+
         {/* Gear → Settings, or the legacy ☰ menu if the user turned it back on */}
         <MenuButton />
 
-        {/* Close — returns to lander; hidden on mobile */}
-        {!isMobile && (
+        {/* Close — returns to lander; hidden on mobile and in host mode (no lander) */}
+        {!isMobile && !hostMode && (
           <button
             className="header-close"
             title="Return to home"

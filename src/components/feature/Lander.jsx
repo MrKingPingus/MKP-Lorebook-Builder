@@ -15,6 +15,8 @@ import { UpdateNotice }         from './UpdateNotice.jsx';
 import { useTourLauncher }      from '../../hooks/use-tour.js';
 import { DUPE_FLASH_MS }        from '../../constants/limits.js';
 import { BUG_REPORT_URL, FEATURE_REQUEST_URL } from '../../constants/links.js';
+import { RestoreBackupTile } from './RestoreBackupTile.jsx';
+import { IMPORT_ACCEPT } from '../../constants/import-flow.js';
 import changelogRaw             from '../../../CHANGELOG.md?raw';
 
 const RECENT_LIMIT = 6;
@@ -138,12 +140,13 @@ export function Lander() {
           <div className="lander-tile-title">Import Paste</div>
           <div className="lander-tile-sub">Paste entries from clipboard</div>
         </button>
+        <RestoreBackupTile />
       </div>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept=".txt,.docx,.odt,.json"
+        accept={IMPORT_ACCEPT}
         style={{ display: 'none' }}
         onChange={onImportFileChosen}
       />
@@ -198,7 +201,7 @@ export function Lander() {
           <li>Create entries with names, types, triggers, and descriptions.</li>
           <li>Your lorebook is saved automatically — just leave the tab open.</li>
           <li>When you're done, export as <strong>JSON</strong> (for AI tools), <strong>TXT</strong>, or <strong>DOCX</strong> from the <em>Import / Export</em> tab.</li>
-          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, <code>.docx</code>, or <code>.odt</code> file.</li>
+          <li>To import an existing lorebook, use the Import / Export tab and drop in a <code>.json</code>, <code>.txt</code>, or <code>.docx</code> file.</li>
           <li>Use <kbd>{displayChord('new_entry')}</kbd> to add a new entry, <kbd>{displayChord('undo')}</kbd> to undo, <kbd>{displayChord('redo')}</kbd> to redo, and <kbd>Esc</kbd> to exit bulk-select mode. Press <kbd>?</kbd> anytime for the full shortcut list.</li>
         </ol>
 

@@ -1,12 +1,14 @@
-// Numeric caps: max trigger count (25), max lorebooks (10), char warning thresholds, char limit
+// Numeric caps: max trigger count (25), max lorebooks (50), char warning thresholds, char limit
 export const MAX_TRIGGERS             = 25;
 export const MAX_LOREBOOKS            = 50;
 export const CHAR_LIMIT               = 1500;
 export const CHAR_WARN_YELLOW         = 750;
 export const CHAR_WARN_RED            = 1000;
 export const TRIGGER_WARN_YELLOW      = 20;
+export const TRIGGER_WARN_ORANGE      = 23;  // four-colour scale only; sits between the yellow warning and MAX_TRIGGERS
 export const TITLE_CHAR_LIMIT         = 50;  // advisory entry-title length cap (mirrors CharSnap; not enforced)
 export const TITLE_WARN_YELLOW        = 40;  // title-length warning surfaces at this count
+export const TITLE_WARN_ORANGE        = 45;  // four-colour scale only; sits between the warning and the cap
 export const MIN_WINDOW_WIDTH         = 480;
 export const MIN_WINDOW_HEIGHT        = 300;
 export const MAX_HISTORY              = 50;
@@ -18,7 +20,22 @@ export const THESAURUS_RELATED_MAX     = 50;  // words requested from Datamuse b
 export const THESAURUS_RELATED_MIN_FREQ = 0.5; // drop related words below this usage frequency (per million words); words with no frequency data are kept
 export const THESAURUS_RELATED_PER_POS  = 12;  // cap on related words shown per part-of-speech group
 export const DUPE_FLASH_MS            = 1500;
+// Trigger condition counter: where it turns yellow and orange, as fractions of
+// its cap. The same proportions as the description's defaults (750 and 1000 of
+// 1500), so the two counters in an entry change colour at the same fill.
+export const CONDITION_WARN_YELLOW_FRACTION = 1 / 2;
+export const CONDITION_WARN_ORANGE_FRACTION = 2 / 3;
+export const CONDITION_FLASH_MS      = 1600;  // how long the condition field stays highlighted after its header badge is clicked
+// In text copied off a CharSnap page (txt-import.js), a line longer than this
+// is description. Names cap at 50 on CharSnap and triggers are a word or a
+// short phrase, so nothing in a header or a trigger list reaches it.
+export const PAGE_TRIGGER_LINE_MAX   = 80;
+export const FAB_LONG_PRESS_CLICK_GRACE_MS = 600; // after a long-press on + is released, how long its trailing click is ignored
+export const CONFIRM_PRESS_WINDOW_MS  = 3000;  // a destructive button stays armed this long for its second press (use-confirm-press)
 export const MENU_PANEL_WIDTH         = 320;
+// Per-entry ⋯ overflow menu. Portalled and anchored, so this is the width the
+// positioner clamps against the viewport rather than a CSS guess.
+export const ENTRY_MENU_WIDTH_PX      = 224;
 // The lorebook pull tab hangs off the OUTSIDE of the window's right edge, so
 // the window can never occupy the last strip of the viewport — the tab needs
 // that margin to live in. Same total footprint as reserving a gutter inside the
@@ -40,6 +57,7 @@ export const STORAGE_QUOTA_BYTES_BY_PROFILE = {
 };
 export const STORAGE_WARN_THRESHOLD       = 0.60;
 export const STORAGE_DANGER_THRESHOLD     = 0.85;
+export const STORAGE_CRITICAL_THRESHOLD   = 0.95; // four-colour scale only; "about to fail a write" rather than "getting full"
 
 // Anchored-popover geometry (see hooks/use-anchored-position.js)
 export const POPOVER_ANCHOR_GAP_PX = 6;  // breathing room between anchor and popover

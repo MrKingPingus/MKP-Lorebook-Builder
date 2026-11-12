@@ -5,9 +5,10 @@ import { useKeybindings }   from '../../hooks/use-keybindings.js';
 import { useUi }            from '../../hooks/use-ui.js';
 import { useMobile }        from '../../hooks/use-mobile.js';
 import { useSettings }      from '../../hooks/use-settings.js';
+import { useConfirmPress }  from '../../hooks/use-confirm-press.js';
 import { FabQuickMenu }     from '../feature/FabQuickMenu.jsx';
 import { ExportMenu }       from '../feature/ExportMenu.jsx';
-import { THESAURUS_LONG_PRESS_MS } from '../../constants/limits.js';
+import { THESAURUS_LONG_PRESS_MS, FAB_LONG_PRESS_CLICK_GRACE_MS } from '../../constants/limits.js';
 import { FAB_SIZES } from '../../constants/scaling.js';
 
 // Hover delays for the FAB quick menu — slightly longer than the suggestion
@@ -17,6 +18,7 @@ const HOVER_OPEN_MS  = 200;
 const HOVER_CLOSE_MS = 200;
 
 function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, onArm, chord = null }) {
+  const confirmPress = useConfirmPress();
   // While the "Add to hotbar" pin flow is active, every slot (filled or empty)
   // is an armable drop target — clicking arms it rather than running its action.
   if (pinMode) {
@@ -40,11 +42,9 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
   const { descriptor, execute, disabled, active } = action;
 
+  const confirming = confirmPress.armedId === descriptor.id;
   function handleClick(e) {
-    if (descriptor.confirm) {
-      if (!window.confirm(descriptor.confirm)) return;
-    }
-    execute(e);
+    confirmPress.press(descriptor.id, !!descriptor.confirm, () => execute(e));
   }
 
   // A boolean `active` (true OR false) marks this as a stateful toggle, so it
@@ -54,13 +54,14 @@ function HotbarSlot({ action, pinMode = false, armed = false, slotIndex = null, 
 
   return (
     <button
-      className={`footer-btn touch-floor${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}`}
+      className={`footer-btn touch-floor${isToggle ? ' footer-btn--toggle' : ''}${active ? ' footer-btn--active' : ''}${confirming ? ' footer-btn--confirm' : ''}`}
       onClick={handleClick}
+      onBlur={confirmPress.disarm}
       disabled={disabled}
       title={chord ? `${descriptor.title} (${chord})` : descriptor.title}
     >
       <span className="hotbar-slot-icon">{descriptor.icon} </span>
-      <span className="hotbar-slot-text">{descriptor.label}</span>
+      <span className="hotbar-slot-text">{confirming ? descriptor.confirm : descriptor.label}</span>
     </button>
   );
 }
@@ -84,6 +85,10 @@ export function Hotbar() {
   const [armedSlot, setArmedSlot] = useState(null);
   const [barWidth,  setBarWidth]  = useState(0);
   const hotbarRef            = useRef(null);
+  const fabRef               = useRef(null);
+  // "New entry from template" opens the Templates manager with no entry
+  // behind it, the same thing Shift+Alt+N does.
+  const openTemplatesManager = useUi((s) => s.openTemplatesManager);
   const openTimerRef         = useRef(null);
   const closeTimerRef        = useRef(null);
   const longPressTimerRef    = useRef(null);
@@ -156,14 +161,19 @@ export function Hotbar() {
     longPressTimerRef.current = setTimeout(() => {
       suppressNextClickRef.current = true;
       setQuickMenuOpen(true);
-      // Self-heal: some mobile browsers swallow the click after a long-press
-      // (context menu wins). Auto-clear so a later legitimate click isn't lost.
-      setTimeout(() => { suppressNextClickRef.current = false; }, 600);
     }, THESAURUS_LONG_PRESS_MS);
   }
   function onFabPointerUp() {
     if (!isMobile) return;
     clearTimeout(longPressTimerRef.current);
+    // Self-heal: some mobile browsers swallow the click after a long-press
+    // (context menu wins), so the suppression must not outlive the gesture
+    // and eat a later, real tap. Timed from the release: it used to run from
+    // the moment the menu opened, so a hold longer than about a second outlived
+    // it and the release's click added an entry as well as opening the menu.
+    if (suppressNextClickRef.current) {
+      setTimeout(() => { suppressNextClickRef.current = false; }, FAB_LONG_PRESS_CLICK_GRACE_MS);
+    }
   }
 
   function onFabClick() {
@@ -202,6 +212,7 @@ export function Hotbar() {
 
       <div className="footer-fab-wrap">
         <button
+          ref={fabRef}
           className="footer-fab"
           onClick={onFabClick}
           onMouseEnter={onFabMouseEnter}
@@ -219,6 +230,8 @@ export function Hotbar() {
 
         {quickMenuOpen && !fabHidden && fabQuickMenuEnabled && (
           <FabQuickMenu
+            onNewFromTemplate={() => { closeMenu(); openTemplatesManager(null); }}
+            newFromTemplateChord={displayChord('new_entry_from_template')}
             actions={allActions}
             onAction={closeMenu}
             onClose={closeMenu}

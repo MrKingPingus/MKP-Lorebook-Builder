@@ -5,6 +5,7 @@ import { useEntries }       from './use-entries.js';
 import { useUi }            from './use-ui.js';
 import { useSettings }      from './use-settings.js';
 import { useReferenceLorebook } from './use-reference-lorebook.js';
+import { useHostStore }     from '../state/host-store.js';
 import { HOTBAR_ACTIONS, HOTBAR_ACTION_MAP } from '../constants/hotbar-actions.js';
 
 // Each resolver receives shared hook outputs and returns { execute, disabled }
@@ -53,7 +54,23 @@ const RESOLVERS = {
     disabled: false,
     active:   crosstalkEnabled,
   }),
+  save_to_host: ({ saveToHost, hostLoaded, hostSaving }) => ({
+    execute:  () => saveToHost?.(),
+    disabled: !hostLoaded || hostSaving || !saveToHost,
+  }),
 };
+
+// In host mode the Save action takes the first empty slot unless the user has
+// already placed it. Display-only — the persisted slot array is untouched, so
+// the standalone hotbar is exactly what the user configured.
+function slotsForHost(slots) {
+  if (slots.includes('save_to_host')) return slots;
+  const empty = slots.indexOf(null);
+  if (empty === -1) return slots;
+  const next = [...slots];
+  next[empty] = 'save_to_host';
+  return next;
+}
 
 export function useHotbarActions() {
   const { undo, redo, canUndo, canRedo }            = useUndoRedo();
@@ -63,6 +80,10 @@ export function useHotbarActions() {
   const setReferenceChooserOpen                     = useUi((s) => s.setReferenceChooserOpen);
   const { hotbarSlots }        = useSettings();
   const { crosstalkEnabled }   = useReferenceLorebook();
+  const hostMode               = useHostStore((s) => s.enabled);
+  const hostLoaded             = useHostStore((s) => s.loaded);
+  const hostSaving             = useHostStore((s) => s.saving);
+  const saveToHost             = useHostStore((s) => s.saveToHost);
 
   const context = {
     undo, redo, canUndo, canRedo,
@@ -70,12 +91,17 @@ export function useHotbarActions() {
     setShowAppendImport, openExportMenu,
     crosstalkEnabled,
     openReferenceChooser: () => setReferenceChooserOpen(true),
+    saveToHost, hostLoaded, hostSaving,
   };
 
-  const slots = hotbarSlots.map((id) => {
+  const effectiveSlots = hostMode ? slotsForHost(hotbarSlots) : hotbarSlots;
+
+  const slots = effectiveSlots.map((id) => {
     if (!id) return null;
 
     const descriptor = HOTBAR_ACTION_MAP[id];
+    // A host-only action in a persisted slot reads as empty outside host mode.
+    if (descriptor?.hostOnly && !hostMode) return null;
     if (!descriptor) {
       if (import.meta.env.DEV) {
         console.warn(`[use-hotbar-actions] slot id "${id}" has no descriptor in HOTBAR_ACTION_MAP`);
@@ -102,6 +128,7 @@ export function useHotbarActions() {
     const descriptor = HOTBAR_ACTION_MAP[id];
     const resolver   = RESOLVERS[id];
     if (!descriptor || !resolver) return null;
+    if (descriptor.hostOnly && !hostMode) return null;
     return { descriptor, ...resolver(context) };
   }).filter(Boolean);
 

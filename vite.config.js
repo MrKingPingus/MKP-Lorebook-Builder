@@ -7,12 +7,11 @@ import { readFileSync } from 'node:fs';
 // whole manifest doesn't end up in the bundle just to get one string.
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
-// The repo name is always the bit after the "/"
-const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? '';
 
 export default defineConfig({
     plugins: [react()],
     define: { __APP_VERSION__: JSON.stringify(version) },
-    // Locally you still get "/", but on Actions you get "/repositoryName/"
-    base: process.env.GITHUB_ACTIONS === 'true' ? `/${repositoryName}/` : '/'
+    // Relative asset paths, so the built dist/ folder can be served from any
+    // path on any host without rebuilding — drop it wherever it should live.
+    base: './'
 });

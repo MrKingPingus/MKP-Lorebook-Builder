@@ -1,0 +1,15 @@
+# Cloudflare Pages headers. Only the frame policy for now — the builder is
+# embedded on CharSnap and nowhere else. A full Content-Security-Policy
+# (script-src, connect-src for the two dictionary APIs, …) is a later step.
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://charsnap.ai https://www.charsnap.ai http://localhost:3000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# The shell must never be served stale: it is what names the content-hashed
+# bundles, and a cached index.html after a deploy points at files that are gone.
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache

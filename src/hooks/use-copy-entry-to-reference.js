@@ -5,6 +5,7 @@
 // the history store is active-only, and cross-book undo isn't supported.
 import { useLorebookStore } from '../state/lorebook-store.js';
 import { cloneEntry }      from '../services/entry-factory.js';
+import { saveLorebook }    from '../services/storage-service.js';
 
 export function useCopyEntryToReference() {
   const lorebooks           = useLorebookStore((s) => s.lorebooks);
@@ -17,7 +18,13 @@ export function useCopyEntryToReference() {
     if (!referenceLorebook) return false;
     const destEntries = referenceLorebook.entries ?? [];
     const clone       = cloneEntry(entry);
-    setLorebook({ ...referenceLorebook, entries: [...destEntries, clone] });
+    const nextRef     = { ...referenceLorebook, entries: [...destEntries, clone] };
+    setLorebook(nextRef);
+    // Autosave only ever persists the ACTIVE book, so a push to the reference
+    // book has to write itself through — otherwise it lives in memory until the
+    // user happens to switch to that book, and is gone if they close the tab
+    // first. Same reason `copyToOtherPanel` in use-bulk-actions.js does.
+    saveLorebook(nextRef);
     return true;
   }
 

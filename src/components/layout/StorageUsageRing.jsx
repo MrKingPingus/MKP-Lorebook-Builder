@@ -12,7 +12,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export function StorageUsageRing() {
   const isMobile = useMobile();
-  const { totalBytes, quotaBytes, percent, tier, breakdown, refresh } = useStorageUsage();
+  const { totalBytes, quotaBytes, percent, tier, tierColor, breakdown, refresh } = useStorageUsage();
   const btnRef = useRef(null);
   const [hoverOpen, setHoverOpen]   = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -48,6 +48,7 @@ export function StorageUsageRing() {
         ref={btnRef}
         type="button"
         className={`storage-usage-ring touch-floor tier-${tier}`}
+        style={{ '--tier-color': tierColor }}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
         onClick={onClick}
@@ -85,6 +86,7 @@ export function StorageUsageRing() {
           quotaBytes={quotaBytes}
           percent={percent}
           tier={tier}
+          tierColor={tierColor}
         />
       )}
 
@@ -95,6 +97,7 @@ export function StorageUsageRing() {
           quotaBytes={quotaBytes}
           percent={percent}
           tier={tier}
+          tierColor={tierColor}
           breakdown={breakdown}
           onRefresh={refresh}
           onClose={() => setDetailOpen(false)}

@@ -1,11 +1,14 @@
 // Root component — composes <FloatingWindow>, mounts autosave effect and keyboard shortcuts
 import { useEffect, useMemo, useCallback } from 'react';
-import { Analytics } from '@vercel/analytics/react';
 import { FloatingWindow }        from './components/layout/FloatingWindow.jsx';
 import { KeyboardHelpOverlay }   from './components/feature/KeyboardHelpOverlay.jsx';
+import { TemplatesManager }      from './components/feature/TemplatesManager.jsx';
 import { ReferenceChooser }      from './components/feature/ReferenceChooser.jsx';
 import { FeatureTour }           from './components/feature/FeatureTour.jsx';
+import { HostConflictDialog }    from './components/feature/HostConflictDialog.jsx';
 import { useAutosave }           from './hooks/use-autosave.js';
+import { useHost, useHostMode }  from './hooks/use-host.js';
+import { useHostStore }          from './state/host-store.js';
 import { useTheme }              from './hooks/use-theme.js';
 import { useAccessibility }      from './hooks/use-accessibility.js';
 import { useKeyboardShortcuts }  from './hooks/use-keyboard-shortcuts.js';
@@ -22,6 +25,8 @@ import { addToIndex }            from './services/lorebook-index.js';
 import { useLorebookStore }      from './state/lorebook-store.js';
 import { useSettingsStore }      from './state/settings-store.js';
 import { useUiStore }            from './state/ui-store.js';
+import { useTemplatesStore }     from './state/templates-store.js';
+import { loadStoredTemplates }   from './hooks/use-templates.js';
 import { useViewportResize }     from './hooks/use-viewport-resize.js';
 import { useCloseLayersOnBreakpoint } from './hooks/use-close-layers-on-breakpoint.js';
 import { usePickFromReference }  from './hooks/use-pick-from-reference.js';
@@ -32,7 +37,7 @@ import {
   WINDOW_STATE_KEY,
 } from './constants/storage-keys.js';
 import { DEFAULT_WINDOW_FRACTION, DEFAULT_WINDOW, LEGACY_DEFAULT_WINDOW } from './constants/defaults.js';
-import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT } from './constants/limits.js';
+import { MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT, CHAR_LIMIT, CHAR_WARN_YELLOW, CHAR_WARN_RED } from './constants/limits.js';
 
 /** Bootstrap: load persisted state from localStorage into stores on first mount. */
 function useBootstrap() {
@@ -78,14 +83,36 @@ function useBootstrap() {
       patch.defaultWindowHeight = DEFAULT_WINDOW.height;
     }
 
+    // Grow counterTiers from the two-stop { yellow, red } shape to the
+    // three-stop { yellow, orange, red } the four-colour and gradient scales
+    // read. The stored `red` was the DANGER stop, so it becomes `orange` and
+    // the new `red` takes the character cap. Written this way round the
+    // three-colour scale keeps painting red at exactly the number the user
+    // chose — only the extra band above it is new. Reading it as the top stop
+    // instead would silently move their red up by 500 characters.
+    const tiers = stored.counterTiers;
+    if (tiers && tiers.orange == null) {
+      patch.counterTiers = {
+        yellow: tiers.yellow ?? CHAR_WARN_YELLOW,
+        orange: tiers.red    ?? CHAR_WARN_RED,
+        red:    CHAR_LIMIT,
+      };
+    }
+
     if (Object.keys(patch).length > 0) {
       applySettings(patch);
       writeJson(SETTINGS_KEY, { ...(settings ?? {}), ...patch });
     }
 
+    // Host mode: the frame fills the iframe, so no window geometry to restore,
+    // and no placeholder book — the host's mkp:load decides what is active.
+    const hostMode = useHostStore.getState().enabled;
+
     // Restore persisted window state, or fall back to default centre-two-thirds layout
-    const saved = readJson(WINDOW_STATE_KEY);
-    if (saved?.size && saved?.pos) {
+    const saved = hostMode ? null : readJson(WINDOW_STATE_KEY);
+    if (hostMode) {
+      // nothing — .floating-window--fill ignores windowPos/windowSize
+    } else if (saved?.size && saved?.pos) {
       // Clamp to current viewport in case screen size changed since last save
       const sw = Math.max(MIN_WINDOW_WIDTH,  Math.min(saved.size.width,  window.innerWidth));
       const sh = Math.max(MIN_WINDOW_HEIGHT, Math.min(saved.size.height, window.innerHeight));
@@ -99,6 +126,11 @@ function useBootstrap() {
       setWindowPos({ x: Math.floor((window.innerWidth - w) / 2), y: 0 });
     }
 
+    // Templates are global and tiny, so they load in one read alongside the
+    // index rather than lazily — every surface that offers them (the entry ⋯
+    // menu, Settings) wants the whole list the moment it opens.
+    useTemplatesStore.getState().setAll(loadStoredTemplates());
+
     // Load lorebook index
     const index = readJson(LOREBOOK_INDEX_KEY, []);
     setLorebookIndex(index);
@@ -111,7 +143,12 @@ function useBootstrap() {
         if (lb) lorebooks[lb.id] = lb;
       }
       setLorebooks(lorebooks);
-      setActiveLorebookId(index[0].id);
+      // In host mode the drafts are loaded but none is activated: use-host
+      // picks (or creates) the one matching the host's lorebook.
+      if (!hostMode) setActiveLorebookId(index[0].id);
+    } else if (hostMode) {
+      // First run inside CharSnap — an empty library, and nothing to create
+      // until the host says what to open.
     } else {
       // First run — create a default lorebook marked as a placeholder so an
       // immediate Import-as-New silently discards it instead of leaving a
@@ -132,6 +169,7 @@ function useBootstrap() {
 
 export default function App() {
   useBootstrap();
+  useHost();
   useAutosave();
   useTheme();
   useAccessibility();
@@ -143,6 +181,7 @@ export default function App() {
   const { bindings }   = useKeybindings();
   const { referenceLorebook, swapReference, crosstalkEnabled } = useReferenceLorebook();
   const { pickFromReferenceMode, exitPickFromReference } = usePickFromReference();
+  const hostMode = useHostMode();
 
   // ui-store setters used by the wired hotkey handlers + the Escape stack.
   const searchMode        = useUiStore((s) => s.searchMode);
@@ -169,6 +208,7 @@ export default function App() {
   // reserved defaults (collision-checked) that stay unwired until their batch.
   const handlers = useMemo(() => ({
     new_entry:           () => addEntry(),
+    new_entry_from_template: () => useUiStore.getState().openTemplatesManager(null),
     undo:                () => undo(),
     redo:                () => redo(),
     toggle_select:       () => setSearchMode(useUiStore.getState().searchMode === 'select' ? 'search' : 'select'),
@@ -187,6 +227,8 @@ export default function App() {
     import_entries:      () => requestImportPick(),
     open_settings:       () => setActiveMenuPanel('settings'),
     keyboard_help:       () => toggleKeyboardHelp(),
+    // Host mode only (the binding is filtered out of the registry otherwise).
+    save_to_host:        () => useHostStore.getState().saveToHost?.(),
   }), [addEntry, undo, redo, setSearchMode, requestSearchFocus, requestFindFocus, setReferenceChooserOpen, referenceLorebook, swapReference, openExportMenuCentered, requestImportPick, setActiveMenuPanel, toggleKeyboardHelp]);
 
   // Any hotkey (other than the help toggle itself) also dismisses the open
@@ -207,8 +249,12 @@ export default function App() {
 
   // Context gate for context-scoped bindings (e.g. crosstalk-only actions).
   const isEnabled = useCallback(
-    (ctx) => (ctx === 'crosstalk' ? crosstalkEnabled : true),
-    [crosstalkEnabled],
+    (ctx) => {
+      if (ctx === 'crosstalk') return crosstalkEnabled;
+      if (ctx === 'host')      return hostMode;
+      return true;
+    },
+    [crosstalkEnabled, hostMode],
   );
 
   useKeyboardShortcuts({ bindings, handlers: wrappedHandlers, isEnabled });
@@ -231,7 +277,10 @@ export default function App() {
           builder, so it has to outlive the view it was started from. */}
       <FeatureTour />
       <KeyboardHelpOverlay />
-      <Analytics />
+      <TemplatesManager />
+      {/* Host mode's "which copy?" prompts. At the root for the same reason as
+          the chooser: it must sit over the mobile detail panel too. */}
+      {hostMode && <HostConflictDialog />}
     </div>
   );
 }

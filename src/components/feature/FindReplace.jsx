@@ -152,6 +152,13 @@ export function FindReplace({
               </button>
             ))}
           </div>
+          <label
+            className="replace-scope-wholeword"
+            title="Only match the text as a whole word: “fox” finds “fox” but not “Foxians”."
+          >
+            <input type="checkbox" checked={!!scope.wholeWord} onChange={() => toggleScope('wholeWord')} />
+            <span>Whole words only</span>
+          </label>
           {crosstalk ? (
             <div className="replace-scope-apply-row">
               <button
