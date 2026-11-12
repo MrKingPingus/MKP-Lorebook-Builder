@@ -93,7 +93,7 @@ Components live at `src/components/[layer]/File.jsx` — two levels deep from `s
 - `docs/tour-voice.md` — how to write feature-tour captions (read before adding or editing a tour step)
 
 ## Deployment
-GitHub Pages. `vite.config.js` reads `GITHUB_REPOSITORY` from the Actions environment and sets the base path to `/<repo-name>/` automatically. Push to `main` triggers deploy via `.github/workflows/main.yml`.
+GitHub Pages. `vite.config.js` builds with relative asset paths (`base: './'`), so the same `dist/` works under Pages' `/<repo-name>/`, inside CharSnap's folder, or at any path. Push to `main` triggers deploy via `.github/workflows/main.yml`. CI (`verify.yml`) serves the build with `vite preview` at the server root.
 
 ## CharSnap (Jason's repo)
 This builder also ships inside `JasonYCao/charsnap-extensions` (folder `mkp-lorebook-builder/`), and Jason edits his copy too. **This repo is the one codebase; his is a destination we publish to and a source we merge from.** The procedure is three scripts — `npm run charsnap:status`, `charsnap:sync`, `charsnap:publish -- X.Y.Z` (`scripts/charsnap.sh`) — and **`docs/charsnap-workflow.md`** explains them, the conflicts to expect, and where things currently stand. Use the scripts rather than hand-typed git: they refuse to sync onto a dirty tree, to publish a build that is behind Jason's `main`, or to publish anything not yet pushed here. Never reword or squash a `Sync charsnap-extensions@<sha>` commit; the next sync finds its base by that subject.
