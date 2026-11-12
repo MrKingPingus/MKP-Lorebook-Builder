@@ -9483,3 +9483,15 @@ kbd {
 .entry-card--reference-mirror .description-area-label .field-label-hint { white-space: nowrap; }
 
 .folder-header-spacer { flex: 1; align-self: stretch; cursor: default; }
+
+/* Find & Replace → Whole words only. */
+.replace-scope-wholeword {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 6px;
+  font-size: 0.75rem;
+  color: var(--text);
+  cursor: pointer;
+}
+@media (max-width: 767px) { .replace-scope-wholeword { min-height: var(--touch-floor); } }

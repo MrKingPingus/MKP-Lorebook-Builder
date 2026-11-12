@@ -2596,6 +2596,45 @@ const SCENARIOS = [
       await page.locator('.thesaurus-popover').count(), 1);
   }),
 
+  // Find & Replace on desktop had no coverage at all (plan.md, Open/deferred).
+  // Tester: replacing "foxian" turned "Foxians" into "bobs burgerss". Whole
+  // words is now the default, so that search finds nothing inside "Foxians".
+  scenario('Find & Replace: whole words by default, and the replace lands', async (page, check) => {
+    await openBuilderWithFixture(page);
+    const first = page.locator('.entry-card').first();
+    await first.locator('.card-action-btn', { hasText: 'Expand' }).click();
+    await first.locator('.entry-name-field').fill('Foxians');
+    await first.locator('.description-textarea').fill('A foxian and the Foxians.');
+    await settle(page, 300);
+
+    await page.locator('.search-mode-select').first().selectOption('find-replace');
+    await page.locator('.find-input').first().fill('foxian');
+    await page.locator('.replace-input').first().fill('bobs burgers');
+    await settle(page, 300);
+    const button = page.locator('.replace-all-btn').first();
+    check('whole words: only the standalone word counts', (await button.innerText()).includes('(1)'), true);
+
+    await button.click();
+    await page.locator('.replace-scope-popover').waitFor({ timeout: 4000 });
+    const whole = page.locator('.replace-scope-wholeword input');
+    check('the option is on by default', await whole.isChecked(), true);
+    await page.locator('.replace-scope-proceed').first().click();
+    await settle(page, 500);
+    const book = await exportJson(page);
+    const entry = Object.values(book.entries).find((e) => e.name.startsWith('Foxians') || e.name.startsWith('bobs'));
+    check('the name "Foxians" is untouched', entry.name, 'Foxians');
+    check('and only the whole word was replaced', entry.description, 'A bobs burgers and the Foxians.');
+
+    // Off, it finds inside words again, as it always did.
+    await page.locator('.find-input').first().fill('Foxian');
+    await settle(page, 200);
+    await button.click();
+    await page.locator('.replace-scope-popover').waitFor({ timeout: 4000 });
+    await page.locator('.replace-scope-wholeword input').uncheck();
+    await settle(page, 200);
+    check('with it off, matches inside words count again', (await button.innerText()).includes('(2)'), true);
+  }),
+
   // Tester: the folder name filled the whole bar, so every click on the bar
   // renamed, and opening or closing meant finding the small button. The bar
   // now opens and closes on a double-click, like an entry's header.
