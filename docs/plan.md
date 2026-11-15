@@ -969,11 +969,18 @@ Won't revisit unless something changes: per-PoS-vs-per-sense granularity (the AP
 **Lorebook Crosstalk — Second Window Mode**
 For power users comparing large lorebooks, a second floating window may beat the current panel-within-window approach. Depends on Phase 9 crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
 
-**Lorebook self-reference**
-Intra-book entry-vs-entry consistency analysis — an adaptation of crosstalk against a single book. Scope (reuse the crosstalk pipeline vs. a new field-level diff) to be decided when picked up.
+**Keep an entry in view, and compare two entries in one book (GitHub #137)**
+Previously filed as "Lorebook self-reference: intra-book consistency analysis". **Reframed 2026-11-15 when picked up, because that framing promised the wrong thing.** Real consistency checking — "these two entries contradict each other" — needs language understanding a browser-only app does not have, and the checks that *can* be done mechanically (trigger overlap) already run per entry and belong to the All-Conflicts Panel below. What #137 asked for is narrower and buildable: look at one entry in the same book while working on another.
+
+Decided 2026-11-15:
+- **A read-only view of a second entry, kept on screen while editing, with a word-level diff as a toggle on it.** The view is the core; the diff is secondary because `diffEntries` on two *different* entries is mostly noise — it earns its place only on near-variants ("Elara (child)" / "Elara (adult)", entries from one template).
+- **Reached from the entry ⋯ menu, independent of crosstalk.** Pointing the reference slot at the active book was rejected: crosstalk pairs by name (`use-name-match.js`), so every entry would pair with itself — every badge "in both", every diff empty, every trigger scanned twice — and the store's reference ≠ active invariant is load-bearing for swap-on-edit-click, copy-to-reference and lateral find & replace. `diffEntries(before, after)` already works on any two entries, so the diff needs no new service.
+- **Duplicate lorebook (0.11.0) already gives #137's own fallback**: duplicate, pair the copy as reference, and crosstalk runs. It is a snapshot that goes stale, which is the gap this feature fills.
+
+Placement (desktop slot, mobile surface, interaction with an already-paired reference book) is not yet decided.
 
 **All-Conflicts Panel**
-Aggregate view of every trigger overlap across the active lorebook in one place (current crosstalk surfaces conflicts per-entry). Lists each conflicting trigger with the entries that share it, plus batch Allow/Revoke at the lorebook level. Phase 9 crosstalk may subsume parts of this.
+Aggregate view of every trigger overlap across the active lorebook in one place (current crosstalk surfaces conflicts per-entry). Lists each conflicting trigger with the entries that share it, plus batch Allow/Revoke at the lorebook level. Phase 9 crosstalk may subsume parts of this. **Also the home for any mechanical intra-book consistency checks** (moved here 2026-11-15 from the old "Lorebook self-reference" entry) — trigger overlap is the one that exists; duplicate or near-duplicate entry names would be the obvious next.
 
 **Entry Checkpoints — inline quick actions + Settings management**
 Apply the Phase 12 Templates management pattern to the Entry Checkpoints system: quick per-checkpoint actions inline where checkpoints are used, plus a fuller management surface in Settings — the same "quick actions where you are + full management in Settings" split. Noted 2026-07-24 while planning Entry Templates; the pattern fits cleanly. The 2026-08-25 refinement below took the first bite (per-checkpoint overwrite landed inline); the Settings half is untouched. Scope to define when picked up.
