@@ -18,6 +18,7 @@ import { useEntryDetail } from '../../hooks/use-entry-detail.js';
 import { useCrosstalk }   from '../../hooks/use-crosstalk.js';
 import { useNameMatch }   from '../../hooks/use-name-match.js';
 import { useRollback }    from '../../hooks/use-rollback.js';
+import { useKeepInView, useCloseKeptEntry } from '../../hooks/use-kept-entry.js';
 import { diffEntries, entriesShallowEqual } from '../../services/diff-service.js';
 import { useIsSelectMode, useIsSelected, useToggleSelected,
          useStagedType, useSetStagedType }              from '../../hooks/use-selection.js';
@@ -56,6 +57,8 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   const setCrossFlashId         = useUi((s) => s.setCrossFlashId);
   const compareEntryId          = useUi((s) => s.compareEntryId);
   const setCompareEntryId       = useUi((s) => s.setCompareEntryId);
+  const { isKept }              = useKeepInView(entry.id);
+  const closeKeptEntry          = useCloseKeptEntry();
   const { escapeHtml, escapeRegex } = useHtmlEscape();
   const isMobile     = useMobile();
   const hostMode     = useHostMode(); // hard-caps the name field at CharSnap's limit
@@ -163,6 +166,9 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
   function onBadgeClick(e) {
     e.stopPropagation();
     if (!sameNameRefId) return;
+    // Both outcomes land in the reference pane, which a kept entry is
+    // standing in for — hand the pane back first.
+    closeKeptEntry();
     if (matchedIsEqual) {
       jumpToReference(sameNameRefId);
     } else {
@@ -376,6 +382,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
             {entry.hiddenFromExport && <ExportOffIcon />}
             {entry.alwaysOn === true && <AlwaysOnIcon />}
             {(entry.triggerCondition ?? '').trim() !== '' && <ConditionIcon />}
+            {isKept && <span className="kept-pill" title="Kept in view — open another entry to see it">in view</span>}
             {!hideEntryStats && (
               <div className="entry-card-mobile-stats">
                 <span style={{ color: warningColor(entry.triggers.length, triggerStops(warningScale), { gradient: isGradient(warningScale) }) }}>
@@ -476,6 +483,7 @@ export function EntryCard({ entry, index, onUpdate, onRemove, onDragHandleMouseD
         {!isCondensed && (entry.triggerCondition ?? '').trim() !== '' && (
           <ConditionIcon onClick={isSelectMode ? undefined : showCondition} />
         )}
+        {isKept && <span className="kept-pill" title="Kept in view beside the editor">in view</span>}
         {!isCondensed && sameNameRefId && (
           <button
             className={`entry-ref-badge entry-ref-badge--header touch-floor${matchedIsEqual ? ' entry-ref-badge--match' : ' entry-ref-badge--diff'}${isComparing && !matchedIsEqual ? ' entry-ref-badge--comparing' : ''}`}

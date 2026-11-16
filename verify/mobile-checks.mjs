@@ -214,9 +214,9 @@ const SCENARIOS = [
 
     await tap(page, page.locator('.entry-detail-more'));
     check('⋯ opens a sheet', await sheet.count(), 1);
-    check('with the four actions, and a way out',
+    check('with the five actions, and a way out',
       (await sheet.locator('.mea-item').allInnerTexts()).join(' | '),
-      'Copy to lorebook… | Move to lorebook… | Templates… | Delete entry | Cancel');
+      'Copy to lorebook… | Move to lorebook… | Templates… | Keep in view | Delete entry | Cancel');
     await sweepPose('entry ⋯ sheet');
 
     // ── copy, into a book made on the spot ──────────────────────────────────
@@ -257,6 +257,45 @@ const SCENARIOS = [
     check('Delete entry removes it and closes the editor',
       await page.locator('.entry-card').count(), total - 2);
   }),
+
+  // Keep in view (#137) on a phone: kept from the editor's ⋯ sheet, which goes
+  // back to the list to pick the entry to work on; a bar in that entry's
+  // editor opens the kept one in a peek, with the same own-words highlight.
+  scenario('Mobile: Keep in view — bar, peek, highlight and swap', async (page, check, sweepPose) => {
+    await openBuilderWithFixture(page);
+    const sheet = page.locator('.mea-sheet');
+    const nameOfOpen = async () => (await page.locator('.entry-detail-title').innerText()).trim();
+
+    await openEntryDetail(page, 1);
+    const keptName = await nameOfOpen();
+    await tap(page, page.locator('.entry-detail-more'));
+    await tap(page, sheet.locator('.mea-item', { hasText: 'Keep in view' }));
+    await settle(page, 300);
+    check('keeping goes back to the list', await page.locator('.entry-detail-panel--open').count(), 0);
+    check('where its row says so', await page.locator('.entry-card--mobile .kept-pill').count(), 1);
+
+    await openEntryDetail(page, 0);
+    const otherName = await nameOfOpen();
+    check('another entry\'s editor shows the bar', (await page.locator('.kept-bar').innerText()).includes(keptName), true);
+    await sweepPose('entry editor with kept bar', { scope: '.entry-detail-panel--open' });
+    await tap(page, page.locator('.kept-bar'));
+    const peek = page.locator('.kept-entry-overlay');
+    await peek.waitFor({ timeout: 4000 });
+    await tap(page, peek.locator('.rollback-diff-toggle'));
+    check('the peek compares with the open entry', (await peek.locator('.kept-peek-vs').innerText()).includes(otherName), true);
+    check('marking only the kept entry\'s own words', await peek.locator('.diff-seg--del, .diff-trigger--removed').count(), 0);
+    await sweepPose('kept peek', { scope: '.kept-entry-overlay' });
+
+    await tap(page, peek.locator('button', { hasText: 'Swap' }));
+    await settle(page, 300);
+    check('Swap opens the kept entry in the editor', await nameOfOpen(), keptName);
+    check('and keeps the one you were editing', (await page.locator('.kept-bar').innerText()).includes(otherName), true);
+
+    await tap(page, page.locator('.kept-bar'));
+    await tap(page, page.locator('.kept-entry-overlay button', { hasText: 'Stop keeping in view' }));
+    await settle(page, 200);
+    check('Stop keeping in view removes the bar', await page.locator('.kept-bar').count(), 0);
+  }, PHONE),
 
   // #128: a phone has no status footer, so the feedback links' only home was
   // the lander. They now sit at the foot of Settings, with the version.

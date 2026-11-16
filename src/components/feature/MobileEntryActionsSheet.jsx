@@ -1,5 +1,5 @@
 // The phone entry editor's ⋯ sheet: copy or move this entry to another
-// lorebook, open Templates for it, or delete it.
+// lorebook, open Templates for it, keep it in view, or delete it.
 //
 // The phone's counterpart to the desktop card's ⋯ menu. That menu's hover
 // flyouts have no room beside them on a phone, so this is a bottom sheet that
@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { useUi }           from '../../hooks/use-ui.js';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
 import { useEntryTransfer, TRANSFER_COPY, TRANSFER_MOVE } from '../../hooks/use-entry-transfer.js';
+import { useKeepInView }   from '../../hooks/use-kept-entry.js';
 import { DISMISS_PRIORITY } from '../../services/dismiss-stack.js';
 import { MAX_LOREBOOKS } from '../../constants/limits.js';
 
@@ -19,8 +20,9 @@ const VIEW_PICK    = 'pick';     // choosing a destination lorebook
 const VIEW_CONFIRM = 'confirm';  // a move, asking first
 const VIEW_RESULT  = 'result';   // a copy landed
 
-export function MobileEntryActionsSheet({ entry, onClose, onDelete, onLeftBook }) {
+export function MobileEntryActionsSheet({ entry, onClose, onDelete, onLeftBook, onKept }) {
   const openTemplatesManager = useUi((s) => s.openTemplatesManager);
+  const { isKept, toggleKeep } = useKeepInView(entry.id);
   const {
     transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook, moveWarning,
   } = useEntryTransfer();
@@ -84,6 +86,15 @@ export function MobileEntryActionsSheet({ entry, onClose, onDelete, onLeftBook }
             <button type="button" className="mea-item" onClick={() => startTransfer(TRANSFER_COPY)}>Copy to lorebook…</button>
             <button type="button" className="mea-item" onClick={() => startTransfer(TRANSFER_MOVE)}>Move to lorebook…</button>
             <button type="button" className="mea-item" onClick={() => { onClose(); openTemplatesManager(entry.id); }}>Templates…</button>
+            {/* Keeping the entry you are looking at means you are about to edit
+                another one, so the editor closes back to the list to pick it. */}
+            <button
+              type="button"
+              className="mea-item"
+              onClick={() => { toggleKeep(); if (isKept) onClose(); else onKept(); }}
+            >
+              {isKept ? 'Stop keeping in view' : 'Keep in view'}
+            </button>
             <button type="button" className="mea-item mea-item--danger" onClick={onDelete}>Delete entry</button>
             <button type="button" className="mea-item mea-item--quiet" onClick={onClose}>Cancel</button>
           </>

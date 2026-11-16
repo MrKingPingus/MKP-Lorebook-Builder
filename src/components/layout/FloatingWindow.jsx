@@ -5,6 +5,9 @@ import { useMenuPanel }         from '../../hooks/use-menu-panel.js';
 import { useReferenceLorebook } from '../../hooks/use-reference-lorebook.js';
 import { useSettings }          from '../../hooks/use-settings.js';
 import { useHostMode, useHostState } from '../../hooks/use-host.js';
+import { useHasKeptEntry }       from '../../hooks/use-kept-entry.js';
+import { useKeptEntryLifecycle } from '../../hooks/use-kept-entry-lifecycle.js';
+import { useLastFocusedEntry }   from '../../hooks/use-last-focused-entry.js';
 import { WindowHeader }         from './WindowHeader.jsx';
 import { Hotbar }            from './Hotbar.jsx';
 import { StatusFooter }      from './StatusFooter.jsx';
@@ -13,6 +16,8 @@ import { ResizeHandles }     from './ResizeHandles.jsx';
 import { MenuPanel }         from './MenuPanel.jsx';
 import { BuildPanel }          from '../feature/BuildPanel.jsx';
 import { ReferencePanel }      from '../feature/ReferencePanel.jsx';
+import { KeptEntryPanel }      from '../feature/KeptEntryPanel.jsx';
+import { KeptEntryOverlay }    from '../feature/KeptEntryOverlay.jsx';
 import { GlobalFilterBar }     from '../feature/GlobalFilterBar.jsx';
 import { Lander }              from '../feature/Lander.jsx';
 import { AppendImportPanel }   from '../feature/AppendImportPanel.jsx';
@@ -41,9 +46,19 @@ export function FloatingWindow() {
   // In fixed-column modes, the active pane is pinned regardless of the
   // activeSide flag; in click-to-edit mode, panel order follows activeSide so
   // a swap-on-click keeps the clicked panel in the same physical slot.
-  const buildOnRight = crosstalkSwapMode === 'click-to-edit'
+  const swapModeBuildOnRight = crosstalkSwapMode === 'click-to-edit'
     ? activeSide === 'right'
     : crosstalkSwapMode === 'fixed-active-right';
+
+  // Keep in view (#137) takes the second pane, ahead of a paired reference
+  // book, which comes back when it closes. Without a pairing there is no swap
+  // mode to consult, and the kept entry sits on the right of the editor.
+  const hasKeptEntry = useHasKeptEntry();
+  useKeptEntryLifecycle();
+  useLastFocusedEntry();
+  const showSecondPane = !isMobile && (hasKeptEntry || crosstalkEnabled);
+  const buildOnRight   = crosstalkEnabled && swapModeBuildOnRight;
+  const secondPane     = hasKeptEntry ? <KeptEntryPanel /> : <ReferencePanel />;
 
   // Handles window expansion/collapse and re-centering when menu panel opens/closes (desktop only)
   useMenuPanel();
@@ -97,11 +112,11 @@ export function FloatingWindow() {
                   Mobile never renders the second slot — crosstalk on mobile
                   surfaces via inline annotations and overlays instead. */}
               <div className="pane-split-slot">
-                {!isMobile && crosstalkEnabled && buildOnRight ? <ReferencePanel /> : <BuildPanel />}
+                {showSecondPane && buildOnRight ? secondPane : <BuildPanel />}
               </div>
-              {!isMobile && crosstalkEnabled && (
+              {showSecondPane && (
                 <div className="pane-split-slot">
-                  {buildOnRight ? <BuildPanel /> : <ReferencePanel />}
+                  {buildOnRight ? <BuildPanel /> : secondPane}
                 </div>
               )}
               <MenuPanel />
@@ -140,6 +155,7 @@ export function FloatingWindow() {
               is tapped from a chip popover, search hit, name badge, crosstalk
               row, or browse sheet. */}
           {isMobile && <ReferenceEntryOverlay />}
+          {isMobile && <KeptEntryOverlay />}
 
           {/* Lorebook name prompt — appears after new lorebook creation */}
           <LorebookNameModal />

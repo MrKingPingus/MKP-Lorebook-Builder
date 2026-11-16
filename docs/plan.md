@@ -969,7 +969,7 @@ Won't revisit unless something changes: per-PoS-vs-per-sense granularity (the AP
 **Lorebook Crosstalk — Second Window Mode**
 For power users comparing large lorebooks, a second floating window may beat the current panel-within-window approach. Depends on Phase 9 crosstalk being fully stable. Significant UI complexity — z-index management between two draggable windows.
 
-**Keep an entry in view, and compare two entries in one book (GitHub #137)**
+**Keep an entry in view, and compare two entries in one book (GitHub #137)** — **built 2026-11-16 for 0.12.0**, one kept entry; several is deferred (below).
 Previously filed as "Lorebook self-reference: intra-book consistency analysis". **Reframed 2026-11-15 when picked up, because that framing promised the wrong thing.** Real consistency checking — "these two entries contradict each other" — needs language understanding a browser-only app does not have, and the checks that *can* be done mechanically (trigger overlap) already run per entry and belong to the All-Conflicts Panel below. What #137 asked for is narrower and buildable: look at one entry in the same book while working on another.
 
 Decided 2026-11-15:
@@ -977,7 +977,26 @@ Decided 2026-11-15:
 - **Reached from the entry ⋯ menu, independent of crosstalk.** Pointing the reference slot at the active book was rejected: crosstalk pairs by name (`use-name-match.js`), so every entry would pair with itself — every badge "in both", every diff empty, every trigger scanned twice — and the store's reference ≠ active invariant is load-bearing for swap-on-edit-click, copy-to-reference and lateral find & replace. `diffEntries(before, after)` already works on any two entries, so the diff needs no new service.
 - **Duplicate lorebook (0.11.0) already gives #137's own fallback**: duplicate, pair the copy as reference, and crosstalk runs. It is a snapshot that goes stale, which is the gap this feature fills.
 
-Placement (desktop slot, mobile surface, interaction with an already-paired reference book) is not yet decided.
+Decided 2026-11-16, after a mockup of real-app screenshots (`mockup-keep-in-view.html`, throwaway — deleted once built; it is in git history):
+- **Desktop: the second pane.** The kept entry renders read-only where a paired reference book goes. Rejected: a floating card (it covers the field being typed in — measured in the mockup, it hid the condition field) and a strip above the list (it has to clamp a 1500-character entry to about two lines, which defeats keeping it in view).
+- **A paired reference book yields the pane** while an entry is kept, with one line saying it comes back on Close. The pairing itself is untouched.
+- **Highlight Differences marks only the kept entry's own words** — the ones the compared entry lacks — and never shows the other entry's words struck through. Found while mocking: the checkpoint panel's inline both-sides rendering turned even the best case (two versions of one character) into word salad. The side-by-side compare mode already draws each side's own words, so this follows that precedent rather than the checkpoint one.
+- **"Compared with" picker**, because desktop has no single entry being edited — several cards can be open. It follows the entry you last worked in until you pick one.
+- **Mobile: a slim "In view" bar under the entry editor's header** opens the existing full-screen peek pattern. It is a quick flip, not side by side; 375px has no room for that.
+
+Decided while building (2026-11-16):
+- **"The entry being worked in" on desktop is the card last focused or pressed** (`use-last-focused-entry.js`), not the last one expanded: typing needs focus, so it is the better proxy. It listens for `pointerdown` too, because Safari does not focus a button on click. The kept entry itself is never recorded, so editing it in the list does not make it its own comparison.
+- **Clearing, not hiding**, when the kept entry's book stops being active or the entry is deleted (`use-kept-entry-lifecycle.js`). A view that reappeared by itself after an undo or a role swap back would be state the user had stopped thinking about.
+- **A crosstalk badge on an entry card closes the kept view first.** Both of its outcomes (jump, side-by-side compare) land in the reference pane the kept entry is standing in for.
+- **Mobile: keeping an entry closes its editor back to the list.** You keep the entry you are looking at because you are about to edit another one; staying in the editor gave no sign anything happened, since the bar is hidden while the kept entry is the one open.
+- **The pane header wraps, deliberately** (layout rule 1 says ask first only before destructive fixes). Label, name and three buttons need ~440px; a pane at a 720px window has ~360, which squeezed the name to 9px, and at 600px the buttons overflowed. The name keeps a 90px floor and the buttons drop to a right-aligned second row.
+- **The kept peek's controls carry `touch-floor`.** They inherit the reference peek's styles, which measured short of the 44px floor (Back 27px tall, footer buttons 39px) — so the reference peek has the same shortfall. Not fixed here; it is outside this change.
+
+**Several kept entries — wanted, deliberately deferred (2026-11-16).** The user wants this and chose to ship one kept entry first to keep it simple. The case for it is not the empty pane space but **independent scrolling**: a set of kept entries stays put while the main list scrolls, which matters when writing an entry that has to agree with several others (a scene against a location, two characters and a faction). What it would change, worked out before deferring:
+- Highlight Differences, its "Compared with" picker, Swap and Close all move from the pane header onto each kept card — diffing several unrelated entries against one compared entry is noise. The pane header keeps only **Clear all**, shown once two or more are kept.
+- Kept cards stack in the order they were kept (newest at the bottom, so nothing moves under you), and need the reference card's Details fold, since three long entries fill the pane.
+- Mobile: the bar reads "In view: 3 entries · Show ›" and opens a short list; a name opens the peek.
+- State is `keptEntry` (one) today; this would make it a list. That is the main retrofit cost, and the reason to settle it before anything else builds on the single shape.
 
 **All-Conflicts Panel**
 Aggregate view of every trigger overlap across the active lorebook in one place (current crosstalk surfaces conflicts per-entry). Lists each conflicting trigger with the entries that share it, plus batch Allow/Revoke at the lorebook level. Phase 9 crosstalk may subsume parts of this. **Also the home for any mechanical intra-book consistency checks** (moved here 2026-11-15 from the old "Lorebook self-reference" entry) — trigger overlap is the one that exists; duplicate or near-duplicate entry names would be the obvious next.

@@ -42,6 +42,7 @@ import { useAnchoredPosition } from '../../hooks/use-anchored-position.js';
 import { useDismissLayer }     from '../../hooks/use-dismiss-layer.js';
 import { useFolders }          from '../../hooks/use-folders.js';
 import { useEntryTransfer, TRANSFER_COPY, TRANSFER_MOVE } from '../../hooks/use-entry-transfer.js';
+import { useKeepInView }       from '../../hooks/use-kept-entry.js';
 import { DISMISS_PRIORITY }    from '../../services/dismiss-stack.js';
 import { NO_FOLDER_LABEL, NEW_FOLDER_NAME } from '../../constants/folders.js';
 import { ENTRY_MENU_WIDTH_PX, MAX_LOREBOOKS } from '../../constants/limits.js';
@@ -97,6 +98,7 @@ function SubmenuRow({ id, label, title, disabled, openSub, onHover, onLeave, onT
 export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
   const { folders, moveEntryToFolder, createFolderWithEntries, foldersSuppressed } = useFolders();
   const { transferTargets, canCreateTarget, transferTo, transferToNewLorebook, goToLorebook, moveWarning } = useEntryTransfer();
+  const { isKept, toggleKeep } = useKeepInView(entry.id);
   // A move waiting on its inline confirmation: `{ destId, destName }` for an
   // existing book, or `{ newName, destName }` for one that does not exist yet.
   const [pendingMove, setPendingMove] = useState(null);
@@ -529,6 +531,23 @@ export function EntryActionsMenu({ entry, onUpdate, onRemove }) {
             type="button"
           >
             <span className="entry-actions-item-label">Templates…</span>
+          </button>
+
+          {/* Keep in view (#137): this entry, read-only, in the second pane
+              while you edit others. Ticked while it is the one kept. */}
+          <button
+            className="entry-actions-item"
+            onClick={act(toggleKeep)}
+            onMouseEnter={leaveSub}
+            title={isKept
+              ? 'Shown beside the editor — choose to stop keeping it in view'
+              : 'Show this entry read-only beside the editor while you work on others'}
+            role="menuitemcheckbox"
+            aria-checked={isKept}
+            type="button"
+          >
+            <span className="entry-actions-item-label">Keep in view</span>
+            <span className="entry-actions-tick" aria-hidden="true">{isKept ? '✓' : ''}</span>
           </button>
 
           <div className="entry-actions-divider" role="separator" />

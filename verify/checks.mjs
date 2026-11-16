@@ -3739,6 +3739,92 @@ const SCENARIOS = [
     check('a deleted category hands its templates back to Uncategorized',
       (await manager.locator('.tpl-list-heading').allInnerTexts()).join(', '), 'UNCATEGORIZED');
   }),
+  // ── Keep in view (#137) ────────────────────────────────────────────────────
+  // One entry, read-only, in the second pane. Highlight Differences compares it
+  // against the entry last worked in and marks only the kept entry's OWN words
+  // — never the other side's struck through, which read as word salad.
+  scenario('Keep in view: second pane, highlight, swap, and clearing', async (page, check) => {
+    await page.addInitScript(() => { window.confirm = () => true; });
+    await openBuilderWithFixture(page);
+    const cards  = page.locator('.build-panel .entry-card');
+    const pane   = page.locator('.kept-panel');
+    const nameOf = async (i) => (await cards.nth(i).locator('.entry-label').innerText()).replace(/^#\d+:\s*/, '').trim();
+    const menuItem = async (i) => {
+      await cards.nth(i).locator('.entry-actions-btn').click();
+      return page.locator('.entry-actions-menu .entry-actions-item', { hasText: 'Keep in view' });
+    };
+    const keptName = await nameOf(1);
+    const otherName = await nameOf(0);
+
+    check('no second pane before anything is kept', await page.locator('.pane-split-slot').count(), 1);
+    await (await menuItem(1)).click();
+    await pane.waitFor({ timeout: 4000 });
+    check('⋯ → Keep in view opens the second pane', await page.locator('.pane-split-slot').count(), 2);
+    check('showing that entry', await pane.locator('.kept-panel-name').innerText(), keptName);
+    check('and its row in the list says so', await cards.nth(1).locator('.kept-pill').count(), 1);
+    check('only its row', await page.locator('.build-panel .kept-pill').count(), 1);
+
+    // Work in another entry, then turn the highlight on: it follows that one.
+    await cards.nth(0).locator('.entry-card-header button', { hasText: 'Expand' }).click();
+    await settle(page, 200);
+    await pane.locator('.rollback-diff-toggle').click();
+    check('Highlight Differences compares with the entry last worked in',
+      await pane.locator('.kept-panel-select').evaluate((el) => el.selectedOptions[0].text), otherName);
+    check('it marks words only this entry has',
+      (await pane.locator('.reference-entry-description .diff-seg--add').count()) > 0, true);
+    check('and never strikes through the other entry\'s words',
+      await pane.locator('.diff-seg--del, .diff-trigger--removed').count(), 0);
+    check('the kept text reads in full, unchanged',
+      (await pane.locator('.reference-entry-description').innerText()).replace(/\s+/g, ' ').trim().length > 0, true);
+
+    // Swap: the pair trades places and the old kept entry opens for editing.
+    await pane.locator('.kept-panel-actions button', { hasText: 'Swap' }).click();
+    await settle(page, 300);
+    check('Swap keeps the entry you were editing', await pane.locator('.kept-panel-name').innerText(), otherName);
+    check('and compares it with the one you swapped out',
+      await pane.locator('.kept-panel-select').evaluate((el) => el.selectedOptions[0].text), keptName);
+    check('which is now open for editing',
+      await page.evaluate(() => document.activeElement?.closest('.entry-card')?.querySelector('.entry-label')?.textContent ?? ''),
+      `#2: ${keptName}`);
+
+    // The menu item is a tick, and choosing it again stops keeping.
+    const item = await menuItem(0);
+    check('the kept entry\'s menu item is ticked', await item.getAttribute('aria-checked'), 'true');
+    await item.click();
+    check('choosing it again closes the pane', await page.locator('.pane-split-slot').count(), 1);
+
+    // An entry that stops existing takes the view with it.
+    await (await menuItem(2)).click();
+    await pane.waitFor({ timeout: 4000 });
+    await cards.nth(2).locator('.entry-actions-btn').click();
+    await page.locator('.entry-actions-menu .entry-actions-item--destructive').click();
+    await settle(page, 300);
+    check('deleting the kept entry clears the view', await pane.count(), 0);
+  }),
+
+  scenario('Keep in view: a paired reference book yields the pane and comes back', async (page, check) => {
+    const { referenceName } = await pairCrosstalk(page);
+    const cards = page.locator('.build-panel .entry-card');
+    await cards.nth(0).locator('.entry-actions-btn').click();
+    await page.locator('.entry-actions-menu .entry-actions-item', { hasText: 'Keep in view' }).click();
+    await page.locator('.kept-panel').waitFor({ timeout: 4000 });
+    check('the kept entry takes the reference pane', await page.locator('.reference-panel').count(), 0);
+    check('still two panes', await page.locator('.pane-split-slot').count(), 2);
+    check('a note names the book that will come back',
+      (await page.locator('.kept-panel-note').innerText()).includes(referenceName), true);
+    await page.locator('.kept-panel-actions button', { hasText: 'Close' }).click();
+    check('Close brings the reference book back', await page.locator('.reference-panel').count(), 1);
+
+    // A crosstalk badge points into the reference pane, so it hands the pane back.
+    await cards.nth(0).locator('.entry-actions-btn').click();
+    await page.locator('.entry-actions-menu .entry-actions-item', { hasText: 'Keep in view' }).click();
+    await page.locator('.kept-panel').waitFor({ timeout: 4000 });
+    await page.locator('.build-panel .entry-ref-badge').first().click();
+    await settle(page, 300);
+    check('a crosstalk badge closes the kept view', await page.locator('.kept-panel').count(), 0);
+    check('and the reference pane is back for it', await page.locator('.reference-panel').count(), 1);
+  }),
+
 ];
 
 // A full run launches a fresh browser per scenario, so it costs minutes. When

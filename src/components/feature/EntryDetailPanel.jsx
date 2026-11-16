@@ -16,6 +16,7 @@ import { TriggerChips }    from './TriggerChips.jsx';
 import { DescriptionArea } from './DescriptionArea.jsx';
 import { ConditionField }  from './ConditionField.jsx';
 import { MobileEntryActionsSheet } from './MobileEntryActionsSheet.jsx';
+import { KeptEntryBar }    from './KeptEntryBar.jsx';
 import { SuggestionsTray } from './SuggestionsTray.jsx';
 import { RollbackPanel }   from './RollbackPanel.jsx';
 import { useDismissLayer } from '../../hooks/use-dismiss-layer.js';
@@ -141,12 +142,15 @@ export function EntryDetailPanel() {
         </button>
       </div>
 
+      {isOpen && <KeptEntryBar />}
+
       {actionsOpen && entry && (
         <MobileEntryActionsSheet
           entry={entry}
           onClose={() => setActionsOpen(false)}
           onDelete={() => { setActionsOpen(false); handleRemove(); }}
           onLeftBook={() => { setActionsOpen(false); handleBack(); }}
+          onKept={() => { setActionsOpen(false); handleBack(); }}
         />
       )}
 

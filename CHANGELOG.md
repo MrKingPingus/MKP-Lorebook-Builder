@@ -2,6 +2,16 @@
 
 ---
 
+## 0.12.0 — 2026-11-16
+
+### New
+
+- **Keep an entry in view while you work on another.** Choose **Keep in view** from an entry's **⋯** menu and it stays on screen, read-only, beside whatever you edit next — handy for keeping two characters, or a character and the place they live, consistent. On a computer it sits in the right-hand pane; if you have a reference lorebook paired, the kept entry borrows its pane and the reference book comes back when you press **Close**. On a phone, keep an entry from the **⋯** in its editor, open the entry you want to work on, and tap **In view** under the title to flip to the kept one.
+
+  **Highlight Differences** marks the words in the kept entry that the entry you're working on doesn't have, and its triggers that the other lacks — useful for versions of the same character, or entries started from one template. On a computer, **Compared with** chooses which entry it's measured against; it follows the one you last worked in until you pick. **Swap** trades the two: you edit the kept entry, and the one you were editing stays in view. ([#137](https://github.com/MrKingPingus/MKP-Lorebook-Builder/issues/137))
+
+---
+
 ## 0.11.0 — 2026-11-12
 
 ### New

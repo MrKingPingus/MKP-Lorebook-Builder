@@ -48,6 +48,15 @@ export const useUiStore = create((set) => ({
   pickFromReferenceMode: false, // mobile-only — true while the user is in the swap-and-back "Pick from Reference" pose (browsing reference as if it were active to multi-select for copy back to original active)
   crossFlashId:          null,  // entry id currently flashing as the target of a cross-pane "in both books" jump; auto-clears on a timer
   compareEntryId:        null,  // active-side entry id currently in side-by-side compare mode against its same-named reference counterpart; null = not comparing
+  keptEntry:             null,  // { lorebookId, entryId } — the one entry held read-only in view ("Keep in view",
+                                //   #137): desktop's second pane, mobile's peek. Ephemeral; cleared when the
+                                //   active book changes or the entry is gone (use-kept-entry-lifecycle.js).
+  keptDiffOn:            false, // Highlight Differences on the kept entry
+  keptCompareWithId:     null,  // entry the kept one is compared against, once picked; null = follow the
+                                //   entry being worked in (lastFocusedEntryId on desktop, activeEntryId on mobile)
+  keptPeekOpen:          false, // mobile-only — the kept entry's full-screen peek is showing
+  lastFocusedEntryId:    null,  // desktop — the build-pane entry card most recently worked in. Desktop can
+                                //   have several cards open, so this is what "the entry you're editing" means.
   keyboardHelpOpen:      false,  // true when the keyboard-shortcuts cheat-sheet overlay is open
   selectAllVisibleNonce: 0,      // bumped by the select-all-visible hotkey; GlobalFilterBar owns the
                                  //   visible-id lists for both panes, so it services the request there
@@ -183,6 +192,18 @@ export const useUiStore = create((set) => ({
   setPickFromReferenceMode: (pickFromReferenceMode) => set({ pickFromReferenceMode }),
   setCrossFlashId:          (crossFlashId)          => set({ crossFlashId }),
   setCompareEntryId:        (compareEntryId)        => set({ compareEntryId }),
+  // Keeping an entry takes the second pane, so a same-name compare that was
+  // using the reference pane has nothing left to compare against.
+  keepEntryInView:  (lorebookId, entryId) => set({ keptEntry: { lorebookId, entryId }, keptCompareWithId: null, compareEntryId: null }),
+  clearKeptEntry:   ()                    => set({ keptEntry: null, keptCompareWithId: null, keptPeekOpen: false }),
+  // Swap: the entry being edited becomes the kept one and the old kept entry
+  // becomes its comparison, so a diff that was on keeps describing the pair.
+  swapKeptEntry:    (lorebookId, nextKeptId, previousKeptId) =>
+    set({ keptEntry: { lorebookId, entryId: nextKeptId }, keptCompareWithId: previousKeptId }),
+  setKeptDiffOn:         (keptDiffOn)         => set({ keptDiffOn }),
+  setKeptCompareWithId:  (keptCompareWithId)  => set({ keptCompareWithId }),
+  setKeptPeekOpen:       (keptPeekOpen)       => set({ keptPeekOpen }),
+  setLastFocusedEntryId: (lastFocusedEntryId) => set({ lastFocusedEntryId }),
   setKeyboardHelpOpen:      (keyboardHelpOpen)      => set({ keyboardHelpOpen }),
   toggleKeyboardHelp:       ()                      => set((s) => ({ keyboardHelpOpen: !s.keyboardHelpOpen })),
   requestSelectAllVisible:  ()                      => set((s) => ({
@@ -227,6 +248,7 @@ export const useUiStore = create((set) => ({
     referenceBrowseOpen:   false,
     pickFromReferenceMode: false,
     compareEntryId:        null,
+    keptPeekOpen:          false,   // the peek is a layer; the kept entry itself is not, and survives
     keyboardHelpOpen:      false,
     mobileTitleMenuOpen:   false,
     referenceChooserOpen:  false,
